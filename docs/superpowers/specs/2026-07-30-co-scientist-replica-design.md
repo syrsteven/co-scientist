@@ -1,8 +1,8 @@
-# Co-Scientist 论文忠实复刻：开发版设计规格
+# Co-Scientist 论文忠实复刻：分阶段预览版设计规格
 
-- 文档状态：待用户书面审阅
+- 文档状态：用户条件已逐项纳入，可进入 Core Preview 实施计划
 - 日期：2026-07-30
-- 目标版本：Developer Preview
+- 目标版本：Core Preview → Research Preview → Product Preview
 - 首要领域：生物医学、眼科、基础研究、药物研发
 - 首个端到端验收题：微创晶状体手术后透明再生与纤维化再生的机制决定因素
 
@@ -29,7 +29,7 @@
 - **不可变历史**：假设内容、审查、比赛和外部调用保留版本与来源；改进生成新实体，不覆写历史。
 - **证据与观点分离**：原始来源、提取证据、模型判断、专家判断和系统派生结论分别存储。
 - **成本可配置但始终记账**：费用上限可显式设为 unlimited，实际 token、调用、工具费用和墙钟时间始终记录。
-- **单机可用，边界可替换**：Developer Preview 默认单机进程和 SQLite，但不把业务逻辑绑定到存储、模型或搜索供应商。
+- **单机可用，边界可替换**：Core Preview 默认单机进程和 SQLite，但不把业务逻辑绑定到存储、模型或搜索供应商。
 - **失败可恢复**：内部逻辑提交通过事务和幂等键实现 exactly-once effect；外部调用按可审计的 at-least-once 处理，不作不真实保证。
 - **性能声明分级**：区分框架行为复现、方法复现、公共数据复现和湿实验验证。
 
@@ -66,25 +66,49 @@
 
 ## 3. 范围
 
-### 3.1 Developer Preview 必须包含
+### 3.1 Core Preview
 
-- ResearchGoal 和 ResearchPlan 解析、版本化及人工修订；
-- Supervisor、持久任务队列、预算账本、停止策略和 checkpoint；
-- Generation、Reflection、Ranking、Proximity、Evolution、Meta-review 六类 Agent；
-- initial、full、deep verification、observation、simulation 和 recurrent/tournament review；
-- tournament 配对、科学辩论、Elo 更新和位置偏差检查；
-- Evolution 多策略、父子谱系及子代完整重新准入；
-- 文献搜索、全文/摘要获取、引用解析和 provenance；
-- 通用证据工具接口及首批生物医学/眼科适配器；
-- OpenAI、DeepSeek、Qwen、Gemini 和 Claude 的统一模型接口；
-- 可配置模型路由、显式 fallback、token/费用/时延追踪；
-- 专家反馈、人工 hypothesis、人工 review、暂停/恢复/软停止/取消；
-- CLI、稳定应用服务、HTTP API、SSE 事件流和研究驾驶舱 Web UI；
-- 离线 fake/replay provider；
-- 行为测试、组件消融、公共 benchmark 和晶状体任务验收框架；
-- 可导出的 run manifest、事件、证据、审查、排名、成本和最终报告。
+Core Preview 是第一个发布门槛，只包含足以验证论文核心循环和工程不变量的纵向切片：
 
-### 3.2 Developer Preview 明确不包含
+- ResearchGoal/ResearchPlan 的最小解析、固定版本和配置加载；
+- 确定性领域内核：事件、投影、Run/Task/Hypothesis 状态机、TournamentEpoch、Elo、预算和停止策略；
+- Supervisor 单一调度权威、持久任务、ExternalCall 生命周期、checkpoint 和 replay；
+- Generation、Reflection、Ranking、Proximity、Evolution、Meta-review 的最小可运行 skill 契约；
+- policy-driven Reflection：initial review 必需，其他 review 由 profile/trigger 决定；
+- HypothesisContent、HypothesisProjection、NoveltyAssessment、Review、Match 和 provenance；
+- fake/replay provider；
+- **一个**真实 LLM provider adapter；
+- **一个**文献 provider adapter；
+- SQLite、artifact store、Application Service 边界和 CLI；
+- deterministic unit/contract/scenario tests；
+- 晶状体研究目标的 smoke test；
+- run manifest、事件、证据、排名、成本和 partial/final CLI 导出。
+
+Core Preview 不以 React Web、HTTP/SSE、五家 LLM provider、完整生物医学数据库、GPQA 或全量论文消融为发布门槛，也不创建这些模块的全量脚手架。
+
+### 3.2 Research Preview
+
+Research Preview 在 Core Preview 之上增加：
+
+- paper-faithful、deep-review 和 cost/quality experimental profiles；
+- OpenAI、DeepSeek、Qwen、Gemini、Claude 的统一 adapter 与跨模型评测；
+- 多文献来源、全文/引用解析、首批生物医学/眼科工具；
+- 高级 Reflection strategies、证据冲突处理和专家反馈；
+- 完整位置偏差、Evolution、Meta-review、Proximity 和 test-time scaling 消融；
+- GPQA、公开 paper-QA 替代集和晶状体盲评；
+- 稳定 HTTP API 与面向研究运行的导出/审计。
+
+### 3.3 Product Preview
+
+Product Preview 在 Research Preview 之上增加：
+
+- React Research Cockpit；
+- SSE 实时事件、tournament/proximity/lineage 可视化；
+- provider/tool 配置体验、运行恢复、错误处理和成本控制界面；
+- 人工 hypothesis/review/feedback 的完整交互；
+- 面向技术型研究者的部署文档和运维检查。
+
+### 3.4 所有预览版均明确不包含
 
 - 正式 SaaS 托管；
 - 多租户账号、组织 RBAC、计费和配额销售；
@@ -94,7 +118,7 @@
 - 对论文私有 adversarial safety 数据、paper-QA 或完整专家集的虚构复现；
 - 自动替代领域专家作出临床、实验伦理或资源投入决策。
 
-### 3.3 交付分解
+### 3.5 交付分解
 
 整个目标拆为六个相互连接但可独立验收的子项目：
 
@@ -183,19 +207,17 @@ flowchart TB
 
 ### 4.2 技术栈选择
 
-Developer Preview 采用：
+Core Preview 采用：
 
 - Python 3.11+；
 - Pydantic v2 作为领域/API schema；
-- FastAPI 提供 REST 与 SSE；
 - SQLAlchemy 2 + Alembic；
-- SQLite WAL 作为 Developer Preview 数据库；
+- SQLite WAL 作为 Core Preview 数据库；
 - `asyncio`/AnyIO 实现单机异步 worker；
 - Typer 提供 CLI；
-- React + TypeScript 提供 Web cockpit；
 - pytest 提供单元、契约与集成测试。
 
-这是 `developer_extension`，不是论文原始实现声明。PostgreSQL adapter 不属于 Developer Preview 发布门槛；但持久化端口和 migration 不得依赖 SQLite 专属业务语义，以便后续替换。
+Research Preview 增加 FastAPI REST；Product Preview 增加 SSE、React 和 TypeScript。以上都是 `developer_extension`，不是论文原始实现声明。PostgreSQL adapter 不属于 Core Preview 发布门槛；但持久化端口和 migration 不得依赖 SQLite 专属业务语义，以便后续替换。
 
 ## 5. 目标项目目录
 
@@ -287,7 +309,7 @@ Supervisor 是确定性的应用级编排器，负责：
 8. 执行 Hypothesis、Task 和 Run 状态迁移；
 9. 确定性更新 Elo、成本、统计和投影；
 10. 触发 Evolution、Meta-review、overview 和 finalization；
-11. 执行 compute、Elo、top-k、novelty/diversity 和 scientist stop；
+11. 执行 hard budget、anchor/top-k/cluster/budget convergence 和 scientist stop；Elo plateau 只作为辅助信号；
 12. 生成最终输出与 completeness 状态。
 
 ### 6.2 权限不变量
@@ -384,14 +406,16 @@ Generation 结果必须先成为 `created` hypothesis，不能直接入 tourname
 
 ### 7.3 Reflection Agent
 
-Reflection 以阶段化任务运行：
+Reflection 以策略驱动的阶段化任务运行。`ReviewPolicy` 为每个 profile 定义 `required_before_admission`、`optional_triggers`、最大重试和预算，Supervisor 根据策略创建任务，而不是把 review ladder 编码为固定状态链。
 
-1. `initial_review`：无外部工具的快速正确性、质量、新颖性和安全检查；
-2. `full_review`：搜索支持证据、反例、相似既有研究，分别评 correctness、quality、novelty；
+1. `initial_review`：所有 hypothesis 必需；无外部工具的快速正确性、质量、初步新颖性和安全检查；
+2. `full_review`：使用文献搜索验证 correctness、quality 和 literature novelty；是否为准入前必需项由 profile 决定，`paper_faithful` profile 将其设为必需；
 3. `deep_verification`：拆解核心 assumptions 与去语境 sub-assumptions，逐条判断；
 4. `observation_review`：寻找长尾实验观察并比较解释力；
 5. `simulation_review`：逐步模拟机制或实验流程，枚举失败模式；
 6. `recurrent_review`：结合累积 tournament 与 Meta-review 对高潜候选再次审查。
+
+`deep_verification`、`observation_review`、`simulation_review` 和 `recurrent_review` 默认不是每个 hypothesis 的 tournament admission 前置条件。它们可由高潜力、低置信度、证据冲突、scientist 请求、Meta-review 建议、tournament 不确定性或 profile 触发；也可在候选进入 tournament 后继续补充 review coverage。
 
 输入包括 Hypothesis immutable snapshot、review stage、计划评价维度、先前审查、允许证据及全局反馈。
 
@@ -427,18 +451,24 @@ Ranking 负责比较，不负责更新 Elo。
 
 输出：
 
-- winner slot，不能默认平局；
+- `decision_status`：decisive、inconclusive、invalid、needs_tiebreaker；
+- decisive 时必须提供 `winner_slot`，其他状态下 winner 为空；
 - 每个评价维度的比较理由；
 - debate transcript；
 - confidence；
 - unresolved disagreement；
 - position-reversal consistency。
 
-Supervisor 将 slot 映射回 hypothesis ID，验证结果后调用确定性的 Elo policy。
+Supervisor 将 slot 映射回 hypothesis ID。只有 `decisive` 且通过 schema、arena 和一致性校验的比赛才调用确定性的 Elo policy：
+
+- `inconclusive`：双方证据不足或无法可靠区分，不更新 Elo；
+- `invalid`：输出、输入版本、judge 或 prompt 不符合 arena 契约，不更新 Elo；
+- `needs_tiebreaker`：创建独立 tiebreaker task，不更新 Elo；
+- `paper_faithful_binary` 是独立 benchmark profile，要求 judge 强制二选一；它不作为默认研究运行策略。
 
 ### 7.5 Proximity Agent
 
-Proximity 计算候选间语义/机制邻近度，不直接修改图。
+Proximity 只计算候选之间的语义/机制邻近度，不直接修改图，也不评价某一假设相对于已发表文献是否新颖。
 
 输入：
 
@@ -456,10 +486,12 @@ Proximity 计算候选间语义/机制邻近度，不直接修改图。
 Supervisor 提交图边并更新 projection。图用于：
 
 - 将难区分的相似候选优先配对；
-- 去重和 novelty 判断；
+- 候选之间的近重复检测和聚类；
 - cluster coverage 和 diversity 统计；
 - Evolution 的跨簇组合；
 - Web 空间视图。
+
+文献新颖性完全由 Reflection 的 `full_review`/novelty review 负责，并写入独立 `NoveltyAssessment`。Proximity 的 duplicate likelihood 只能说明“候选之间重复”，不能替代文献 novelty verdict。
 
 ### 7.6 Evolution Agent
 
@@ -489,9 +521,9 @@ Evolution 只创建子候选，不修改父候选。策略至少包括：
 - 子代应优于父代的可检验理由；
 - 新 assumptions 和实验预测。
 
-每个 child 均从 `created` 开始，依次完成：
+每个 child 均从 `created` 开始，按当前 TournamentEpoch 的 admission policy 重新执行：
 
-`initial review / safety → full/deep reflection → proximity and novelty check → tournament-ready → initial Elo assigned → new tournament round`
+`safety → required reviews（initial 必需；其余由 profile 决定）→ NoveltyAssessment（若 policy 要求）→ Proximity candidate-space check → tournament-ready → epoch-specific initial Elo assigned → new tournament round`
 
 父代保持不变。子代不能继承父代 Elo、比赛次数或 tournament 位置，也不能被默认视为更优。
 
@@ -574,7 +606,7 @@ ResearchGoal 修改生成新版本。运行始终绑定明确版本。
 - `evidence_requirements`；
 - `allowed_tools`；
 - `generation_strategies`；
-- `review_ladder`；
+- `review_policy`：每类 review 的 required/optional/trigger/budget；
 - `model_routing_profile`；
 - `budget_policy`；
 - `stop_policy`；
@@ -582,13 +614,14 @@ ResearchGoal 修改生成新版本。运行始终绑定明确版本。
 - `safety_constraints`；
 - `source_level_by_field`。
 
-### 8.4 Hypothesis
+### 8.4 HypothesisContent 与 HypothesisProjection
 
-Hypothesis 是不可变科学提案，字段包括：
+`HypothesisContent` 是不可变的科学内容，字段包括：
 
-- `hypothesis_id`；
+- `content_id`；
 - `origin_type`：generated、evolved、scientist_submitted；
 - `parent_ids`；
+- `supersedes_id`；
 - `generation_strategy`；
 - `title`；
 - `claim`；
@@ -601,9 +634,26 @@ Hypothesis 是不可变科学提案，字段包括：
 - `known_alternatives`；
 - `evidence_refs`；
 - `content_version`；
-- `lifecycle_state`。
+- `content_hash`。
 
-需要“修改”时创建新 hypothesis，并用 `supersedes_id` 或 `parent_ids` 建立关系。
+需要“修改”时创建新的 `HypothesisContent`，并用 `supersedes_id` 或 `parent_ids` 建立关系。科学内容对象不包含生命周期、review coverage、rating、cluster、预算或运行时状态。
+
+`HypothesisProjection` 是由事件重建的可变视图，字段包括：
+
+- `hypothesis_id` 与 `content_id`；
+- `lifecycle_state`；
+- `safety_status`；
+- `review_coverage`：按 stage 保存完成状态和最新 review IDs；
+- `novelty_assessment_ids`；
+- `admission_policy_version` 与缺失条件；
+- `tournament_entries_by_epoch`；
+- `current_rating_by_epoch`；
+- `matches_by_epoch`；
+- `cluster_memberships` 和 proximity edge 摘要；
+- `active_access_issues`；
+- `created_sequence`、`last_updated_sequence`。
+
+Projection 可以删除并从事件重放；它不是科学内容的事实来源。Rating、review coverage 和 cluster 不能回写到 `HypothesisContent`。
 
 ### 8.5 MechanismChain
 
@@ -644,11 +694,46 @@ Hypothesis 是不可变科学提案，字段包括：
 
 Review 不覆盖旧 review。Supervisor 的准入决定引用所依据的 review IDs。
 
-### 8.7 TournamentEntry、Match 与 Rating
+`NoveltyAssessment` 是独立数据对象，由 Reflection 的 literature novelty review 产生：
+
+- `novelty_assessment_id`；
+- `hypothesis_id` 与 `content_hash`；
+- `research_plan_version`；
+- `review_profile`、`review_id` 和 `assessor_profile`；
+- 检索 query、cutoff date 和 literature provider；
+- closest prior works；
+- claim/mechanism overlap；
+- 分维度 novelty scores；
+- `verdict`：novel、partially_novel、not_novel、insufficient_evidence；
+- confidence、理由和 evidence refs；
+- raw response/search artifacts；
+- access issues。
+
+NoveltyAssessment 评价“相对于已发表或可检索证据是否新颖”。它不存储候选间 cluster，也不从 Proximity score 推导 verdict。
+
+### 8.7 TournamentEpoch、TournamentEntry、Match 与 Rating
+
+`TournamentEpoch`（也称 Arena）定义 Elo 的可比范围：
+
+- `epoch_id`、`run_id`；
+- `research_plan_version`；
+- `evaluation_rules_hash`；
+- `ranking_skill_version` 与 `ranking_prompt_hash`；
+- `judge_profile_hash`；
+- `rating_policy_version`；
+- `admission_policy_version`；
+- `anchor_set_id`；
+- `parent_epoch_id` 和创建原因；
+- `status`：open、finalizing、closed；
+- `opened_at`、`closed_at`。
+
+只有同时属于同一 epoch 的 TournamentEntry 才能比赛并更新相互可比的 Elo。任何输入契约与 epoch hash 不匹配的 match 都是 `invalid`。
 
 `TournamentEntry`：
 
+- `epoch_id`；
 - `hypothesis_id`；
+- `content_hash`；
 - `admitted_at`；
 - `initial_rating`；
 - `matches_played`；
@@ -658,12 +743,16 @@ Review 不覆盖旧 review。Supervisor 的准入决定引用所依据的 review
 
 `Match`：
 
+- `epoch_id`；
 - 两个 hypothesis ID；
+- 双方 content hash；
 - pairing reason 与 score components；
 - debate tier；
 - randomized slot mapping；
-- winner；
+- `decision_status`；
+- decisive 时的 winner；
 - judge profile；
+- ranking prompt/rules/rating policy hashes；
 - transcript artifact；
 - confidence；
 - reversal match link；
@@ -672,13 +761,18 @@ Review 不覆盖旧 review。Supervisor 的准入决定引用所依据的 review
 
 Elo 规则：
 
-- candidate 通过审查并成为 tournament-ready 后，准入事务赋予默认初始 rating 1200；
+- candidate 通过当前 epoch 的 admission policy 并成为 tournament-ready 后，准入事务在该 epoch 赋予默认初始 rating 1200；
 - 1200 不是审查阈值；
 - 默认 K-factor 为 32，仅作为 `replica_default`；
 - 预期分使用标准 Elo logistic 公式；
-- 论文 prompt 要求选出胜者，Developer Preview 默认不使用平局；
+- 只有 `decisive` match 更新 Elo；inconclusive、invalid 和 needs_tiebreaker 均不更新；
+- `paper_faithful_binary` benchmark profile 保留论文 prompt 的强制二选一行为；
 - K-factor、初始值和配对权重均写入 run manifest；
 - rating 由 Supervisor 的纯函数更新，Agent 不返回新 rating。
+
+Elo 不跨 epoch 比较、排序、拼接或继承。新 epoch 中重新准入的 hypothesis 获得新的 TournamentEntry 和初始 rating；旧 epoch rating 只作为历史信息展示。
+
+ResearchPlan 版本一旦变化，当前 epoch 必须关闭并创建新 epoch。若修改涉及研究问题、关键因果链、评价维度/权重或候选可比总体，Supervisor 默认要求 fork run；若只是同一科学问题下的评价/prompt/judge/rating policy 变更，可以在同一 run 新建 epoch。两种情况都不迁移 rating。
 
 ### 8.8 Evidence 与 Provenance
 
@@ -725,7 +819,27 @@ Elo 规则：
 - `reserved_budget`；
 - result artifact 和 error classification。
 
-`ExternalCall` 包含请求指纹、provider/model/tool、开始结束时间、response ID、状态、重试原因、缓存命中、脱敏请求/响应 artifact 和费用。
+`ExternalCall` 包含：
+
+- `external_call_id`、`task_id`、attempt；
+- 请求指纹、provider/model/tool；
+- `lifecycle_state`；
+- planned/started/raw persisted/validated/submitted/applied 时间；
+- provider response ID；
+- raw artifact ref、content hash、mime type 和 byte length；
+- validated payload artifact；
+- AgentResult ID；
+- applied domain event sequence；
+- 重试/repair/fallback parent call；
+- 缓存命中、错误分类、token、费用和时延。
+
+成功生命周期固定为：
+
+`planned → started → raw_response_persisted → validated → agent_result_submitted → domain_result_applied`
+
+收到供应商响应后，runtime 必须先把未经领域解释的 raw response 以 artifact 持久化并提交 `ExternalCallRawResponsePersisted`，随后才能解析、修复、验证或提交 AgentResult。崩溃恢复优先从已持久化 raw artifact 继续，不能在已有完整 raw response 时无理由再次调用供应商。
+
+允许的失败状态为 `failed_before_response`、`raw_persist_failed`、`validation_failed`、`submission_failed` 和 `domain_apply_failed`。repair/retry 使用新的 ExternalCall，并通过 parent call 关联，不覆写原记录。raw artifact 使用受限访问；日志和 UI 只显示脱敏视图。
 
 `CostEntry` 包含 input/output/cache tokens、模型费用、tool/search 费用、时延、估算/账单状态和 pricing version。
 
@@ -749,12 +863,13 @@ Elo 规则：
 - Run：`RunCreated`、`RunStarted`、`RunPausing`、`RunPaused`、`RunNeedsAttention`、`RunStopping`、`RunCompleted`、`RunCompletedPartial`、`RunFailed`、`RunCancelled`；
 - Plan：`ResearchGoalAccepted`、`ResearchPlanProposed`、`ResearchPlanAccepted`、`ResearchPlanRevised`；
 - Task：`TaskEnqueued`、`TaskLeased`、`TaskHeartbeatRecorded`、`TaskResultReceived`、`TaskRetryScheduled`、`TaskSucceeded`、`TaskBlocked`、`TaskFailed`、`TaskCancelled`；
-- Hypothesis：`HypothesisCreated`、`HypothesisSafetyPassed`、`HypothesisSafetyBlocked`、`ReviewCompleted`、`HypothesisRejected`、`NoveltyCheckCompleted`、`HypothesisDuplicateArchived`、`HypothesisTournamentReady`、`HypothesisArchived`；
-- Tournament：`TournamentEntryCreated`、`InitialRatingAssigned`、`MatchScheduled`、`MatchCompleted`、`RatingUpdated`；
+- Hypothesis：`HypothesisContentCreated`、`HypothesisSafetyPassed`、`HypothesisSafetyBlocked`、`ReviewCompleted`、`NoveltyAssessmentCompleted`、`HypothesisRejected`、`CandidateSimilarityCheckCompleted`、`HypothesisDuplicateArchived`、`HypothesisTournamentReady`、`HypothesisArchived`；
+- Tournament：`TournamentEpochOpened`、`TournamentEpochFinalizing`、`TournamentEpochClosed`、`TournamentEntryCreated`、`InitialRatingAssigned`、`MatchScheduled`、`MatchDecisive`、`MatchInconclusive`、`MatchInvalid`、`MatchNeedsTiebreaker`、`RatingUpdated`；
 - Proximity/Evolution：`ProximityEdgeUpdated`、`ClusterProjectionUpdated`、`EvolutionRequested`、`EvolutionChildCreated`；
 - Meta/Scientist：`SystemFeedbackGenerated`、`OverviewGenerated`、`ScientistFeedbackSubmitted`、`HumanHypothesisSubmitted`、`HumanReviewSubmitted`；
 - Budget/Stop：`BudgetReserved`、`BudgetSettled`、`StopSignalObserved`、`StopPolicyTriggered`；
-- Safety/Operations：`SafetyVerdictRecorded`、`AccessIssueRecorded`、`ProviderFallbackUsed`、`InvariantViolationDetected`。
+- Safety/Operations：`SafetyVerdictRecorded`、`AccessIssueRecorded`、`ProviderFallbackUsed`、`InvariantViolationDetected`；
+- ExternalCall：`ExternalCallPlanned`、`ExternalCallStarted`、`ExternalCallRawResponsePersisted`、`ExternalCallValidated`、`AgentResultSubmitted`、`DomainResultApplied`、`ExternalCallFailed`。
 
 事件 payload 版本独立演进。Command 必须携带 `expected_run_sequence` 或显式选择 latest-state 语义；发生并发版本冲突时返回 conflict，不自动覆盖。
 
@@ -775,7 +890,6 @@ stateDiagram-v2
     paused --> stopping
     stopping --> completed_partial
     stopping --> completed
-    running --> completed
     running --> failed
     needs_attention --> failed
     created --> cancelled
@@ -790,6 +904,8 @@ stateDiagram-v2
 - `paused` 不释放 run 数据，不丢弃 pending task；
 - `needs_attention` 用于缺少 key、永久配置错误或需人工处理的工具访问问题；
 - scientist soft stop 进入 `stopping`，保留已提交结果并生成 partial/final report；
+- 正常运行完成、自动质量收敛和预算停止都必须先进入 `stopping`，完成 finalization/checkpoint 后才能成为 `completed` 或 `completed_partial`；
+- 不允许 `running → completed`；
 - hard cancel 进入 `cancelled`，不生成探索后继任务，可生成最小审计摘要；
 - `completed_partial` 必须列出未完成阶段和未执行任务；
 - terminal 状态不能恢复为 running，只能 fork 为新 run。
@@ -825,53 +941,91 @@ stateDiagram-v2
 
 重复提交相同 idempotency key 返回已提交结果，不再次迁移状态或计入逻辑成本。外部供应商若重复计费则以独立 `ExternalCall` 记录。
 
-### 9.3 Hypothesis 状态
+### 9.3 ExternalCall 状态
+
+```mermaid
+stateDiagram-v2
+    [*] --> planned
+    planned --> started
+    started --> raw_response_persisted
+    raw_response_persisted --> validated
+    validated --> agent_result_submitted
+    agent_result_submitted --> domain_result_applied
+    planned --> failed_before_response
+    started --> failed_before_response
+    started --> raw_persist_failed
+    raw_response_persisted --> validation_failed
+    validated --> submission_failed
+    agent_result_submitted --> domain_apply_failed
+```
+
+`raw_response_persisted` 是供应商调用与领域处理之间的恢复边界。只有该状态存在完整 artifact hash 时才能进入 validation；只有 `agent_result_submitted` 的结果通过 Supervisor 校验并产生领域事件后，ExternalCall 才成为 `domain_result_applied`。
+
+### 9.4 HypothesisProjection 状态
 
 ```mermaid
 stateDiagram-v2
     [*] --> created
-    created --> safety_pending
-    safety_pending --> initial_review_pending
-    safety_pending --> safety_blocked
-    initial_review_pending --> full_review_pending
-    initial_review_pending --> rejected
-    full_review_pending --> deep_verification_pending
-    full_review_pending --> rejected
-    deep_verification_pending --> proximity_novelty_pending
-    deep_verification_pending --> rejected
-    proximity_novelty_pending --> tournament_ready
-    proximity_novelty_pending --> duplicate_archived
-    tournament_ready --> tournament_active: assign initial Elo
+    created --> screening
+    screening --> safety_blocked
+    screening --> admission_pending
+    admission_pending --> rejected
+    admission_pending --> duplicate_archived
+    admission_pending --> tournament_ready: policy satisfied
+    tournament_ready --> tournament_active: epoch entry + initial Elo
     tournament_active --> archived
 ```
 
 补充规则：
 
-- `tournament_ready → tournament_active` 的准入事务同时创建 TournamentEntry 并赋予初始 Elo；
-- observation、simulation、recurrent review 是 tournament-active 上的附加审查轨道，不把主状态倒退；
+- review stage 不是 Hypothesis lifecycle state；完成情况写入 `HypothesisProjection.review_coverage`；
+- `initial_review` 始终是 admission requirement，其他 required stages 由当前 epoch 的 admission/review policy 决定；
+- `tournament_ready → tournament_active` 的准入事务同时创建当前 epoch 的 TournamentEntry 并赋予该 epoch 的初始 Elo；
+- optional deep verification、observation、simulation、recurrent review 可在 admission 前后执行，不把主状态倒退；
 - 审查发现致命问题时，active hypothesis 可被 Supervisor `archived`，但历史比赛不删除；
 - Evolution 不让父 hypothesis 进入 `evolved` 或退出 active；
 - Evolution child 一律从 `created` 重新开始；
 - 被拒候选只能通过创建修订子代重新进入，不原地解封。
 
-## 10. Tournament、Proximity 与 Evolution 策略
+## 10. TournamentEpoch、Proximity 与 Evolution 策略
 
 ### 10.1 Tournament admission
 
 准入条件：
 
 - goal 与 hypothesis safety 通过；
-- required initial/full/deep review 完成；
+- 当前 `ReviewPolicy.required_before_admission` 已满足；其中 initial review 永远必需；
+- 当前 policy 要求 literature novelty 时，存在适用于相同 content hash 与 ResearchPlan version 的 `NoveltyAssessment`；
 - 没有 unresolved critical flaw；
-- proximity/novelty check 完成；
+- Proximity 的 candidate-space similarity/cluster check 完成；
 - 未被判定为需要归档的重复候选；
 - 必需结构字段完整。
 
 准入动作：
 
-`passed review → tournament-ready → initial Elo assigned (default 1200) → tournament-active`
+`policy satisfied → tournament-ready → current epoch initial Elo assigned (default 1200) → tournament-active`
 
-### 10.2 配对
+### 10.2 Epoch 生命周期与固定 anchors
+
+创建 epoch 时冻结 ResearchPlan version、评价规则、ranking prompt、judge profile、rating policy 和 admission policy。epoch open 后这些字段不可原地修改。
+
+计划修订规则：
+
+- 任何新的 ResearchPlan version 都不能沿用旧 epoch；
+- 仅改变同一科学问题下的评审/prompt/judge/rating policy 时，关闭旧 epoch，在同一 run 创建新 epoch；
+- 改变研究问题、关键因果链、主要评价维度/权重或候选总体时，fork run；
+- 新 epoch 可重新准入旧 HypothesisContent，但 rating 从默认初始值重新开始；
+- 跨 epoch 只能比较外部质量指标、anchor 结果和内容，不直接比较 Elo 数值。
+
+每个 epoch 冻结一个 `AnchorSet`。Anchor 是固定 HypothesisContent 或人工/基线 reference，不随候选池变化。checkpoint 使用相同 evaluation rules、ranking prompt 和 judge profile，让 top-k 的冻结快照与 anchors 做重复比较，产生 `AnchorComparison`：
+
+- anchor comparisons 不更新 Elo；
+- 保存顺序随机化、decision status、judge 和成本；
+- 只比较同一 epoch 内的 checkpoint；
+- 用 win rate、外部 quality score 或成对偏好稳定性观察绝对参照下的改进；
+- 没有足够 anchors 时，自动质量收敛停止被禁用。
+
+### 10.3 配对
 
 Supervisor 使用可解释的 composite pairing score：
 
@@ -885,7 +1039,9 @@ Supervisor 使用可解释的 composite pairing score：
 
 权重配置化并写入 manifest。高相似候选优先并不排除跨簇比赛；系统保留一定 exploration 比例，避免 cluster 隔离。
 
-### 10.3 Debate 层级
+所有 pair 必须属于相同 epoch。tiebreaker 使用同一 frozen judge profile、ranking prompt 和 rating policy，只改变随机顺序或独立上下文。若要更换 judge profile，结果只能作为不更新 Elo 的外部 adjudication；要让新 judge 产生 rating，必须创建新 epoch。
+
+### 10.4 Debate 层级
 
 - top-ranked、rating 接近或高不确定 pair 使用多轮 scientific debate；
 - 较低排名或早期筛选 pair 使用单轮比较；
@@ -893,17 +1049,19 @@ Supervisor 使用可解释的 composite pairing score：
 - benchmark 可执行顺序反转并测量 winner consistency；
 - transcript、每轮模型和成本全部保留。
 
-### 10.4 Evolution 触发
+默认研究 profile 允许 inconclusive/invalid/needs_tiebreaker。只有 `paper_faithful_binary` benchmark profile 强制二选一，并将该结果与普通研究 profile 分开报告。
+
+### 10.5 Evolution 触发
 
 Evolution 可由以下条件触发：
 
-- Elo/top-k improvement 进入初次 plateau；
+- Elo/top-k 变化进入疑似 plateau，作为需要进一步诊断的辅助信号；
 - Meta-review 识别出共性可修复缺陷；
 - cluster coverage 不足；
 - scientist 请求；
 - 固定周期或计划配置。
 
-初次 plateau 优先触发配置数量的 Evolution burst，而不是立即停止。只有达到最大 evolution plateau cycles，且新子代没有恢复质量或多样性改进时，相关 plateau 才成为停止理由。
+疑似 plateau 可触发配置数量的 Evolution burst，但 Elo plateau 本身不能停止运行。Evolution 后是否收敛由固定 anchor comparisons、top-k 稳定性、cluster diversity 和预算条件共同判断。
 
 ## 11. 停止策略与预算
 
@@ -932,10 +1090,12 @@ Evolution 可由以下条件触发：
 Supervisor 检测：
 
 1. **compute budget reached**：任一硬上限触达；
-2. **Elo improvement plateau**：滚动窗口中 top-k mean/max rating 改变量低于 epsilon；
-3. **top-k ranking stability**：连续窗口的 top-k Jaccard 和顺序 Kendall tau 达到阈值；
-4. **novelty/diversity plateau**：新唯一 cluster 比例和候选到既有空间的最小距离持续低于阈值；
-5. **scientist stop**：用户发出软停止或硬取消。
+2. **anchor improvement plateau**：固定 AnchorSet 上的 win rate/外部质量在连续 checkpoint 不再提升；
+3. **top-k ranking stability**：同一 epoch 连续窗口的 top-k Jaccard 和顺序 Kendall tau 达到阈值；
+4. **cluster diversity plateau**：新唯一 cluster 比例和候选到既有候选空间的最小距离持续低于阈值；
+5. **minimum budget condition**：已消费计划规定的最低探索预算、完成最低比赛/anchor 覆盖，且没有未完成的高优先级准入任务；
+6. **Elo improvement plateau（辅助）**：同一 epoch、固定 cohort 的 top-k mean/max rating 改变量低于 epsilon；
+7. **scientist stop**：用户发出软停止或硬取消。
 
 Replica 初始默认值在配置中明确为：
 
@@ -943,11 +1103,20 @@ Replica 初始默认值在配置中明确为：
 - minimum evidence：每个窗口至少 20 场新比赛；
 - top-k：10；
 - 初次 plateau 后最多 2 个 Evolution burst；
-- 自动质量停止要求至少两个 plateau 信号同时成立，或单一 plateau 信号持续更长窗口。
+- 自动质量停止要求 anchor plateau、top-k stability、cluster diversity plateau 和 minimum budget condition 同时成立；
+- Elo plateau 只能增加停止置信度或触发 Evolution，不能单独或与另一个信号组合触发停止。
 
 这些数值均标记为 `replica_default`，不是论文参数。
 
 预算硬上限和 scientist soft stop 可单独立即触发 `stopping`；scientist hard cancel 单独立即触发 `cancelled`，不受 plateau 组合规则约束。
+
+候选池持续变化会使 raw Elo 非平稳。因此：
+
+- 只在同一 epoch 内计算 Elo plateau；
+- 使用固定 cohort 或 anchor-normalized 指标；
+- 报告 epoch ID、候选池规模和入场/退场数量；
+- 新 epoch 不继承 plateau window；
+- 缺少可用 anchor 时只允许预算、显式任务完成或 scientist stop，不允许 Elo 驱动的自动质量停止。
 
 最终报告记录：
 
@@ -1061,9 +1230,11 @@ Context Memory 不是无界聊天记录，而是版本化、可追溯的运行�
 - task 状态；
 - 新后继 task；
 - cost ledger；
-- outbox/SSE notification。
+- outbox/notification。
 
 append-only event log 是审计和投影重建的来源。projection 可以删除后重放恢复；artifact hash 不一致时 fail-closed。
+
+ExternalCall 的 raw response persistence 是更早的独立 durability boundary：供应商返回后先以原子文件写入/rename 或等价 artifact transaction 持久化 raw bytes，再写 `ExternalCallRawResponsePersisted`。后续领域事务只引用已存在且 hash 已校验的 artifact。raw artifact 持久化失败时不得解析或提交 AgentResult。
 
 ### 14.2 Lease 与 heartbeat
 
@@ -1107,7 +1278,7 @@ Partial 不是成功的别名。任何 partial output 必须列出：
 4. **Evidence isolation**：网页、PDF 和数据库文本作为不可信数据，隔离 prompt injection；
 5. **Output gate**：Meta-review 持续方向检查，最终输出再次审查。
 
-Developer Preview 默认：
+Core Preview 默认：
 
 - 绑定 localhost；
 - 无多租户承诺；
@@ -1123,6 +1294,8 @@ Developer Preview 默认：
 若研究者人工 override 非致命安全警告，系统记录身份、时间、理由和受影响对象。硬拒绝类别不能通过普通 UI override。
 
 ## 16. Application API、CLI 与 Web
+
+本节描述最终 Product Preview 的统一客户端边界。Core Preview 只实现 Application Service 协议和 CLI；Research Preview 增加 HTTP API；Product Preview 才增加 SSE 与 React Cockpit。后续阶段复用同一 command/query DTO，不让 CLI 直接耦合存储。
 
 ### 16.1 Application Service
 
@@ -1206,7 +1379,7 @@ CLI 使用 Application Service 或 HTTP client，不直接查询 SQLite。
 
 - **右侧：候选审计**
   - 完整机制链；
-  - review ladder；
+  - policy-driven review coverage；
   - evidence 与反例；
   - debate transcript；
   - safety、provenance、provider 和 cost metadata；
@@ -1215,6 +1388,8 @@ CLI 使用 Application Service 或 HTTP client，不直接查询 SQLite。
 UI 必须显式显示：
 
 - rating 与外部质量不是同一概念；
+- 当前 TournamentEpoch 及其 ResearchPlan/ranking/judge/rating policy；
+- 跨 epoch rating 不可直接比较；
 - hypothesis 是否完成全部准入；
 - evidence access limitation；
 - fallback 和 partial 状态；
@@ -1229,6 +1404,10 @@ UI 必须显式显示：
 - database schema version；
 - evidence pack version；
 - ResearchGoal/Plan version；
+- TournamentEpoch IDs 及每个 epoch 的 frozen contract hashes；
+- ReviewPolicy/admission policy 和实际 review coverage；
+- NoveltyAssessment cutoff/provider；
+- AnchorSet 和 checkpoint comparison policy；
 - skill/prompt/schema hashes；
 - provider/model/embedding/tool versions；
 - model routing 与 fallback；
@@ -1249,13 +1428,19 @@ API provider 即使接受 seed 也可能不完全确定。报告只能声明“�
 
 覆盖：
 
-- Run、Task、Hypothesis 状态迁移；
+- Run、Task、ExternalCall 和 HypothesisProjection 状态迁移；
+- 正常 Run 只能经 stopping/finalization 完成；
+- HypothesisContent 不可变、projection 可重放；
+- ReviewPolicy：initial 必需，其他 review 按 required/trigger 执行；
+- NoveltyAssessment 与 Proximity candidate similarity 职责隔离；
+- TournamentEpoch contract hash 和跨 epoch Elo 拒绝；
 - 非法迁移 fail-closed；
-- Elo 计算和初始值语义；
+- Elo 计算、初始值语义和仅 decisive 更新；
+- inconclusive、invalid、needs_tiebreaker 不更新 rating；
 - pairing score 和公平性；
 - budget reserve/settle；
-- 五类 stop signal；
-- plateau 先 Evolution 后 stop；
+- anchor/top-k/cluster/budget 组合停止条件；
+- Elo plateau 单独不能停止；
 - idempotency；
 - provenance graph；
 - redaction；
@@ -1270,6 +1455,7 @@ API provider 即使接受 seed 也可能不完全确定。报告只能声明“�
 - timeout/429/5xx 分类；
 - usage/cost parsing；
 - response ID 和 raw artifact；
+- raw response 先于 validation 和 domain apply 持久化；
 - retry/fallback audit；
 - secret redaction；
 - prompt injection fixture；
@@ -1282,10 +1468,16 @@ API provider 即使接受 seed 也可能不完全确定。报告只能声明“�
 使用 scripted LLM trace 覆盖：
 
 - goal → plan → generation → review → proximity → admission → tournament；
-- plateau → Evolution → child 全量重新准入 → 新 tournament round；
+- review profile 切换只改变 required coverage，不改变 Hypothesis lifecycle schema；
+- literature NoveltyAssessment 与 candidate-space Proximity 产生独立对象；
+- plateau diagnosis → Evolution → child 按当前 epoch policy 重新准入 → 新 tournament round；
+- ResearchPlan/ranking/judge/rating policy 变化 → close epoch → new epoch 或 fork run；
+- inconclusive → no rating update；needs_tiebreaker → 独立 task；
 - Meta-review feedback 注入下一轮；
 - scientist feedback 和 human hypothesis；
-- crash after external response but before commit；
+- crash after external response but before raw artifact persistence；
+- crash after raw artifact persistence but before validation；
+- crash after AgentResult submission but before domain result apply；
 - crash after commit but before worker acknowledgement；
 - duplicate result delivery；
 - expired lease；
@@ -1310,7 +1502,9 @@ Golden scenario 对事件类型、因果关系和最终 projection 断言，不�
 - 用 golden trace 检查 Supervisor 与六类 Agent 的事件关系；
 - 校验 prompt 输入槽位、结构终止输出和 review ladder；
 - 检查 Evolution child 不绕过准入；
-- 检查初始 Elo 1200 只在 tournament admission 赋予。
+- 检查 initial review 必需而高级 review 由 profile/trigger 决定；
+- 检查 literature novelty 不由 Proximity 推断；
+- 检查初始 Elo 1200 只在 epoch-specific tournament admission 赋予。
 
 该层证明公开框架行为被实现，不证明内部代码相同。
 
@@ -1350,15 +1544,17 @@ Golden scenario 对事件类型、因果关系和最终 projection 断言，不�
 
 按运行时间划分十个等量区间，报告：
 
-- top-10 mean Elo；
-- max Elo；
+- epoch、候选池规模和 cohort；
+- 同一 epoch 的 top-10 mean Elo；
+- 同一 epoch 的 max Elo；
+- 固定 anchor win rate/外部质量；
 - top-k membership 与顺序稳定性；
 - cluster diversity；
 - 外部盲化 judge quality；
 - 专家评分；
 - 累积费用、token、调用和时延。
 
-内部 Elo 与外部质量曲线并列，避免循环自证。
+内部 Elo、固定 anchor 和外部质量曲线并列，避免循环自证。ResearchPlan、ranking prompt、judge profile 或 rating policy 变化后的新 epoch 单独画图，不把 Elo 曲线直接拼接。
 
 ### 19.5 Level E：晶状体领域验收
 
@@ -1399,28 +1595,58 @@ Golden scenario 对事件类型、因果关系和最终 projection 断言，不�
 - 对评分分歧单独报告，不只报告均值；
 - 区分 hypothesis 质量和实验计划质量。
 
-湿实验是后续独立研究项目。Developer Preview 的成功标准是产生可审计、可证伪、可被专家选择进入实验的候选，不是宣称生物学机制已经验证。
+湿实验是后续独立研究项目。Research Preview 的成功标准是产生可审计、可证伪、可被专家选择进入实验的候选，不是宣称生物学机制已经验证。Core Preview 只要求完成同一研究目标的可追溯 smoke run，不以专家级科学质量为发布声明。
 
 ## 20. 发布门槛
 
-Developer Preview 发布前必须满足：
+### 20.1 Core Preview
+
+Core Preview 发布前必须满足：
 
 - unit 和 contract test 通过；
 - golden scenario 完整运行；
 - event replay 重建相同 projection；
+- HypothesisContent 不变且 projection 可重建；
+- strategy-driven review coverage fixture 通过；
+- NoveltyAssessment 与 Proximity 不混用；
+- TournamentEpoch 阻止跨 plan/prompt/judge/rating policy 的 Elo 比较；
 - crash/duplicate delivery 不造成重复状态迁移；
-- Evolution child 完成全量重新准入；
+- raw response 在 validation/domain apply 前持久化，三处 crash boundary 可恢复；
+- Evolution child 按当前 policy 重新准入；
 - Elo 1200 未被误用为准入阈值；
-- 五类 stop signal 均有可重复 fixture；
+- 非 decisive 比赛不更新 Elo；
+- Elo plateau 单独不能停止，anchor/top-k/cluster/budget fixture 可重复；
+- 正常 Run 必须通过 stopping/finalization；
 - provider fallback 可见且可审计；
 - 日志和 artifact 无 API key；
 - evidence 引用可解析，访问限制可见；
 - CLI 能完成一个离线 replay run；
-- API 和 Web 能观察同一 run；
-- 晶状体任务可完成一次真实端到端运行；
-- benchmark report 可由 manifest 和保留工件重建；
+- 一个真实 LLM provider 与一个文献 provider 的 contract/smoke test 可运行；
+- 晶状体任务完成一次有 manifest 的 smoke run；
 - 所有结果使用正确的复现等级；
 - 没有可比数据、模型和计算预算时，不宣称达到论文同等性能。
+
+React Web、五家 provider 和完整 benchmark 不阻塞 Core Preview。
+
+### 20.2 Research Preview
+
+在 Core Preview 基础上还需：
+
+- 五家 provider adapter 的离线/在线 contract 覆盖；
+- 多文献/生物医学工具和细粒度 provenance；
+- paper-faithful 与高级 review profiles；
+- 组件消融、GPQA/替代 paper-QA、scaling 和晶状体盲评报告；
+- benchmark report 可由 manifest 和保留工件重建；
+- HTTP API 可观察和控制同一 run。
+
+### 20.3 Product Preview
+
+在 Research Preview 基础上还需：
+
+- React Cockpit 通过关键用户流程和可访问性测试；
+- SSE 断线续接、错误恢复、成本和 partial/fallback 显示正确；
+- CLI、HTTP 和 Web 对同一 Application Service 契约一致；
+- 技术型研究者可以从部署文档完成本地配置和运行。
 
 ## 21. 首批验收场景
 
@@ -1428,15 +1654,15 @@ Developer Preview 发布前必须满足：
 
 输入三个 scripted hypotheses：
 
-- 一个通过全部审查并进入 tournament；
+- 一个满足当前 ReviewPolicy 并进入 tournament；
 - 一个因安全或关键机制缺陷被拒；
 - 一个与既有候选高度重复而归档。
 
-随后触发 plateau，Evolution 产生 child。断言 child 从 `created` 重新经过 safety、reflection、proximity 和 admission，获得自己的初始 Elo；父 hypothesis 内容和 rating 历史不被覆盖。
+随后触发疑似 plateau，Evolution 产生 child。断言 child 从 `created` 重新经过 safety、required reviews、NoveltyAssessment（若 policy 要求）、Proximity 和 admission，获得当前 epoch 的初始 Elo；父 HypothesisContent 和 rating 历史不被覆盖。
 
 ### 21.2 崩溃恢复场景
 
-在 LLM 返回后、数据库提交前杀死 worker；恢复后允许重新调用或使用已缓存响应，但逻辑结果只提交一次。再在数据库提交后、worker ack 前杀死 worker；恢复后不得重复创建 review、match 或后继任务。
+分别在供应商返回但 raw artifact 尚未完成、raw artifact 已持久化但尚未 validation、AgentResult 已提交但 domain result 尚未 applied、domain transaction 已提交但 worker 尚未 ack 时杀死 worker。恢复后从最近持久边界继续，已有完整 raw artifact 时不重复调用，逻辑结果只提交一次。
 
 ### 21.3 真实晶状体场景
 
@@ -1474,12 +1700,12 @@ Developer Preview 发布前必须满足：
 
 ## 24. 设计审批后的下一步
 
-本规格获得用户书面批准后，下一步只进入详细实施计划。实施计划需要：
+用户已对本规格有条件批准，八项条件已逐项纳入。下一步只为 Core Preview 编写详细实施计划：
 
-- 按六个子项目拆分可验证增量；
-- 先实现 evidence pack 和确定性内核；
+- 先实现 evidence pack、确定性领域内核和 replay；
 - 以测试驱动方式定义状态机、事件和 Supervisor；
-- 再接 Agent skills、provider/tool adapter、API/CLI、Web 和 benchmark；
+- 接入六类最小 Agent skills、一个真实 LLM provider、一个文献 provider 和 CLI；
+- 以晶状体 smoke test 验证纵向切片；
 - 为每一阶段写明文件、测试、命令、验收和回滚边界。
 
-在实施计划获批前，不创建实现脚手架或业务代码。
+Research Preview 和 Product Preview 分别另写后续实施计划。当前计划不创建 React、SSE、五家 provider、全量领域工具或完整 benchmark 脚手架。在 Core Preview 实施计划获批前，不创建实现脚手架或业务代码。
