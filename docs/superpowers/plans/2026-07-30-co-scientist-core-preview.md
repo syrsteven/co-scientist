@@ -1734,6 +1734,7 @@ git commit -m "feat: persist events and raw artifacts atomically"
 - Modify: `src/co_scientist/adapters/artifacts/filesystem.py`
 - Modify: `src/co_scientist/adapters/persistence/sqlite.py`
 - Modify: `alembic/versions/0001_core_tables.py`
+- Create: `alembic/versions/0002_external_call_recovery.py`
 - Modify: `tests/contract/persistence/test_filesystem_artifacts.py`
 - Modify: `tests/contract/persistence/test_sqlite_event_store.py`
 - Modify: `tests/contract/persistence/test_sqlite_uow_atomic.py`
