@@ -66,6 +66,8 @@ def upgrade() -> None:
         sa.Column("parent_call_id", sa.String(), nullable=True),
         sa.Column("provider_response_id", sa.String(), nullable=True),
         sa.Column("usage_json", sa.Text(), nullable=False, server_default="{}"),
+        sa.Column("execution_context_json", sa.Text(), nullable=False),
+        sa.Column("agent_result_json", sa.Text(), nullable=True),
     )
     op.create_table(
         "cost_entries",

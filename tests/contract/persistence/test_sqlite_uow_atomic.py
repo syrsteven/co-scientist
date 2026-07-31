@@ -2,20 +2,44 @@ import json
 from decimal import Decimal
 
 import pytest
+from pydantic import BaseModel, ConfigDict
 from sqlalchemy import text
 from sqlalchemy.exc import IntegrityError
 
 from co_scientist.adapters.persistence.sqlite import SqliteUnitOfWork
+from co_scientist.agents.result import AgentResult
 from co_scientist.domain.budget import CostEntry
 from co_scientist.domain.states import ExternalCallState, TaskState
 from co_scientist.domain.task import NewTask, TaskMutation
 from co_scientist.events.models import NewEvent
+from co_scientist.ports.artifact_store import ArtifactRef
 
 
 def _store(tmp_path) -> SqliteUnitOfWork:
     store = SqliteUnitOfWork(f"sqlite:///{tmp_path / 'core.db'}")
     store.create_schema()
     return store
+
+
+def _execution_context(
+    *, run_id: str = "r-1", task_id: str = "task-1", idempotency_key: str = "source"
+) -> dict[str, object]:
+    return {
+        "run_id": run_id,
+        "task_id": task_id,
+        "idempotency_key": idempotency_key,
+        "skill_id": "generation",
+        "skill_version": "0.1.0",
+        "output_schema_version": 1,
+        "input_snapshot_hash": "sha256:input",
+    }
+
+
+class UnserializableResult(BaseModel):
+    model_config = ConfigDict(arbitrary_types_allowed=True)
+
+    result_id: str
+    value: object
 
 
 def _prepare_replay_store(tmp_path) -> SqliteUnitOfWork:
@@ -142,6 +166,7 @@ def test_domain_batch_commits_events_task_followup_cost_call_and_run_sequence(tm
         task_id="task-1",
         provider="stub",
         model_or_tool="stub-model",
+        execution_context=_execution_context(),
     )
     store.transition_call("call-1", ExternalCallState.STARTED)
     store.transition_call("call-1", ExternalCallState.RAW_RESPONSE_PERSISTED)
@@ -330,6 +355,9 @@ def test_cross_run_batch_member_rolls_back_the_whole_batch(tmp_path, foreign_wri
         "sha256:request",
         run_id="r-2",
         task_id="task-2",
+        execution_context=_execution_context(
+            run_id="r-2", task_id="task-2", idempotency_key="source-2"
+        ),
     )
     store.transition_call("call-2", ExternalCallState.STARTED)
     store.transition_call("call-2", ExternalCallState.RAW_RESPONSE_PERSISTED)
@@ -396,3 +424,205 @@ def test_cross_run_batch_member_rolls_back_the_whole_batch(tmp_path, foreign_wri
         ).one()
     assert run_sequence == 0
     assert counts == (2, 0, 0)
+
+
+def test_external_call_plan_requires_real_run_and_task_ownership(tmp_path) -> None:
+    store = _store(tmp_path)
+    store.create_run("r-1", manifest={})
+    store.create_run("r-2", manifest={})
+    store.enqueue_tasks(
+        [
+            NewTask(
+                task_id="task-1",
+                run_id="r-1",
+                idempotency_key="source",
+                intent_type="reflect",
+                payload={},
+            )
+        ]
+    )
+
+    with pytest.raises(ValueError, match="does not belong to run r-2"):
+        store.plan_external_call(
+            "call-1",
+            "sha256:request",
+            run_id="r-2",
+            task_id="task-1",
+            execution_context=_execution_context(run_id="r-2"),
+        )
+
+    with pytest.raises(KeyError, match="unknown task"):
+        store.plan_external_call(
+            "call-2",
+            "sha256:request",
+            run_id="r-1",
+            task_id="missing",
+            execution_context=_execution_context(task_id="missing"),
+        )
+
+
+def test_external_call_plan_rejects_execution_context_mismatch(tmp_path) -> None:
+    store = _store(tmp_path)
+    store.create_run("r-1", manifest={})
+    store.enqueue_tasks(
+        [
+            NewTask(
+                task_id="task-1",
+                run_id="r-1",
+                idempotency_key="source",
+                intent_type="reflect",
+                payload={},
+            )
+        ]
+    )
+
+    with pytest.raises(ValueError, match="execution context"):
+        store.plan_external_call(
+            "call-1",
+            "sha256:request",
+            run_id="r-1",
+            task_id="task-1",
+            execution_context=_execution_context(run_id="different"),
+        )
+
+
+def test_validated_payload_and_full_result_commit_atomically(tmp_path) -> None:
+    store = _store(tmp_path)
+    store.create_run("r-1", manifest={})
+    store.enqueue_tasks(
+        [
+            NewTask(
+                task_id="task-1",
+                run_id="r-1",
+                idempotency_key="source",
+                intent_type="reflect",
+                payload={},
+            )
+        ]
+    )
+    context = _execution_context()
+    store.plan_external_call(
+        "call-1",
+        "sha256:request",
+        run_id="r-1",
+        task_id="task-1",
+        execution_context=context,
+    )
+    store.transition_call("call-1", "started")
+    ref = ArtifactRef(
+        path="raw/call-1/digest",
+        sha256="sha256:digest",
+        mime_type="application/json",
+        byte_length=2,
+    )
+    store.record_raw_and_transition("call-1", ref, "raw_response_persisted")
+    result = AgentResult(
+        result_id="result-1",
+        external_call_id="call-1",
+        status="completed",
+        payload={"nested": {"values": [1, 2]}},
+        raw_artifact_ref=ref,
+        **context,
+    )
+
+    store.record_validated_and_submitted("call-1", result.payload, result)
+
+    call = store.get_external_call("call-1")
+    assert call.state == "agent_result_submitted"
+    assert call.run_id == "r-1"
+    assert call.task_id == "task-1"
+    assert call.request_fingerprint == "sha256:request"
+    assert call.execution_context == context
+    assert call.validated_payload == {"nested": {"values": [1, 2]}}
+    assert call.agent_result == result.model_dump(mode="json")
+
+
+def test_atomic_result_serialization_failure_leaves_raw_call_recoverable(tmp_path) -> None:
+    store = _store(tmp_path)
+    store.create_run("r-1", manifest={})
+    store.enqueue_tasks(
+        [
+            NewTask(
+                task_id="task-1",
+                run_id="r-1",
+                idempotency_key="source",
+                intent_type="reflect",
+                payload={},
+            )
+        ]
+    )
+    store.plan_external_call(
+        "call-1",
+        "sha256:request",
+        run_id="r-1",
+        task_id="task-1",
+        execution_context=_execution_context(),
+    )
+    store.transition_call("call-1", "started")
+    ref = ArtifactRef(
+        path="raw/call-1/digest",
+        sha256="sha256:digest",
+        mime_type="application/json",
+        byte_length=2,
+    )
+    store.record_raw_and_transition("call-1", ref, "raw_response_persisted")
+
+    with pytest.raises(Exception, match="serialize|serializ"):
+        store.record_validated_and_submitted(
+            "call-1",
+            {"hypotheses": []},
+            UnserializableResult(result_id="result-1", value=object()),
+        )
+
+    call = store.get_external_call("call-1")
+    assert call.state == "raw_response_persisted"
+    assert call.validated_payload is None
+    assert call.agent_result is None
+
+
+def test_atomic_result_rejects_traceability_mismatch_without_advancing(tmp_path) -> None:
+    store = _store(tmp_path)
+    store.create_run("r-1", manifest={})
+    store.enqueue_tasks(
+        [
+            NewTask(
+                task_id="task-1",
+                run_id="r-1",
+                idempotency_key="source",
+                intent_type="reflect",
+                payload={},
+            )
+        ]
+    )
+    context = _execution_context()
+    store.plan_external_call(
+        "call-1",
+        "sha256:request",
+        run_id="r-1",
+        task_id="task-1",
+        execution_context=context,
+    )
+    store.transition_call("call-1", "started")
+    ref = ArtifactRef(
+        path="raw/call-1/digest",
+        sha256="sha256:digest",
+        mime_type="application/json",
+        byte_length=2,
+    )
+    store.record_raw_and_transition("call-1", ref, "raw_response_persisted")
+    mismatched = AgentResult(
+        result_id="result-1",
+        external_call_id="different-call",
+        status="completed",
+        payload={"hypotheses": []},
+        raw_artifact_ref=ref,
+        **context,
+    )
+
+    with pytest.raises(ValueError, match="does not match external call"):
+        store.record_validated_and_submitted("call-1", {"hypotheses": []}, mismatched)
+
+    call = store.get_external_call("call-1")
+    assert call.state == "raw_response_persisted"
+    assert call.validated_payload is None
+    assert call.agent_result is None

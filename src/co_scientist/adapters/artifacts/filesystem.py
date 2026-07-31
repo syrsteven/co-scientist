@@ -2,9 +2,14 @@
 
 import hashlib
 import os
+from collections.abc import Mapping
 from pathlib import Path
+from typing import Any
 
-from co_scientist.ports.artifact_store import ArtifactRef
+from pydantic import ValidationError
+
+from co_scientist.ports.artifact_store import ArtifactRef, RawArtifactManifest
+from co_scientist.ports.external_provider import thaw_json
 
 
 def _sha256(data: bytes) -> str:
@@ -34,28 +39,80 @@ class FilesystemArtifactStore:
             raise ValueError("path is outside artifact root")
         return resolved
 
-    def persist_raw(self, call_id: str, data: bytes, mime_type: str) -> ArtifactRef:
-        self._validate_call_id(call_id)
-        digest = _sha256(data)
-        destination = self._contained_path(
-            self.root / "raw" / call_id / digest.removeprefix("sha256:")
-        )
+    @staticmethod
+    def _atomic_write(destination: Path, data: bytes) -> None:
         destination.parent.mkdir(parents=True, exist_ok=True)
-        partial = destination.with_suffix(".partial")
+        partial = destination.with_suffix(destination.suffix + ".partial")
         with partial.open("wb") as handle:
             handle.write(data)
             handle.flush()
             os.fsync(handle.fileno())
         os.replace(partial, destination)
-        return ArtifactRef(
-            path=str(destination),
+        directory_fd = os.open(destination.parent, os.O_RDONLY)
+        try:
+            os.fsync(directory_fd)
+        finally:
+            os.close(directory_fd)
+
+    def persist_raw(
+        self,
+        call_id: str,
+        data: bytes,
+        mime_type: str,
+        *,
+        provider_response_id: str | None = None,
+        usage: Mapping[str, Any] | None = None,
+    ) -> ArtifactRef:
+        self._validate_call_id(call_id)
+        digest = _sha256(data)
+        relative_path = Path("raw") / call_id / digest.removeprefix("sha256:")
+        destination = self._contained_path(self.root / relative_path)
+        ref = ArtifactRef(
+            path=relative_path.as_posix(),
             sha256=digest,
             mime_type=mime_type,
             byte_length=len(data),
         )
+        manifest = RawArtifactManifest(
+            call_id=call_id,
+            artifact_ref=ref,
+            provider_response_id=provider_response_id,
+            usage=thaw_json(usage or {}),
+        )
+        manifest_path = destination.with_name(destination.name + ".manifest.json")
+        self._atomic_write(destination, data)
+        self._atomic_write(manifest_path, manifest.model_dump_json().encode("utf-8"))
+        return ref
 
     def read(self, ref: ArtifactRef) -> bytes:
-        data = self._contained_path(Path(ref.path)).read_bytes()
+        data = self._contained_path(self.root / ref.path).read_bytes()
         if len(data) != ref.byte_length or _sha256(data) != ref.sha256:
             raise ValueError("artifact integrity check failed")
         return data
+
+    def discover_raw(self, call_id: str) -> RawArtifactManifest | None:
+        self._validate_call_id(call_id)
+        directory = self._contained_path(self.root / "raw" / call_id)
+        if not directory.exists():
+            return None
+        manifests = sorted(directory.glob("*.manifest.json"))
+        if not manifests:
+            return None
+        if len(manifests) != 1:
+            raise ValueError(f"multiple durable raw manifests for call {call_id}")
+        manifest_path = manifests[0]
+        try:
+            manifest = RawArtifactManifest.model_validate_json(manifest_path.read_bytes())
+        except (OSError, ValidationError, ValueError) as error:
+            raise ValueError("raw manifest integrity check failed") from error
+        ref = manifest.artifact_ref
+        expected_path = Path("raw") / call_id / ref.sha256.removeprefix("sha256:")
+        expected_manifest = expected_path.name + ".manifest.json"
+        if (
+            manifest.call_id != call_id
+            or ref.path != expected_path.as_posix()
+            or manifest_path.name != expected_manifest
+        ):
+            raise ValueError("raw manifest integrity check failed")
+        self.read(ref)
+        return manifest

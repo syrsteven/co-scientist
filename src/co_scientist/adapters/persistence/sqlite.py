@@ -35,6 +35,7 @@ from co_scientist.domain.transitions import transition_external_call
 from co_scientist.events.models import DomainEvent, NewEvent
 from co_scientist.ports.artifact_store import ArtifactRef
 from co_scientist.ports.event_store import ConcurrencyConflict
+from co_scientist.ports.external_provider import thaw_json
 
 
 class Base(DeclarativeBase):
@@ -111,6 +112,8 @@ class ExternalCallRow(Base):
     parent_call_id: Mapped[str | None] = mapped_column(String, nullable=True)
     provider_response_id: Mapped[str | None] = mapped_column(String, nullable=True)
     usage_json: Mapped[str] = mapped_column(Text, nullable=False, server_default="{}")
+    execution_context_json: Mapped[str] = mapped_column(Text, nullable=False)
+    agent_result_json: Mapped[str | None] = mapped_column(Text, nullable=True)
 
 
 class CostEntryRow(Base):
@@ -148,15 +151,27 @@ class PersistedExternalCall(BaseModel):
     model_config = ConfigDict(frozen=True)
 
     external_call_id: str
+    run_id: str
+    task_id: str
+    request_fingerprint: str
     state: ExternalCallState
+    execution_context: Mapping[str, Any]
     raw_artifact_ref: ArtifactRef | None = None
     validated_payload: Mapping[str, Any] | None = None
     agent_result_id: str | None = None
+    agent_result: Mapping[str, Any] | None = None
+    provider_response_id: str | None = None
+    usage: Mapping[str, Any]
     applied_domain_sequence: int | None = None
 
 
 def _json(value: Any) -> str:
-    return json.dumps(value, ensure_ascii=False, separators=(",", ":"), sort_keys=True)
+    return json.dumps(
+        thaw_json(value),
+        ensure_ascii=False,
+        separators=(",", ":"),
+        sort_keys=True,
+    )
 
 
 def _configure_sqlite(dbapi_connection: Any, _connection_record: Any) -> None:
@@ -340,8 +355,9 @@ class SqliteUnitOfWork:
         call_id: str,
         request_fingerprint: str,
         *,
-        run_id: str = "",
-        task_id: str = "",
+        run_id: str,
+        task_id: str,
+        execution_context: Mapping[str, Any],
         attempt: int = 1,
         provider: str = "unknown",
         model_or_tool: str = "unknown",
@@ -349,6 +365,21 @@ class SqliteUnitOfWork:
     ) -> None:
         with self.session_factory.begin() as session:
             self._begin_immediate(session)
+            self._require_run(session, run_id)
+            task = session.get(TaskRow, task_id)
+            if task is None:
+                raise KeyError(f"unknown task: {task_id}")
+            self._assert_run_owner(
+                kind="task",
+                identifier=task_id,
+                actual_run_id=task.run_id,
+                expected_run_id=run_id,
+            )
+            context = dict(execution_context)
+            if context.get("run_id") != run_id or context.get("task_id") != task_id:
+                raise ValueError("execution context does not match external call ownership")
+            if context.get("idempotency_key") != task.idempotency_key:
+                raise ValueError("execution context does not match task idempotency key")
             session.add(
                 ExternalCallRow(
                     external_call_id=call_id,
@@ -361,6 +392,7 @@ class SqliteUnitOfWork:
                     state=ExternalCallState.PLANNED.value,
                     parent_call_id=parent_call_id,
                     usage_json="{}",
+                    execution_context_json=_json(context),
                 )
             )
 
@@ -394,7 +426,7 @@ class SqliteUnitOfWork:
         target_state: ExternalCallState | str,
         *,
         provider_response_id: str | None = None,
-        usage: Mapping[str, int] | None = None,
+        usage: Mapping[str, Any] | None = None,
     ) -> None:
         target = ExternalCallState(target_state)
         with self.session_factory.begin() as session:
@@ -402,7 +434,7 @@ class SqliteUnitOfWork:
             row = self._external_call(session, call_id)
             row.raw_artifact_ref_json = ref.model_dump_json()
             row.provider_response_id = provider_response_id
-            row.usage_json = _json(dict(usage or {}))
+            row.usage_json = _json(thaw_json(usage or {}))
             row.state = transition_external_call(ExternalCallState(row.state), target).value
 
     def record_validated(self, call_id: str, payload: Mapping[str, Any]) -> None:
@@ -414,17 +446,79 @@ class SqliteUnitOfWork:
                 ExternalCallState(row.state), ExternalCallState.VALIDATED
             ).value
 
+    @staticmethod
+    def _assert_result_matches_call(
+        row: ExternalCallRow,
+        result_data: Mapping[str, Any],
+        *,
+        payload: Mapping[str, Any] | None = None,
+    ) -> None:
+        context = json.loads(row.execution_context_json)
+        trace_fields = (
+            "run_id",
+            "task_id",
+            "idempotency_key",
+            "skill_id",
+            "skill_version",
+            "output_schema_version",
+            "input_snapshot_hash",
+        )
+        if result_data.get("external_call_id") != row.external_call_id or any(
+            result_data.get(field) != context.get(field) for field in trace_fields
+        ):
+            raise ValueError("submitted result does not match external call traceability")
+        raw_ref = (
+            json.loads(row.raw_artifact_ref_json)
+            if row.raw_artifact_ref_json is not None
+            else None
+        )
+        if result_data.get("raw_artifact_ref") != raw_ref:
+            raise ValueError("submitted result does not match external call raw artifact")
+        if payload is not None and result_data.get("payload") != dict(payload):
+            raise ValueError("submitted result does not match validated payload")
+
     def record_submitted_result(self, call_id: str, result: BaseModel) -> None:
+        result_data = result.model_dump(mode="json")
+        result_json = _json(result_data)
         with self.session_factory.begin() as session:
             self._begin_immediate(session)
             row = self._external_call(session, call_id)
+            self._assert_result_matches_call(row, result_data)
             result_id = getattr(result, "result_id", None)
             if not isinstance(result_id, str):
                 raise TypeError("submitted result must have a string result_id")
             row.agent_result_id = result_id
+            row.agent_result_json = result_json
             row.state = transition_external_call(
                 ExternalCallState(row.state), ExternalCallState.AGENT_RESULT_SUBMITTED
             ).value
+
+    def record_validated_and_submitted(
+        self,
+        call_id: str,
+        payload: Mapping[str, Any],
+        result: BaseModel,
+    ) -> None:
+        payload_json = _json(dict(payload))
+        result_data = result.model_dump(mode="json")
+        result_json = _json(result_data)
+        result_id = getattr(result, "result_id", None)
+        if not isinstance(result_id, str):
+            raise TypeError("submitted result must have a string result_id")
+        with self.session_factory.begin() as session:
+            self._begin_immediate(session)
+            row = self._external_call(session, call_id)
+            self._assert_result_matches_call(row, result_data, payload=payload)
+            validated = transition_external_call(
+                ExternalCallState(row.state), ExternalCallState.VALIDATED
+            )
+            submitted = transition_external_call(
+                validated, ExternalCallState.AGENT_RESULT_SUBMITTED
+            )
+            row.validated_artifact_ref_json = payload_json
+            row.agent_result_id = result_id
+            row.agent_result_json = result_json
+            row.state = submitted.value
 
     def get_external_call(self, call_id: str) -> PersistedExternalCall:
         with self.session_factory() as session:
@@ -439,12 +533,22 @@ class SqliteUnitOfWork:
                 if row.validated_artifact_ref_json is not None
                 else None
             )
+            result = (
+                json.loads(row.agent_result_json) if row.agent_result_json is not None else None
+            )
             return PersistedExternalCall(
                 external_call_id=row.external_call_id,
+                run_id=row.run_id,
+                task_id=row.task_id,
+                request_fingerprint=row.request_fingerprint,
                 state=ExternalCallState(row.state),
+                execution_context=json.loads(row.execution_context_json),
                 raw_artifact_ref=raw_ref,
                 validated_payload=validated,
                 agent_result_id=row.agent_result_id,
+                agent_result=result,
+                provider_response_id=row.provider_response_id,
+                usage=json.loads(row.usage_json),
                 applied_domain_sequence=row.applied_domain_sequence,
             )
 

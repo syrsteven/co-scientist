@@ -1,8 +1,10 @@
-"""Port for durable raw-artifact persistence."""
+"""Port for durable raw-artifact persistence and crash recovery."""
 
-from typing import Protocol
+from collections.abc import Mapping
+from pathlib import PurePosixPath
+from typing import Any, Literal, Protocol
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class ArtifactRef(BaseModel):
@@ -15,10 +17,47 @@ class ArtifactRef(BaseModel):
     mime_type: str
     byte_length: int
 
+    @field_validator("path")
+    @classmethod
+    def require_root_relative_path(cls, value: str) -> str:
+        candidate = PurePosixPath(value)
+        if (
+            not value
+            or "\\" in value
+            or candidate.is_absolute()
+            or not candidate.parts
+            or ".." in candidate.parts
+            or candidate.as_posix() != value
+        ):
+            raise ValueError("artifact path must be a normalized root-relative identifier")
+        return value
+
 
 class ArtifactStore(Protocol):
     """Persist and retrieve complete raw response bodies."""
 
-    def persist_raw(self, call_id: str, data: bytes, mime_type: str) -> ArtifactRef: ...
+    def persist_raw(
+        self,
+        call_id: str,
+        data: bytes,
+        mime_type: str,
+        *,
+        provider_response_id: str | None = None,
+        usage: Mapping[str, Any] | None = None,
+    ) -> ArtifactRef: ...
 
     def read(self, ref: ArtifactRef) -> bytes: ...
+
+    def discover_raw(self, call_id: str) -> "RawArtifactManifest | None": ...
+
+
+class RawArtifactManifest(BaseModel):
+    """Durable metadata committed after a complete raw response body."""
+
+    model_config = ConfigDict(frozen=True)
+
+    version: Literal[1] = 1
+    call_id: str
+    artifact_ref: ArtifactRef
+    provider_response_id: str | None = None
+    usage: dict[str, Any] = Field(default_factory=dict)
