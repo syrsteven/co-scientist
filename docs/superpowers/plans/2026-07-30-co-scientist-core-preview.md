@@ -1700,7 +1700,9 @@ def test_failed_followup_insert_rolls_back_events_and_task_success(store) -> Non
             cost_entries=(),
         )
     assert store.load("r-1") == []
-    assert store.task_state("task-1") == "pending"
+    # The RESULT_RECEIVED transition committed before this failed batch and
+    # therefore remains durable; only work attempted inside the batch rolls back.
+    assert store.task_state("task-1") == "result_received"
 ```
 
 - [ ] **Step 7: Run migrations and contract tests**
@@ -2941,7 +2943,7 @@ Expected: PASS.
 - [ ] **Step 8: Commit**
 
 ```bash
-git add src/co_scientist/ports/literature.py src/co_scientist/adapters/literature tests/contract/literature
+git add src/co_scientist/ports/literature.py src/co_scientist/adapters/literature tests/contract/literature tests/scenario/fixtures/pubmed_search_lens.json tests/scenario/fixtures/pubmed_summary_lens.json
 git commit -m "feat: add PubMed evidence provider"
 ```
 
