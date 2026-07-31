@@ -1,4 +1,5 @@
 import pytest
+from pydantic import ValidationError
 
 from co_scientist.events.models import DomainEvent, NewEvent
 from co_scientist.events.reducers import replay_hypothesis
@@ -69,3 +70,33 @@ def test_event_payload_is_deeply_immutable_and_json_serializable(
     assert event.model_dump(mode="json")["payload"] == {
         "nested": {"items": ["original"]}
     }
+
+
+@pytest.mark.parametrize(
+    ("event_class", "event_kwargs", "payload"),
+    [
+        (
+            DomainEvent,
+            {"sequence": 1, "run_id": "r-1", "event_type": "Example"},
+            {"labels": {"first"}},
+        ),
+        (
+            DomainEvent,
+            {"sequence": 1, "run_id": "r-1", "event_type": "Example"},
+            {"nested": {"labels": frozenset({"first"})}},
+        ),
+        (NewEvent, {"event_type": "Example"}, {"labels": {"first"}}),
+        (
+            NewEvent,
+            {"event_type": "Example"},
+            {"nested": {"labels": frozenset({"first"})}},
+        ),
+    ],
+)
+def test_event_payload_rejects_sets_outside_the_json_domain(
+    event_class: type[DomainEvent] | type[NewEvent],
+    event_kwargs: dict[str, object],
+    payload: dict[str, object],
+) -> None:
+    with pytest.raises(ValidationError, match="payload values must be JSON-compatible"):
+        event_class(**event_kwargs, payload=payload)

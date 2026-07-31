@@ -2,6 +2,7 @@
 
 from collections.abc import Mapping
 from datetime import UTC, datetime
+from math import isfinite
 from types import MappingProxyType
 from typing import Any
 
@@ -10,10 +11,16 @@ from pydantic import BaseModel, ConfigDict, Field, field_serializer, field_valid
 
 def _deep_freeze(value: Any) -> Any:
     if isinstance(value, Mapping):
+        if any(not isinstance(key, str) for key in value):
+            raise ValueError("payload values must be JSON-compatible")
         return MappingProxyType({key: _deep_freeze(item) for key, item in value.items()})
     if isinstance(value, list | tuple):
         return tuple(_deep_freeze(item) for item in value)
-    return value
+    if value is None or isinstance(value, str | int | bool):
+        return value
+    if isinstance(value, float) and isfinite(value):
+        return value
+    raise ValueError("payload values must be JSON-compatible")
 
 
 def _deep_thaw(value: Any) -> Any:
