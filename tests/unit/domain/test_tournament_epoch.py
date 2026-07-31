@@ -21,15 +21,47 @@ def _epoch() -> TournamentEpoch:
     )
 
 
-def test_prompt_or_plan_mismatch_invalidates_match_contract() -> None:
+@pytest.mark.parametrize(
+    "contract_override",
+    [
+        {"plan_version": 2},
+        {"rules_hash": "rules-b"},
+        {"prompt_hash": "prompt-b"},
+        {"judge_hash": "judge-b"},
+        {"rating_policy": "elo-v2"},
+        {"admission_policy": "admission-v2"},
+    ],
+)
+def test_each_contract_dimension_mismatch_invalidates_match(
+    contract_override: dict[str, int | str],
+) -> None:
+    contract = {
+        "plan_version": 1,
+        "rules_hash": "rules-a",
+        "prompt_hash": "prompt-a",
+        "judge_hash": "judge-a",
+        "rating_policy": "elo-v1",
+        "admission_policy": "admission-v1",
+    }
+    contract.update(contract_override)
+
     with pytest.raises(EpochContractMismatch):
+        validate_match_contract(_epoch(), **contract)
+
+
+def test_complete_matching_contract_is_accepted() -> None:
+    assert (
         validate_match_contract(
             _epoch(),
-            plan_version=2,
+            plan_version=1,
+            rules_hash="rules-a",
             prompt_hash="prompt-a",
             judge_hash="judge-a",
             rating_policy="elo-v1",
+            admission_policy="admission-v1",
         )
+        is None
+    )
 
 
 def test_admission_scopes_entry_to_epoch_at_default_rating() -> None:

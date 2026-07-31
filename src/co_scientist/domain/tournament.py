@@ -63,16 +63,27 @@ def validate_match_contract(
     epoch: TournamentEpoch,
     *,
     plan_version: int,
+    rules_hash: str,
     prompt_hash: str,
     judge_hash: str,
     rating_policy: str,
+    admission_policy: str,
 ) -> None:
-    actual = (plan_version, prompt_hash, judge_hash, rating_policy)
+    actual = (
+        plan_version,
+        rules_hash,
+        prompt_hash,
+        judge_hash,
+        rating_policy,
+        admission_policy,
+    )
     expected = (
         epoch.research_plan_version,
+        epoch.evaluation_rules_hash,
         epoch.ranking_prompt_hash,
         epoch.judge_profile_hash,
         epoch.rating_policy_version,
+        epoch.admission_policy_version,
     )
     if actual != expected:
         raise EpochContractMismatch(f"{actual} != {expected}")
