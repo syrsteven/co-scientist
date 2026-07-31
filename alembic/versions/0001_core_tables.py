@@ -81,6 +81,8 @@ def upgrade() -> None:
         "idempotency_commits",
         sa.Column("run_id", sa.String(), nullable=False),
         sa.Column("idempotency_key", sa.String(), nullable=False),
+        sa.Column("batch_fingerprint", sa.String(), nullable=False),
+        sa.Column("first_sequence", sa.Integer(), nullable=False),
         sa.Column("last_sequence", sa.Integer(), nullable=False),
         sa.PrimaryKeyConstraint("run_id", "idempotency_key"),
     )

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import hashlib
 import json
 import sqlite3
 from collections.abc import Mapping, Sequence
@@ -45,7 +46,7 @@ class RunRow(Base):
 
     run_id: Mapped[str] = mapped_column(String, primary_key=True)
     state: Mapped[str] = mapped_column(String, nullable=False)
-    current_sequence: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    current_sequence: Mapped[int] = mapped_column(Integer, nullable=False, server_default="0")
     manifest_json: Mapped[str] = mapped_column(Text, nullable=False)
 
 
@@ -89,7 +90,7 @@ class TaskRow(Base):
     payload_json: Mapped[str] = mapped_column(Text, nullable=False)
     lease_owner: Mapped[str | None] = mapped_column(String, nullable=True)
     lease_expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
-    attempt: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    attempt: Mapped[int] = mapped_column(Integer, nullable=False, server_default="0")
 
 
 class ExternalCallRow(Base):
@@ -109,7 +110,7 @@ class ExternalCallRow(Base):
     applied_domain_sequence: Mapped[int | None] = mapped_column(Integer, nullable=True)
     parent_call_id: Mapped[str | None] = mapped_column(String, nullable=True)
     provider_response_id: Mapped[str | None] = mapped_column(String, nullable=True)
-    usage_json: Mapped[str] = mapped_column(Text, nullable=False, default="{}")
+    usage_json: Mapped[str] = mapped_column(Text, nullable=False, server_default="{}")
 
 
 class CostEntryRow(Base):
@@ -118,9 +119,9 @@ class CostEntryRow(Base):
     cost_entry_id: Mapped[str] = mapped_column(String, primary_key=True)
     run_id: Mapped[str] = mapped_column(String, nullable=False)
     external_call_id: Mapped[str] = mapped_column(String, nullable=False)
-    input_tokens: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
-    output_tokens: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
-    cost_usd: Mapped[str] = mapped_column(String, nullable=False, default="0")
+    input_tokens: Mapped[int] = mapped_column(Integer, nullable=False, server_default="0")
+    output_tokens: Mapped[int] = mapped_column(Integer, nullable=False, server_default="0")
+    cost_usd: Mapped[str] = mapped_column(String, nullable=False, server_default="0")
     pricing_version: Mapped[str] = mapped_column(String, nullable=False)
 
 
@@ -129,6 +130,8 @@ class IdempotencyCommitRow(Base):
 
     run_id: Mapped[str] = mapped_column(String, primary_key=True)
     idempotency_key: Mapped[str] = mapped_column(String, primary_key=True)
+    batch_fingerprint: Mapped[str] = mapped_column(String, nullable=False)
+    first_sequence: Mapped[int] = mapped_column(Integer, nullable=False)
     last_sequence: Mapped[int] = mapped_column(Integer, nullable=False)
 
 
@@ -229,10 +232,22 @@ class SqliteUnitOfWork:
         return persisted
 
     @staticmethod
-    def _set_run_sequence(session: Session, run_id: str, sequence: int) -> None:
-        session.execute(
-            update(RunRow).where(RunRow.run_id == run_id).values(current_sequence=sequence)
+    def _set_run_sequence(
+        session: Session, run_id: str, sequence: int, *, required: bool = False
+    ) -> None:
+        result = cast(
+            CursorResult[Any],
+            session.execute(
+                update(RunRow).where(RunRow.run_id == run_id).values(current_sequence=sequence)
+            ),
         )
+        if required and result.rowcount != 1:
+            raise KeyError(f"unknown run: {run_id}")
+
+    @staticmethod
+    def _require_run(session: Session, run_id: str) -> None:
+        if session.get(RunRow, run_id) is None:
+            raise KeyError(f"unknown run: {run_id}")
 
     def append(
         self,
@@ -240,13 +255,13 @@ class SqliteUnitOfWork:
         expected_sequence: int,
         events: Sequence[NewEvent],
     ) -> list[DomainEvent]:
-        if not events:
-            return []
+        persisted: list[DomainEvent] = []
         with self.session_factory.begin() as session:
             self._begin_immediate(session)
             self._assert_sequence(session, run_id, expected_sequence)
-            persisted = self._insert_events(session, run_id, expected_sequence, events)
-            self._set_run_sequence(session, run_id, persisted[-1].sequence)
+            if events:
+                persisted = self._insert_events(session, run_id, expected_sequence, events)
+                self._set_run_sequence(session, run_id, persisted[-1].sequence)
         return persisted
 
     def append_new(
@@ -434,24 +449,51 @@ class SqliteUnitOfWork:
             )
 
     @staticmethod
-    def _apply_task_mutations(session: Session, mutations: Sequence[TaskMutation]) -> None:
-        for mutation in mutations:
-            result = cast(
-                CursorResult[Any],
-                session.execute(
-                    update(TaskRow)
-                    .where(TaskRow.task_id == mutation.task_id)
-                    .values(state=mutation.target_state.value)
-                ),
-            )
-            if result.rowcount != 1:
-                raise KeyError(f"unknown task: {mutation.task_id}")
+    def _assert_run_owner(
+        *, kind: str, identifier: str, actual_run_id: str, expected_run_id: str
+    ) -> None:
+        if actual_run_id != expected_run_id:
+            raise ValueError(f"{kind} {identifier} does not belong to run {expected_run_id}")
 
-    def _insert_followup_tasks(self, session: Session, tasks: Sequence[NewTask]) -> None:
+    @classmethod
+    def _apply_task_mutations(
+        cls, session: Session, run_id: str, mutations: Sequence[TaskMutation]
+    ) -> None:
+        for mutation in mutations:
+            row = session.get(TaskRow, mutation.task_id)
+            if row is None:
+                raise KeyError(f"unknown task: {mutation.task_id}")
+            cls._assert_run_owner(
+                kind="task",
+                identifier=mutation.task_id,
+                actual_run_id=row.run_id,
+                expected_run_id=run_id,
+            )
+            row.state = mutation.target_state.value
+
+    def _insert_followup_tasks(
+        self, session: Session, run_id: str, tasks: Sequence[NewTask]
+    ) -> None:
+        for task in tasks:
+            self._assert_run_owner(
+                kind="follow-up task",
+                identifier=task.task_id,
+                actual_run_id=task.run_id,
+                expected_run_id=run_id,
+            )
         session.add_all([self._task_row(task) for task in tasks])
 
-    @staticmethod
-    def _insert_cost_entries(session: Session, entries: Sequence[CostEntry]) -> None:
+    @classmethod
+    def _insert_cost_entries(
+        cls, session: Session, run_id: str, entries: Sequence[CostEntry]
+    ) -> None:
+        for entry in entries:
+            cls._assert_run_owner(
+                kind="cost entry",
+                identifier=entry.cost_entry_id,
+                actual_run_id=entry.run_id,
+                expected_run_id=run_id,
+            )
         session.add_all(
             [
                 CostEntryRow(
@@ -472,20 +514,80 @@ class SqliteUnitOfWork:
         session: Session,
         run_id: str,
         idempotency_key: str,
+        batch_fingerprint: str,
+        first_sequence: int,
         last_sequence: int,
     ) -> None:
         session.add(
             IdempotencyCommitRow(
                 run_id=run_id,
                 idempotency_key=idempotency_key,
+                batch_fingerprint=batch_fingerprint,
+                first_sequence=first_sequence,
                 last_sequence=last_sequence,
             )
         )
 
+    @staticmethod
+    def _load_idempotency_commit(
+        session: Session,
+        run_id: str,
+        idempotency_key: str,
+        batch_fingerprint: str,
+    ) -> CommitResult | None:
+        commit = session.get(IdempotencyCommitRow, (run_id, idempotency_key))
+        if commit is None:
+            return None
+        if commit.batch_fingerprint != batch_fingerprint:
+            raise ValueError("idempotency key reused with a different batch")
+        rows = session.scalars(
+            select(EventRow)
+            .where(
+                EventRow.run_id == run_id,
+                EventRow.sequence >= commit.first_sequence,
+                EventRow.sequence <= commit.last_sequence,
+            )
+            .order_by(EventRow.sequence)
+        ).all()
+        return CommitResult(
+            events=tuple(row.to_domain() for row in rows),
+            last_sequence=commit.last_sequence,
+        )
+
+    @staticmethod
+    def _batch_fingerprint(
+        *,
+        events: Sequence[NewEvent],
+        task_mutations: Sequence[TaskMutation],
+        followup_tasks: Sequence[NewTask],
+        external_call_id: str | None,
+        cost_entries: Sequence[CostEntry],
+    ) -> str:
+        canonical = _json(
+            {
+                "events": [event.model_dump(mode="json") for event in events],
+                "task_mutations": [mutation.model_dump(mode="json") for mutation in task_mutations],
+                "followup_tasks": [task.model_dump(mode="json") for task in followup_tasks],
+                "external_call_id": external_call_id,
+                "cost_entries": [entry.model_dump(mode="json") for entry in cost_entries],
+            }
+        )
+        return "sha256:" + hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+
     def _mark_external_call_domain_applied(
-        self, session: Session, external_call_id: str, sequence: int
+        self,
+        session: Session,
+        run_id: str,
+        external_call_id: str,
+        sequence: int,
     ) -> None:
         row = self._external_call(session, external_call_id)
+        self._assert_run_owner(
+            kind="external call",
+            identifier=external_call_id,
+            actual_run_id=row.run_id,
+            expected_run_id=run_id,
+        )
         row.state = transition_external_call(
             ExternalCallState(row.state), ExternalCallState.DOMAIN_RESULT_APPLIED
         ).value
@@ -505,21 +607,39 @@ class SqliteUnitOfWork:
     ) -> CommitResult:
         if not events:
             raise ValueError("a domain batch must contain at least one event")
+        batch_fingerprint = self._batch_fingerprint(
+            events=events,
+            task_mutations=task_mutations,
+            followup_tasks=followup_tasks,
+            external_call_id=external_call_id,
+            cost_entries=cost_entries,
+        )
         with self.session_factory.begin() as session:
             self._begin_immediate(session)
+            self._require_run(session, run_id)
+            previous = self._load_idempotency_commit(
+                session, run_id, idempotency_key, batch_fingerprint
+            )
+            if previous is not None:
+                return previous
             self._assert_sequence(session, run_id, expected_sequence)
             persisted = self._insert_events(session, run_id, expected_sequence, events)
-            self._apply_task_mutations(session, task_mutations)
-            self._insert_followup_tasks(session, followup_tasks)
-            self._insert_cost_entries(session, cost_entries)
+            self._apply_task_mutations(session, run_id, task_mutations)
+            self._insert_followup_tasks(session, run_id, followup_tasks)
+            self._insert_cost_entries(session, run_id, cost_entries)
             last_sequence = persisted[-1].sequence
             self._insert_idempotency_commit(
-                session, run_id, idempotency_key, last_sequence
+                session,
+                run_id,
+                idempotency_key,
+                batch_fingerprint,
+                persisted[0].sequence,
+                last_sequence,
             )
             if external_call_id is not None:
                 self._mark_external_call_domain_applied(
-                    session, external_call_id, last_sequence
+                    session, run_id, external_call_id, last_sequence
                 )
-            self._set_run_sequence(session, run_id, last_sequence)
+            self._set_run_sequence(session, run_id, last_sequence, required=True)
             session.flush()
         return CommitResult(events=tuple(persisted), last_sequence=last_sequence)
