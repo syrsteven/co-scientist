@@ -1730,6 +1730,20 @@ git commit -m "feat: persist events and raw artifacts atomically"
 - Create: `src/co_scientist/runtime/external_calls.py`
 - Create: `tests/scenario/test_external_call_raw_first.py`
 - Create: `tests/scenario/test_external_call_recovery.py`
+- Modify: `src/co_scientist/ports/artifact_store.py`
+- Modify: `src/co_scientist/adapters/artifacts/filesystem.py`
+- Modify: `src/co_scientist/adapters/persistence/sqlite.py`
+- Modify: `alembic/versions/0001_core_tables.py`
+- Modify: `tests/contract/persistence/test_filesystem_artifacts.py`
+- Modify: `tests/contract/persistence/test_sqlite_event_store.py`
+- Modify: `tests/contract/persistence/test_sqlite_uow_atomic.py`
+
+**Approved scope amendment (2026-07-31):** After Task 8's recovery-critical review,
+the scientist authorized these narrow cross-task persistence changes. They are required
+to reconcile a raw artifact durably written before its database metadata commit, bind
+ExternalCall to its Run/Task and execution context, and reconstruct an already-submitted
+AgentResult without a provider recall. This amendment supersedes Task 8's original
+file-list boundary for only the files listed above.
 
 **Interfaces:**
 - Consumes: `SqliteUnitOfWork`, `FilesystemArtifactStore`, ExternalCall transitions
