@@ -7,6 +7,7 @@ class ConvergenceSnapshot(BaseModel):
     model_config = ConfigDict(frozen=True)
 
     epoch_id: str
+    anchor_set_id: str | None = None
     elo_plateau: bool
     anchor_plateau: bool
     top_k_stable: bool
@@ -40,7 +41,8 @@ def evaluate_stop(
         return StopDecision(action="stop", reason="hard_budget_reached")
 
     primary = (
-        snapshot.anchor_plateau
+        bool(snapshot.anchor_set_id)
+        and snapshot.anchor_plateau
         and snapshot.top_k_stable
         and snapshot.cluster_diversity_plateau
         and snapshot.minimum_budget_satisfied

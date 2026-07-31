@@ -30,12 +30,23 @@ class BudgetLedger(BaseModel):
     policy: BudgetPolicy
     cost_usd: Decimal = Decimal(0)
     model_calls: int = 0
+    hypotheses: int = 0
+    matches: int = 0
 
-    def settle(self, *, cost_usd: Decimal, model_calls: int) -> "BudgetLedger":
+    def settle(
+        self,
+        *,
+        cost_usd: Decimal,
+        model_calls: int,
+        hypotheses: int = 0,
+        matches: int = 0,
+    ) -> "BudgetLedger":
         return self.model_copy(
             update={
                 "cost_usd": self.cost_usd + cost_usd,
                 "model_calls": self.model_calls + model_calls,
+                "hypotheses": self.hypotheses + hypotheses,
+                "matches": self.matches + matches,
             }
         )
 
@@ -44,4 +55,9 @@ class BudgetLedger(BaseModel):
         return (self.policy.max_usd is not None and self.cost_usd >= self.policy.max_usd) or (
             self.policy.max_model_calls is not None
             and self.model_calls >= self.policy.max_model_calls
+        ) or (
+            self.policy.max_hypotheses is not None
+            and self.hypotheses >= self.policy.max_hypotheses
+        ) or (
+            self.policy.max_matches is not None and self.matches >= self.policy.max_matches
         )
