@@ -1,0 +1,41 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "co-scientist-replica"
+version = "0.1.0.dev0"
+requires-python = ">=3.11,<3.13"
+dependencies = [
+  "pydantic>=2.7,<3",
+  "sqlalchemy>=2.0,<3",
+  "alembic>=1.13,<2",
+  "anyio>=4.4,<5",
+  "typer>=0.12,<1",
+  "httpx>=0.27,<1",
+  "openai>=1.40,<3",
+  "PyYAML>=6.0,<7",
+]
+
+[project.optional-dependencies]
+dev = [
+  "pytest>=8.2,<9",
+  "pytest-asyncio>=0.23,<1",
+  "respx>=0.21,<1",
+  "ruff>=0.5,<1",
+  "mypy>=1.10,<2",
+]
+
+[project.scripts]
+co-scientist = "co_scientist.cli.app:main"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+markers = ["online: requires live external credentials"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
