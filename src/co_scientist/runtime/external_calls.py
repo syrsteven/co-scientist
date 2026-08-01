@@ -9,7 +9,7 @@ from uuid import uuid4
 from co_scientist.adapters.persistence.sqlite import PersistedExternalCall
 from co_scientist.agents.result import AgentExecutionContext, AgentResult
 from co_scientist.domain.states import ExternalCallState
-from co_scientist.ports.artifact_store import ArtifactRef
+from co_scientist.ports.artifact_store import ArtifactRef, RawArtifactManifest
 from co_scientist.ports.external_provider import ExternalProvider
 
 Validator = Callable[[bytes], Mapping[str, Any]]
@@ -20,6 +20,12 @@ def request_fingerprint(request: dict[str, Any]) -> str:
 
     canonical = json.dumps(request, ensure_ascii=False, separators=(",", ":"), sort_keys=True)
     return hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+
+
+def execution_context_fingerprint(context: Mapping[str, Any]) -> str:
+    """Hash a canonical execution-context document for artifact provenance."""
+
+    return request_fingerprint(dict(context))
 
 
 class ExternalCallRunner:
@@ -38,13 +44,40 @@ class ExternalCallRunner:
         call: PersistedExternalCall,
         context: AgentExecutionContext,
     ) -> None:
-        if dict(call.execution_context) != self._context_data(context):
+        if (
+            context.run_id != call.run_id
+            or context.task_id != call.task_id
+            or context.idempotency_key != call.task_idempotency_key
+            or (
+                call.execution_context is not None
+                and dict(call.execution_context) != self._context_data(context)
+            )
+        ):
             raise ValueError(f"call {call.external_call_id} execution context mismatch")
 
     @staticmethod
     def _assert_fingerprint(call: PersistedExternalCall, fingerprint: str) -> None:
         if call.request_fingerprint != fingerprint:
             raise ValueError(f"call {call.external_call_id} request fingerprint mismatch")
+
+    @staticmethod
+    def _assert_manifest_provenance(
+        call: PersistedExternalCall,
+        manifest: RawArtifactManifest,
+        context: AgentExecutionContext,
+    ) -> None:
+        expected_context_fingerprint = execution_context_fingerprint(
+            context.model_dump(mode="json")
+        )
+        if (
+            manifest.request_fingerprint != call.request_fingerprint
+            or manifest.run_id != call.run_id
+            or manifest.task_id != call.task_id
+            or manifest.execution_context_fingerprint != expected_context_fingerprint
+        ):
+            raise ValueError(
+                f"call {call.external_call_id} raw manifest provenance mismatch"
+            )
 
     @staticmethod
     def _build_result(
@@ -63,10 +96,26 @@ class ExternalCallRunner:
         )
 
     @staticmethod
-    def _persisted_result(call: PersistedExternalCall) -> AgentResult:
-        if call.agent_result is None:
-            raise ValueError(f"call {call.external_call_id} has no persisted AgentResult")
-        return AgentResult.model_validate(call.agent_result)
+    def _persisted_result(
+        call: PersistedExternalCall,
+        context: AgentExecutionContext,
+    ) -> AgentResult:
+        if call.agent_result is not None:
+            return AgentResult.model_validate(call.agent_result)
+        if (
+            call.agent_result_id is None
+            or call.raw_artifact_ref is None
+            or call.validated_payload is None
+        ):
+            raise ValueError(f"call {call.external_call_id} has incomplete legacy result data")
+        return AgentResult(
+            result_id=call.agent_result_id,
+            external_call_id=call.external_call_id,
+            raw_artifact_ref=call.raw_artifact_ref,
+            status="completed",
+            payload=call.validated_payload,
+            **context.model_dump(),
+        )
 
     def _validate_and_submit(
         self,
@@ -120,12 +169,38 @@ class ExternalCallRunner:
                 call_id,
                 raw.body,
                 raw.mime_type,
+                request_fingerprint=request_fingerprint(request),
+                run_id=context.run_id,
+                task_id=context.task_id,
+                execution_context_fingerprint=execution_context_fingerprint(
+                    self._context_data(context)
+                ),
                 provider_response_id=raw.provider_response_id,
                 usage=raw.usage,
             )
-        except Exception:
-            self.uow.transition_call(call_id, ExternalCallState.RAW_PERSIST_FAILED)
-            raise
+        except Exception as persist_error:  # noqa: BLE001 - adapter boundary recovery
+            try:
+                call = self.uow.get_external_call(call_id)
+                manifest = self.artifacts.discover_raw(call_id)
+                if manifest is None:
+                    raise ValueError("no durable raw manifest")
+                self._assert_manifest_provenance(call, manifest, context)
+            except (AttributeError, OSError, ValueError):
+                self.uow.transition_call(call_id, ExternalCallState.RAW_PERSIST_FAILED)
+                raise persist_error
+            self.uow.record_raw_and_transition(
+                call_id,
+                manifest.artifact_ref,
+                ExternalCallState.RAW_RESPONSE_PERSISTED,
+                provider_response_id=manifest.provider_response_id,
+                usage=manifest.usage,
+            )
+            return self._validate_and_submit(
+                call_id,
+                manifest.artifact_ref,
+                validator,
+                context,
+            )
         self.uow.record_raw_and_transition(
             call_id,
             ref,
@@ -160,6 +235,7 @@ class ExternalCallRunner:
         if state is ExternalCallState.STARTED:
             manifest = self.artifacts.discover_raw(call.external_call_id)
             if manifest is not None:
+                self._assert_manifest_provenance(call, manifest, context)
                 self.uow.record_raw_and_transition(
                     call.external_call_id,
                     manifest.artifact_ref,
@@ -197,7 +273,7 @@ class ExternalCallRunner:
             ExternalCallState.AGENT_RESULT_SUBMITTED,
             ExternalCallState.DOMAIN_RESULT_APPLIED,
         }:
-            return self._persisted_result(call)
+            return self._persisted_result(call, context)
         raise ValueError(f"call {call.external_call_id} cannot resume from state {state.value}")
 
     async def execute(

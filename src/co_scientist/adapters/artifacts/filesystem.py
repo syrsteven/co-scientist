@@ -60,6 +60,10 @@ class FilesystemArtifactStore:
         data: bytes,
         mime_type: str,
         *,
+        request_fingerprint: str,
+        run_id: str,
+        task_id: str,
+        execution_context_fingerprint: str,
         provider_response_id: str | None = None,
         usage: Mapping[str, Any] | None = None,
     ) -> ArtifactRef:
@@ -76,6 +80,10 @@ class FilesystemArtifactStore:
         manifest = RawArtifactManifest(
             call_id=call_id,
             artifact_ref=ref,
+            request_fingerprint=request_fingerprint,
+            run_id=run_id,
+            task_id=task_id,
+            execution_context_fingerprint=execution_context_fingerprint,
             provider_response_id=provider_response_id,
             usage=thaw_json(usage or {}),
         )

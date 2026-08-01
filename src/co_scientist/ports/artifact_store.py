@@ -42,6 +42,10 @@ class ArtifactStore(Protocol):
         data: bytes,
         mime_type: str,
         *,
+        request_fingerprint: str,
+        run_id: str,
+        task_id: str,
+        execution_context_fingerprint: str,
         provider_response_id: str | None = None,
         usage: Mapping[str, Any] | None = None,
     ) -> ArtifactRef: ...
@@ -59,5 +63,9 @@ class RawArtifactManifest(BaseModel):
     version: Literal[1] = 1
     call_id: str
     artifact_ref: ArtifactRef
+    request_fingerprint: str = Field(min_length=1)
+    run_id: str = Field(min_length=1)
+    task_id: str = Field(min_length=1)
+    execution_context_fingerprint: str = Field(min_length=1)
     provider_response_id: str | None = None
     usage: dict[str, Any] = Field(default_factory=dict)

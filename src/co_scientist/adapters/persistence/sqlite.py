@@ -112,7 +112,7 @@ class ExternalCallRow(Base):
     parent_call_id: Mapped[str | None] = mapped_column(String, nullable=True)
     provider_response_id: Mapped[str | None] = mapped_column(String, nullable=True)
     usage_json: Mapped[str] = mapped_column(Text, nullable=False, server_default="{}")
-    execution_context_json: Mapped[str] = mapped_column(Text, nullable=False)
+    execution_context_json: Mapped[str | None] = mapped_column(Text, nullable=True)
     agent_result_json: Mapped[str | None] = mapped_column(Text, nullable=True)
 
 
@@ -153,9 +153,10 @@ class PersistedExternalCall(BaseModel):
     external_call_id: str
     run_id: str
     task_id: str
+    task_idempotency_key: str
     request_fingerprint: str
     state: ExternalCallState
-    execution_context: Mapping[str, Any]
+    execution_context: Mapping[str, Any] | None
     raw_artifact_ref: ArtifactRef | None = None
     validated_payload: Mapping[str, Any] | None = None
     agent_result_id: str | None = None
@@ -453,6 +454,8 @@ class SqliteUnitOfWork:
         *,
         payload: Mapping[str, Any] | None = None,
     ) -> None:
+        if row.execution_context_json is None:
+            raise ValueError("external call has no persisted execution context")
         context = json.loads(row.execution_context_json)
         trace_fields = (
             "run_id",
@@ -523,6 +526,15 @@ class SqliteUnitOfWork:
     def get_external_call(self, call_id: str) -> PersistedExternalCall:
         with self.session_factory() as session:
             row = self._external_call(session, call_id)
+            task = session.get(TaskRow, row.task_id)
+            if task is None:
+                raise KeyError(f"unknown task: {row.task_id}")
+            self._assert_run_owner(
+                kind="task",
+                identifier=row.task_id,
+                actual_run_id=task.run_id,
+                expected_run_id=row.run_id,
+            )
             raw_ref = (
                 ArtifactRef.model_validate_json(row.raw_artifact_ref_json)
                 if row.raw_artifact_ref_json is not None
@@ -540,9 +552,14 @@ class SqliteUnitOfWork:
                 external_call_id=row.external_call_id,
                 run_id=row.run_id,
                 task_id=row.task_id,
+                task_idempotency_key=task.idempotency_key,
                 request_fingerprint=row.request_fingerprint,
                 state=ExternalCallState(row.state),
-                execution_context=json.loads(row.execution_context_json),
+                execution_context=(
+                    json.loads(row.execution_context_json)
+                    if row.execution_context_json is not None
+                    else None
+                ),
                 raw_artifact_ref=raw_ref,
                 validated_payload=validated,
                 agent_result_id=row.agent_result_id,

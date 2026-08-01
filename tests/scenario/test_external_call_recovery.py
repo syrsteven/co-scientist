@@ -2,6 +2,7 @@ import json
 from types import SimpleNamespace
 
 import pytest
+from sqlalchemy import text
 
 from co_scientist.adapters.artifacts.filesystem import FilesystemArtifactStore
 from co_scientist.adapters.persistence.sqlite import SqliteUnitOfWork
@@ -54,6 +55,12 @@ class CrashOnceAtomicResultUnitOfWork(SqliteUnitOfWork):
         super().record_validated_and_submitted(call_id, payload, result)
 
 
+class ManifestThenRaiseArtifactStore(FilesystemArtifactStore):
+    def persist_raw(self, call_id, data, mime_type, **metadata):
+        super().persist_raw(call_id, data, mime_type, **metadata)
+        raise OSError("directory fsync acknowledgement lost")
+
+
 def _context() -> AgentExecutionContext:
     return AgentExecutionContext(
         run_id="r-1",
@@ -98,11 +105,29 @@ def _plan_started(uow, *, request=None) -> None:
     uow.transition_call("call-1", "started")
 
 
+def _provenance(*, request=None, context=None) -> dict[str, str]:
+    request = request or {"prompt": "generate"}
+    context = context or _context()
+    return {
+        "request_fingerprint": request_fingerprint(request),
+        "run_id": context.run_id,
+        "task_id": context.task_id,
+        "execution_context_fingerprint": request_fingerprint(
+            context.model_dump(mode="json")
+        ),
+    }
+
+
 @pytest.mark.asyncio
 async def test_resume_validates_existing_raw_without_provider_recall(tmp_path) -> None:
     uow, artifacts, runtime = _runtime(tmp_path)
     _plan_started(uow)
-    ref = artifacts.persist_raw("call-1", b'{"hypotheses":[]}', "application/json")
+    ref = artifacts.persist_raw(
+        "call-1",
+        b'{"hypotheses":[]}',
+        "application/json",
+        **_provenance(),
+    )
     uow.record_raw_and_transition("call-1", ref, "raw_response_persisted")
     provider = FailingProvider()
 
@@ -128,6 +153,7 @@ async def test_started_call_recovers_durable_manifest_without_provider_recall(tm
         "application/json",
         provider_response_id="response-1",
         usage={"input_tokens": 7},
+        **_provenance(),
     )
     provider = FailingProvider()
 
@@ -314,7 +340,12 @@ async def test_duplicate_execute_rejects_execution_context_mismatch(tmp_path) ->
 async def test_legacy_validated_call_submits_without_provider_or_validator_recall(tmp_path) -> None:
     uow, artifacts, runtime = _runtime(tmp_path)
     _plan_started(uow)
-    ref = artifacts.persist_raw("call-1", b'{"hypotheses":[]}', "application/json")
+    ref = artifacts.persist_raw(
+        "call-1",
+        b'{"hypotheses":[]}',
+        "application/json",
+        **_provenance(),
+    )
     uow.record_raw_and_transition("call-1", ref, "raw_response_persisted")
     uow.record_validated("call-1", {"hypotheses": []})
     provider = FailingProvider()
@@ -367,6 +398,53 @@ async def test_submitted_result_reconstructs_exactly_after_runtime_restart(tmp_p
 
 
 @pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "terminal_state",
+    ["agent_result_submitted", "domain_result_applied"],
+)
+async def test_legacy_terminal_result_without_envelope_reconstructs_without_replay(
+    tmp_path, terminal_state
+) -> None:
+    uow, _, runtime = _runtime(tmp_path)
+    initial_provider = CountingProvider()
+    first = await ExternalCallRunner(runtime).execute(
+        call_id="call-1",
+        request={"prompt": "generate"},
+        provider=initial_provider,
+        validator=lambda raw: json.loads(raw),
+        context=_context(),
+    )
+    with uow.engine.begin() as connection:
+        connection.execute(
+            text(
+                "UPDATE external_calls SET agent_result_json = NULL, state = :state "
+                "WHERE external_call_id = 'call-1'"
+            ),
+            {"state": terminal_state},
+        )
+    validation_count = 0
+
+    def validator(raw):
+        nonlocal validation_count
+        validation_count += 1
+        raise AssertionError("validator must not be called")
+
+    recovery_provider = FailingProvider()
+    recovered = await ExternalCallRunner(runtime).resume(
+        "call-1",
+        provider=recovery_provider,
+        validator=validator,
+        context=_context(),
+    )
+
+    assert recovered.model_dump(mode="json") == first.model_dump(mode="json")
+    assert initial_provider.call_count == 1
+    assert recovery_provider.call_count == 0
+    assert validation_count == 0
+    assert uow.external_call_state("call-1") == terminal_state
+
+
+@pytest.mark.asyncio
 async def test_resume_started_without_durable_manifest_does_not_call_provider(tmp_path) -> None:
     _, _, runtime = _runtime(tmp_path)
     _plan_started(runtime.uow)
@@ -406,3 +484,82 @@ async def test_resume_planned_call_does_not_advance_or_call_provider(tmp_path) -
 
     assert uow.external_call_state("call-1") == "planned"
     assert provider.call_count == 0
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("field", "forged_value"),
+    [
+        ("request_fingerprint", "stale-request"),
+        ("run_id", "foreign-run"),
+        ("task_id", "foreign-task"),
+        ("execution_context_fingerprint", "foreign-context"),
+    ],
+)
+async def test_started_recovery_rejects_forged_manifest_provenance(
+    tmp_path, field, forged_value
+) -> None:
+    uow, artifacts, runtime = _runtime(tmp_path)
+    _plan_started(uow)
+    provenance = _provenance()
+    provenance[field] = forged_value
+    artifacts.persist_raw(
+        "call-1",
+        b'{"hypotheses":[]}',
+        "application/json",
+        **provenance,
+    )
+    provider = FailingProvider()
+    validation_count = 0
+
+    def validator(raw):
+        nonlocal validation_count
+        validation_count += 1
+        return json.loads(raw)
+
+    with pytest.raises(ValueError, match="manifest provenance"):
+        await ExternalCallRunner(runtime).resume(
+            "call-1",
+            provider=provider,
+            validator=validator,
+            context=_context(),
+        )
+
+    assert uow.external_call_state("call-1") == "started"
+    assert provider.call_count == 0
+    assert validation_count == 0
+
+
+@pytest.mark.asyncio
+async def test_manifest_installed_before_persist_error_continues_without_terminal_failure(
+    tmp_path,
+) -> None:
+    uow = SqliteUnitOfWork(f"sqlite:///{tmp_path / 'core.db'}")
+    uow.create_schema()
+    uow.create_run("r-1", manifest={})
+    uow.enqueue_tasks(
+        [
+            NewTask(
+                task_id="task-1",
+                run_id="r-1",
+                idempotency_key="generation:r-1:1",
+                intent_type="generate",
+                payload={},
+            )
+        ]
+    )
+    artifacts = ManifestThenRaiseArtifactStore(tmp_path / "artifacts")
+    runtime = SimpleNamespace(uow=uow, artifacts=artifacts)
+    provider = CountingProvider()
+
+    result = await ExternalCallRunner(runtime).execute(
+        call_id="call-1",
+        request={"prompt": "generate"},
+        provider=provider,
+        validator=lambda raw: json.loads(raw),
+        context=_context(),
+    )
+
+    assert result.payload == {"hypotheses": []}
+    assert provider.call_count == 1
+    assert uow.external_call_state("call-1") == "agent_result_submitted"
