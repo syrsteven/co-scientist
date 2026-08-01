@@ -4,6 +4,7 @@ from types import SimpleNamespace
 import pytest
 from sqlalchemy import text
 
+import co_scientist.adapters.artifacts.filesystem as artifact_filesystem
 from co_scientist.adapters.artifacts.filesystem import FilesystemArtifactStore
 from co_scientist.adapters.persistence.sqlite import SqliteUnitOfWork
 from co_scientist.agents.result import AgentExecutionContext
@@ -61,6 +62,34 @@ class ManifestThenRaiseArtifactStore(FilesystemArtifactStore):
         raise OSError("directory fsync acknowledgement lost")
 
 
+class MismatchedManifestThenRaiseArtifactStore(FilesystemArtifactStore):
+    def __init__(self, root, mismatch) -> None:
+        super().__init__(root)
+        self.mismatch = mismatch
+
+    def persist_raw(self, call_id, data, mime_type, **metadata):
+        if self.mismatch == "body":
+            data = b'{"hypotheses":["stale"]}'
+        elif self.mismatch == "mime_type":
+            mime_type = "text/plain"
+        elif self.mismatch == "provider_response_id":
+            metadata["provider_response_id"] = "stale-response"
+        elif self.mismatch == "usage":
+            metadata["usage"] = {"input_tokens": 999}
+        super().persist_raw(call_id, data, mime_type, **metadata)
+        raise OSError("post-manifest persist failure")
+
+
+class PersistentConfirmationFailureArtifactStore(ManifestThenRaiseArtifactStore):
+    def __init__(self, root) -> None:
+        super().__init__(root)
+        self.confirmation_count = 0
+
+    def confirm_raw(self, manifest) -> None:
+        self.confirmation_count += 1
+        raise OSError("durability confirmation failed")
+
+
 def _context() -> AgentExecutionContext:
     return AgentExecutionContext(
         run_id="r-1",
@@ -73,7 +102,7 @@ def _context() -> AgentExecutionContext:
     )
 
 
-def _runtime(tmp_path, *, uow_type=SqliteUnitOfWork):
+def _runtime(tmp_path, *, uow_type=SqliteUnitOfWork, artifacts=None):
     uow = uow_type(f"sqlite:///{tmp_path / 'core.db'}")
     uow.create_schema()
     uow.create_run("r-1", manifest={})
@@ -88,8 +117,8 @@ def _runtime(tmp_path, *, uow_type=SqliteUnitOfWork):
             )
         ]
     )
-    artifacts = FilesystemArtifactStore(tmp_path / "artifacts")
-    return uow, artifacts, SimpleNamespace(uow=uow, artifacts=artifacts)
+    artifact_store = artifacts or FilesystemArtifactStore(tmp_path / "artifacts")
+    return uow, artifact_store, SimpleNamespace(uow=uow, artifacts=artifact_store)
 
 
 def _plan_started(uow, *, request=None) -> None:
@@ -116,6 +145,27 @@ def _provenance(*, request=None, context=None) -> dict[str, str]:
             context.model_dump(mode="json")
         ),
     }
+
+
+def _forget_execution_context(uow) -> None:
+    with uow.engine.begin() as connection:
+        connection.execute(
+            text(
+                "UPDATE external_calls SET execution_context_json = NULL "
+                "WHERE external_call_id = 'call-1'"
+            )
+        )
+
+
+def _forged_trace_context() -> AgentExecutionContext:
+    return _context().model_copy(
+        update={
+            "skill_id": "foreign-skill",
+            "skill_version": "99.0.0",
+            "output_schema_version": 99,
+            "input_snapshot_hash": "sha256:foreign-input",
+        }
+    )
 
 
 @pytest.mark.asyncio
@@ -417,7 +467,8 @@ async def test_legacy_terminal_result_without_envelope_reconstructs_without_repl
     with uow.engine.begin() as connection:
         connection.execute(
             text(
-                "UPDATE external_calls SET agent_result_json = NULL, state = :state "
+                "UPDATE external_calls SET agent_result_json = NULL, "
+                "execution_context_json = NULL, state = :state "
                 "WHERE external_call_id = 'call-1'"
             ),
             {"state": terminal_state},
@@ -442,6 +493,33 @@ async def test_legacy_terminal_result_without_envelope_reconstructs_without_repl
     assert recovery_provider.call_count == 0
     assert validation_count == 0
     assert uow.external_call_state("call-1") == terminal_state
+
+
+@pytest.mark.asyncio
+async def test_terminal_result_with_envelope_does_not_relax_missing_context(tmp_path) -> None:
+    uow, _, runtime = _runtime(tmp_path)
+    initial_provider = CountingProvider()
+    await ExternalCallRunner(runtime).execute(
+        call_id="call-1",
+        request={"prompt": "generate"},
+        provider=initial_provider,
+        validator=lambda raw: json.loads(raw),
+        context=_context(),
+    )
+    _forget_execution_context(uow)
+    recovery_provider = FailingProvider()
+
+    with pytest.raises(ValueError, match="execution context"):
+        await ExternalCallRunner(runtime).resume(
+            "call-1",
+            provider=recovery_provider,
+            validator=lambda raw: json.loads(raw),
+            context=_forged_trace_context(),
+        )
+
+    assert uow.external_call_state("call-1") == "agent_result_submitted"
+    assert initial_provider.call_count == 1
+    assert recovery_provider.call_count == 0
 
 
 @pytest.mark.asyncio
@@ -563,3 +641,176 @@ async def test_manifest_installed_before_persist_error_continues_without_termina
     assert result.payload == {"hypotheses": []}
     assert provider.call_count == 1
     assert uow.external_call_state("call-1") == "agent_result_submitted"
+
+
+@pytest.mark.asyncio
+async def test_started_legacy_call_without_context_rejects_forged_trace_before_manifest(
+    tmp_path,
+) -> None:
+    uow, artifacts, runtime = _runtime(tmp_path)
+    _plan_started(uow)
+    _forget_execution_context(uow)
+    forged_context = _forged_trace_context()
+    artifacts.persist_raw(
+        "call-1",
+        b'{"hypotheses":[]}',
+        "application/json",
+        **_provenance(context=forged_context),
+    )
+    provider = FailingProvider()
+    validation_count = 0
+
+    def validator(raw):
+        nonlocal validation_count
+        validation_count += 1
+        return json.loads(raw)
+
+    with pytest.raises(ValueError, match="execution context"):
+        await ExternalCallRunner(runtime).resume(
+            "call-1",
+            provider=provider,
+            validator=validator,
+            context=forged_context,
+        )
+
+    assert uow.external_call_state("call-1") == "started"
+    assert provider.call_count == 0
+    assert validation_count == 0
+
+
+@pytest.mark.asyncio
+async def test_post_raw_legacy_call_without_context_rejects_forged_trace_before_validation(
+    tmp_path,
+) -> None:
+    uow, artifacts, runtime = _runtime(tmp_path)
+    _plan_started(uow)
+    ref = artifacts.persist_raw(
+        "call-1",
+        b'{"hypotheses":[]}',
+        "application/json",
+        **_provenance(),
+    )
+    uow.record_raw_and_transition("call-1", ref, "raw_response_persisted")
+    _forget_execution_context(uow)
+    provider = FailingProvider()
+    validation_count = 0
+
+    def validator(raw):
+        nonlocal validation_count
+        validation_count += 1
+        return json.loads(raw)
+
+    with pytest.raises(ValueError, match="execution context"):
+        await ExternalCallRunner(runtime).resume(
+            "call-1",
+            provider=provider,
+            validator=validator,
+            context=_forged_trace_context(),
+        )
+
+    assert uow.external_call_state("call-1") == "raw_response_persisted"
+    assert provider.call_count == 0
+    assert validation_count == 0
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize(
+    "mismatch",
+    ["body", "mime_type", "provider_response_id", "usage"],
+)
+async def test_persist_error_rejects_manifest_that_does_not_match_current_response(
+    tmp_path, mismatch
+) -> None:
+    artifacts = MismatchedManifestThenRaiseArtifactStore(
+        tmp_path / "artifacts", mismatch
+    )
+    uow, _, runtime = _runtime(tmp_path, artifacts=artifacts)
+    validation_count = 0
+
+    def validator(raw):
+        nonlocal validation_count
+        validation_count += 1
+        return json.loads(raw)
+
+    with pytest.raises(OSError, match="post-manifest persist failure"):
+        await ExternalCallRunner(runtime).execute(
+            call_id="call-1",
+            request={"prompt": "generate"},
+            provider=CountingProvider(),
+            validator=validator,
+            context=_context(),
+        )
+
+    assert uow.external_call_state("call-1") == "raw_persist_failed"
+    assert validation_count == 0
+
+
+@pytest.mark.asyncio
+async def test_post_rename_fsync_failure_is_recovered_by_explicit_confirmation(
+    tmp_path, monkeypatch
+) -> None:
+    uow, _, runtime = _runtime(tmp_path)
+    provider = CountingProvider()
+    real_fsync = artifact_filesystem.os.fsync
+    fsync_count = 0
+
+    def fail_manifest_directory_fsync_once(file_descriptor):
+        nonlocal fsync_count
+        fsync_count += 1
+        if fsync_count == 4:
+            raise OSError("manifest directory fsync failed")
+        return real_fsync(file_descriptor)
+
+    monkeypatch.setattr(artifact_filesystem.os, "fsync", fail_manifest_directory_fsync_once)
+
+    result = await ExternalCallRunner(runtime).execute(
+        call_id="call-1",
+        request={"prompt": "generate"},
+        provider=provider,
+        validator=lambda raw: json.loads(raw),
+        context=_context(),
+    )
+
+    assert result.payload == {"hypotheses": []}
+    assert fsync_count >= 7
+    assert provider.call_count == 1
+    assert uow.external_call_state("call-1") == "agent_result_submitted"
+
+
+@pytest.mark.asyncio
+async def test_persistent_durability_confirmation_failure_keeps_started_recoverable(
+    tmp_path,
+) -> None:
+    artifacts = PersistentConfirmationFailureArtifactStore(tmp_path / "artifacts")
+    uow, _, runtime = _runtime(tmp_path, artifacts=artifacts)
+    provider = CountingProvider()
+    validation_count = 0
+
+    def validator(raw):
+        nonlocal validation_count
+        validation_count += 1
+        return json.loads(raw)
+
+    runner = ExternalCallRunner(runtime)
+    with pytest.raises(OSError, match="durability confirmation failed"):
+        await runner.execute(
+            call_id="call-1",
+            request={"prompt": "generate"},
+            provider=provider,
+            validator=validator,
+            context=_context(),
+        )
+
+    assert uow.external_call_state("call-1") == "started"
+    with pytest.raises(OSError, match="durability confirmation failed"):
+        await runner.resume(
+            "call-1",
+            provider=provider,
+            validator=validator,
+            context=_context(),
+        )
+
+    assert uow.external_call_state("call-1") == "started"
+    assert artifacts.confirmation_count == 2
+    assert provider.call_count == 1
+    assert validation_count == 0

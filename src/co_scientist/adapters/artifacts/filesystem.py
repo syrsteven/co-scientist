@@ -124,3 +124,25 @@ class FilesystemArtifactStore:
             raise ValueError("raw manifest integrity check failed")
         self.read(ref)
         return manifest
+
+    def confirm_raw(self, manifest: RawArtifactManifest) -> None:
+        """Revalidate and fsync a manifest durability boundary after an uncertain write."""
+
+        discovered = self.discover_raw(manifest.call_id)
+        if discovered != manifest:
+            raise ValueError("raw manifest changed before durability confirmation")
+        body_path = self._contained_path(self.root / manifest.artifact_ref.path)
+        manifest_path = body_path.with_name(body_path.name + ".manifest.json")
+        for path in (body_path, manifest_path):
+            descriptor = os.open(path, os.O_RDONLY)
+            try:
+                os.fsync(descriptor)
+            finally:
+                os.close(descriptor)
+        directory_descriptor = os.open(body_path.parent, os.O_RDONLY)
+        try:
+            os.fsync(directory_descriptor)
+        finally:
+            os.close(directory_descriptor)
+        if self.discover_raw(manifest.call_id) != manifest:
+            raise ValueError("raw manifest changed during durability confirmation")

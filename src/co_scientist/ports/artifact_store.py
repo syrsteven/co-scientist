@@ -54,6 +54,8 @@ class ArtifactStore(Protocol):
 
     def discover_raw(self, call_id: str) -> "RawArtifactManifest | None": ...
 
+    def confirm_raw(self, manifest: "RawArtifactManifest") -> None: ...
+
 
 class RawArtifactManifest(BaseModel):
     """Durable metadata committed after a complete raw response body."""

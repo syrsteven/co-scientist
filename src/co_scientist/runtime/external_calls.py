@@ -10,7 +10,7 @@ from co_scientist.adapters.persistence.sqlite import PersistedExternalCall
 from co_scientist.agents.result import AgentExecutionContext, AgentResult
 from co_scientist.domain.states import ExternalCallState
 from co_scientist.ports.artifact_store import ArtifactRef, RawArtifactManifest
-from co_scientist.ports.external_provider import ExternalProvider
+from co_scientist.ports.external_provider import ExternalProvider, RawExternalResponse, thaw_json
 
 Validator = Callable[[bytes], Mapping[str, Any]]
 
@@ -44,10 +44,23 @@ class ExternalCallRunner:
         call: PersistedExternalCall,
         context: AgentExecutionContext,
     ) -> None:
+        terminal_legacy_states = {
+            ExternalCallState.AGENT_RESULT_SUBMITTED,
+            ExternalCallState.DOMAIN_RESULT_APPLIED,
+        }
+        allows_legacy_reconstruction = (
+            call.execution_context is None
+            and call.agent_result is None
+            and call.state in terminal_legacy_states
+        )
         if (
             context.run_id != call.run_id
             or context.task_id != call.task_id
             or context.idempotency_key != call.task_idempotency_key
+            or (
+                call.execution_context is None
+                and not allows_legacy_reconstruction
+            )
             or (
                 call.execution_context is not None
                 and dict(call.execution_context) != self._context_data(context)
@@ -78,6 +91,22 @@ class ExternalCallRunner:
             raise ValueError(
                 f"call {call.external_call_id} raw manifest provenance mismatch"
             )
+
+    @staticmethod
+    def _assert_manifest_matches_response(
+        manifest: RawArtifactManifest,
+        raw: RawExternalResponse,
+    ) -> None:
+        ref = manifest.artifact_ref
+        expected_sha256 = "sha256:" + hashlib.sha256(raw.body).hexdigest()
+        if (
+            ref.sha256 != expected_sha256
+            or ref.byte_length != len(raw.body)
+            or ref.mime_type != raw.mime_type
+            or manifest.provider_response_id != raw.provider_response_id
+            or manifest.usage != thaw_json(raw.usage)
+        ):
+            raise ValueError("raw manifest does not match current provider response")
 
     @staticmethod
     def _build_result(
@@ -185,9 +214,11 @@ class ExternalCallRunner:
                 if manifest is None:
                     raise ValueError("no durable raw manifest")
                 self._assert_manifest_provenance(call, manifest, context)
+                self._assert_manifest_matches_response(manifest, raw)
             except (AttributeError, OSError, ValueError):
                 self.uow.transition_call(call_id, ExternalCallState.RAW_PERSIST_FAILED)
                 raise persist_error
+            self.artifacts.confirm_raw(manifest)
             self.uow.record_raw_and_transition(
                 call_id,
                 manifest.artifact_ref,
@@ -236,6 +267,7 @@ class ExternalCallRunner:
             manifest = self.artifacts.discover_raw(call.external_call_id)
             if manifest is not None:
                 self._assert_manifest_provenance(call, manifest, context)
+                self.artifacts.confirm_raw(manifest)
                 self.uow.record_raw_and_transition(
                     call.external_call_id,
                     manifest.artifact_ref,
