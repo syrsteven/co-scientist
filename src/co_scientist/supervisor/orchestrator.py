@@ -428,8 +428,10 @@ class Supervisor:
         if action == "new_epoch":
             if not next_epoch_id:
                 raise ValueError("next_epoch_id is required for an in-run plan revision")
-            if next_epoch_id == current_epoch.epoch_id:
-                raise ValueError("new epoch ID must differ from the active epoch ID")
+            if not already_accepted and any(
+                epoch.epoch_id == next_epoch_id for epoch in epoch_history
+            ):
+                raise ValueError("new epoch ID was previously used by this Run")
             next_epoch = TournamentEpoch(
                 epoch_id=next_epoch_id,
                 research_plan_version=new.version,
@@ -601,12 +603,32 @@ class Supervisor:
         budget_reached = (
             budget.hard_limit_reached if budget is not None else bool(hard_budget_reached)
         )
-        epoch = self._active_epoch(run_id)
+        run_state = RunState(self.uow.run_state(run_id))
         decision = evaluate_stop(
             convergence,
             hard_budget_reached=budget_reached,
             scientist_action=scientist_action,
         )
+        if decision.action == "cancel":
+            commit = self.uow.commit_domain_batch(
+                run_id=run_id,
+                expected_sequence=expected_sequence,
+                events=(NewEvent(event_type="RunCancelled", payload={"reason": decision.reason}),),
+                target_run_state=RunState.CANCELLED,
+                idempotency_key=f"cancel:{run_id}",
+            )
+            return TickOutcome(decision=decision, commit=commit)
+        if decision.action == "stop" and decision.reason != "quality_converged":
+            commit = self.request_normal_completion(
+                run_id,
+                expected_sequence=expected_sequence,
+                reason=decision.reason or "work_complete",
+            )
+            return TickOutcome(decision=decision, commit=commit)
+        if decision.action == "continue" and run_state is not RunState.RUNNING:
+            raise ValueError("non-terminal tick requires a running Run")
+
+        epoch = self._active_epoch(run_id)
         if convergence.epoch_id != epoch.epoch_id:
             raise EpochContractMismatch(
                 "convergence snapshot does not match the active TournamentEpoch"
@@ -620,15 +642,6 @@ class Supervisor:
             )
         if decision.action == "continue":
             return TickOutcome(decision=decision)
-        if decision.action == "cancel":
-            commit = self.uow.commit_domain_batch(
-                run_id=run_id,
-                expected_sequence=expected_sequence,
-                events=(NewEvent(event_type="RunCancelled", payload={"reason": decision.reason}),),
-                target_run_state=RunState.CANCELLED,
-                idempotency_key=f"cancel:{run_id}",
-            )
-            return TickOutcome(decision=decision, commit=commit)
         commit = self.request_normal_completion(
             run_id,
             expected_sequence=expected_sequence,

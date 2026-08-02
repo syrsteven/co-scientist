@@ -60,6 +60,18 @@ def _snapshot(
     )
 
 
+def _continuing_snapshot() -> ConvergenceSnapshot:
+    return ConvergenceSnapshot(
+        epoch_id="epoch-1",
+        anchor_set_id="anchors-1",
+        elo_plateau=False,
+        anchor_plateau=False,
+        top_k_stable=False,
+        cluster_diversity_plateau=False,
+        minimum_budget_satisfied=False,
+    )
+
+
 def _open_epoch(supervisor: Supervisor) -> int:
     commit = supervisor.uow.commit_domain_batch(
         run_id="run-1",
@@ -165,6 +177,93 @@ def test_quality_stop_rejects_snapshot_for_non_active_epoch(tmp_path) -> None:
         )
 
     assert supervisor.uow.run_state("run-1") == "running"
+
+
+# Mutation caught: allowing a non-terminal tick to continue a durable stopping Run.
+def test_tick_cannot_continue_a_non_running_durable_run(tmp_path) -> None:
+    supervisor = _supervisor(tmp_path)
+    expected_sequence = _open_epoch(supervisor)
+    stopped = supervisor.uow.commit_domain_batch(
+        run_id="run-1",
+        expected_sequence=expected_sequence,
+        events=[NewEvent(event_type="RunStopping", payload={})],
+        target_run_state=RunState.STOPPING,
+        idempotency_key="prepare-stopping:run-1",
+    )
+
+    with pytest.raises(ValueError, match="running Run"):
+        supervisor.tick(
+            run_id="run-1",
+            expected_sequence=stopped.last_sequence,
+            convergence=_continuing_snapshot(),
+        )
+
+
+@pytest.mark.parametrize(
+    ("open_epoch", "hard_budget_reached", "scientist_action", "reason", "state"),
+    [
+        (False, True, None, "hard_budget_reached", "stopping"),
+        (True, False, "soft_stop", "scientist_stop", "stopping"),
+        (True, False, "hard_cancel", "scientist_cancel", "cancelled"),
+    ],
+)
+# Mutation caught: validating convergence epoch data before terminal stop precedence.
+def test_terminal_tick_is_not_blocked_by_missing_or_stale_epoch_data(
+    tmp_path,
+    open_epoch: bool,
+    hard_budget_reached: bool,
+    scientist_action: str | None,
+    reason: str,
+    state: str,
+) -> None:
+    supervisor = _supervisor(tmp_path)
+    expected_sequence = _open_epoch(supervisor) if open_epoch else 1
+
+    outcome = supervisor.tick(
+        run_id="run-1",
+        expected_sequence=expected_sequence,
+        convergence=_snapshot(epoch_id="epoch-stale", anchor_set_id="anchors-stale"),
+        hard_budget_reached=hard_budget_reached,
+        scientist_action=scientist_action,
+    )
+
+    assert outcome.decision.reason == reason
+    assert outcome.commit is not None
+    assert supervisor.uow.run_state("run-1") == state
+
+
+@pytest.mark.parametrize(
+    ("hard_budget_reached", "scientist_action", "target"),
+    [
+        (True, None, "stopping"),
+        (False, "soft_stop", "stopping"),
+        (False, "hard_cancel", "cancelled"),
+    ],
+)
+# Mutation caught: allowing terminal precedence to bypass durable Run transition legality.
+def test_terminal_tick_still_obeys_the_durable_run_state_machine(
+    tmp_path,
+    hard_budget_reached: bool,
+    scientist_action: str | None,
+    target: str,
+) -> None:
+    supervisor = _supervisor(tmp_path)
+    stopped = supervisor.uow.commit_domain_batch(
+        run_id="run-1",
+        expected_sequence=1,
+        events=[NewEvent(event_type="RunStopping", payload={})],
+        target_run_state=RunState.STOPPING,
+        idempotency_key="prepare-stopping:run-1",
+    )
+
+    with pytest.raises(InvalidTransition, match=f"stopping.*{target}"):
+        supervisor.tick(
+            run_id="run-1",
+            expected_sequence=stopped.last_sequence,
+            convergence=_snapshot(epoch_id="epoch-stale", anchor_set_id="anchors-stale"),
+            hard_budget_reached=hard_budget_reached,
+            scientist_action=scientist_action,
+        )
 
 
 def test_matching_quality_stop_enters_stopping_and_enqueues_finalization(tmp_path) -> None:

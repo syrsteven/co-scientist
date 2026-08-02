@@ -146,6 +146,35 @@ def test_plan_revision_rejects_reused_active_epoch_id(tmp_path) -> None:
     ]
 
 
+# Mutation caught: allowing a closed epoch ID to be recycled after a later epoch opened.
+def test_plan_revision_rejects_any_previously_used_epoch_id(tmp_path) -> None:
+    supervisor = _supervisor(tmp_path)
+    second = supervisor.accept_plan_revision(
+        old=_plan(version=1),
+        new=_plan(version=2, rules="rules-b"),
+        expected_sequence=2,
+        next_epoch_id="epoch-2",
+        next_anchor_set_id="anchors-2",
+    )
+
+    with pytest.raises(ValueError, match="previously used"):
+        supervisor.accept_plan_revision(
+            old=_plan(version=2, rules="rules-b"),
+            new=_plan(version=3, rules="rules-c"),
+            expected_sequence=second.commit.last_sequence,
+            next_epoch_id="epoch-1",
+            next_anchor_set_id="anchors-3",
+        )
+
+    assert [event.event_type for event in supervisor.uow.load("run-1")] == [
+        "RunStarted",
+        "TournamentEpochOpened",
+        "ResearchPlanAccepted",
+        "TournamentEpochClosed",
+        "TournamentEpochOpened",
+    ]
+
+
 # Mutation caught: leaving admission and initial Elo assignment to a caller-side helper.
 def test_supervisor_atomically_admits_into_active_epoch_at_internal_1200(tmp_path) -> None:
     supervisor = _supervisor(tmp_path)
