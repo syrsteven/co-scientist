@@ -2010,14 +2010,29 @@ git commit -m "feat: enforce raw-first external call recovery"
 - Create: `src/co_scientist/supervisor/followups.py`
 - Create: `src/co_scientist/supervisor/orchestrator.py`
 - Create: `src/co_scientist/domain/research_plan.py`
+- Modify: `src/co_scientist/adapters/persistence/sqlite.py`
+- Modify: `src/co_scientist/domain/transitions.py`
 - Create: `tests/unit/supervisor/test_followups.py`
 - Create: `tests/unit/supervisor/test_admission.py`
 - Create: `tests/scenario/test_epoch_rollover.py`
 - Create: `tests/scenario/test_finalization_path.py`
+- Modify: `tests/contract/persistence/test_sqlite_uow_atomic.py`
+- Modify: `tests/unit/domain/test_task_transitions.py`
 
 **Interfaces:**
 - Consumes: events, state machines, review policy, tournament, budget, convergence, submitted AgentResult
 - Produces: `Supervisor.handle_result`, `Supervisor.tick`, `derive_followup_intents`, `AdmissionDecision`
+
+**Authorized Task 9 review corrections:**
+
+- The user authorized the narrow cross-task file expansion above after the first Task 9 review. No schema migration is required.
+- `commit_domain_batch` must optionally apply a validated Run state transition in the same transaction as its events, Task mutations, follow-ups, costs, ExternalCall application, idempotency record, and sequence update. Run and Task mutations must validate the durable current state through the domain transition functions; they must also participate in the batch fingerprint and rollback together on any failure.
+- Supervisor stopping, cancellation, finalization, admission, convergence, and plan-revision commands must derive Run and active TournamentEpoch identity from durable state, not trust caller-supplied state or epoch identity. Opening a replacement epoch with the same ID is invalid.
+- Finalization may only complete from a durable `stopping` Run and a durable finalization Task in `result_received`; the final atomic batch performs only the legal `result_received → succeeded` and `stopping → completed|completed_partial` transitions.
+- Supervisor owns an atomic admission command. A successful command emits `HypothesisTournamentReady`, `TournamentEntryCreated`, and `InitialRatingAssigned` in the durable active epoch and assigns the internal default initial Elo 1200; callers cannot supply a rating.
+- When novelty is required, a `NoveltyAssessment` is applicable only if hypothesis ID, content hash, and ResearchPlan version match the admission target and active epoch. Only `novel` and `partially_novel` satisfy this Core Preview admission policy.
+- AgentResult status semantics are explicit: `completed` applies typed scientific events and policy-owned follow-ups; `partial` emits an audit-only partial-result event and no scientific follow-ups; `rejected` and `failed` emit audit events and fail the Task. All four statuses settle cost and atomically mark the ExternalCall `domain_result_applied`. The Task transition table therefore permits `result_received → failed`.
+- TDD evidence must cover atomic Run-state rollback, invalid Task-transition rollback, legal finalization progression, stale/spoofed epoch rejection, atomic admission plus initial 1200 assignment, all four AgentResult statuses, and NoveltyAssessment identity/version/verdict cases.
 
 - [ ] **Step 1: Write failing single-authority follow-up test**
 
