@@ -32,6 +32,8 @@ from co_scientist.domain.budget import CostEntry
 from co_scientist.domain.states import ExternalCallState, RunState, TaskState
 from co_scientist.domain.task import NewTask, TaskMutation
 from co_scientist.domain.transitions import transition_external_call
+from co_scientist.domain.transitions import transition_run as validate_run_transition
+from co_scientist.domain.transitions import transition_task as validate_task_transition
 from co_scientist.events.models import DomainEvent, NewEvent
 from co_scientist.ports.artifact_store import ArtifactRef
 from co_scientist.ports.event_store import ConcurrencyConflict
@@ -335,20 +337,23 @@ class SqliteUnitOfWork:
         target = TaskState(target_state)
         with self.session_factory.begin() as session:
             self._begin_immediate(session)
-            result = cast(
-                CursorResult[Any],
-                session.execute(
-                    update(TaskRow).where(TaskRow.task_id == task_id).values(state=target.value)
-                ),
-            )
-            if result.rowcount != 1:
+            row = session.get(TaskRow, task_id)
+            if row is None:
                 raise KeyError(f"unknown task: {task_id}")
+            row.state = validate_task_transition(TaskState(row.state), target).value
 
     def task_state(self, task_id: str) -> str:
         with self.session_factory() as session:
             state = session.scalar(select(TaskRow.state).where(TaskRow.task_id == task_id))
         if state is None:
             raise KeyError(f"unknown task: {task_id}")
+        return state
+
+    def run_state(self, run_id: str) -> str:
+        with self.session_factory() as session:
+            state = session.scalar(select(RunRow.state).where(RunRow.run_id == run_id))
+        if state is None:
+            raise KeyError(f"unknown run: {run_id}")
         return state
 
     def plan_external_call(
@@ -590,7 +595,22 @@ class SqliteUnitOfWork:
                 actual_run_id=row.run_id,
                 expected_run_id=run_id,
             )
-            row.state = mutation.target_state.value
+            row.state = validate_task_transition(
+                TaskState(row.state), mutation.target_state
+            ).value
+
+    @staticmethod
+    def _apply_run_transition(
+        session: Session,
+        run_id: str,
+        target_state: RunState | None,
+    ) -> None:
+        if target_state is None:
+            return
+        row = session.get(RunRow, run_id)
+        if row is None:
+            raise KeyError(f"unknown run: {run_id}")
+        row.state = validate_run_transition(RunState(row.state), target_state).value
 
     def _insert_followup_tasks(
         self, session: Session, run_id: str, tasks: Sequence[NewTask]
@@ -679,6 +699,7 @@ class SqliteUnitOfWork:
     def _batch_fingerprint(
         *,
         events: Sequence[NewEvent],
+        target_run_state: RunState | None,
         task_mutations: Sequence[TaskMutation],
         followup_tasks: Sequence[NewTask],
         external_call_id: str | None,
@@ -687,6 +708,7 @@ class SqliteUnitOfWork:
         canonical = _json(
             {
                 "events": [event.model_dump(mode="json") for event in events],
+                "target_run_state": target_run_state.value if target_run_state else None,
                 "task_mutations": [mutation.model_dump(mode="json") for mutation in task_mutations],
                 "followup_tasks": [task.model_dump(mode="json") for task in followup_tasks],
                 "external_call_id": external_call_id,
@@ -720,6 +742,7 @@ class SqliteUnitOfWork:
         run_id: str,
         expected_sequence: int,
         events: Sequence[NewEvent],
+        target_run_state: RunState | str | None = None,
         task_mutations: Sequence[TaskMutation] = (),
         followup_tasks: Sequence[NewTask] = (),
         idempotency_key: str,
@@ -728,8 +751,10 @@ class SqliteUnitOfWork:
     ) -> CommitResult:
         if not events:
             raise ValueError("a domain batch must contain at least one event")
+        run_target = RunState(target_run_state) if target_run_state is not None else None
         batch_fingerprint = self._batch_fingerprint(
             events=events,
+            target_run_state=run_target,
             task_mutations=task_mutations,
             followup_tasks=followup_tasks,
             external_call_id=external_call_id,
@@ -744,6 +769,7 @@ class SqliteUnitOfWork:
             if previous is not None:
                 return previous
             self._assert_sequence(session, run_id, expected_sequence)
+            self._apply_run_transition(session, run_id, run_target)
             persisted = self._insert_events(session, run_id, expected_sequence, events)
             self._apply_task_mutations(session, run_id, task_mutations)
             self._insert_followup_tasks(session, run_id, followup_tasks)

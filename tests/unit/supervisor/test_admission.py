@@ -1,5 +1,6 @@
 from decimal import Decimal
 
+import pytest
 from sqlalchemy import text
 
 from co_scientist.adapters.persistence.sqlite import SqliteUnitOfWork
@@ -66,6 +67,9 @@ def test_novelty_and_candidate_proximity_remain_separate_admission_gates() -> No
         duplicate=False,
     )
     missing_proximity = evaluate_admission(
+        hypothesis_id="h-1",
+        content_hash="sha256:content",
+        research_plan_version=1,
         safety_passed=True,
         required_stages={"initial_review"},
         completed_stages={"initial_review"},
@@ -77,6 +81,99 @@ def test_novelty_and_candidate_proximity_remain_separate_admission_gates() -> No
 
     assert missing_novelty.missing_requirements == ("novelty_assessment",)
     assert missing_proximity.missing_requirements == ("proximity",)
+
+
+# Mutation caught: treating any non-null NoveltyAssessment as applicable and qualifying.
+@pytest.mark.parametrize(
+    "assessment",
+    [
+        NoveltyAssessment(
+            assessment_id="wrong-hypothesis",
+            hypothesis_id="h-other",
+            content_hash="sha256:content",
+            research_plan_version=2,
+            verdict=NoveltyVerdict.NOVEL,
+            closest_prior_work_ids=(),
+        ),
+        NoveltyAssessment(
+            assessment_id="stale-content",
+            hypothesis_id="h-1",
+            content_hash="sha256:stale",
+            research_plan_version=2,
+            verdict=NoveltyVerdict.NOVEL,
+            closest_prior_work_ids=(),
+        ),
+        NoveltyAssessment(
+            assessment_id="stale-plan",
+            hypothesis_id="h-1",
+            content_hash="sha256:content",
+            research_plan_version=1,
+            verdict=NoveltyVerdict.NOVEL,
+            closest_prior_work_ids=(),
+        ),
+        NoveltyAssessment(
+            assessment_id="not-novel",
+            hypothesis_id="h-1",
+            content_hash="sha256:content",
+            research_plan_version=2,
+            verdict=NoveltyVerdict.NOT_NOVEL,
+            closest_prior_work_ids=("paper-1",),
+        ),
+        NoveltyAssessment(
+            assessment_id="insufficient",
+            hypothesis_id="h-1",
+            content_hash="sha256:content",
+            research_plan_version=2,
+            verdict=NoveltyVerdict.INSUFFICIENT_EVIDENCE,
+            closest_prior_work_ids=(),
+        ),
+    ],
+)
+def test_required_novelty_rejects_inapplicable_or_nonqualifying_assessment(
+    assessment: NoveltyAssessment,
+) -> None:
+    decision = evaluate_admission(
+        hypothesis_id="h-1",
+        content_hash="sha256:content",
+        research_plan_version=2,
+        safety_passed=True,
+        required_stages={"initial_review"},
+        completed_stages={"initial_review"},
+        novelty_required=True,
+        novelty_assessment=assessment,
+        proximity_complete=True,
+        duplicate=False,
+    )
+
+    assert not decision.admitted
+    assert decision.missing_requirements == ("novelty_assessment",)
+
+
+# Mutation caught: rejecting the policy-qualified partially_novel verdict.
+def test_required_novelty_accepts_matching_partially_novel_assessment() -> None:
+    assessment = NoveltyAssessment(
+        assessment_id="novelty-1",
+        hypothesis_id="h-1",
+        content_hash="sha256:content",
+        research_plan_version=2,
+        verdict=NoveltyVerdict.PARTIALLY_NOVEL,
+        closest_prior_work_ids=("paper-1",),
+    )
+
+    decision = evaluate_admission(
+        hypothesis_id="h-1",
+        content_hash="sha256:content",
+        research_plan_version=2,
+        safety_passed=True,
+        required_stages={"initial_review"},
+        completed_stages={"initial_review"},
+        novelty_required=True,
+        novelty_assessment=assessment,
+        proximity_complete=True,
+        duplicate=False,
+    )
+
+    assert decision.admitted
 
 
 def test_handle_result_atomically_applies_policy_owned_work_and_ignores_agent_actions(
@@ -96,6 +193,8 @@ def test_handle_result_atomically_applies_policy_owned_work_and_ignores_agent_ac
             )
         ]
     )
+    uow.transition_task("generate-1", TaskState.LEASED)
+    uow.transition_task("generate-1", TaskState.RUNNING)
     uow.transition_task("generate-1", TaskState.RESULT_RECEIVED)
     context = {
         "run_id": "run-1",
@@ -179,3 +278,115 @@ def test_handle_result_atomically_applies_policy_owned_work_and_ignores_agent_ac
         ).one()
     assert [row.intent_type for row in task_rows] == ["generate", "run_initial_review"]
     assert cost == (11, 7, str(Decimal("0.0123")), "2026-07")
+
+
+def _submitted_generation_result(tmp_path, status: str):
+    uow = SqliteUnitOfWork(f"sqlite:///{tmp_path / f'{status}.db'}")
+    uow.create_schema()
+    uow.create_run("run-1", manifest={})
+    uow.enqueue_tasks(
+        [
+            NewTask(
+                task_id="generate-1",
+                run_id="run-1",
+                idempotency_key="generation:run-1:1",
+                intent_type="generate",
+                payload={},
+            )
+        ]
+    )
+    uow.transition_task("generate-1", TaskState.LEASED)
+    uow.transition_task("generate-1", TaskState.RUNNING)
+    uow.transition_task("generate-1", TaskState.RESULT_RECEIVED)
+    context = {
+        "run_id": "run-1",
+        "task_id": "generate-1",
+        "idempotency_key": "generation:run-1:1",
+        "skill_id": "generation",
+        "skill_version": "0.1.0",
+        "output_schema_version": 1,
+        "input_snapshot_hash": "sha256:input",
+    }
+    uow.plan_external_call(
+        "call-1",
+        "sha256:request",
+        run_id="run-1",
+        task_id="generate-1",
+        execution_context=context,
+    )
+    uow.transition_call("call-1", ExternalCallState.STARTED)
+    raw_ref = ArtifactRef(
+        path="raw/call-1/digest",
+        sha256="sha256:digest",
+        mime_type="application/json",
+        byte_length=2,
+    )
+    uow.record_raw_and_transition(
+        "call-1",
+        raw_ref,
+        ExternalCallState.RAW_RESPONSE_PERSISTED,
+        usage={"input_tokens": 3, "output_tokens": 2, "pricing_version": "test"},
+    )
+    payload = {
+        "hypotheses": [
+            {
+                "hypothesis_id": "h-1",
+                "content_id": "content-1",
+                "content_hash": "sha256:content",
+            }
+        ]
+    }
+    result = AgentResult(
+        result_id=f"result-{status}",
+        external_call_id="call-1",
+        run_id="run-1",
+        task_id="generate-1",
+        idempotency_key="generation:run-1:1",
+        skill_id="generation",
+        skill_version="0.1.0",
+        output_schema_version=1,
+        input_snapshot_hash="sha256:input",
+        status=status,
+        payload=payload,
+        recommended_actions=("run_deep_verification",),
+        raw_artifact_ref=raw_ref,
+    )
+    uow.record_validated_and_submitted("call-1", payload, result)
+    supervisor = Supervisor(uow=uow, review_policy=ReviewPolicy(profile_id="minimal"))
+    return supervisor, result
+
+
+# Mutation caught: treating partial/rejected/failed as completed or leaving them unapplied.
+@pytest.mark.parametrize(
+    ("status", "expected_event", "expected_task_state", "followup_exists"),
+    [
+        ("completed", "HypothesisContentCreated", "succeeded", True),
+        ("partial", "AgentResultPartial", "pending", False),
+        ("rejected", "AgentResultRejected", "failed", False),
+        ("failed", "AgentResultFailed", "failed", False),
+    ],
+)
+def test_handle_result_applies_each_status_with_explicit_atomic_semantics(
+    tmp_path,
+    status: str,
+    expected_event: str,
+    expected_task_state: str,
+    followup_exists: bool,
+) -> None:
+    supervisor, result = _submitted_generation_result(tmp_path, status)
+
+    commit = supervisor.handle_result(
+        run_id="run-1",
+        task_id="generate-1",
+        result=result,
+        expected_sequence=0,
+    )
+
+    assert [event.event_type for event in commit.events] == [expected_event]
+    assert supervisor.uow.task_state("generate-1") == expected_task_state
+    assert supervisor.uow.external_call_state("call-1") == "domain_result_applied"
+    with supervisor.uow.engine.connect() as connection:
+        task_count = connection.execute(text("SELECT COUNT(*) FROM tasks")).scalar_one()
+        cost_count = connection.execute(text("SELECT COUNT(*) FROM cost_entries")).scalar_one()
+    assert task_count == (2 if followup_exists else 1)
+    assert cost_count == 1

@@ -3,6 +3,7 @@
 from co_scientist.supervisor.followups import FollowupIntent, derive_followup_intents
 from co_scientist.supervisor.orchestrator import (
     AdmissionDecision,
+    AdmissionOutcome,
     PlanRevisionOutcome,
     Supervisor,
     TickOutcome,
@@ -12,6 +13,7 @@ from co_scientist.supervisor.orchestrator import (
 
 __all__ = [
     "AdmissionDecision",
+    "AdmissionOutcome",
     "FollowupIntent",
     "PlanRevisionOutcome",
     "Supervisor",

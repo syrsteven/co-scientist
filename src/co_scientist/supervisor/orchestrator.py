@@ -14,15 +14,21 @@ from co_scientist.agents.result import AgentResult
 from co_scientist.domain.budget import BudgetLedger, CostEntry
 from co_scientist.domain.convergence import ConvergenceSnapshot, StopDecision, evaluate_stop
 from co_scientist.domain.research_plan import ResearchPlan
-from co_scientist.domain.review import NoveltyAssessment, ReviewPolicy, ReviewStage
+from co_scientist.domain.review import (
+    NoveltyAssessment,
+    NoveltyVerdict,
+    ReviewPolicy,
+    ReviewStage,
+)
 from co_scientist.domain.states import ExternalCallState, RunState, TaskState
 from co_scientist.domain.task import NewTask, TaskMutation
 from co_scientist.domain.tournament import (
     EpochContractMismatch,
+    TournamentEntry,
     TournamentEpoch,
+    admit_entry,
     validate_match_contract,
 )
-from co_scientist.domain.transitions import transition_run
 from co_scientist.events.models import NewEvent
 from co_scientist.supervisor.followups import FollowupIntent, derive_followup_intents
 
@@ -36,8 +42,19 @@ class AdmissionDecision(BaseModel):
     missing_requirements: tuple[str, ...] = ()
 
 
+class AdmissionOutcome(BaseModel):
+    model_config = ConfigDict(frozen=True, arbitrary_types_allowed=True)
+
+    decision: AdmissionDecision
+    entry: TournamentEntry | None = None
+    commit: CommitResult | None = None
+
+
 def evaluate_admission(
     *,
+    hypothesis_id: str | None = None,
+    content_hash: str | None = None,
+    research_plan_version: int | None = None,
     safety_passed: bool,
     required_stages: AbstractSet[str | ReviewStage],
     completed_stages: AbstractSet[str | ReviewStage],
@@ -56,8 +73,20 @@ def evaluate_admission(
     if not safety_passed:
         missing.append("safety")
     missing.extend(sorted(required - completed))
-    if novelty_required and novelty_assessment is None:
-        missing.append("novelty_assessment")
+    if novelty_required:
+        novelty_qualifies = (
+            novelty_assessment is not None
+            and hypothesis_id is not None
+            and content_hash is not None
+            and research_plan_version is not None
+            and novelty_assessment.hypothesis_id == hypothesis_id
+            and novelty_assessment.content_hash == content_hash
+            and novelty_assessment.research_plan_version == research_plan_version
+            and novelty_assessment.verdict
+            in {NoveltyVerdict.NOVEL, NoveltyVerdict.PARTIALLY_NOVEL}
+        )
+        if not novelty_qualifies:
+            missing.append("novelty_assessment")
     if not proximity_complete:
         missing.append("proximity")
     if duplicate:
@@ -112,6 +141,30 @@ class Supervisor:
         self.uow = uow
         self.review_policy = review_policy
 
+    def _epoch_state(
+        self,
+        run_id: str,
+    ) -> tuple[TournamentEpoch | None, tuple[TournamentEpoch, ...]]:
+        active: TournamentEpoch | None = None
+        history: list[TournamentEpoch] = []
+        for event in self.uow.load(run_id):
+            if event.event_type == "TournamentEpochOpened":
+                active = TournamentEpoch.model_validate(event.payload)
+                history.append(active)
+            elif (
+                event.event_type == "TournamentEpochClosed"
+                and active is not None
+                and event.payload.get("epoch_id") == active.epoch_id
+            ):
+                active = None
+        return active, tuple(history)
+
+    def _active_epoch(self, run_id: str) -> TournamentEpoch:
+        active, _ = self._epoch_state(run_id)
+        if active is None:
+            raise ValueError(f"run {run_id} has no active TournamentEpoch")
+        return active
+
     @staticmethod
     def _validate_submitted_result(
         *,
@@ -131,10 +184,37 @@ class Supervisor:
             raise ValueError("AgentResult has not reached agent_result_submitted")
         if persisted_result != result.model_dump(mode="json"):
             raise ValueError("AgentResult does not match the durably submitted result")
-        if task_state not in {TaskState.RESULT_RECEIVED, TaskState.SUCCEEDED}:
+        terminal_task_state = {
+            "completed": TaskState.SUCCEEDED,
+            "partial": TaskState.PENDING,
+            "rejected": TaskState.FAILED,
+            "failed": TaskState.FAILED,
+        }[result.status]
+        valid_task_state = (
+            task_state is TaskState.RESULT_RECEIVED
+            if call_state is ExternalCallState.AGENT_RESULT_SUBMITTED
+            else task_state is terminal_task_state
+        )
+        if not valid_task_state:
             raise ValueError("task must be result_received before domain application")
-        if result.status not in {"completed", "partial"}:
-            raise ValueError("only completed or partial AgentResult can be applied")
+
+    @staticmethod
+    def _audit_event_for_result(result: AgentResult) -> NewEvent:
+        event_type = {
+            "partial": "AgentResultPartial",
+            "rejected": "AgentResultRejected",
+            "failed": "AgentResultFailed",
+        }[result.status]
+        return NewEvent(
+            event_type=event_type,
+            payload={
+                "source_result_id": result.result_id,
+                "source_task_id": result.task_id,
+                "status": result.status,
+            },
+            causation_id=result.result_id,
+            correlation_id=result.run_id,
+        )
 
     @staticmethod
     def _events_for_result(result: AgentResult) -> tuple[NewEvent, ...]:
@@ -261,13 +341,21 @@ class Supervisor:
         )
         if call.run_id != run_id or call.task_id != task_id:
             raise ValueError("external call does not match Supervisor command ownership")
-        events = self._events_for_result(result)
-        followups = self._followup_tasks(run_id=run_id, events=events)
+        if result.status == "completed":
+            events = self._events_for_result(result)
+            followups = self._followup_tasks(run_id=run_id, events=events)
+            task_target = TaskState.SUCCEEDED
+        else:
+            events = (self._audit_event_for_result(result),)
+            followups = ()
+            task_target = (
+                TaskState.PENDING if result.status == "partial" else TaskState.FAILED
+            )
         return self.uow.commit_domain_batch(
             run_id=run_id,
             expected_sequence=expected_sequence,
             events=events,
-            task_mutations=(TaskMutation.succeed(task_id),),
+            task_mutations=(TaskMutation(task_id=task_id, target_state=task_target),),
             followup_tasks=followups,
             idempotency_key=result.idempotency_key,
             external_call_id=result.external_call_id,
@@ -285,13 +373,38 @@ class Supervisor:
         *,
         old: ResearchPlan,
         new: ResearchPlan,
-        current_epoch: TournamentEpoch,
         expected_sequence: int,
         next_epoch_id: str | None = None,
         next_anchor_set_id: str | None = None,
     ) -> PlanRevisionOutcome:
         """Atomically accept a plan and close its epoch, opening or forking by policy."""
 
+        action = plan_revision_action(old, new)
+        stream = self.uow.load(old.run_id)
+        already_accepted = any(
+            event.event_type == "ResearchPlanAccepted"
+            and event.payload.get("version") == new.version
+            and event.payload.get("action") == action
+            for event in stream
+        )
+        active_epoch, epoch_history = self._epoch_state(old.run_id)
+        if already_accepted:
+            current_epoch = next(
+                (
+                    epoch
+                    for epoch in reversed(epoch_history)
+                    if epoch.research_plan_version == old.version
+                ),
+                None,
+            )
+            if current_epoch is None:
+                raise ValueError("accepted plan revision has no durable source epoch")
+        else:
+            if RunState(self.uow.run_state(old.run_id)) is not RunState.RUNNING:
+                raise ValueError("plan revision requires a running Run")
+            if active_epoch is None:
+                raise ValueError(f"run {old.run_id} has no active TournamentEpoch")
+            current_epoch = active_epoch
         validate_match_contract(
             current_epoch,
             plan_version=old.version,
@@ -301,7 +414,6 @@ class Supervisor:
             rating_policy=old.rating_policy_version,
             admission_policy=old.admission_policy_version,
         )
-        action = plan_revision_action(old, new)
         next_epoch: TournamentEpoch | None = None
         events = [
             NewEvent(
@@ -316,6 +428,8 @@ class Supervisor:
         if action == "new_epoch":
             if not next_epoch_id:
                 raise ValueError("next_epoch_id is required for an in-run plan revision")
+            if next_epoch_id == current_epoch.epoch_id:
+                raise ValueError("new epoch ID must differ from the active epoch ID")
             next_epoch = TournamentEpoch(
                 epoch_id=next_epoch_id,
                 research_plan_version=new.version,
@@ -347,17 +461,78 @@ class Supervisor:
         )
         return PlanRevisionOutcome(action=action, commit=commit, next_epoch=next_epoch)
 
+    def admit_hypothesis(
+        self,
+        *,
+        run_id: str,
+        expected_sequence: int,
+        hypothesis_id: str,
+        content_hash: str,
+        safety_passed: bool,
+        required_stages: AbstractSet[str | ReviewStage],
+        completed_stages: AbstractSet[str | ReviewStage],
+        novelty_required: bool,
+        novelty_assessment: NoveltyAssessment | None,
+        proximity_complete: bool,
+        duplicate: bool,
+    ) -> AdmissionOutcome:
+        """Admit a candidate and assign its epoch-local initial rating atomically."""
+
+        if RunState(self.uow.run_state(run_id)) is not RunState.RUNNING:
+            raise ValueError("admission requires a running Run")
+        epoch = self._active_epoch(run_id)
+        decision = evaluate_admission(
+            hypothesis_id=hypothesis_id,
+            content_hash=content_hash,
+            research_plan_version=epoch.research_plan_version,
+            safety_passed=safety_passed,
+            required_stages=required_stages,
+            completed_stages=completed_stages,
+            novelty_required=novelty_required,
+            novelty_assessment=novelty_assessment,
+            proximity_complete=proximity_complete,
+            duplicate=duplicate,
+        )
+        if not decision.admitted:
+            return AdmissionOutcome(decision=decision)
+
+        entry = admit_entry(epoch, hypothesis_id, content_hash)
+        entry_payload = entry.model_dump(mode="json")
+        commit = self.uow.commit_domain_batch(
+            run_id=run_id,
+            expected_sequence=expected_sequence,
+            events=(
+                NewEvent(
+                    event_type="HypothesisTournamentReady",
+                    payload={
+                        "hypothesis_id": hypothesis_id,
+                        "content_hash": content_hash,
+                        "epoch_id": epoch.epoch_id,
+                    },
+                ),
+                NewEvent(event_type="TournamentEntryCreated", payload=entry_payload),
+                NewEvent(
+                    event_type="InitialRatingAssigned",
+                    payload={
+                        "epoch_id": epoch.epoch_id,
+                        "hypothesis_id": hypothesis_id,
+                        "rating": entry.rating,
+                    },
+                ),
+            ),
+            idempotency_key=f"admit:{epoch.epoch_id}:{hypothesis_id}:{content_hash}",
+        )
+        return AdmissionOutcome(decision=decision, entry=entry, commit=commit)
+
     def request_normal_completion(
         self,
         run_id: str,
         *,
         expected_sequence: int,
         reason: str = "work_complete",
-        run_state: RunState = RunState.RUNNING,
     ) -> CommitResult:
         """Enter stopping and durably enqueue the required finalization task."""
 
-        transition_run(run_state, RunState.STOPPING)
         finalization_task = NewTask(
             task_id=f"finalize:{run_id}",
             run_id=run_id,
@@ -375,6 +550,7 @@ class Supervisor:
                     payload={"task_id": finalization_task.task_id},
                 ),
             ),
+            target_run_state=RunState.STOPPING,
             followup_tasks=(finalization_task,),
             idempotency_key=f"stop:{run_id}",
         )
@@ -388,15 +564,7 @@ class Supervisor:
     ) -> CommitResult:
         """Record finalization before the corresponding normal terminal event."""
 
-        stream = self.uow.load(run_id)
-        event_types = [event.event_type for event in stream]
-        if "RunStopping" not in event_types:
-            raise ValueError("run must enter stopping before finalization")
         terminal = "RunCompleted" if completeness == "complete" else "RunCompletedPartial"
-        transition_run(
-            RunState.STOPPING,
-            RunState.COMPLETED if completeness == "complete" else RunState.COMPLETED_PARTIAL,
-        )
         return self.uow.commit_domain_batch(
             run_id=run_id,
             expected_sequence=expected_sequence,
@@ -407,6 +575,11 @@ class Supervisor:
                 ),
                 NewEvent(event_type=terminal, payload={"completeness": completeness}),
             ),
+            target_run_state=(
+                RunState.COMPLETED
+                if completeness == "complete"
+                else RunState.COMPLETED_PARTIAL
+            ),
             task_mutations=(TaskMutation.succeed(f"finalize:{run_id}"),),
             idempotency_key=f"finalization:{run_id}",
         )
@@ -416,8 +589,6 @@ class Supervisor:
         *,
         run_id: str,
         expected_sequence: int,
-        run_state: RunState,
-        epoch: TournamentEpoch,
         convergence: ConvergenceSnapshot,
         hard_budget_reached: bool | None = None,
         budget: BudgetLedger | None = None,
@@ -430,26 +601,31 @@ class Supervisor:
         budget_reached = (
             budget.hard_limit_reached if budget is not None else bool(hard_budget_reached)
         )
+        epoch = self._active_epoch(run_id)
         decision = evaluate_stop(
             convergence,
             hard_budget_reached=budget_reached,
             scientist_action=scientist_action,
         )
-        if decision.reason == "quality_converged" and (
-            convergence.epoch_id != epoch.epoch_id
-            or convergence.anchor_set_id != epoch.anchor_set_id
+        if convergence.epoch_id != epoch.epoch_id:
+            raise EpochContractMismatch(
+                "convergence snapshot does not match the active TournamentEpoch"
+            )
+        if (
+            decision.reason == "quality_converged"
+            and convergence.anchor_set_id != epoch.anchor_set_id
         ):
             raise EpochContractMismatch(
-                "convergence snapshot epoch and anchor set must match TournamentEpoch"
+                "convergence snapshot anchor set must match the active TournamentEpoch"
             )
         if decision.action == "continue":
             return TickOutcome(decision=decision)
         if decision.action == "cancel":
-            transition_run(run_state, RunState.CANCELLED)
             commit = self.uow.commit_domain_batch(
                 run_id=run_id,
                 expected_sequence=expected_sequence,
                 events=(NewEvent(event_type="RunCancelled", payload={"reason": decision.reason}),),
+                target_run_state=RunState.CANCELLED,
                 idempotency_key=f"cancel:{run_id}",
             )
             return TickOutcome(decision=decision, commit=commit)
@@ -457,6 +633,5 @@ class Supervisor:
             run_id,
             expected_sequence=expected_sequence,
             reason=decision.reason or "work_complete",
-            run_state=run_state,
         )
         return TickOutcome(decision=decision, commit=commit)

@@ -39,7 +39,7 @@ TASK_TRANSITIONS = {
         TaskState.NEEDS_ATTENTION,
         TaskState.FAILED,
     },
-    TaskState.RESULT_RECEIVED: {TaskState.SUCCEEDED, TaskState.PENDING},
+    TaskState.RESULT_RECEIVED: {TaskState.SUCCEEDED, TaskState.PENDING, TaskState.FAILED},
     TaskState.BLOCKED: {TaskState.PENDING, TaskState.CANCELLED},
     TaskState.NEEDS_ATTENTION: {TaskState.PENDING, TaskState.CANCELLED},
     TaskState.SUCCEEDED: set(),

@@ -9,8 +9,9 @@ from sqlalchemy.exc import IntegrityError
 from co_scientist.adapters.persistence.sqlite import SqliteUnitOfWork
 from co_scientist.agents.result import AgentResult
 from co_scientist.domain.budget import CostEntry
-from co_scientist.domain.states import ExternalCallState, TaskState
+from co_scientist.domain.states import ExternalCallState, RunState, TaskState
 from co_scientist.domain.task import NewTask, TaskMutation
+from co_scientist.domain.transitions import InvalidTransition
 from co_scientist.events.models import NewEvent
 from co_scientist.ports.artifact_store import ArtifactRef
 
@@ -35,6 +36,12 @@ def _execution_context(
     }
 
 
+def _advance_task_to_result_received(store: SqliteUnitOfWork, task_id: str) -> None:
+    store.transition_task(task_id, TaskState.LEASED)
+    store.transition_task(task_id, TaskState.RUNNING)
+    store.transition_task(task_id, TaskState.RESULT_RECEIVED)
+
+
 class UnserializableResult(BaseModel):
     model_config = ConfigDict(arbitrary_types_allowed=True)
 
@@ -56,7 +63,7 @@ def _prepare_replay_store(tmp_path) -> SqliteUnitOfWork:
             )
         ]
     )
-    store.transition_task("task-1", TaskState.RESULT_RECEIVED)
+    _advance_task_to_result_received(store, "task-1")
     return store
 
 
@@ -158,7 +165,7 @@ def test_domain_batch_commits_events_task_followup_cost_call_and_run_sequence(tm
             )
         ]
     )
-    store.transition_task("task-1", TaskState.RESULT_RECEIVED)
+    _advance_task_to_result_received(store, "task-1")
     store.plan_external_call(
         "call-1",
         "sha256:request",
@@ -227,6 +234,96 @@ def test_domain_batch_commits_events_task_followup_cost_call_and_run_sequence(tm
     assert call_sequence == 1
 
 
+# Mutation caught: dropping the durable Run transition from an otherwise successful batch.
+def test_domain_batch_persists_validated_run_transition(tmp_path) -> None:
+    store = _store(tmp_path)
+    store.create_run("r-1", manifest={})
+
+    store.commit_domain_batch(
+        run_id="r-1",
+        expected_sequence=0,
+        events=[NewEvent(event_type="RunStarted", payload={})],
+        target_run_state=RunState.RUNNING,
+        idempotency_key="start:r-1",
+    )
+
+    assert store.run_state("r-1") == "running"
+
+
+# Mutation caught: assigning TaskRow.state directly instead of consulting transition_task.
+def test_invalid_task_mutation_rolls_back_the_domain_batch(tmp_path) -> None:
+    store = _store(tmp_path)
+    store.create_run("r-1", manifest={})
+    store.enqueue_tasks(
+        [
+            NewTask(
+                task_id="task-1",
+                run_id="r-1",
+                idempotency_key="task-1",
+                intent_type="finalize_run",
+                payload={},
+            )
+        ]
+    )
+
+    with pytest.raises(InvalidTransition, match="pending.*succeeded"):
+        store.commit_domain_batch(
+            run_id="r-1",
+            expected_sequence=0,
+            events=[NewEvent(event_type="FinalizationCompleted", payload={})],
+            task_mutations=[TaskMutation.succeed("task-1")],
+            idempotency_key="finalize:r-1",
+        )
+
+    assert store.load("r-1") == []
+    assert store.task_state("task-1") == "pending"
+
+
+# Mutation caught: committing RunRow.state before a later follow-up insert fails.
+def test_failed_domain_batch_rolls_back_run_transition(tmp_path) -> None:
+    store = _store(tmp_path)
+    store.create_run("r-1", manifest={})
+    started = store.commit_domain_batch(
+        run_id="r-1",
+        expected_sequence=0,
+        events=[NewEvent(event_type="RunStarted", payload={})],
+        target_run_state=RunState.RUNNING,
+        idempotency_key="start:r-1",
+    )
+    store.enqueue_tasks(
+        [
+            NewTask(
+                task_id="existing",
+                run_id="r-1",
+                idempotency_key="duplicate",
+                intent_type="existing",
+                payload={},
+            )
+        ]
+    )
+
+    with pytest.raises(IntegrityError):
+        store.commit_domain_batch(
+            run_id="r-1",
+            expected_sequence=started.last_sequence,
+            events=[NewEvent(event_type="RunStopping", payload={})],
+            target_run_state=RunState.STOPPING,
+            followup_tasks=[
+                NewTask(
+                    task_id="duplicate",
+                    run_id="r-1",
+                    idempotency_key="duplicate",
+                    intent_type="finalize_run",
+                    payload={},
+                )
+            ],
+            idempotency_key="stop:r-1",
+        )
+
+    assert store.run_state("r-1") == "running"
+    assert [event.event_type for event in store.load("r-1")] == ["RunStarted"]
+
+
 def test_failed_followup_insert_rolls_back_only_the_domain_batch(tmp_path) -> None:
     store = _store(tmp_path)
     store.create_run("r-1", manifest={})
@@ -248,7 +345,7 @@ def test_failed_followup_insert_rolls_back_only_the_domain_batch(tmp_path) -> No
             ),
         ]
     )
-    store.transition_task("task-1", TaskState.RESULT_RECEIVED)
+    _advance_task_to_result_received(store, "task-1")
 
     with pytest.raises(IntegrityError):
         store.commit_domain_batch(
@@ -349,7 +446,7 @@ def test_cross_run_batch_member_rolls_back_the_whole_batch(tmp_path, foreign_wri
             ),
         ]
     )
-    store.transition_task("task-2", TaskState.RESULT_RECEIVED)
+    _advance_task_to_result_received(store, "task-2")
     store.plan_external_call(
         "call-2",
         "sha256:request",

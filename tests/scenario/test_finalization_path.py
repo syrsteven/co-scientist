@@ -6,6 +6,8 @@ from co_scientist.domain.convergence import ConvergenceSnapshot
 from co_scientist.domain.review import ReviewPolicy
 from co_scientist.domain.states import RunState
 from co_scientist.domain.tournament import EpochContractMismatch, TournamentEpoch
+from co_scientist.domain.transitions import InvalidTransition
+from co_scientist.events.models import NewEvent
 from co_scientist.supervisor.orchestrator import Supervisor
 
 
@@ -13,7 +15,20 @@ def _supervisor(tmp_path) -> Supervisor:
     uow = SqliteUnitOfWork(f"sqlite:///{tmp_path / 'finalization.db'}")
     uow.create_schema()
     uow.create_run("run-1", manifest={})
+    uow.commit_domain_batch(
+        run_id="run-1",
+        expected_sequence=0,
+        events=[NewEvent(event_type="RunStarted", payload={})],
+        target_run_state=RunState.RUNNING,
+        idempotency_key="start:run-1",
+    )
     return Supervisor(uow=uow, review_policy=ReviewPolicy(profile_id="minimal"))
+
+
+def _advance_finalization_to_result_received(supervisor: Supervisor) -> None:
+    supervisor.uow.transition_task("finalize:run-1", "leased")
+    supervisor.uow.transition_task("finalize:run-1", "running")
+    supervisor.uow.transition_task("finalize:run-1", "result_received")
 
 
 def _epoch() -> TournamentEpoch:
@@ -29,9 +44,13 @@ def _epoch() -> TournamentEpoch:
     )
 
 
-def _snapshot(*, anchor_set_id: str = "anchors-1") -> ConvergenceSnapshot:
+def _snapshot(
+    *,
+    epoch_id: str = "epoch-1",
+    anchor_set_id: str = "anchors-1",
+) -> ConvergenceSnapshot:
     return ConvergenceSnapshot(
-        epoch_id="epoch-1",
+        epoch_id=epoch_id,
         anchor_set_id=anchor_set_id,
         elo_plateau=True,
         anchor_plateau=True,
@@ -41,17 +60,35 @@ def _snapshot(*, anchor_set_id: str = "anchors-1") -> ConvergenceSnapshot:
     )
 
 
-def test_normal_completion_always_stops_and_runs_finalization_first(tmp_path) -> None:
+def _open_epoch(supervisor: Supervisor) -> int:
+    commit = supervisor.uow.commit_domain_batch(
+        run_id="run-1",
+        expected_sequence=1,
+        events=[
+            NewEvent(
+                event_type="TournamentEpochOpened",
+                payload=_epoch().model_dump(mode="json"),
+            )
+        ],
+        idempotency_key="open:epoch-1",
+    )
+    return commit.last_sequence
+
+
+# Mutation caught: persisting terminal events without the Run and finalization Task states.
+def test_normal_completion_atomically_persists_legal_run_and_task_states(tmp_path) -> None:
     supervisor = _supervisor(tmp_path)
 
     stopping = supervisor.request_normal_completion(
-        "run-1", expected_sequence=0, reason="work_complete"
+        "run-1", expected_sequence=1, reason="work_complete"
     )
+    assert supervisor.uow.run_state("run-1") == "stopping"
+    _advance_finalization_to_result_received(supervisor)
     completed = supervisor.apply_finalization(
         "run-1", expected_sequence=stopping.last_sequence, completeness="complete"
     )
 
-    events = supervisor.uow.load("run-1")
+    events = supervisor.uow.load("run-1", after_sequence=1)
     assert [event.event_type for event in events] == [
         "RunStopping",
         "FinalizationRequested",
@@ -60,44 +97,83 @@ def test_normal_completion_always_stops_and_runs_finalization_first(tmp_path) ->
     ]
     assert completed.events[-1].payload["completeness"] == "complete"
     assert supervisor.uow.task_state("finalize:run-1") == "succeeded"
+    assert supervisor.uow.run_state("run-1") == "completed"
+
+
+# Mutation caught: allowing pending -> succeeded for the finalization Task.
+def test_finalization_requires_durable_result_received_task(tmp_path) -> None:
+    supervisor = _supervisor(tmp_path)
+    stopping = supervisor.request_normal_completion("run-1", expected_sequence=1)
+
+    with pytest.raises(InvalidTransition, match="pending.*succeeded"):
+        supervisor.apply_finalization(
+            "run-1",
+            expected_sequence=stopping.last_sequence,
+            completeness="complete",
+        )
+
+    assert supervisor.uow.run_state("run-1") == "stopping"
+    assert supervisor.uow.task_state("finalize:run-1") == "pending"
+    assert [event.event_type for event in supervisor.uow.load("run-1", after_sequence=1)] == [
+        "RunStopping",
+        "FinalizationRequested",
+    ]
 
 
 def test_finalization_cannot_complete_a_run_that_never_stopped(tmp_path) -> None:
     supervisor = _supervisor(tmp_path)
 
-    with pytest.raises(ValueError, match="stopping"):
+    with pytest.raises(InvalidTransition, match="running.*completed_partial"):
         supervisor.apply_finalization(
-            "run-1", expected_sequence=0, completeness="partial"
+            "run-1", expected_sequence=1, completeness="partial"
         )
 
-    assert supervisor.uow.load("run-1") == []
+    assert [event.event_type for event in supervisor.uow.load("run-1")] == ["RunStarted"]
 
 
 def test_quality_stop_requires_snapshot_anchor_to_match_epoch(tmp_path) -> None:
     supervisor = _supervisor(tmp_path)
+    expected_sequence = _open_epoch(supervisor)
 
     with pytest.raises(EpochContractMismatch, match="anchor set"):
         supervisor.tick(
             run_id="run-1",
-            expected_sequence=0,
-            run_state=RunState.RUNNING,
-            epoch=_epoch(),
+            expected_sequence=expected_sequence,
             convergence=_snapshot(anchor_set_id="different"),
             hard_budget_reached=False,
             scientist_action=None,
         )
 
-    assert supervisor.uow.load("run-1") == []
+    assert [event.event_type for event in supervisor.uow.load("run-1")] == [
+        "RunStarted",
+        "TournamentEpochOpened",
+    ]
+
+
+# Mutation caught: accepting a convergence snapshot for a caller-spoofed epoch identity.
+def test_quality_stop_rejects_snapshot_for_non_active_epoch(tmp_path) -> None:
+    supervisor = _supervisor(tmp_path)
+    expected_sequence = _open_epoch(supervisor)
+
+    with pytest.raises(EpochContractMismatch, match="active TournamentEpoch"):
+        supervisor.tick(
+            run_id="run-1",
+            expected_sequence=expected_sequence,
+            convergence=_snapshot(epoch_id="epoch-stale"),
+            hard_budget_reached=False,
+            scientist_action=None,
+        )
+
+    assert supervisor.uow.run_state("run-1") == "running"
 
 
 def test_matching_quality_stop_enters_stopping_and_enqueues_finalization(tmp_path) -> None:
     supervisor = _supervisor(tmp_path)
+    expected_sequence = _open_epoch(supervisor)
 
     outcome = supervisor.tick(
         run_id="run-1",
-        expected_sequence=0,
-        run_state=RunState.RUNNING,
-        epoch=_epoch(),
+        expected_sequence=expected_sequence,
         convergence=_snapshot(),
         hard_budget_reached=False,
         scientist_action=None,
@@ -113,6 +189,7 @@ def test_matching_quality_stop_enters_stopping_and_enqueues_finalization(tmp_pat
 
 def test_tick_consumes_budget_ledger_and_routes_hard_limit_through_finalization(tmp_path) -> None:
     supervisor = _supervisor(tmp_path)
+    expected_sequence = _open_epoch(supervisor)
     budget = BudgetLedger(
         policy=BudgetPolicy(max_model_calls=1),
         model_calls=1,
@@ -120,9 +197,7 @@ def test_tick_consumes_budget_ledger_and_routes_hard_limit_through_finalization(
 
     outcome = supervisor.tick(
         run_id="run-1",
-        expected_sequence=0,
-        run_state=RunState.RUNNING,
-        epoch=_epoch(),
+        expected_sequence=expected_sequence,
         convergence=_snapshot(anchor_set_id="different"),
         budget=budget,
         scientist_action=None,
