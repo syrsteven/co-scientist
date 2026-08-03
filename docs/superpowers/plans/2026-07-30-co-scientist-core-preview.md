@@ -3003,10 +3003,24 @@ git commit -m "feat: add PubMed evidence provider"
 - Create: `tests/unit/application/test_service_boundary.py`
 - Create: `tests/contract/cli/test_cli_run.py`
 - Create: `tests/contract/cli/test_cli_stop.py`
+- Modify: `src/co_scientist/supervisor/orchestrator.py`
+- Modify: `src/co_scientist/adapters/persistence/sqlite.py`
+- Modify: `tests/contract/persistence/test_sqlite_uow_atomic.py`
+- Modify: `tests/scenario/test_finalization_path.py`
 
 **Interfaces:**
 - Consumes: Supervisor and read projections
 - Produces: `ApplicationService.execute(command)`, `ApplicationService.query(query)`, `co-scientist` CLI
+
+**Authorized Task 13 review corrections:**
+
+- The user authorized this narrow cross-task expansion after the first Task 13 review. It requires SQLite/UoW implementation changes but no table change, schema change, Alembic migration, or domain-transition change.
+- Supervisor remains the sole lifecycle authority. Add Supervisor-owned operations for atomic create-and-start, pause, resume, cancel, and synchronous Core Preview stop-and-finalize-partial. The application command handler may translate typed commands and format outcomes, but it must not access `Supervisor.uow`, construct lifecycle events, mutate Tasks/Runs, or define state transitions itself.
+- Add one atomic SQLite run-initialization operation under the existing `BEGIN IMMEDIATE` transaction. It must insert the Run, validate `created -> running`, persist `RunStarted`, record sequence and idempotency, and roll back the Run row if any part fails. A split `create_run` followed by a later start batch is not acceptable.
+- Lifecycle commits must validate `expected_sequence` before returning an idempotent replay. Preserve replay-first behavior for existing non-lifecycle domain batches. Lifecycle idempotency keys are sequence-scoped: `pause-request:{run_id}:{expected_sequence}`, `pause-complete:{run_id}:{pausing_sequence}`, `resume:{run_id}:{expected_sequence}`, `stop:{run_id}:{expected_sequence}`, `cancel:{run_id}:{expected_sequence}`, and `finalization:{run_id}:{expected_sequence}`. Multiple valid pause/resume cycles must produce new commits, while stale retries must fail concurrency validation.
+- Storage selection belongs to application composition, not `CreateRun`; remove or reject command-level `data_dir`. Every CLI command that reads or mutates a Run must accept the same `--data-dir` selection (and may support `CO_SCIENTIST_DATA_DIR`) so separate uninjected CLI invocations can operate on the same durable run.
+- `config check` must validate actionable local configuration rather than merely confirming that composition already created a directory. Expected configuration, not-found, concurrency, invalid-transition, validation, and filesystem failures must become concise stderr diagnostics with stable non-zero CLI exit codes, not raw tracebacks.
+- TDD coverage must include atomic initialization success and rollback, lifecycle sequence-before-idempotency behavior, multiple valid pause/resume cycles, stale retries after successful mutations, Supervisor-owned finalization/cancel, separate uninjected CLI invocations against one custom data directory, config failure paths, and stable CLI error codes/messages.
 
 - [ ] **Step 1: Write failing boundary test**
 
