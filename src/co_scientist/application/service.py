@@ -7,15 +7,18 @@ from pathlib import Path
 from typing import Any, Protocol
 from uuid import uuid4
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, ValidationError
+from sqlalchemy import inspect
+from sqlalchemy.exc import SQLAlchemyError
 
 from co_scientist.adapters.persistence.sqlite import SqliteUnitOfWork
 from co_scientist.application.commands import CreateRun, ExportRun, RunCommand
 from co_scientist.application.queries import CheckConfig, GetRunStatus, ReplayRun
-from co_scientist.domain.convergence import ConvergenceSnapshot
 from co_scientist.domain.review import ReviewPolicy
 from co_scientist.domain.states import RunState
-from co_scientist.events.models import DomainEvent, NewEvent
+from co_scientist.domain.transitions import InvalidTransition
+from co_scientist.events.models import DomainEvent
+from co_scientist.ports.event_store import ConcurrencyConflict
 from co_scientist.supervisor.orchestrator import Supervisor
 
 
@@ -52,6 +55,61 @@ class ExportResult(BaseModel):
     output: Path
 
 
+class ApplicationError(RuntimeError):
+    category = "application error"
+    exit_code = 1
+
+
+class ApplicationConfigurationError(ApplicationError):
+    category = "configuration error"
+    exit_code = 2
+
+
+class ApplicationNotFoundError(ApplicationError):
+    category = "not found"
+    exit_code = 3
+
+
+class ApplicationConcurrencyError(ApplicationError):
+    category = "concurrency conflict"
+    exit_code = 4
+
+
+class ApplicationInvalidRequestError(ApplicationError):
+    category = "invalid request"
+    exit_code = 5
+
+
+class ApplicationFilesystemError(ApplicationError):
+    category = "filesystem error"
+    exit_code = 6
+
+
+_EXPECTED_APPLICATION_ERRORS = (
+    ApplicationError,
+    KeyError,
+    ConcurrencyConflict,
+    OSError,
+    InvalidTransition,
+    ValidationError,
+    ValueError,
+)
+
+
+def _translate_expected_error(error: Exception) -> ApplicationError:
+    if isinstance(error, ApplicationError):
+        return error
+    if isinstance(error, KeyError):
+        return ApplicationNotFoundError(str(error.args[0]))
+    if isinstance(error, ConcurrencyConflict):
+        return ApplicationConcurrencyError(str(error))
+    if isinstance(error, OSError):
+        return ApplicationFilesystemError(str(error))
+    if isinstance(error, InvalidTransition | ValidationError | ValueError):
+        return ApplicationInvalidRequestError(str(error))
+    raise error
+
+
 class ApplicationService:
     """Single delivery-facing boundary for commands and read-model queries."""
 
@@ -60,10 +118,16 @@ class ApplicationService:
         self._read_model = read_model
 
     def execute(self, command: object) -> object:
-        return self._supervisor.handle_command(command)
+        try:
+            return self._supervisor.handle_command(command)
+        except _EXPECTED_APPLICATION_ERRORS as error:
+            raise _translate_expected_error(error) from None
 
     def query(self, query: object) -> object:
-        return self._read_model.execute(query)
+        try:
+            return self._read_model.execute(query)
+        except _EXPECTED_APPLICATION_ERRORS as error:
+            raise _translate_expected_error(error) from None
 
 
 _EVENT_STATES: dict[str, RunState] = {
@@ -110,13 +174,28 @@ class _SqliteReadModel:
 
     def execute(self, query: object) -> object:
         if isinstance(query, CheckConfig):
-            requested_dir = query.data_dir or self._data_dir
-            if requested_dir != self._data_dir:
-                return ConfigResult(
-                    ok=False,
-                    message=f"configured data directory is {self._data_dir}",
+            tables = set(inspect(self._uow.engine).get_table_names())
+            required_tables = {
+                "runs",
+                "events",
+                "tasks",
+                "external_calls",
+                "cost_entries",
+                "idempotency_commits",
+            }
+            missing = sorted(required_tables - tables)
+            if missing:
+                raise ApplicationConfigurationError(
+                    f"database schema missing tables: {', '.join(missing)}"
                 )
-            return ConfigResult(ok=True, message="configuration valid")
+            database = self._data_dir / "co-scientist.db"
+            return ConfigResult(
+                ok=True,
+                message=(
+                    f"configuration ready data_dir={self._data_dir} "
+                    f"database={database} schema=ready"
+                ),
+            )
         if isinstance(query, GetRunStatus):
             events = self._uow.load(query.run_id)
             return {
@@ -141,125 +220,51 @@ class _SupervisorCommandHandler:
         self._supervisor = supervisor
         self._read_model = read_model
 
-    @property
-    def _uow(self) -> SqliteUnitOfWork:
-        return self._supervisor.uow
-
     def _result(self, run_id: str) -> RunResult:
-        events = self._uow.load(run_id)
-        return RunResult(
-            run_id=run_id,
-            state=RunState(self._uow.run_state(run_id)),
-            current_sequence=_current_sequence(events),
+        return RunResult.model_validate(
+            self._read_model.execute(GetRunStatus(run_id=run_id))
         )
 
     def _create_run(self, command: CreateRun) -> RunResult:
         run_id = f"run-{uuid4().hex}"
-        self._uow.create_run(
+        payload = {
+            "goal_file": str(command.goal_file),
+            "profile_file": str(command.profile_file),
+            "provider": command.provider,
+        }
+        self._supervisor.create_and_start_run(
             run_id,
-            manifest={
-                "goal_file": str(command.goal_file),
-                "profile_file": str(command.profile_file),
-                "provider": command.provider,
-            },
-        )
-        self._uow.commit_domain_batch(
-            run_id=run_id,
-            expected_sequence=0,
-            events=(
-                NewEvent(
-                    event_type="RunStarted",
-                    payload={
-                        "goal_file": str(command.goal_file),
-                        "profile_file": str(command.profile_file),
-                        "provider": command.provider,
-                    },
-                ),
-            ),
-            target_run_state=RunState.RUNNING,
-            idempotency_key=f"start:{run_id}",
+            manifest=payload,
+            start_payload=payload,
         )
         return self._result(run_id)
 
-    def _commit_transition(
-        self,
-        *,
-        run_id: str,
-        expected_sequence: int,
-        event_type: str,
-        target: RunState,
-        idempotency_key: str,
-    ) -> int:
-        commit = self._uow.commit_domain_batch(
-            run_id=run_id,
-            expected_sequence=expected_sequence,
-            events=(NewEvent(event_type=event_type, payload={}),),
-            target_run_state=target,
-            idempotency_key=idempotency_key,
-        )
-        return commit.last_sequence
-
     def _control_run(self, command: RunCommand) -> RunResult:
         if command.command == "start":
-            self._commit_transition(
-                run_id=command.run_id,
+            self._supervisor.start_run(
+                command.run_id,
                 expected_sequence=command.expected_run_sequence,
-                event_type="RunStarted",
-                target=RunState.RUNNING,
-                idempotency_key=f"start:{command.run_id}",
             )
         elif command.command == "pause":
-            pausing_sequence = self._commit_transition(
-                run_id=command.run_id,
+            self._supervisor.pause_run(
+                command.run_id,
                 expected_sequence=command.expected_run_sequence,
-                event_type="RunPausing",
-                target=RunState.PAUSING,
-                idempotency_key=f"pause-request:{command.run_id}",
-            )
-            self._commit_transition(
-                run_id=command.run_id,
-                expected_sequence=pausing_sequence,
-                event_type="RunPaused",
-                target=RunState.PAUSED,
-                idempotency_key=f"pause-complete:{command.run_id}",
             )
         elif command.command == "resume":
-            self._commit_transition(
-                run_id=command.run_id,
+            self._supervisor.resume_run(
+                command.run_id,
                 expected_sequence=command.expected_run_sequence,
-                event_type="RunResumed",
-                target=RunState.RUNNING,
-                idempotency_key=f"resume:{command.run_id}",
             )
         elif command.command == "stop":
-            stopping = self._supervisor.request_normal_completion(
+            self._supervisor.stop_and_finalize_partial(
                 command.run_id,
                 expected_sequence=command.expected_run_sequence,
                 reason="scientist_stop",
             )
-            finalization_task_id = f"finalize:{command.run_id}"
-            self._uow.transition_task(finalization_task_id, "leased")
-            self._uow.transition_task(finalization_task_id, "running")
-            self._uow.transition_task(finalization_task_id, "result_received")
-            self._supervisor.apply_finalization(
-                command.run_id,
-                expected_sequence=stopping.last_sequence,
-                completeness="partial",
-            )
         elif command.command == "cancel":
-            self._supervisor.tick(
-                run_id=command.run_id,
+            self._supervisor.cancel_run(
+                command.run_id,
                 expected_sequence=command.expected_run_sequence,
-                convergence=ConvergenceSnapshot(
-                    epoch_id="cancel-not-applicable",
-                    anchor_set_id="cancel-not-applicable",
-                    elo_plateau=False,
-                    anchor_plateau=False,
-                    top_k_stable=False,
-                    cluster_diversity_plateau=False,
-                    minimum_budget_satisfied=False,
-                ),
-                scientist_action="hard_cancel",
             )
         return self._result(command.run_id)
 
@@ -286,9 +291,16 @@ def build_application_service(data_dir: Path) -> ApplicationService:
     """Compose the guarded local preview; provider selection never performs a call."""
 
     resolved_data_dir = data_dir.expanduser()
-    resolved_data_dir.mkdir(parents=True, exist_ok=True)
-    uow = SqliteUnitOfWork(f"sqlite:///{resolved_data_dir / 'co-scientist.db'}")
-    uow.create_schema()
+    try:
+        resolved_data_dir.mkdir(parents=True, exist_ok=True)
+        if not resolved_data_dir.is_dir():
+            raise NotADirectoryError(f"data directory is not a directory: {resolved_data_dir}")
+        uow = SqliteUnitOfWork(f"sqlite:///{resolved_data_dir / 'co-scientist.db'}")
+        uow.create_schema()
+    except OSError as error:
+        raise ApplicationFilesystemError(str(error)) from None
+    except SQLAlchemyError as error:
+        raise ApplicationConfigurationError(f"database initialization failed: {error}") from None
     supervisor = Supervisor(
         uow=uow,
         review_policy=ReviewPolicy(profile_id="core-preview"),

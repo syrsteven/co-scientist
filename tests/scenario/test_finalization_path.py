@@ -8,6 +8,7 @@ from co_scientist.domain.states import RunState
 from co_scientist.domain.tournament import EpochContractMismatch, TournamentEpoch
 from co_scientist.domain.transitions import InvalidTransition
 from co_scientist.events.models import NewEvent
+from co_scientist.ports.event_store import ConcurrencyConflict
 from co_scientist.supervisor.orchestrator import Supervisor
 
 
@@ -22,6 +23,12 @@ def _supervisor(tmp_path) -> Supervisor:
         target_run_state=RunState.RUNNING,
         idempotency_key="start:run-1",
     )
+    return Supervisor(uow=uow, review_policy=ReviewPolicy(profile_id="minimal"))
+
+
+def _empty_supervisor(tmp_path) -> Supervisor:
+    uow = SqliteUnitOfWork(f"sqlite:///{tmp_path / 'empty.db'}")
+    uow.create_schema()
     return Supervisor(uow=uow, review_policy=ReviewPolicy(profile_id="minimal"))
 
 
@@ -85,6 +92,85 @@ def _open_epoch(supervisor: Supervisor) -> int:
         idempotency_key="open:epoch-1",
     )
     return commit.last_sequence
+
+
+# Mutation caught: application/persistence callers creating then starting a Run separately.
+def test_supervisor_atomically_creates_and_starts_run(tmp_path) -> None:
+    supervisor = _empty_supervisor(tmp_path)
+
+    started = supervisor.create_and_start_run(
+        "run-new",
+        manifest={"provider": "replay"},
+        start_payload={"provider": "replay"},
+    )
+
+    assert started.last_sequence == 1
+    assert supervisor.uow.run_state("run-new") == "running"
+    assert [event.event_type for event in supervisor.uow.load("run-new")] == ["RunStarted"]
+
+
+# Mutation caught: fixed lifecycle keys replaying old pause/resume commits on later cycles.
+def test_supervisor_supports_repeated_pause_resume_cycles_and_rejects_stale_retry(
+    tmp_path,
+) -> None:
+    supervisor = _supervisor(tmp_path)
+
+    first_pause = supervisor.pause_run("run-1", expected_sequence=1)
+    with pytest.raises(ConcurrencyConflict, match="expected 1, got 3"):
+        supervisor.pause_run("run-1", expected_sequence=1)
+    first_resume = supervisor.resume_run(
+        "run-1", expected_sequence=first_pause.last_sequence
+    )
+    second_pause = supervisor.pause_run(
+        "run-1", expected_sequence=first_resume.last_sequence
+    )
+    second_resume = supervisor.resume_run(
+        "run-1", expected_sequence=second_pause.last_sequence
+    )
+
+    assert (
+        first_pause.last_sequence,
+        first_resume.last_sequence,
+        second_pause.last_sequence,
+        second_resume.last_sequence,
+    ) == (3, 4, 6, 7)
+    assert supervisor.uow.run_state("run-1") == "running"
+    assert [event.event_type for event in supervisor.uow.load("run-1")] == [
+        "RunStarted",
+        "RunPausing",
+        "RunPaused",
+        "RunResumed",
+        "RunPausing",
+        "RunPaused",
+        "RunResumed",
+    ]
+
+
+# Mutation caught: application code advancing the finalization Task outside Supervisor.
+def test_supervisor_core_preview_stop_owns_partial_finalization(tmp_path) -> None:
+    supervisor = _supervisor(tmp_path)
+
+    completed = supervisor.stop_and_finalize_partial(
+        "run-1", expected_sequence=1, reason="scientist_stop"
+    )
+
+    assert completed.last_sequence == 6
+    assert supervisor.uow.run_state("run-1") == "completed_partial"
+    assert supervisor.uow.task_state("finalize:run-1") == "succeeded"
+    assert [event.event_type for event in supervisor.uow.load("run-1")][-2:] == [
+        "FinalizationCompleted",
+        "RunCompletedPartial",
+    ]
+
+
+# Mutation caught: routing explicit cancel through application-owned state mutation.
+def test_supervisor_owns_explicit_cancel(tmp_path) -> None:
+    supervisor = _supervisor(tmp_path)
+
+    cancelled = supervisor.cancel_run("run-1", expected_sequence=1)
+
+    assert cancelled.last_sequence == 2
+    assert supervisor.uow.run_state("run-1") == "cancelled"
 
 
 # Mutation caught: persisting terminal events without the Run and finalization Task states.

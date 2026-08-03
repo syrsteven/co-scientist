@@ -316,6 +316,51 @@ class SqliteUnitOfWork:
                 )
             )
 
+    def create_started_run(
+        self,
+        run_id: str,
+        *,
+        manifest: dict[str, Any],
+        event: NewEvent,
+        idempotency_key: str,
+    ) -> CommitResult:
+        """Atomically create a Run and persist its validated start transition."""
+
+        if event.event_type != "RunStarted":
+            raise ValueError("started Run initialization requires RunStarted")
+        batch_fingerprint = self._batch_fingerprint(
+            events=(event,),
+            target_run_state=RunState.RUNNING,
+            task_mutations=(),
+            followup_tasks=(),
+            external_call_id=None,
+            cost_entries=(),
+        )
+        with self.session_factory.begin() as session:
+            self._begin_immediate(session)
+            session.add(
+                RunRow(
+                    run_id=run_id,
+                    state=RunState.CREATED.value,
+                    current_sequence=0,
+                    manifest_json=_json(manifest),
+                )
+            )
+            session.flush()
+            self._apply_run_transition(session, run_id, RunState.RUNNING)
+            persisted = self._insert_events(session, run_id, 0, (event,))
+            self._insert_idempotency_commit(
+                session,
+                run_id,
+                idempotency_key,
+                batch_fingerprint,
+                persisted[0].sequence,
+                persisted[-1].sequence,
+            )
+            self._set_run_sequence(session, run_id, persisted[-1].sequence, required=True)
+            session.flush()
+        return CommitResult(events=tuple(persisted), last_sequence=persisted[-1].sequence)
+
     @staticmethod
     def _task_row(task: NewTask) -> TaskRow:
         return TaskRow(
@@ -748,6 +793,7 @@ class SqliteUnitOfWork:
         idempotency_key: str,
         external_call_id: str | None = None,
         cost_entries: Sequence[CostEntry] = (),
+        _validate_sequence_before_replay: bool = False,
     ) -> CommitResult:
         if not events:
             raise ValueError("a domain batch must contain at least one event")
@@ -763,12 +809,15 @@ class SqliteUnitOfWork:
         with self.session_factory.begin() as session:
             self._begin_immediate(session)
             self._require_run(session, run_id)
+            if _validate_sequence_before_replay:
+                self._assert_sequence(session, run_id, expected_sequence)
             previous = self._load_idempotency_commit(
                 session, run_id, idempotency_key, batch_fingerprint
             )
             if previous is not None:
                 return previous
-            self._assert_sequence(session, run_id, expected_sequence)
+            if not _validate_sequence_before_replay:
+                self._assert_sequence(session, run_id, expected_sequence)
             self._apply_run_transition(session, run_id, run_target)
             persisted = self._insert_events(session, run_id, expected_sequence, events)
             self._apply_task_mutations(session, run_id, task_mutations)
@@ -790,3 +839,27 @@ class SqliteUnitOfWork:
             self._set_run_sequence(session, run_id, last_sequence, required=True)
             session.flush()
         return CommitResult(events=tuple(persisted), last_sequence=last_sequence)
+
+    def commit_lifecycle_batch(
+        self,
+        *,
+        run_id: str,
+        expected_sequence: int,
+        events: Sequence[NewEvent],
+        target_run_state: RunState | str | None = None,
+        task_mutations: Sequence[TaskMutation] = (),
+        followup_tasks: Sequence[NewTask] = (),
+        idempotency_key: str,
+    ) -> CommitResult:
+        """Commit lifecycle state only after validating the caller's current sequence."""
+
+        return self.commit_domain_batch(
+            run_id=run_id,
+            expected_sequence=expected_sequence,
+            events=events,
+            target_run_state=target_run_state,
+            task_mutations=task_mutations,
+            followup_tasks=followup_tasks,
+            idempotency_key=idempotency_key,
+            _validate_sequence_before_replay=True,
+        )

@@ -14,6 +14,7 @@ from co_scientist.domain.task import NewTask, TaskMutation
 from co_scientist.domain.transitions import InvalidTransition
 from co_scientist.events.models import NewEvent
 from co_scientist.ports.artifact_store import ArtifactRef
+from co_scientist.ports.event_store import ConcurrencyConflict
 
 
 def _store(tmp_path) -> SqliteUnitOfWork:
@@ -114,6 +115,70 @@ def _assert_replay_did_not_repeat_writes(store) -> None:
         ).scalar_one()
     assert counts == (2, 2, 1, 1)
     assert current_sequence == 2
+
+
+# Mutation caught: committing the Run row separately from its initial state/event batch.
+def test_started_run_initialization_is_one_atomic_commit(tmp_path) -> None:
+    store = _store(tmp_path)
+
+    committed = store.create_started_run(
+        "r-started",
+        manifest={"provider": "replay"},
+        event=NewEvent(event_type="RunStarted", payload={"provider": "replay"}),
+        idempotency_key="start:r-started:0",
+    )
+
+    assert committed.last_sequence == 1
+    assert store.run_state("r-started") == "running"
+    assert [event.event_type for event in store.load("r-started")] == ["RunStarted"]
+
+
+# Mutation caught: leaving an orphan created Run when initial event persistence fails.
+def test_started_run_initialization_rolls_back_row_on_failure(tmp_path, monkeypatch) -> None:
+    store = _store(tmp_path)
+
+    def fail_event_insert(*_args, **_kwargs):
+        raise RuntimeError("injected event failure")
+
+    monkeypatch.setattr(store, "_insert_events", fail_event_insert)
+
+    with pytest.raises(RuntimeError, match="injected event failure"):
+        store.create_started_run(
+            "r-orphan",
+            manifest={},
+            event=NewEvent(event_type="RunStarted", payload={}),
+            idempotency_key="start:r-orphan:0",
+        )
+
+    with pytest.raises(KeyError, match="unknown run"):
+        store.run_state("r-orphan")
+
+
+# Mutation caught: returning a prior lifecycle commit before checking a stale sequence.
+def test_lifecycle_batch_checks_sequence_before_idempotent_replay(tmp_path) -> None:
+    store = _store(tmp_path)
+    store.create_started_run(
+        "r-1",
+        manifest={},
+        event=NewEvent(event_type="RunStarted", payload={}),
+        idempotency_key="start:r-1:0",
+    )
+    store.commit_lifecycle_batch(
+        run_id="r-1",
+        expected_sequence=1,
+        events=[NewEvent(event_type="RunPausing", payload={})],
+        target_run_state=RunState.PAUSING,
+        idempotency_key="pause-request:r-1:1",
+    )
+
+    with pytest.raises(ConcurrencyConflict, match="expected 1, got 2"):
+        store.commit_lifecycle_batch(
+            run_id="r-1",
+            expected_sequence=1,
+            events=[NewEvent(event_type="RunPausing", payload={})],
+            target_run_state=RunState.PAUSING,
+            idempotency_key="pause-request:r-1:1",
+        )
 
 
 def test_exact_idempotency_replay_returns_prior_commit_for_stale_sequence(tmp_path) -> None:

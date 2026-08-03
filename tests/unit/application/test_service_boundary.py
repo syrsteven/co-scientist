@@ -1,6 +1,9 @@
 from pathlib import Path
 from types import SimpleNamespace
 
+import pytest
+from pydantic import ValidationError
+
 from co_scientist.application.commands import CreateRun
 from co_scientist.application.queries import GetRunStatus
 from co_scientist.application.service import ApplicationService
@@ -34,13 +37,22 @@ def test_service_sends_commands_to_supervisor_without_exposing_repository() -> N
             goal_file=Path("goal.yaml"),
             profile_file=Path("core.yaml"),
             provider="fake",
-            data_dir=Path(".co-scientist"),
         )
     )
 
     assert result.run_id == "r-1"
     assert fake_supervisor.received_commands == ["CreateRun"]
     assert not hasattr(service, "database")
+
+
+# Mutation caught: allowing storage-composition details into application commands.
+def test_create_run_rejects_command_level_data_directory() -> None:
+    with pytest.raises(ValidationError, match="data_dir"):
+        CreateRun(
+            goal_file=Path("goal.yaml"),
+            profile_file=Path("core.yaml"),
+            data_dir=Path("elsewhere"),
+        )
 
 
 # Mutation caught: sending reads through the mutation handler instead of the read-model port.

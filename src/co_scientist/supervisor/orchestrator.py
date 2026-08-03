@@ -578,7 +578,7 @@ class Supervisor:
             intent_type="finalize_run",
             payload={"reason": reason},
         )
-        return self.uow.commit_domain_batch(
+        return self.uow.commit_lifecycle_batch(
             run_id=run_id,
             expected_sequence=expected_sequence,
             events=(
@@ -591,7 +591,7 @@ class Supervisor:
             ),
             target_run_state=RunState.STOPPING,
             followup_tasks=(finalization_task,),
-            idempotency_key=f"stop:{run_id}",
+            idempotency_key=f"stop:{run_id}:{expected_sequence}",
         )
 
     def apply_finalization(
@@ -604,7 +604,7 @@ class Supervisor:
         """Record finalization before the corresponding normal terminal event."""
 
         terminal = "RunCompleted" if completeness == "complete" else "RunCompletedPartial"
-        return self.uow.commit_domain_batch(
+        return self.uow.commit_lifecycle_batch(
             run_id=run_id,
             expected_sequence=expected_sequence,
             events=(
@@ -620,7 +620,104 @@ class Supervisor:
                 else RunState.COMPLETED_PARTIAL
             ),
             task_mutations=(TaskMutation.succeed(f"finalize:{run_id}"),),
-            idempotency_key=f"finalization:{run_id}",
+            idempotency_key=f"finalization:{run_id}:{expected_sequence}",
+        )
+
+    def create_and_start_run(
+        self,
+        run_id: str,
+        *,
+        manifest: dict[str, Any],
+        start_payload: dict[str, Any],
+    ) -> CommitResult:
+        """Atomically create and start a Run under Supervisor authority."""
+
+        return self.uow.create_started_run(
+            run_id,
+            manifest=manifest,
+            event=NewEvent(event_type="RunStarted", payload=start_payload),
+            idempotency_key=f"start:{run_id}:0",
+        )
+
+    def start_run(self, run_id: str, *, expected_sequence: int) -> CommitResult:
+        """Start an existing created Run using strict lifecycle concurrency."""
+
+        return self.uow.commit_lifecycle_batch(
+            run_id=run_id,
+            expected_sequence=expected_sequence,
+            events=(NewEvent(event_type="RunStarted", payload={}),),
+            target_run_state=RunState.RUNNING,
+            idempotency_key=f"start:{run_id}:{expected_sequence}",
+        )
+
+    def pause_run(self, run_id: str, *, expected_sequence: int) -> CommitResult:
+        """Durably traverse running through pausing to paused."""
+
+        pausing = self.uow.commit_lifecycle_batch(
+            run_id=run_id,
+            expected_sequence=expected_sequence,
+            events=(NewEvent(event_type="RunPausing", payload={}),),
+            target_run_state=RunState.PAUSING,
+            idempotency_key=f"pause-request:{run_id}:{expected_sequence}",
+        )
+        return self.uow.commit_lifecycle_batch(
+            run_id=run_id,
+            expected_sequence=pausing.last_sequence,
+            events=(NewEvent(event_type="RunPaused", payload={}),),
+            target_run_state=RunState.PAUSED,
+            idempotency_key=f"pause-complete:{run_id}:{pausing.last_sequence}",
+        )
+
+    def resume_run(self, run_id: str, *, expected_sequence: int) -> CommitResult:
+        """Resume a paused Run using strict lifecycle concurrency."""
+
+        return self.uow.commit_lifecycle_batch(
+            run_id=run_id,
+            expected_sequence=expected_sequence,
+            events=(NewEvent(event_type="RunResumed", payload={}),),
+            target_run_state=RunState.RUNNING,
+            idempotency_key=f"resume:{run_id}:{expected_sequence}",
+        )
+
+    def cancel_run(
+        self,
+        run_id: str,
+        *,
+        expected_sequence: int,
+        reason: str = "scientist_cancel",
+    ) -> CommitResult:
+        """Cancel a Run using strict lifecycle concurrency."""
+
+        return self.uow.commit_lifecycle_batch(
+            run_id=run_id,
+            expected_sequence=expected_sequence,
+            events=(NewEvent(event_type="RunCancelled", payload={"reason": reason}),),
+            target_run_state=RunState.CANCELLED,
+            idempotency_key=f"cancel:{run_id}:{expected_sequence}",
+        )
+
+    def stop_and_finalize_partial(
+        self,
+        run_id: str,
+        *,
+        expected_sequence: int,
+        reason: str = "scientist_stop",
+    ) -> CommitResult:
+        """Synchronously finish the Core Preview's durable partial-finalization path."""
+
+        stopping = self.request_normal_completion(
+            run_id,
+            expected_sequence=expected_sequence,
+            reason=reason,
+        )
+        finalization_task_id = f"finalize:{run_id}"
+        self.uow.transition_task(finalization_task_id, TaskState.LEASED)
+        self.uow.transition_task(finalization_task_id, TaskState.RUNNING)
+        self.uow.transition_task(finalization_task_id, TaskState.RESULT_RECEIVED)
+        return self.apply_finalization(
+            run_id,
+            expected_sequence=stopping.last_sequence,
+            completeness="partial",
         )
 
     def tick(
@@ -647,12 +744,10 @@ class Supervisor:
             scientist_action=scientist_action,
         )
         if decision.action == "cancel":
-            commit = self.uow.commit_domain_batch(
-                run_id=run_id,
+            commit = self.cancel_run(
+                run_id,
                 expected_sequence=expected_sequence,
-                events=(NewEvent(event_type="RunCancelled", payload={"reason": decision.reason}),),
-                target_run_state=RunState.CANCELLED,
-                idempotency_key=f"cancel:{run_id}",
+                reason=decision.reason or "scientist_cancel",
             )
             return TickOutcome(decision=decision, commit=commit)
         if decision.action == "stop" and decision.reason != "quality_converged":

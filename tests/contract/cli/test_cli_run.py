@@ -7,7 +7,6 @@ from typer.testing import CliRunner
 
 from co_scientist.application.commands import CreateRun, ExportRun, RunCommand
 from co_scientist.application.queries import CheckConfig, GetRunStatus, ReplayRun
-from co_scientist.application.service import build_application_service
 from co_scientist.cli.app import app
 
 
@@ -89,7 +88,6 @@ def test_cli_start_constructs_typed_create_run(tmp_path: Path) -> None:
             goal_file=Path("examples/lens_regeneration_goal.yaml"),
             profile_file=Path("configs/profiles/core_preview.yaml"),
             provider="replay",
-            data_dir=tmp_path,
         )
     ]
 
@@ -186,47 +184,67 @@ def test_cli_openai_selection_only_builds_the_application_command(tmp_path: Path
     assert "run_id=" in result.stdout
 
 
-# Mutation caught: any command being a parse-only placeholder rather than durable behavior.
-def test_cli_full_surface_operates_on_one_durable_run(tmp_path: Path) -> None:
-    service = build_application_service(tmp_path)
-    started = service.execute(
-        CreateRun(
-            goal_file=Path("goal.yaml"),
-            profile_file=Path("profile.yaml"),
-            provider="replay",
-            data_dir=tmp_path,
-        )
+# Mutation caught: later invocations silently reopening the default data directory.
+def test_separate_cli_invocations_share_custom_data_dir_and_repeat_lifecycle(
+    tmp_path: Path,
+) -> None:
+    runner = CliRunner()
+    data_option = ["--data-dir", str(tmp_path)]
+    started = runner.invoke(
+        app,
+        [
+            "run",
+            "start",
+            "--goal",
+            "goal.yaml",
+            "--profile",
+            "profile.yaml",
+            "--provider",
+            "replay",
+            *data_option,
+        ],
     )
-    run_id = started.run_id
+    assert started.exit_code == 0, started.output
+    run_id = started.stdout.split()[0].split("=", 1)[1]
 
-    checked = _invoke(service, ["config", "check"])
-    status = _invoke(service, ["run", "status", run_id])
-    stale_pause = _invoke(
-        service,
-        ["run", "pause", run_id, "--expected-sequence", "0"],
+    checked = runner.invoke(app, ["config", "check", *data_option])
+    status = runner.invoke(app, ["run", "status", run_id, *data_option])
+    first_pause = runner.invoke(
+        app, ["run", "pause", run_id, "--expected-sequence", "1", *data_option]
     )
-    paused = _invoke(
-        service,
-        ["run", "pause", run_id, "--expected-sequence", str(started.current_sequence)],
+    stale_pause = runner.invoke(
+        app, ["run", "pause", run_id, "--expected-sequence", "1", *data_option]
     )
-    stale_resume = _invoke(
-        service,
-        ["run", "resume", run_id, "--expected-sequence", "1"],
+    first_resume = runner.invoke(
+        app, ["run", "resume", run_id, "--expected-sequence", "3", *data_option]
     )
-    resumed = _invoke(service, ["run", "resume", run_id, "--expected-sequence", "3"])
+    second_pause = runner.invoke(
+        app, ["run", "pause", run_id, "--expected-sequence", "4", *data_option]
+    )
+    second_resume = runner.invoke(
+        app, ["run", "resume", run_id, "--expected-sequence", "6", *data_option]
+    )
     output = tmp_path / "exports" / "run.json"
-    exported = _invoke(service, ["run", "export", run_id, "--output", str(output)])
-    replayed = _invoke(service, ["replay", run_id])
+    exported = runner.invoke(
+        app, ["run", "export", run_id, "--output", str(output), *data_option]
+    )
+    replayed = runner.invoke(app, ["replay", run_id, *data_option])
 
     assert checked.exit_code == 0, checked.output
+    assert f"data_dir={tmp_path}" in checked.stdout
+    assert "schema=ready" in checked.stdout
     assert status.exit_code == 0, status.output
     assert f"run_id={run_id} state=running sequence=1" in status.stdout
-    assert stale_pause.exit_code != 0
-    assert paused.exit_code == 0, paused.output
-    assert "state=paused sequence=3" in paused.stdout
-    assert stale_resume.exit_code != 0
-    assert resumed.exit_code == 0, resumed.output
-    assert "state=running sequence=4" in resumed.stdout
+    assert first_pause.exit_code == 0, first_pause.output
+    assert "state=paused sequence=3" in first_pause.stdout
+    assert stale_pause.exit_code == 4
+    assert "concurrency conflict: expected 1, got 3" in stale_pause.stderr
+    assert first_resume.exit_code == 0, first_resume.output
+    assert "state=running sequence=4" in first_resume.stdout
+    assert second_pause.exit_code == 0, second_pause.output
+    assert "state=paused sequence=6" in second_pause.stdout
+    assert second_resume.exit_code == 0, second_resume.output
+    assert "state=running sequence=7" in second_resume.stdout
     assert exported.exit_code == 0, exported.output
     snapshot = json.loads(output.read_text(encoding="utf-8"))
     assert snapshot["state_history"] == [
@@ -235,6 +253,110 @@ def test_cli_full_surface_operates_on_one_durable_run(tmp_path: Path) -> None:
         "pausing",
         "paused",
         "running",
+        "pausing",
+        "paused",
+        "running",
     ]
     assert replayed.exit_code == 0, replayed.output
     assert json.loads(replayed.stdout) == snapshot
+
+
+# Mutation caught: config check reporting success without validating selected storage/schema.
+def test_cli_config_check_reports_filesystem_failure(tmp_path: Path) -> None:
+    invalid_data_dir = tmp_path / "not-a-directory"
+    invalid_data_dir.write_text("occupied", encoding="utf-8")
+
+    result = CliRunner().invoke(
+        app, ["config", "check", "--data-dir", str(invalid_data_dir)]
+    )
+
+    assert result.exit_code == 6
+    assert "filesystem error:" in result.stderr
+    assert str(invalid_data_dir) in result.stderr
+
+
+# Mutation caught: corrupt database configuration leaking a SQLAlchemy traceback.
+def test_cli_config_check_reports_database_configuration_failure(tmp_path: Path) -> None:
+    (tmp_path / "co-scientist.db").write_bytes(b"not a sqlite database")
+
+    result = CliRunner().invoke(
+        app, ["config", "check", "--data-dir", str(tmp_path)]
+    )
+
+    assert result.exit_code == 2
+    assert "configuration error: database initialization failed:" in result.stderr
+    assert "Traceback" not in result.stderr
+
+
+# Mutation caught: expected application failures leaking tracebacks or unstable exit codes.
+def test_cli_maps_not_found_and_invalid_transition_errors(tmp_path: Path) -> None:
+    runner = CliRunner()
+    data_option = ["--data-dir", str(tmp_path)]
+    missing = runner.invoke(app, ["run", "status", "missing", *data_option])
+    started = runner.invoke(
+        app,
+        [
+            "run",
+            "start",
+            "--goal",
+            "goal.yaml",
+            "--profile",
+            "profile.yaml",
+            *data_option,
+        ],
+    )
+    run_id = started.stdout.split()[0].split("=", 1)[1]
+    invalid = runner.invoke(
+        app, ["run", "resume", run_id, "--expected-sequence", "1", *data_option]
+    )
+
+    assert missing.exit_code == 3
+    assert "not found: unknown run: missing" in missing.stderr
+    assert invalid.exit_code == 5
+    assert "invalid request: running -> running" in invalid.stderr
+    assert "Traceback" not in missing.stderr + invalid.stderr
+
+
+# Mutation caught: export filesystem errors escaping the stable CLI boundary.
+def test_cli_maps_export_filesystem_error(tmp_path: Path) -> None:
+    runner = CliRunner()
+    data_option = ["--data-dir", str(tmp_path)]
+    started = runner.invoke(
+        app,
+        [
+            "run",
+            "start",
+            "--goal",
+            "goal.yaml",
+            "--profile",
+            "profile.yaml",
+            *data_option,
+        ],
+    )
+    run_id = started.stdout.split()[0].split("=", 1)[1]
+
+    result = runner.invoke(
+        app, ["run", "export", run_id, "--output", str(tmp_path), *data_option]
+    )
+
+    assert result.exit_code == 6
+    assert "filesystem error:" in result.stderr
+
+
+# Mutation caught: input validation returning an unstable generic application failure.
+def test_cli_validation_error_has_stable_usage_exit_and_message(tmp_path: Path) -> None:
+    result = CliRunner().invoke(
+        app,
+        [
+            "run",
+            "pause",
+            "run-1",
+            "--expected-sequence",
+            "-1",
+            "--data-dir",
+            str(tmp_path),
+        ],
+    )
+
+    assert result.exit_code == 2
+    assert "Invalid value for '--expected-sequence'" in result.stderr

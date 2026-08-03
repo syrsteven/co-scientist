@@ -9,12 +9,11 @@ from pydantic import BaseModel, ConfigDict, Field
 class CreateRun(BaseModel):
     """Create and start one developer-preview run without invoking a provider."""
 
-    model_config = ConfigDict(frozen=True)
+    model_config = ConfigDict(frozen=True, extra="forbid")
 
     goal_file: Path
     profile_file: Path
     provider: Literal["fake", "replay", "openai"] = "fake"
-    data_dir: Path = Path(".co-scientist")
 
 
 class RunCommand(BaseModel):

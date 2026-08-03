@@ -3,14 +3,19 @@
 from __future__ import annotations
 
 import json
+from collections.abc import Callable
 from pathlib import Path
-from typing import Annotated, Any, Literal, cast
+from typing import Annotated, Any, Literal, TypeVar, cast
 
 import typer
 
 from co_scientist.application.commands import CreateRun, ExportRun, RunCommand
 from co_scientist.application.queries import CheckConfig, GetRunStatus, ReplayRun
-from co_scientist.application.service import ApplicationService, build_application_service
+from co_scientist.application.service import (
+    ApplicationError,
+    ApplicationService,
+    build_application_service,
+)
 
 app = typer.Typer(no_args_is_help=True)
 config_app = typer.Typer(no_args_is_help=True)
@@ -19,12 +24,13 @@ app.add_typer(config_app, name="config")
 app.add_typer(run_app, name="run")
 
 _DEFAULT_DATA_DIR = Path(".co-scientist")
+_ResultT = TypeVar("_ResultT")
 
 
-def _service(context: typer.Context, *, data_dir: Path | None = None) -> ApplicationService:
+def _service(context: typer.Context, *, data_dir: Path) -> ApplicationService:
     if context.obj is not None:
         return cast(ApplicationService, context.obj)
-    service = build_application_service(data_dir or _DEFAULT_DATA_DIR)
+    service = build_application_service(data_dir)
     context.obj = service
     return service
 
@@ -35,14 +41,27 @@ def _value(result: object, name: str) -> Any:
     return getattr(result, name)
 
 
-@config_app.command("check")
-def config_check(context: typer.Context) -> None:
-    """Check the composed local configuration and storage boundary."""
+def _application_call(operation: Callable[[], _ResultT]) -> _ResultT:
+    try:
+        return operation()
+    except ApplicationError as error:
+        typer.echo(f"{error.category}: {error}", err=True)
+        raise typer.Exit(code=error.exit_code) from None
 
-    result = _service(context).query(CheckConfig())
+
+@config_app.command("check")
+def config_check(
+    context: typer.Context,
+    data_dir: Annotated[
+        Path, typer.Option("--data-dir", envvar="CO_SCIENTIST_DATA_DIR")
+    ] = _DEFAULT_DATA_DIR,
+) -> None:
+    """Check the selected local storage and schema readiness."""
+
+    result = _application_call(
+        lambda: _service(context, data_dir=data_dir).query(CheckConfig())
+    )
     typer.echo(_value(result, "message"))
-    if not _value(result, "ok"):
-        raise typer.Exit(code=1)
 
 
 @run_app.command("start")
@@ -53,16 +72,15 @@ def run_start(
     provider: Annotated[
         Literal["fake", "replay", "openai"], typer.Option("--provider")
     ] = "fake",
-    data_dir: Annotated[Path, typer.Option("--data-dir")] = _DEFAULT_DATA_DIR,
+    data_dir: Annotated[
+        Path, typer.Option("--data-dir", envvar="CO_SCIENTIST_DATA_DIR")
+    ] = _DEFAULT_DATA_DIR,
 ) -> None:
     """Create and start a preview run without implicitly calling a provider."""
 
-    result = _service(context, data_dir=data_dir).execute(
-        CreateRun(
-            goal_file=goal,
-            profile_file=profile,
-            provider=provider,
-            data_dir=data_dir,
+    result = _application_call(
+        lambda: _service(context, data_dir=data_dir).execute(
+            CreateRun(goal_file=goal, profile_file=profile, provider=provider)
         )
     )
     typer.echo(
@@ -72,10 +90,18 @@ def run_start(
 
 
 @run_app.command("status")
-def run_status(context: typer.Context, run_id: str) -> None:
+def run_status(
+    context: typer.Context,
+    run_id: str,
+    data_dir: Annotated[
+        Path, typer.Option("--data-dir", envvar="CO_SCIENTIST_DATA_DIR")
+    ] = _DEFAULT_DATA_DIR,
+) -> None:
     """Show a run's current read projection."""
 
-    result = _service(context).query(GetRunStatus(run_id=run_id))
+    result = _application_call(
+        lambda: _service(context, data_dir=data_dir).query(GetRunStatus(run_id=run_id))
+    )
     typer.echo(
         f"run_id={_value(result, 'run_id')} state={_value(result, 'state')} "
         f"sequence={_value(result, 'current_sequence')}"
@@ -88,12 +114,15 @@ def _execute_run_command(
     run_id: str,
     expected_sequence: int,
     command: Literal["pause", "resume", "stop", "cancel"],
+    data_dir: Path,
 ) -> None:
-    result = _service(context).execute(
-        RunCommand(
-            run_id=run_id,
-            expected_run_sequence=expected_sequence,
-            command=command,
+    result = _application_call(
+        lambda: _service(context, data_dir=data_dir).execute(
+            RunCommand(
+                run_id=run_id,
+                expected_run_sequence=expected_sequence,
+                command=command,
+            )
         )
     )
     typer.echo(
@@ -107,6 +136,9 @@ def run_pause(
     context: typer.Context,
     run_id: str,
     expected_sequence: Annotated[int, typer.Option("--expected-sequence", min=0)],
+    data_dir: Annotated[
+        Path, typer.Option("--data-dir", envvar="CO_SCIENTIST_DATA_DIR")
+    ] = _DEFAULT_DATA_DIR,
 ) -> None:
     """Pause a run using optimistic concurrency."""
 
@@ -115,6 +147,7 @@ def run_pause(
         run_id=run_id,
         expected_sequence=expected_sequence,
         command="pause",
+        data_dir=data_dir,
     )
 
 
@@ -123,6 +156,9 @@ def run_resume(
     context: typer.Context,
     run_id: str,
     expected_sequence: Annotated[int, typer.Option("--expected-sequence", min=0)],
+    data_dir: Annotated[
+        Path, typer.Option("--data-dir", envvar="CO_SCIENTIST_DATA_DIR")
+    ] = _DEFAULT_DATA_DIR,
 ) -> None:
     """Resume a paused run using optimistic concurrency."""
 
@@ -131,6 +167,7 @@ def run_resume(
         run_id=run_id,
         expected_sequence=expected_sequence,
         command="resume",
+        data_dir=data_dir,
     )
 
 
@@ -139,6 +176,9 @@ def run_stop(
     context: typer.Context,
     run_id: str,
     expected_sequence: Annotated[int, typer.Option("--expected-sequence", min=0)],
+    data_dir: Annotated[
+        Path, typer.Option("--data-dir", envvar="CO_SCIENTIST_DATA_DIR")
+    ] = _DEFAULT_DATA_DIR,
 ) -> None:
     """Soft-stop and finalize a run as completed_partial."""
 
@@ -147,6 +187,7 @@ def run_stop(
         run_id=run_id,
         expected_sequence=expected_sequence,
         command="stop",
+        data_dir=data_dir,
     )
 
 
@@ -155,6 +196,9 @@ def run_cancel(
     context: typer.Context,
     run_id: str,
     expected_sequence: Annotated[int, typer.Option("--expected-sequence", min=0)],
+    data_dir: Annotated[
+        Path, typer.Option("--data-dir", envvar="CO_SCIENTIST_DATA_DIR")
+    ] = _DEFAULT_DATA_DIR,
 ) -> None:
     """Hard-cancel a run using optimistic concurrency."""
 
@@ -163,6 +207,7 @@ def run_cancel(
         run_id=run_id,
         expected_sequence=expected_sequence,
         command="cancel",
+        data_dir=data_dir,
     )
 
 
@@ -171,18 +216,33 @@ def run_export(
     context: typer.Context,
     run_id: str,
     output: Annotated[Path, typer.Option("--output")],
+    data_dir: Annotated[
+        Path, typer.Option("--data-dir", envvar="CO_SCIENTIST_DATA_DIR")
+    ] = _DEFAULT_DATA_DIR,
 ) -> None:
     """Export a deterministic run snapshot."""
 
-    result = _service(context).execute(ExportRun(run_id=run_id, output=output))
+    result = _application_call(
+        lambda: _service(context, data_dir=data_dir).execute(
+            ExportRun(run_id=run_id, output=output)
+        )
+    )
     typer.echo(f"output={_value(result, 'output')}")
 
 
 @app.command("replay")
-def replay(context: typer.Context, run_id: str) -> None:
+def replay(
+    context: typer.Context,
+    run_id: str,
+    data_dir: Annotated[
+        Path, typer.Option("--data-dir", envvar="CO_SCIENTIST_DATA_DIR")
+    ] = _DEFAULT_DATA_DIR,
+) -> None:
     """Reconstruct and print a run from durable events."""
 
-    result = _service(context).query(ReplayRun(run_id=run_id))
+    result = _application_call(
+        lambda: _service(context, data_dir=data_dir).query(ReplayRun(run_id=run_id))
+    )
     typer.echo(json.dumps(result, ensure_ascii=False, sort_keys=True))
 
 
