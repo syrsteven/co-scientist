@@ -1,0 +1,27 @@
+profile_id: core_preview
+review_policy:
+  required_before_admission: [initial_review, full_review]
+  trigger_rules:
+    deep_verification: [critical_assumption_low_confidence]
+    observation_review: [scientist_request]
+    simulation_review: [high_rank_low_testability]
+    recurrent_review: [needs_tiebreaker]
+literature_novelty_required: true
+tournament:
+  initial_rating: 1200
+  k_factor: 32
+  match_mode: research
+  anchor_count: 2
+stop:
+  minimum_matches: 6
+  require_anchor_plateau: true
+  require_top_k_stability: true
+  require_cluster_diversity_plateau: true
+budget:
+  max_usd: null
+  max_model_calls: 40
+  max_hypotheses: 6
+  max_matches: 12
+providers:
+  llm: replay
+  literature: replay_pubmed

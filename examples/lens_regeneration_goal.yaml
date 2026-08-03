@@ -1,0 +1,16 @@
+title: Mechanistic determinants of transparent versus fibrotic lens regeneration after minimally invasive lens surgery
+goal: >
+  Develop and rank mechanistically explicit, falsifiable hypotheses explaining
+  how surgical configuration, host age, early postoperative cell state,
+  tissue organization, and morphogenesis determine transparent versus fibrotic
+  lens regeneration.
+required_causal_chain:
+  - surgical_configuration
+  - host_age_or_development
+  - early_postoperative_cell_state
+  - tissue_organization_and_morphogenesis
+  - final_morphology_and_transparency
+required_outputs:
+  - earliest_causal_determinant
+  - falsifiers
+  - discriminating_experiments
