@@ -93,6 +93,7 @@ _EXPECTED_APPLICATION_ERRORS = (
     InvalidTransition,
     ValidationError,
     ValueError,
+    SQLAlchemyError,
 )
 
 
@@ -105,6 +106,8 @@ def _translate_expected_error(error: Exception) -> ApplicationError:
         return ApplicationConcurrencyError(str(error))
     if isinstance(error, OSError):
         return ApplicationFilesystemError(str(error))
+    if isinstance(error, SQLAlchemyError):
+        return ApplicationConfigurationError("database operation failed")
     if isinstance(error, InvalidTransition | ValidationError | ValueError):
         return ApplicationInvalidRequestError(str(error))
     raise error
@@ -299,8 +302,8 @@ def build_application_service(data_dir: Path) -> ApplicationService:
         uow.create_schema()
     except OSError as error:
         raise ApplicationFilesystemError(str(error)) from None
-    except SQLAlchemyError as error:
-        raise ApplicationConfigurationError(f"database initialization failed: {error}") from None
+    except SQLAlchemyError:
+        raise ApplicationConfigurationError("database initialization failed") from None
     supervisor = Supervisor(
         uow=uow,
         review_policy=ReviewPolicy(profile_id="core-preview"),

@@ -3,10 +3,12 @@ from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
+from sqlalchemy.exc import OperationalError
 from typer.testing import CliRunner
 
 from co_scientist.application.commands import CreateRun, ExportRun, RunCommand
 from co_scientist.application.queries import CheckConfig, GetRunStatus, ReplayRun
+from co_scientist.application.service import ApplicationService
 from co_scientist.cli.app import app
 
 
@@ -35,6 +37,24 @@ class RecordingService:
         if isinstance(query, ReplayRun):
             return {"run_id": query.run_id, "state_history": ["created", "running"]}
         return {"run_id": "r-1", "state": "running", "current_sequence": 7}
+
+
+def _database_failure() -> OperationalError:
+    return OperationalError(
+        "SELECT * FROM runs WHERE credential = ?",
+        {"credential": "secret-token"},
+        RuntimeError("connection dropped"),
+    )
+
+
+class FailingSupervisor:
+    def handle_command(self, _command: object) -> object:
+        raise _database_failure()
+
+
+class FailingReadModel:
+    def execute(self, _query: object) -> object:
+        raise _database_failure()
 
 
 def _invoke(service: RecordingService, args: list[str]):
@@ -284,7 +304,7 @@ def test_cli_config_check_reports_database_configuration_failure(tmp_path: Path)
     )
 
     assert result.exit_code == 2
-    assert "configuration error: database initialization failed:" in result.stderr
+    assert result.stderr == "configuration error: database initialization failed\n"
     assert "Traceback" not in result.stderr
 
 
@@ -360,3 +380,39 @@ def test_cli_validation_error_has_stable_usage_exit_and_message(tmp_path: Path) 
 
     assert result.exit_code == 2
     assert "Invalid value for '--expected-sequence'" in result.stderr
+
+
+# Mutation caught: post-composition query database failures escaping ApplicationService.
+def test_cli_sanitizes_post_composition_query_database_failure() -> None:
+    service = ApplicationService(
+        supervisor=RecordingService(),
+        read_model=FailingReadModel(),
+    )
+
+    result = CliRunner().invoke(app, ["run", "status", "r-1"], obj=service)
+
+    assert result.exit_code == 2
+    assert result.stderr == "configuration error: database operation failed\n"
+    assert "SELECT" not in result.stderr
+    assert "secret-token" not in result.stderr
+    assert "Traceback" not in result.stderr
+
+
+# Mutation caught: lifecycle database failures bypassing the stable CLI error boundary.
+def test_cli_sanitizes_post_composition_lifecycle_database_failure() -> None:
+    service = ApplicationService(
+        supervisor=FailingSupervisor(),
+        read_model=RecordingService(),
+    )
+
+    result = CliRunner().invoke(
+        app,
+        ["run", "pause", "r-1", "--expected-sequence", "1"],
+        obj=service,
+    )
+
+    assert result.exit_code == 2
+    assert result.stderr == "configuration error: database operation failed\n"
+    assert "SELECT" not in result.stderr
+    assert "secret-token" not in result.stderr
+    assert "Traceback" not in result.stderr
