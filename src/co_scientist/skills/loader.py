@@ -1,6 +1,8 @@
 """Load and validate project runtime skill manifests."""
 
+from collections.abc import Mapping
 from pathlib import Path
+from types import MappingProxyType
 from typing import Literal
 
 import yaml  # type: ignore[import-untyped]
@@ -10,7 +12,7 @@ from pydantic import BaseModel, ConfigDict
 class SkillManifest(BaseModel):
     """Immutable capability boundary for one worker skill."""
 
-    model_config = ConfigDict(frozen=True)
+    model_config = ConfigDict(frozen=True, extra="forbid")
 
     id: str
     agent_type: Literal[
@@ -29,12 +31,81 @@ class SkillManifest(BaseModel):
     allowed_capabilities: tuple[Literal["return_agent_result"], ...]
 
 
+CORE_SKILL_CONTRACTS: Mapping[str, SkillManifest] = MappingProxyType(
+    {
+        "generation": SkillManifest(
+            id="generation",
+            agent_type="generation",
+            version="0.1.0",
+            prompt_path="prompts/system.md",
+            input_schema="GenerationInputV1",
+            output_schema="GenerationResultV1",
+            allowed_tools=(),
+            allowed_capabilities=("return_agent_result",),
+        ),
+        "reflection": SkillManifest(
+            id="reflection",
+            agent_type="reflection",
+            version="0.1.0",
+            prompt_path="prompts/system.md",
+            input_schema="ReflectionInputV1",
+            output_schema="ReflectionResultV1",
+            allowed_tools=("literature_search",),
+            allowed_capabilities=("return_agent_result",),
+        ),
+        "ranking": SkillManifest(
+            id="ranking",
+            agent_type="ranking",
+            version="0.1.0",
+            prompt_path="prompts/system.md",
+            input_schema="RankingInputV1",
+            output_schema="RankingResultV1",
+            allowed_tools=(),
+            allowed_capabilities=("return_agent_result",),
+        ),
+        "proximity": SkillManifest(
+            id="proximity",
+            agent_type="proximity",
+            version="0.1.0",
+            prompt_path="prompts/system.md",
+            input_schema="ProximityInputV1",
+            output_schema="ProximityResultV1",
+            allowed_tools=(),
+            allowed_capabilities=("return_agent_result",),
+        ),
+        "evolution": SkillManifest(
+            id="evolution",
+            agent_type="evolution",
+            version="0.1.0",
+            prompt_path="prompts/system.md",
+            input_schema="EvolutionInputV1",
+            output_schema="EvolutionResultV1",
+            allowed_tools=(),
+            allowed_capabilities=("return_agent_result",),
+        ),
+        "meta_review": SkillManifest(
+            id="meta_review",
+            agent_type="meta_review",
+            version="0.1.0",
+            prompt_path="prompts/system.md",
+            input_schema="MetaReviewInputV1",
+            output_schema="MetaReviewResultV1",
+            allowed_tools=(),
+            allowed_capabilities=("return_agent_result",),
+        ),
+    }
+)
+
+
 def load_skill(directory: Path) -> SkillManifest:
     """Load a skill and fail closed when its prompt or authority is invalid."""
 
     manifest = SkillManifest.model_validate(
         yaml.safe_load((directory / "manifest.yaml").read_text(encoding="utf-8"))
     )
+    expected = CORE_SKILL_CONTRACTS.get(directory.name)
+    if expected is None or manifest != expected:
+        raise ValueError("skill manifest does not match the canonical Core Preview contract")
     prompt = directory / manifest.prompt_path
     if not prompt.is_file():
         raise FileNotFoundError(prompt)

@@ -14,7 +14,7 @@ from co_scientist.adapters.llm.replay import ReplayLLMProvider, ReplayMiss
 from co_scientist.adapters.persistence.sqlite import SqliteUnitOfWork
 from co_scientist.agents.executor import SkillExecutor
 from co_scientist.agents.result import AgentExecutionContext
-from co_scientist.domain.review import ReviewPolicy, ReviewStage
+from co_scientist.domain.review import ReviewPolicy, ReviewStage, required_review_stages
 from co_scientist.domain.states import RunState, TaskState
 from co_scientist.domain.task import NewTask
 from co_scientist.domain.tournament import TournamentEpoch
@@ -236,9 +236,8 @@ class _CoreHarness:
         self.root = root
 
     @staticmethod
-    def _enrich_payloads(responses: list[dict]) -> tuple[list[dict], dict[str, str]]:
+    def _enrich_payloads(responses: list[dict]) -> list[dict]:
         payloads: list[dict] = []
-        content_hashes: dict[str, str] = {}
         for index, response in enumerate(responses):
             payload = copy.deepcopy(response["payload"])
             if response["skill"] == "generation":
@@ -246,7 +245,6 @@ class _CoreHarness:
                     hypothesis_id = f"h-{hypothesis_index}"
                     hypothesis["hypothesis_id"] = hypothesis_id
                     hypothesis["content_hash"] = _content_hash(hypothesis)
-                    content_hashes[hypothesis_id] = hypothesis["content_hash"]
             elif response["skill"] == "reflection":
                 payload.update(
                     {
@@ -263,9 +261,8 @@ class _CoreHarness:
                     }
                 )
                 payload["content_hash"] = _content_hash(payload)
-                content_hashes["h-3"] = payload["content_hash"]
             payloads.append(payload)
-        return payloads, content_hashes
+        return payloads
 
     @staticmethod
     def _task_id(index: int, response: dict) -> str:
@@ -274,24 +271,10 @@ class _CoreHarness:
         return f"scenario:{response['skill']}:{index}"
 
     @staticmethod
-    def _persisted_tasks(uow: SqliteUnitOfWork) -> tuple[NewTask, ...]:
+    def _persisted_task_ids(uow: SqliteUnitOfWork) -> set[str]:
         with uow.engine.connect() as connection:
-            rows = connection.execute(
-                text(
-                    "SELECT task_id, run_id, idempotency_key, intent_type, payload_json "
-                    "FROM tasks ORDER BY rowid"
-                )
-            ).all()
-        return tuple(
-            NewTask(
-                task_id=row.task_id,
-                run_id=row.run_id,
-                idempotency_key=row.idempotency_key,
-                intent_type=row.intent_type,
-                payload=json.loads(row.payload_json),
-            )
-            for row in rows
-        )
+            rows = connection.execute(text("SELECT task_id FROM tasks")).all()
+        return {row.task_id for row in rows}
 
     def run_trace(self, trace_path: str) -> SimpleNamespace:
         return asyncio.run(self._run_trace(Path(trace_path)))
@@ -301,7 +284,7 @@ class _CoreHarness:
         if trace["trace_version"] != 1:
             raise ValueError("unsupported core trace version")
         responses = trace["responses"]
-        payloads, content_hashes = self._enrich_payloads(responses)
+        payloads = self._enrich_payloads(responses)
 
         uow = SqliteUnitOfWork(f"sqlite:///{self.root / 'core-loop.db'}")
         uow.create_schema()
@@ -357,17 +340,19 @@ class _CoreHarness:
             try:
                 uow.task_state(task_id)
             except KeyError:
-                uow.enqueue_tasks(
-                    [
-                        NewTask(
-                            task_id=task_id,
-                            run_id="run-1",
-                            idempotency_key=task_id,
-                            intent_type=f"run_{response['skill']}",
-                            payload={key: value for key, value in response.items() if key != "payload"},
-                        )
-                    ]
+                scheduled = supervisor.enqueue_task(
+                    task=NewTask(
+                        task_id=task_id,
+                        run_id="run-1",
+                        idempotency_key=task_id,
+                        intent_type=f"run_{response['skill']}",
+                        payload={
+                            key: value for key, value in response.items() if key != "payload"
+                        },
+                    ),
+                    expected_sequence=expected_sequence,
                 )
+                expected_sequence = scheduled.last_sequence
             uow.transition_task(task_id, TaskState.LEASED)
             uow.transition_task(task_id, TaskState.RUNNING)
             inputs = {
@@ -399,32 +384,74 @@ class _CoreHarness:
             )
             expected_sequence = committed.last_sequence
 
-        child_admission = trace["child_admission"]
         events = uow.load("run-1")
-        completed_stages = {
-            event.payload["stage"]
+        child_events = [
+            event
+            for event in events
+            if event.event_type == "HypothesisContentCreated"
+            and event.payload.get("parent_content_ids")
+        ]
+        if len(child_events) != 1:
+            raise ValueError("expected exactly one committed Evolution child")
+        child_payload = child_events[0].payload
+        child_id = child_payload.get("hypothesis_id")
+        child_content_hash = child_payload.get("content_hash")
+        if child_id is None or child_content_hash is None:
+            raise ValueError("committed Evolution child identity is incomplete")
+        if not isinstance(child_id, str) or not isinstance(child_content_hash, str):
+            raise TypeError("committed Evolution child identity must be strings")
+        child_reviews = [
+            event
             for event in events
             if event.event_type == "ReviewCompleted"
-            and event.payload.get("hypothesis_id") == child_admission["hypothesis_id"]
+            and event.payload.get("hypothesis_id") == child_id
+        ]
+        completed_stages = {
+            event.payload["stage"]
+            for event in child_reviews
         }
-        proximity_complete = any(
-            event.event_type == "ProximityAssessed"
-            and child_admission["hypothesis_id"]
-            in {event.payload.get("left_id"), event.payload.get("right_id")}
+        safety_verdicts = [
+            event.payload["safety_passed"]
+            for event in child_reviews
+            if "safety_passed" in event.payload
+        ]
+        if len(safety_verdicts) != 1 or not isinstance(safety_verdicts[0], bool):
+            raise ValueError("committed Reflection safety_passed verdict is required")
+        child_proximity = [
+            event
             for event in events
-        )
+            if event.event_type == "ProximityAssessed"
+            and child_id
+            in {event.payload.get("left_id"), event.payload.get("right_id")}
+        ]
+        if len(child_proximity) != 1:
+            raise ValueError("exactly one committed child Proximity result is required")
+        duplicate_likelihood = child_proximity[0].payload.get("duplicate_likelihood")
+        threshold = trace["policy"].get("duplicate_likelihood_threshold")
+        if duplicate_likelihood is None:
+            raise ValueError("committed Proximity duplicate_likelihood is required")
+        if (
+            isinstance(duplicate_likelihood, bool)
+            or not isinstance(duplicate_likelihood, int | float)
+        ):
+            raise TypeError("committed Proximity duplicate_likelihood must be numeric")
+        if threshold is None:
+            raise ValueError("duplicate_likelihood_threshold policy is required")
+        if isinstance(threshold, bool) or not isinstance(threshold, int | float):
+            raise TypeError("duplicate_likelihood_threshold policy must be numeric")
+        duplicate = duplicate_likelihood >= threshold
         admission = supervisor.admit_hypothesis(
             run_id="run-1",
             expected_sequence=expected_sequence,
-            hypothesis_id=child_admission["hypothesis_id"],
-            content_hash=content_hashes[child_admission["hypothesis_id"]],
-            safety_passed=child_admission["safety_passed"],
-            required_stages=set(child_admission["required_stages"]),
+            hypothesis_id=child_id,
+            content_hash=child_content_hash,
+            safety_passed=safety_verdicts[0],
+            required_stages=required_review_stages(supervisor.review_policy),
             completed_stages=completed_stages,
-            novelty_required=child_admission["novelty_required"],
+            novelty_required=trace["policy"]["novelty_required"],
             novelty_assessment=None,
-            proximity_complete=proximity_complete,
-            duplicate=child_admission["duplicate"],
+            proximity_complete=True,
+            duplicate=duplicate,
         )
         if admission.entry is None or admission.commit is None:
             raise AssertionError(f"child admission failed: {admission.decision}")
@@ -444,10 +471,14 @@ class _CoreHarness:
             completeness="complete",
         )
         state_history.append(uow.run_state("run-1"))
+        committed_events = uow.load("run-1")
         return SimpleNamespace(
             final_state=uow.run_state("run-1"),
             state_history=state_history,
-            tasks=self._persisted_tasks(uow),
+            persisted_task_ids=self._persisted_task_ids(uow),
+            task_enqueued_events=tuple(
+                event for event in committed_events if event.event_type == "TaskEnqueued"
+            ),
             child=SimpleNamespace(initial_rating=admission.entry.rating),
         )
 
@@ -463,5 +494,68 @@ def test_fake_trace_reaches_finalization_without_agent_created_tasks(core_harnes
     result = core_harness.run_trace("tests/scenario/fixtures/core_loop_trace.json")
     assert result.final_state == "completed"
     assert result.state_history[-2:] == ["stopping", "completed"]
-    assert all(task.created_by == "supervisor" for task in result.tasks)
+    assert result.persisted_task_ids == {
+        event.payload["task_id"] for event in result.task_enqueued_events
+    }
+    assert all(
+        event.payload["created_by"] == "supervisor"
+        for event in result.task_enqueued_events
+    )
     assert result.child.initial_rating == 1200.0
+
+
+def _write_trace_variant(tmp_path: Path, mutate) -> Path:
+    trace = json.loads(
+        Path("tests/scenario/fixtures/core_loop_trace.json").read_text(encoding="utf-8")
+    )
+    mutate(trace)
+    destination = tmp_path / "trace.json"
+    destination.write_text(json.dumps(trace), encoding="utf-8")
+    return destination
+
+
+@pytest.mark.parametrize("missing_field", ["safety_passed", "duplicate_likelihood"])
+# Mutation caught: admitting when a required scientific verdict is absent from committed results.
+def test_fake_trace_fails_closed_when_admission_evidence_is_missing(
+    core_harness,
+    tmp_path: Path,
+    missing_field: str,
+) -> None:
+    def remove_field(trace: dict) -> None:
+        if missing_field == "safety_passed":
+            response = next(
+                item
+                for item in trace["responses"]
+                if item.get("hypothesis_id") == "h-3" and item.get("stage") == "initial_review"
+            )
+        else:
+            response = next(
+                item
+                for item in trace["responses"]
+                if item["skill"] == "proximity" and item["payload"].get("left_id") == "h-3"
+            )
+        response["payload"].pop(missing_field)
+
+    trace_path = _write_trace_variant(tmp_path, remove_field)
+
+    with pytest.raises(ValueError, match=missing_field):
+        core_harness.run_trace(str(trace_path))
+
+
+# Mutation caught: ignoring the committed duplicate likelihood or its explicit policy threshold.
+def test_fake_trace_rejects_child_at_or_above_duplicate_threshold(
+    core_harness,
+    tmp_path: Path,
+) -> None:
+    def mark_duplicate(trace: dict) -> None:
+        response = next(
+            item
+            for item in trace["responses"]
+            if item["skill"] == "proximity" and item["payload"].get("left_id") == "h-3"
+        )
+        response["payload"]["duplicate_likelihood"] = 0.5
+
+    trace_path = _write_trace_variant(tmp_path, mark_duplicate)
+
+    with pytest.raises(AssertionError, match="child admission failed"):
+        core_harness.run_trace(str(trace_path))

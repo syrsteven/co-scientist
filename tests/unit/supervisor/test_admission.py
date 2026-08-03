@@ -176,6 +176,27 @@ def test_required_novelty_accepts_matching_partially_novel_assessment() -> None:
     assert decision.admitted
 
 
+# Mutation caught: inserting a task without atomic, full Supervisor creator provenance.
+def test_supervisor_enqueue_task_atomically_persists_full_provenance(tmp_path) -> None:
+    uow = SqliteUnitOfWork(f"sqlite:///{tmp_path / 'enqueue.db'}")
+    uow.create_schema()
+    uow.create_run("run-1", manifest={})
+    supervisor = Supervisor(uow=uow, review_policy=ReviewPolicy(profile_id="minimal"))
+    task = NewTask(
+        task_id="generate-1",
+        run_id="run-1",
+        idempotency_key="generation:run-1:1",
+        intent_type="generate",
+        payload={"research_goal": "regeneration"},
+    )
+
+    commit = supervisor.enqueue_task(task=task, expected_sequence=0)
+
+    assert [event.event_type for event in commit.events] == ["TaskEnqueued"]
+    assert commit.events[0].payload == task.model_dump(mode="json")
+    assert uow.task_state(task.task_id) == "pending"
+
+
 def test_handle_result_atomically_applies_policy_owned_work_and_ignores_agent_actions(
     tmp_path,
 ) -> None:
@@ -266,7 +287,18 @@ def test_handle_result_atomically_applies_policy_owned_work_and_ignores_agent_ac
         expected_sequence=0,
     )
 
-    assert [event.event_type for event in commit.events] == ["HypothesisContentCreated"]
+    assert [event.event_type for event in commit.events] == [
+        "HypothesisContentCreated",
+        "TaskEnqueued",
+    ]
+    assert commit.events[1].payload == {
+        "task_id": "review:initial_review:h-1",
+        "run_id": "run-1",
+        "idempotency_key": "review:initial_review:h-1",
+        "intent_type": "run_initial_review",
+        "payload": {"hypothesis_id": "h-1", "review_stage": "initial_review"},
+        "created_by": "supervisor",
+    }
     assert uow.task_state("generate-1") == "succeeded"
     assert uow.task_state("review:initial_review:h-1") == "pending"
     assert uow.external_call_state("call-1") == "domain_result_applied"
@@ -382,7 +414,8 @@ def test_handle_result_applies_each_status_with_explicit_atomic_semantics(
         expected_sequence=0,
     )
 
-    assert [event.event_type for event in commit.events] == [expected_event]
+    expected_events = [expected_event, "TaskEnqueued"] if followup_exists else [expected_event]
+    assert [event.event_type for event in commit.events] == expected_events
     assert supervisor.uow.task_state("generate-1") == expected_task_state
     assert supervisor.uow.external_call_state("call-1") == "domain_result_applied"
     with supervisor.uow.engine.connect() as connection:

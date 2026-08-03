@@ -141,6 +141,31 @@ class Supervisor:
         self.uow = uow
         self.review_policy = review_policy
 
+    @staticmethod
+    def _task_enqueued_event(
+        task: NewTask,
+        *,
+        causation_id: str | None = None,
+        correlation_id: str | None = None,
+    ) -> NewEvent:
+        return NewEvent(
+            event_type="TaskEnqueued",
+            payload=task.model_dump(mode="json"),
+            causation_id=causation_id,
+            correlation_id=correlation_id,
+        )
+
+    def enqueue_task(self, *, task: NewTask, expected_sequence: int) -> CommitResult:
+        """Atomically persist a Supervisor-owned task and its creator provenance."""
+
+        return self.uow.commit_domain_batch(
+            run_id=task.run_id,
+            expected_sequence=expected_sequence,
+            events=(self._task_enqueued_event(task, correlation_id=task.run_id),),
+            followup_tasks=(task,),
+            idempotency_key=f"task-enqueue:{task.idempotency_key}",
+        )
+
     def _epoch_state(
         self,
         run_id: str,
@@ -344,6 +369,17 @@ class Supervisor:
         if result.status == "completed":
             events = self._events_for_result(result)
             followups = self._followup_tasks(run_id=run_id, events=events)
+            events = (
+                *events,
+                *(
+                    self._task_enqueued_event(
+                        task,
+                        causation_id=result.result_id,
+                        correlation_id=run_id,
+                    )
+                    for task in followups
+                ),
+            )
             task_target = TaskState.SUCCEEDED
         else:
             events = (self._audit_event_for_result(result),)
@@ -551,6 +587,7 @@ class Supervisor:
                     event_type="FinalizationRequested",
                     payload={"task_id": finalization_task.task_id},
                 ),
+                self._task_enqueued_event(finalization_task, correlation_id=run_id),
             ),
             target_run_state=RunState.STOPPING,
             followup_tasks=(finalization_task,),

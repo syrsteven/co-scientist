@@ -104,9 +104,18 @@ def test_normal_completion_atomically_persists_legal_run_and_task_states(tmp_pat
     assert [event.event_type for event in events] == [
         "RunStopping",
         "FinalizationRequested",
+        "TaskEnqueued",
         "FinalizationCompleted",
         "RunCompleted",
     ]
+    assert events[2].payload == {
+        "task_id": "finalize:run-1",
+        "run_id": "run-1",
+        "idempotency_key": "finalize:run-1",
+        "intent_type": "finalize_run",
+        "payload": {"reason": "work_complete"},
+        "created_by": "supervisor",
+    }
     assert completed.events[-1].payload["completeness"] == "complete"
     assert supervisor.uow.task_state("finalize:run-1") == "succeeded"
     assert supervisor.uow.run_state("run-1") == "completed"
@@ -129,6 +138,7 @@ def test_finalization_requires_durable_result_received_task(tmp_path) -> None:
     assert [event.event_type for event in supervisor.uow.load("run-1", after_sequence=1)] == [
         "RunStopping",
         "FinalizationRequested",
+        "TaskEnqueued",
     ]
 
 
@@ -283,6 +293,7 @@ def test_matching_quality_stop_enters_stopping_and_enqueues_finalization(tmp_pat
     assert [event.event_type for event in outcome.commit.events] == [
         "RunStopping",
         "FinalizationRequested",
+        "TaskEnqueued",
     ]
 
 
@@ -307,4 +318,5 @@ def test_tick_consumes_budget_ledger_and_routes_hard_limit_through_finalization(
     assert [event.event_type for event in outcome.commit.events] == [
         "RunStopping",
         "FinalizationRequested",
+        "TaskEnqueued",
     ]
