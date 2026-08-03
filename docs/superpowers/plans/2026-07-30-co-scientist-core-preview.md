@@ -2241,6 +2241,7 @@ git commit -m "feat: make Supervisor the sole orchestration authority"
 - Create: `src/co_scientist/agents/executor.py`
 - Create: `src/co_scientist/adapters/llm/fake.py`
 - Create: `src/co_scientist/adapters/llm/replay.py`
+- Modify: `src/co_scientist/supervisor/orchestrator.py`
 - Create: `skills/generation/manifest.yaml`
 - Create: `skills/generation/prompts/system.md`
 - Create: `skills/reflection/manifest.yaml`
@@ -2256,10 +2257,21 @@ git commit -m "feat: make Supervisor the sole orchestration authority"
 - Create: `tests/contract/skills/test_skill_manifests.py`
 - Create: `tests/scenario/test_fake_core_loop.py`
 - Create: `tests/scenario/fixtures/core_loop_trace.json`
+- Modify: `tests/unit/supervisor/test_admission.py`
+- Modify: `tests/scenario/test_finalization_path.py`
 
 **Interfaces:**
 - Consumes: `ExternalCallRunner`, domain AgentResult payloads
 - Produces: `SkillManifest`, `load_skill`, `SkillExecutor`, `FakeLLMProvider`, `ReplayLLMProvider`
+
+**Authorized Task 10 review corrections:**
+
+- The user authorized the narrow cross-task file expansion above after the first Task 10 review. No SQLite schema or Alembic migration is required.
+- Supervisor must expose one atomic task-enqueue command that commits a `TaskEnqueued` event containing the full immutable `NewTask` provenance, including `created_by: supervisor`, together with the same task in `followup_tasks`. The command owns a task-enqueue-specific idempotency key namespace.
+- Result-derived review follow-ups and the mandatory finalization task must also persist one matching `TaskEnqueued` event in the same domain batch that inserts each task. The deterministic scenario must create every worker task through Supervisor commands or Supervisor-derived follow-up batches and assert creator provenance from committed events, never by reconstructing `NewTask` defaults from Task rows.
+- Child admission facts must be derived fail-closed from applied provider results and policy: safety from committed Reflection review payloads, candidate duplication from committed Proximity output using an explicit policy threshold, required stages from `required_review_stages(review_policy)`, and child identity/content hash from committed Evolution content. Scientific verdicts cannot be injected as harness-only admission constants.
+- `load_skill` must fail closed over the exact six-skill Core Preview matrix. The immutable model forbids extra fields; directory name, manifest ID, and agent type must agree; version, prompt path, input/output schema, allowed tools, and allowed capabilities must equal the canonical per-agent contract. Contract-test expected values must be independent hand-written literals, not derived from the production mapping.
+- TDD evidence must cover atomic Supervisor enqueue/provenance, result-derived and finalization task provenance, removal of tautological ownership reconstruction, omission/change of scientific admission evidence, and manifest mutations for ID/version/schema/tools/extra fields.
 
 - [ ] **Step 1: Write failing manifest contract test**
 
