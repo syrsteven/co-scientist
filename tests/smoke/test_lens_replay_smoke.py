@@ -1,6 +1,7 @@
 import asyncio
 import hashlib
 import json
+import threading
 from collections.abc import Callable
 from pathlib import Path
 from types import SimpleNamespace
@@ -8,12 +9,19 @@ from typing import Any
 
 import pytest
 import yaml
+from sqlalchemy import event as sqlalchemy_event
+from sqlalchemy import select, update
 
 from co_scientist.adapters.artifacts.filesystem import FilesystemArtifactStore
 from co_scientist.adapters.literature.pubmed import parse_pubmed_records
 from co_scientist.adapters.literature.replay import ReplayLiteratureProvider
 from co_scientist.adapters.llm.replay import ReplayLLMProvider
-from co_scientist.adapters.persistence.sqlite import SqliteUnitOfWork
+from co_scientist.adapters.persistence.sqlite import (
+    ExternalCallRow,
+    RunRow,
+    SqliteUnitOfWork,
+    TaskRow,
+)
 from co_scientist.agents.executor import SkillExecutor
 from co_scientist.agents.result import AgentExecutionContext, AgentResult
 from co_scientist.domain.convergence import ConvergenceSnapshot
@@ -32,6 +40,7 @@ from co_scientist.export.run_export import SqliteRunReadModel, export_run
 from co_scientist.ports.external_provider import RawExternalResponse
 from co_scientist.runtime.external_calls import (
     ExternalCallRunner,
+    prompt_hash,
     request_fingerprint,
 )
 from co_scientist.skills.loader import load_skill
@@ -94,6 +103,7 @@ class ExportBundle:
         self.root = root
         self.manifest = self._json("manifest.json")
         self.hypotheses = self._json("hypotheses.json")
+        self.projections = self._json("hypothesis_projections.json")
         self.reviews = self._json("reviews.json")
         self.novelty_assessments = self._json("novelty_assessments.json")
         self.proximity = self._json("proximity.json")
@@ -166,6 +176,27 @@ class LensReplayHarness:
                 "provider": provider_name(profile),
                 "literature_provider": profile["providers"]["literature"],
                 "reproduction_level": "deterministic_offline_replay",
+                "anchor_sets": [
+                    {
+                        "anchor_set_id": "lens-anchors-v1",
+                        "members": [
+                            {
+                                "anchor_id": "transparent-regeneration-baseline-v1",
+                                "kind": "baseline_reference",
+                                "content_hash": _sha256_json(
+                                    "ordered transparent lens regeneration baseline"
+                                ),
+                            },
+                            {
+                                "anchor_id": "fibrotic-regeneration-baseline-v1",
+                                "kind": "baseline_reference",
+                                "content_hash": _sha256_json(
+                                    "disorganized fibrotic lens regeneration baseline"
+                                ),
+                            },
+                        ],
+                    }
+                ],
             },
             start_payload={
                 "profile_id": profile["profile_id"],
@@ -177,7 +208,7 @@ class LensReplayHarness:
             epoch_id="epoch-1",
             research_plan_version=1,
             evaluation_rules_hash="sha256:lens-rules-v1",
-            ranking_prompt_hash=_sha256_json(
+            ranking_prompt_hash=prompt_hash(
                 Path("skills/ranking/prompts/system.md").read_text(encoding="utf-8")
             ),
             judge_profile_hash="sha256:replay-judge-v1",
@@ -490,6 +521,7 @@ class LensReplayHarness:
             skill_version="0.1.0",
             output_schema_version=1,
             input_snapshot_hash=_sha256_json(inputs),
+            prompt_hash=prompt_hash(str(request["system_prompt"])),
         )
         self.run.uow.plan_external_call(
             call_id,
@@ -597,7 +629,8 @@ def test_lens_replay_exports_a_traceable_ranked_result(
     assert bundle.manifest["finalization_state"] == "completed"
     assert bundle.manifest["tournament_epochs"][0]["research_plan_version"] == 1
     assert bundle.hypotheses[0]["mechanism_chain"] == MECHANISM_CHAIN
-    assert bundle.hypotheses[0]["projection"]["lifecycle_state"] == "tournament_ready"
+    assert "projection" not in bundle.hypotheses[0]
+    assert bundle.projections[0]["lifecycle_state"] == "tournament_ready"
     assert {review["stage"] for review in bundle.reviews} == {
         "initial_review",
         "full_review",
@@ -644,6 +677,24 @@ def test_lens_replay_exports_a_traceable_ranked_result(
         "FinalizationCompleted",
         "RunCompleted",
     ]
+    assert event_types.count("RatingUpdated") == 8
+    assert bundle.manifest["anchor_sets"][0]["anchor_set_id"] == "lens-anchors-v1"
+    assert {
+        member["anchor_id"] for member in bundle.manifest["anchor_sets"][0]["members"]
+    } == {
+        "transparent-regeneration-baseline-v1",
+        "fibrotic-regeneration-baseline-v1",
+    }
+    prompt_metadata = [
+        item
+        for item in bundle.manifest["skill_prompt_provider_model_metadata"]
+        if item["provider"] == "replay"
+    ]
+    assert prompt_metadata
+    assert all(item["prompt_hash"] for item in prompt_metadata)
+    assert {
+        item["prompt_hash"] for item in prompt_metadata if item["skill_id"] == "ranking"
+    } == set(bundle.manifest["ranking_prompt_hashes"])
 
 
 # Mutations caught: including export time/path, random output ordering, or rewriting raw bytes.
@@ -684,3 +735,368 @@ def test_export_fails_without_touching_an_existing_output_directory(
 
     assert sentinel.read_text(encoding="utf-8") == "preserve me\n"
     assert list(destination.iterdir()) == [sentinel]
+
+
+# Mutation caught: opening independent SQLite sessions for bundle components.
+def test_export_uses_one_explicit_sqlite_snapshot_during_concurrent_commit(
+    core_cli: LensReplayHarness,
+    tmp_path: Path,
+) -> None:
+    run_id = core_cli.start_lens(provider="replay", data_dir=tmp_path)
+    assert core_cli.run is not None
+    uow = core_cli.run.uow
+    with uow.session_factory() as session:
+        task = session.scalar(select(TaskRow).where(TaskRow.run_id == run_id))
+    assert task is not None
+    observed_begin = False
+    mutated = False
+    writer_errors: list[BaseException] = []
+
+    def after_cursor_execute(_conn, _cursor, statement, _parameters, _context, _many) -> None:
+        nonlocal observed_begin, mutated
+        if statement.strip().upper() == "BEGIN":
+            observed_begin = True
+        if mutated or "FROM external_calls" not in statement:
+            return
+        mutated = True
+
+        def write_concurrently() -> None:
+            try:
+                uow.plan_external_call(
+                    "concurrent-call",
+                    "concurrent-request",
+                    run_id=run_id,
+                    task_id=task.task_id,
+                    execution_context={
+                        "run_id": run_id,
+                        "task_id": task.task_id,
+                        "idempotency_key": task.idempotency_key,
+                    },
+                    provider="concurrent-provider",
+                    model_or_tool="concurrent-model",
+                )
+            except BaseException as error:  # noqa: BLE001 - cross-thread test evidence
+                writer_errors.append(error)
+
+        writer = threading.Thread(target=write_concurrently)
+        writer.start()
+        writer.join(timeout=10)
+        assert not writer.is_alive()
+
+    sqlalchemy_event.listen(uow.engine, "after_cursor_execute", after_cursor_execute)
+    try:
+        bundle = core_cli.export(run_id, tmp_path / "snapshot-export")
+    finally:
+        sqlalchemy_event.remove(uow.engine, "after_cursor_execute", after_cursor_execute)
+
+    assert writer_errors == []
+    assert observed_begin
+    assert bundle.manifest["external_call_count"] == len(bundle.external_calls)
+    assert "concurrent-call" not in {
+        call["external_call_id"] for call in bundle.external_calls
+    }
+    assert "concurrent-call" in {
+        call["external_call_id"] for call in SqliteRunReadModel(uow).external_calls(run_id)
+    }
+
+
+@pytest.mark.parametrize(
+    ("field", "forged_value"),
+    [
+        ("run_id", "forged-run"),
+        ("task_id", "forged-task"),
+        ("request_fingerprint", "forged-request"),
+        ("execution_context_fingerprint", "forged-context"),
+        ("provider_response_id", "forged-response"),
+        ("usage", {"input_tokens": 999999}),
+    ],
+)
+# Mutation caught: exporting a self-consistent raw manifest belonging to different call metadata.
+def test_export_rejects_raw_manifest_metadata_not_bound_to_persisted_call(
+    core_cli: LensReplayHarness,
+    tmp_path: Path,
+    field: str,
+    forged_value: object,
+) -> None:
+    run_id = core_cli.start_lens(provider="replay", data_dir=tmp_path)
+    assert core_cli.run is not None
+    call = SqliteRunReadModel(core_cli.run.uow).external_calls(run_id)[0]
+    raw_ref = call["raw_artifact_ref"]
+    assert isinstance(raw_ref, dict)
+    manifest_path = core_cli.run.artifacts.root / (
+        str(raw_ref["path"]) + ".manifest.json"
+    )
+    manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+    manifest[field] = forged_value
+    manifest_path.write_text(json.dumps(manifest), encoding="utf-8")
+
+    with pytest.raises(ValueError, match="raw manifest.*persisted call"):
+        core_cli.export(run_id, tmp_path / f"forged-{field}")
+
+
+# Mutation caught: validating two ArtifactRefs independently without checking their equality.
+def test_export_rejects_persisted_artifact_ref_from_another_call(
+    core_cli: LensReplayHarness,
+    tmp_path: Path,
+) -> None:
+    run_id = core_cli.start_lens(provider="replay", data_dir=tmp_path)
+    assert core_cli.run is not None
+    calls = SqliteRunReadModel(core_cli.run.uow).external_calls(run_id)
+    first, second = calls[:2]
+    with core_cli.run.uow.session_factory.begin() as session:
+        session.execute(
+            update(ExternalCallRow)
+            .where(ExternalCallRow.external_call_id == first["external_call_id"])
+            .values(raw_artifact_ref_json=json.dumps(second["raw_artifact_ref"]))
+        )
+
+    with pytest.raises(ValueError, match="raw manifest.*persisted call"):
+        core_cli.export(run_id, tmp_path / "swapped-ref")
+
+
+# Mutation caught: reconstructing historical content rows with the latest projection attached.
+def test_export_separates_immutable_content_revisions_from_current_projection(
+    tmp_path: Path,
+) -> None:
+    uow = SqliteUnitOfWork(f"sqlite:///{tmp_path / 'revisions.db'}")
+    uow.create_schema()
+    uow.create_run("revision-run", manifest={})
+    base = {
+        "hypothesis_id": "h-1",
+        "title": "Revision",
+        "claim": "claim",
+        "mechanism_chain": ["a"],
+        "assumptions": [],
+        "predictions": [],
+        "falsifiers": [],
+    }
+    uow.commit_domain_batch(
+        run_id="revision-run",
+        expected_sequence=0,
+        events=(
+            NewEvent(
+                event_type="HypothesisContentCreated",
+                payload={**base, "content_id": "content-v1"},
+            ),
+            NewEvent(
+                event_type="HypothesisContentCreated",
+                payload={
+                    **base,
+                    "content_id": "content-v2",
+                    "supersedes_content_id": "content-v1",
+                },
+            ),
+        ),
+        idempotency_key="two-revisions",
+    )
+    root = export_run(
+        "revision-run",
+        tmp_path / "revision-export",
+        SqliteRunReadModel(uow),
+        FilesystemArtifactStore(tmp_path / "revision-artifacts"),
+    )
+    contents = json.loads((root / "hypotheses.json").read_text(encoding="utf-8"))
+    projections = json.loads(
+        (root / "hypothesis_projections.json").read_text(encoding="utf-8")
+    )
+
+    assert [item["content_id"] for item in contents] == ["content-v1", "content-v2"]
+    assert all("projection" not in item for item in contents)
+    assert projections == [
+        {
+            "cluster_ids": [],
+            "content_id": "content-v2",
+            "hypothesis_id": "h-1",
+            "lifecycle_state": "created",
+            "novelty_assessment_ids": [],
+            "ratings_by_epoch": {},
+            "review_coverage": {},
+            "safety_status": "pending",
+            "tournament_entries_by_epoch": {},
+        }
+    ]
+
+
+# Mutation caught: accepting an epoch anchor ID that has no frozen member declaration.
+def test_export_rejects_epoch_anchor_without_frozen_members(tmp_path: Path) -> None:
+    uow = SqliteUnitOfWork(f"sqlite:///{tmp_path / 'anchors.db'}")
+    uow.create_schema()
+    uow.create_run("anchor-run", manifest={})
+    epoch = TournamentEpoch(
+        epoch_id="epoch-1",
+        research_plan_version=1,
+        evaluation_rules_hash="rules",
+        ranking_prompt_hash="prompt",
+        judge_profile_hash="judge",
+        rating_policy_version="elo-32-v1",
+        admission_policy_version="admission",
+        anchor_set_id="missing-anchor-set",
+    )
+    uow.commit_domain_batch(
+        run_id="anchor-run",
+        expected_sequence=0,
+        events=(NewEvent(event_type="TournamentEpochOpened", payload=epoch.model_dump()),),
+        idempotency_key="open-epoch",
+    )
+
+    with pytest.raises(ValueError, match="anchor set.*frozen members"):
+        export_run(
+            "anchor-run",
+            tmp_path / "anchor-export",
+            SqliteRunReadModel(uow),
+            FilesystemArtifactStore(tmp_path / "anchor-artifacts"),
+        )
+
+
+@pytest.mark.parametrize(
+    "members",
+    [
+        [
+            {"anchor_id": "duplicate", "content_hash": "sha256:" + "a" * 64},
+            {"anchor_id": "duplicate", "content_hash": "sha256:" + "b" * 64},
+        ],
+        [
+            {"anchor_id": "anchor-1", "content_hash": "not-a-content-hash"},
+            {"anchor_id": "anchor-2", "content_hash": "sha256:" + "b" * 64},
+        ],
+    ],
+)
+# Mutation caught: treating member count and non-empty strings as frozen anchor identity.
+def test_export_rejects_duplicate_or_noncanonical_frozen_anchor_members(
+    tmp_path: Path,
+    members: list[dict[str, str]],
+) -> None:
+    manifest = {
+        "profile": {"tournament": {"anchor_count": 2}},
+        "anchor_sets": [{"anchor_set_id": "anchors-1", "members": members}],
+    }
+    uow = SqliteUnitOfWork(f"sqlite:///{tmp_path / 'invalid-anchors.db'}")
+    uow.create_schema()
+    uow.create_run("anchor-run", manifest=manifest)
+    epoch = TournamentEpoch(
+        epoch_id="epoch-1",
+        research_plan_version=1,
+        evaluation_rules_hash="rules",
+        ranking_prompt_hash="prompt",
+        judge_profile_hash="judge",
+        rating_policy_version="elo-32-v1",
+        admission_policy_version="admission",
+        anchor_set_id="anchors-1",
+    )
+    uow.commit_domain_batch(
+        run_id="anchor-run",
+        expected_sequence=0,
+        events=(NewEvent(event_type="TournamentEpochOpened", payload=epoch.model_dump()),),
+        idempotency_key="open-epoch",
+    )
+
+    with pytest.raises(ValueError, match="anchor set.*frozen members"):
+        export_run(
+            "anchor-run",
+            tmp_path / "anchor-export",
+            SqliteRunReadModel(uow),
+            FilesystemArtifactStore(tmp_path / "anchor-artifacts"),
+        )
+
+
+# Mutation caught: recomputing old ratings with a mutable current profile coefficient.
+def test_export_uses_persisted_rating_updates_not_current_profile(
+    core_cli: LensReplayHarness,
+    tmp_path: Path,
+) -> None:
+    run_id = core_cli.start_lens(provider="replay", data_dir=tmp_path)
+    assert core_cli.run is not None
+    expected: dict[str, float] = {}
+    for event in core_cli.run.uow.load(run_id):
+        if event.event_type == "RatingUpdated":
+            expected[str(event.payload["hypothesis_id"])] = float(event.payload["rating"])
+    assert expected.keys() == {"h-1", "h-2"}
+    with core_cli.run.uow.session_factory.begin() as session:
+        row = session.get(RunRow, run_id)
+        assert row is not None
+        manifest = json.loads(row.manifest_json)
+        manifest["profile"]["tournament"]["k_factor"] = 999
+        row.manifest_json = json.dumps(manifest)
+
+    bundle = core_cli.export(run_id, tmp_path / "persisted-ratings-export")
+
+    assert bundle.ratings == {"epoch-1": expected}
+
+
+# Mutation caught: collapsing two same-hypothesis rating updates into one export row.
+def test_export_rejects_persisted_self_match(tmp_path: Path) -> None:
+    uow = SqliteUnitOfWork(f"sqlite:///{tmp_path / 'self-match.db'}")
+    uow.create_schema()
+    uow.create_run("self-match-run", manifest={})
+    epoch = TournamentEpoch(
+        epoch_id="epoch-1",
+        research_plan_version=1,
+        evaluation_rules_hash="sha256:rules",
+        ranking_prompt_hash="sha256:prompt",
+        judge_profile_hash="sha256:judge",
+        rating_policy_version="elo-32-v1",
+        admission_policy_version="admission-v1",
+    )
+    uow.commit_domain_batch(
+        run_id="self-match-run",
+        expected_sequence=0,
+        events=(
+            NewEvent(event_type="TournamentEpochOpened", payload=epoch.model_dump()),
+            NewEvent(
+                event_type="TournamentEntryCreated",
+                payload={"epoch_id": "epoch-1", "hypothesis_id": "h-1", "rating": 1200.0},
+            ),
+            NewEvent(
+                event_type="InitialRatingAssigned",
+                payload={"epoch_id": "epoch-1", "hypothesis_id": "h-1", "rating": 1200.0},
+            ),
+            NewEvent(
+                event_type="MatchEvaluated",
+                payload={
+                    "match_id": "self-match",
+                    "epoch_id": "epoch-1",
+                    "left_id": "h-1",
+                    "right_id": "h-1",
+                    "decision": "decisive",
+                    "winner_id": "h-1",
+                    "research_plan_version": 1,
+                    "evaluation_rules_hash": "sha256:rules",
+                    "ranking_prompt_hash": "sha256:prompt",
+                    "judge_profile_hash": "sha256:judge",
+                    "rating_policy_version": "elo-32-v1",
+                    "admission_policy_version": "admission-v1",
+                },
+            ),
+            NewEvent(
+                event_type="RatingUpdated",
+                payload={
+                    "match_id": "self-match",
+                    "epoch_id": "epoch-1",
+                    "hypothesis_id": "h-1",
+                    "before_rating": 1200.0,
+                    "rating": 1216.0,
+                    "rating_policy_version": "elo-32-v1",
+                },
+            ),
+            NewEvent(
+                event_type="RatingUpdated",
+                payload={
+                    "match_id": "self-match",
+                    "epoch_id": "epoch-1",
+                    "hypothesis_id": "h-1",
+                    "before_rating": 1200.0,
+                    "rating": 1184.0,
+                    "rating_policy_version": "elo-32-v1",
+                },
+            ),
+        ),
+        idempotency_key="persisted-self-match",
+    )
+
+    with pytest.raises(ValueError, match="distinct participants"):
+        export_run(
+            "self-match-run",
+            tmp_path / "self-match-export",
+            SqliteRunReadModel(uow),
+            FilesystemArtifactStore(tmp_path / "self-match-artifacts"),
+        )

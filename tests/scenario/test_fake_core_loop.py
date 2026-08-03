@@ -19,8 +19,271 @@ from co_scientist.domain.states import RunState, TaskState
 from co_scientist.domain.task import NewTask
 from co_scientist.domain.tournament import TournamentEpoch
 from co_scientist.events.models import NewEvent
-from co_scientist.runtime.external_calls import ExternalCallRunner, request_fingerprint
+from co_scientist.runtime.external_calls import (
+    ExternalCallRunner,
+    prompt_hash,
+    request_fingerprint,
+)
 from co_scientist.supervisor.orchestrator import Supervisor
+
+
+def _valid_ranking_payload() -> dict[str, object]:
+    ranking_prompt = Path("skills/ranking/prompts/system.md").read_text(encoding="utf-8")
+    return {
+        "match_id": "match-1",
+        "epoch_id": "epoch-1",
+        "left_id": "h-1",
+        "right_id": "h-2",
+        "decision": "inconclusive",
+        "winner_id": None,
+        "research_plan_version": 1,
+        "evaluation_rules_hash": "sha256:rules",
+        "ranking_prompt_hash": prompt_hash(ranking_prompt),
+        "judge_profile_hash": "sha256:judge",
+        "rating_policy_version": "elo-32-v1",
+        "admission_policy_version": "admission-v1",
+    }
+
+
+async def _execute_ranking_result(
+    tmp_path: Path,
+    payload: dict[str, object],
+    *,
+    active_epoch: bool = True,
+    admitted_ids: frozenset[str] = frozenset({"h-1", "h-2"}),
+) -> tuple[SqliteUnitOfWork, Exception | None]:
+    uow = SqliteUnitOfWork(f"sqlite:///{tmp_path / 'ranking-validation.db'}")
+    uow.create_schema()
+    uow.create_run("run-1", manifest={})
+    expected_sequence = 0
+    if active_epoch:
+        epoch = TournamentEpoch(
+            epoch_id="epoch-1",
+            research_plan_version=1,
+            evaluation_rules_hash="sha256:rules",
+            ranking_prompt_hash=str(_valid_ranking_payload()["ranking_prompt_hash"]),
+            judge_profile_hash="sha256:judge",
+            rating_policy_version="elo-32-v1",
+            admission_policy_version="admission-v1",
+            anchor_set_id="anchors-1",
+        )
+        seed_events = [NewEvent(event_type="TournamentEpochOpened", payload=epoch.model_dump())]
+        for hypothesis_id in ("h-1", "h-2"):
+            if hypothesis_id not in admitted_ids:
+                continue
+            seed_events.extend(
+                (
+                    NewEvent(
+                        event_type="TournamentEntryCreated",
+                        payload={
+                            "epoch_id": "epoch-1",
+                            "hypothesis_id": hypothesis_id,
+                            "rating": 1200.0,
+                        },
+                    ),
+                    NewEvent(
+                        event_type="InitialRatingAssigned",
+                        payload={
+                            "epoch_id": "epoch-1",
+                            "hypothesis_id": hypothesis_id,
+                            "rating": 1200.0,
+                        },
+                    ),
+                )
+            )
+        seeded = uow.commit_domain_batch(
+            run_id="run-1",
+            expected_sequence=0,
+            events=tuple(seed_events),
+            idempotency_key="ranking-seed",
+        )
+        expected_sequence = seeded.last_sequence
+    supervisor = Supervisor(uow=uow, review_policy=ReviewPolicy(profile_id="minimal"))
+    task = NewTask(
+        task_id="ranking-task",
+        run_id="run-1",
+        idempotency_key="ranking-task",
+        intent_type="run_ranking",
+        payload={},
+    )
+    scheduled = supervisor.enqueue_task(task=task, expected_sequence=expected_sequence)
+    expected_sequence = scheduled.last_sequence
+    uow.transition_task(task.task_id, TaskState.LEASED)
+    uow.transition_task(task.task_id, TaskState.RUNNING)
+    runner = ExternalCallRunner(
+        SimpleNamespace(
+            uow=uow,
+            artifacts=FilesystemArtifactStore(tmp_path / "ranking-artifacts"),
+        )
+    )
+    result = await SkillExecutor(
+        runner,
+        FakeLLMProvider(
+            [json.dumps(payload, separators=(",", ":"), sort_keys=True).encode("utf-8")]
+        ),
+    ).execute(
+        call_id="ranking-call",
+        skill_directory=Path("skills/ranking"),
+        inputs={"comparison": "h-1 versus h-2"},
+        context=AgentExecutionContext(
+            run_id="run-1",
+            task_id=task.task_id,
+            idempotency_key=task.idempotency_key,
+            skill_id="ranking",
+            skill_version="0.1.0",
+            output_schema_version=1,
+            input_snapshot_hash="sha256:input",
+        ),
+    )
+    uow.transition_task(task.task_id, TaskState.RESULT_RECEIVED)
+    error: Exception | None = None
+    try:
+        supervisor.handle_result(
+            "run-1",
+            task.task_id,
+            result,
+            expected_sequence=expected_sequence,
+        )
+    except Exception as caught:  # noqa: BLE001 - fail-closed result is asserted below
+        error = caught
+    return uow, error
+
+
+_INCOMPLETE_OR_INVALID_RANKING_CASES = [
+    ("missing_match_id", "match_id", None, True),
+    ("missing_epoch_id", "epoch_id", None, True),
+    ("missing_left_id", "left_id", None, True),
+    ("missing_right_id", "right_id", None, True),
+    ("missing_decision", "decision", None, True),
+    ("missing_plan", "research_plan_version", None, True),
+    ("missing_rules", "evaluation_rules_hash", None, True),
+    ("missing_prompt", "ranking_prompt_hash", None, True),
+    ("missing_judge", "judge_profile_hash", None, True),
+    ("missing_rating_policy", "rating_policy_version", None, True),
+    ("missing_admission_policy", "admission_policy_version", None, True),
+    ("wrong_plan", "research_plan_version", 2, True),
+    ("wrong_rules", "evaluation_rules_hash", "sha256:wrong", True),
+    ("wrong_prompt", "ranking_prompt_hash", "sha256:wrong", True),
+    ("wrong_judge", "judge_profile_hash", "sha256:wrong", True),
+    ("wrong_rating_policy", "rating_policy_version", "elo-wrong", True),
+    ("wrong_admission_policy", "admission_policy_version", "admission-wrong", True),
+    ("no_active_epoch", None, None, False),
+]
+
+
+@pytest.mark.parametrize(
+    ("case", "field", "replacement", "active_epoch"),
+    _INCOMPLETE_OR_INVALID_RANKING_CASES,
+    ids=[case[0] for case in _INCOMPLETE_OR_INVALID_RANKING_CASES],
+)
+# Mutation caught: deriving MatchEvaluated before validating the complete ranking contract.
+@pytest.mark.asyncio
+async def test_completed_ranking_fails_closed_before_match_event(
+    tmp_path: Path,
+    case: str,
+    field: str | None,
+    replacement: object,
+    active_epoch: bool,
+) -> None:
+    del case
+    payload = _valid_ranking_payload()
+    if field is not None and replacement is None:
+        del payload[field]
+    elif field is not None:
+        payload[field] = replacement
+
+    uow, error = await _execute_ranking_result(
+        tmp_path,
+        payload,
+        active_epoch=active_epoch,
+    )
+    event_types = [event.event_type for event in uow.load("run-1")]
+
+    assert "MatchEvaluated" not in event_types
+    assert "RatingUpdated" not in event_types
+    assert error is not None
+    assert uow.task_state("ranking-task") == "result_received"
+    assert uow.external_call_state("ranking-call") == "agent_result_submitted"
+
+
+# Mutation caught: emitting two RatingUpdated events for one self-matched hypothesis.
+@pytest.mark.asyncio
+async def test_supervisor_rejects_self_match_without_event_pollution(tmp_path: Path) -> None:
+    payload = _valid_ranking_payload()
+    payload.update(
+        {
+            "right_id": "h-1",
+            "decision": "decisive",
+            "winner_id": "h-1",
+        }
+    )
+
+    uow, error = await _execute_ranking_result(tmp_path, payload)
+    event_types = [event.event_type for event in uow.load("run-1")]
+
+    assert "MatchEvaluated" not in event_types
+    assert "RatingUpdated" not in event_types
+    assert error is not None
+    assert uow.task_state("ranking-task") == "result_received"
+    assert uow.external_call_state("ranking-call") == "agent_result_submitted"
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        ("match_id", ""),
+        ("epoch_id", ""),
+        ("left_id", ""),
+        ("right_id", ""),
+        ("epoch_id", "bogus-epoch"),
+    ],
+    ids=["empty-match", "empty-epoch", "empty-left", "empty-right", "bogus-epoch"],
+)
+# Mutation caught: accepting empty identity or a non-active epoch after contract hashes match.
+@pytest.mark.asyncio
+async def test_supervisor_rejects_empty_identity_and_bogus_epoch_before_events(
+    tmp_path: Path,
+    field: str,
+    value: str,
+) -> None:
+    payload = _valid_ranking_payload()
+    payload[field] = value
+
+    uow, error = await _execute_ranking_result(tmp_path, payload)
+    event_types = [event.event_type for event in uow.load("run-1")]
+
+    assert "MatchEvaluated" not in event_types
+    assert "RatingUpdated" not in event_types
+    assert error is not None
+    assert uow.task_state("ranking-task") == "result_received"
+    assert uow.external_call_state("ranking-call") == "agent_result_submitted"
+
+
+@pytest.mark.parametrize("decision", ["inconclusive", "invalid", "needs_tiebreaker"])
+@pytest.mark.parametrize("unadmitted_id", ["h-1", "h-2"], ids=["left", "right"])
+# Mutation caught: checking participant admission only on the decisive rating branch.
+@pytest.mark.asyncio
+async def test_non_decisive_ranking_rejects_unadmitted_participant_without_events(
+    tmp_path: Path,
+    decision: str,
+    unadmitted_id: str,
+) -> None:
+    payload = _valid_ranking_payload()
+    payload["decision"] = decision
+    admitted_ids = frozenset({"h-1", "h-2"} - {unadmitted_id})
+
+    uow, error = await _execute_ranking_result(
+        tmp_path,
+        payload,
+        admitted_ids=admitted_ids,
+    )
+    event_types = [event.event_type for event in uow.load("run-1")]
+
+    assert "MatchEvaluated" not in event_types
+    assert "RatingUpdated" not in event_types
+    assert error is not None
+    assert uow.task_state("ranking-task") == "result_received"
+    assert uow.external_call_state("ranking-call") == "agent_result_submitted"
 
 
 # Mutation caught: modifying raw bytes, violating FIFO order, or returning unstable fake IDs.
@@ -111,6 +374,14 @@ async def test_skill_executor_uses_raw_first_runner_and_returns_agent_result(tmp
     assert result.raw_artifact_ref.path.startswith("raw/call-1/")
     assert artifacts.read(result.raw_artifact_ref) == raw_body
     assert uow.external_call_state("call-1") == "agent_result_submitted"
+    expected_prompt_hash = "sha256:" + hashlib.sha256(
+        expected_request["system_prompt"].encode("utf-8")
+    ).hexdigest()
+    assert result.prompt_hash == expected_prompt_hash
+    assert uow.get_external_call("call-1").execution_context == {
+        **context.model_dump(mode="json"),
+        "prompt_hash": expected_prompt_hash,
+    }
 
 
 @pytest.mark.parametrize(
@@ -261,6 +532,30 @@ class _CoreHarness:
                     }
                 )
                 payload["content_hash"] = _content_hash(payload)
+            elif response["skill"] == "ranking":
+                decision = payload.pop("decision_status")
+                winner_slot = payload.pop("winner_slot", None)
+                ranking_prompt = Path("skills/ranking/prompts/system.md").read_text(
+                    encoding="utf-8"
+                )
+                payload.update(
+                    {
+                        "match_id": f"trace-match-{index}",
+                        "epoch_id": "epoch-1",
+                        "left_id": "h-1",
+                        "right_id": "h-2",
+                        "decision": decision,
+                        "winner_id": (
+                            f"h-{winner_slot}" if decision == "decisive" else None
+                        ),
+                        "research_plan_version": 1,
+                        "evaluation_rules_hash": "sha256:rules",
+                        "ranking_prompt_hash": prompt_hash(ranking_prompt),
+                        "judge_profile_hash": "sha256:judge",
+                        "rating_policy_version": "elo-32-v1",
+                        "admission_policy_version": "admission-v1",
+                    }
+                )
             payloads.append(payload)
         return payloads
 
@@ -275,6 +570,87 @@ class _CoreHarness:
         with uow.engine.connect() as connection:
             rows = connection.execute(text("SELECT task_id FROM tasks")).all()
         return {row.task_id for row in rows}
+
+    @staticmethod
+    def _admit_ranking_participants(
+        *,
+        uow: SqliteUnitOfWork,
+        supervisor: Supervisor,
+        payload: dict,
+        policy: dict,
+        expected_sequence: int,
+    ) -> int:
+        events = uow.load("run-1")
+        threshold = policy["duplicate_likelihood_threshold"]
+        for hypothesis_id in (payload["left_id"], payload["right_id"]):
+            content_events = [
+                event
+                for event in events
+                if event.event_type == "HypothesisContentCreated"
+                and event.payload.get("hypothesis_id") == hypothesis_id
+            ]
+            if len(content_events) != 1:
+                raise ValueError(
+                    f"exactly one committed content event is required for {hypothesis_id}"
+                )
+            content_hash = content_events[0].payload.get("content_hash")
+            if not isinstance(content_hash, str) or not content_hash:
+                raise ValueError(f"committed content_hash is required for {hypothesis_id}")
+            reviews = [
+                event
+                for event in events
+                if event.event_type == "ReviewCompleted"
+                and event.payload.get("hypothesis_id") == hypothesis_id
+            ]
+            completed_stages = {event.payload["stage"] for event in reviews}
+            safety_verdicts = [
+                event.payload["safety_passed"]
+                for event in reviews
+                if event.payload.get("stage") == ReviewStage.INITIAL.value
+                and "safety_passed" in event.payload
+            ]
+            if len(safety_verdicts) != 1 or not isinstance(safety_verdicts[0], bool):
+                raise ValueError(
+                    f"committed Reflection safety_passed verdict is required for {hypothesis_id}"
+                )
+            proximity = [
+                event
+                for event in events
+                if event.event_type == "ProximityAssessed"
+                and hypothesis_id
+                in {event.payload.get("left_id"), event.payload.get("right_id")}
+            ]
+            if len(proximity) != 1:
+                raise ValueError(
+                    f"exactly one committed Proximity result is required for {hypothesis_id}"
+                )
+            duplicate_likelihood = proximity[0].payload.get("duplicate_likelihood")
+            if (
+                isinstance(duplicate_likelihood, bool)
+                or not isinstance(duplicate_likelihood, int | float)
+            ):
+                raise TypeError(
+                    f"committed Proximity duplicate_likelihood must be numeric for {hypothesis_id}"
+                )
+            admission = supervisor.admit_hypothesis(
+                run_id="run-1",
+                expected_sequence=expected_sequence,
+                hypothesis_id=hypothesis_id,
+                content_hash=content_hash,
+                safety_passed=safety_verdicts[0],
+                required_stages=required_review_stages(supervisor.review_policy),
+                completed_stages=completed_stages,
+                novelty_required=policy["novelty_required"],
+                novelty_assessment=None,
+                proximity_complete=True,
+                duplicate=duplicate_likelihood >= threshold,
+            )
+            if admission.entry is None or admission.commit is None:
+                raise AssertionError(
+                    f"ranking participant admission failed: {admission.decision}"
+                )
+            expected_sequence = admission.commit.last_sequence
+        return expected_sequence
 
     def run_trace(self, trace_path: str) -> SimpleNamespace:
         return asyncio.run(self._run_trace(Path(trace_path)))
@@ -294,10 +670,12 @@ class _CoreHarness:
             epoch_id="epoch-1",
             research_plan_version=1,
             evaluation_rules_hash="sha256:rules",
-            ranking_prompt_hash="sha256:ranking-prompt",
+            ranking_prompt_hash=prompt_hash(
+                Path("skills/ranking/prompts/system.md").read_text(encoding="utf-8")
+            ),
             judge_profile_hash="sha256:judge",
-            rating_policy_version="1",
-            admission_policy_version="1",
+            rating_policy_version="elo-32-v1",
+            admission_policy_version="admission-v1",
             anchor_set_id="anchors-1",
         )
         started = uow.commit_domain_batch(
@@ -336,6 +714,14 @@ class _CoreHarness:
         )
 
         for index, (response, payload) in enumerate(zip(responses, payloads, strict=True)):
+            if response["skill"] == "ranking":
+                expected_sequence = self._admit_ranking_participants(
+                    uow=uow,
+                    supervisor=supervisor,
+                    payload=payload,
+                    policy=trace["policy"],
+                    expected_sequence=expected_sequence,
+                )
             task_id = self._task_id(index, response)
             try:
                 uow.task_state(task_id)

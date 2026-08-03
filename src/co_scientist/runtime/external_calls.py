@@ -28,6 +28,12 @@ def execution_context_fingerprint(context: Mapping[str, Any]) -> str:
     return request_fingerprint(dict(context))
 
 
+def prompt_hash(prompt: str) -> str:
+    """Hash the exact UTF-8 prompt bytes bound to one external request."""
+
+    return "sha256:" + hashlib.sha256(prompt.encode("utf-8")).hexdigest()
+
+
 class ExternalCallRunner:
     """Advance durable external calls without repeating committed work."""
 
@@ -72,6 +78,19 @@ class ExternalCallRunner:
     def _assert_fingerprint(call: PersistedExternalCall, fingerprint: str) -> None:
         if call.request_fingerprint != fingerprint:
             raise ValueError(f"call {call.external_call_id} request fingerprint mismatch")
+
+    @staticmethod
+    def _assert_prompt_hash(
+        request: Mapping[str, Any],
+        context: AgentExecutionContext,
+    ) -> None:
+        prompt = request.get("system_prompt")
+        if prompt is None:
+            return
+        if not isinstance(prompt, str):
+            raise TypeError("system_prompt must be a string")
+        if context.prompt_hash != prompt_hash(prompt):
+            raise ValueError("execution context prompt hash does not match request")
 
     @staticmethod
     def _assert_manifest_provenance(
@@ -317,6 +336,7 @@ class ExternalCallRunner:
         validator: Validator,
         context: AgentExecutionContext,
     ) -> AgentResult:
+        self._assert_prompt_hash(request, context)
         fingerprint = request_fingerprint(request)
         try:
             call = self.uow.get_external_call(call_id)

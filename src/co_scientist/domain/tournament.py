@@ -1,4 +1,6 @@
+from collections.abc import Mapping
 from enum import StrEnum
+from types import MappingProxyType
 
 from pydantic import BaseModel, ConfigDict, model_validator
 
@@ -10,6 +12,36 @@ class MatchDecision(StrEnum):
     INCONCLUSIVE = "inconclusive"
     INVALID = "invalid"
     NEEDS_TIEBREAKER = "needs_tiebreaker"
+
+
+class RatingPolicy(BaseModel):
+    """Immutable parameters selected by the version persisted on an epoch."""
+
+    model_config = ConfigDict(frozen=True)
+
+    version: str
+    initial_rating: float
+    k_factor: float
+
+
+_RATING_POLICIES: Mapping[str, RatingPolicy] = MappingProxyType(
+    {
+        "elo-32-v1": RatingPolicy(
+            version="elo-32-v1",
+            initial_rating=1200.0,
+            k_factor=32.0,
+        )
+    }
+)
+
+
+def get_rating_policy(version: str) -> RatingPolicy:
+    """Resolve a persisted rating-policy version without using mutable defaults."""
+
+    try:
+        return _RATING_POLICIES[version]
+    except KeyError as error:
+        raise ValueError(f"unknown rating policy: {version}") from error
 
 
 class TournamentEpoch(BaseModel):
@@ -47,6 +79,10 @@ class MatchResult(BaseModel):
 
     @model_validator(mode="after")
     def validate_winner(self) -> "MatchResult":
+        if not all((self.match_id, self.epoch_id, self.left_id, self.right_id)):
+            raise ValueError("match and participant IDs must be non-empty")
+        if self.left_id == self.right_id:
+            raise ValueError("match requires distinct participants")
         decisive = self.decision is MatchDecision.DECISIVE
         if decisive and self.winner_id not in {self.left_id, self.right_id}:
             raise ValueError("decisive match requires a valid winner")

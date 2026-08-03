@@ -24,12 +24,17 @@ from co_scientist.domain.states import ExternalCallState, RunState, TaskState
 from co_scientist.domain.task import NewTask, TaskMutation
 from co_scientist.domain.tournament import (
     EpochContractMismatch,
+    MatchDecision,
+    MatchResult,
     TournamentEntry,
     TournamentEpoch,
     admit_entry,
+    apply_match,
+    get_rating_policy,
     validate_match_contract,
 )
 from co_scientist.events.models import NewEvent
+from co_scientist.events.reducers import replay_tournament
 from co_scientist.supervisor.followups import FollowupIntent, derive_followup_intents
 
 
@@ -132,6 +137,12 @@ def _as_int(value: Any) -> int:
     if isinstance(value, int):
         return value
     return 0
+
+
+def _as_float(value: Any) -> float:
+    if isinstance(value, bool) or not isinstance(value, int | float):
+        raise TypeError("persisted rating value must be numeric")
+    return float(value)
 
 
 class Supervisor:
@@ -346,6 +357,175 @@ class Supervisor:
             pricing_version=str(usage.get("pricing_version", "unpriced")),
         )
 
+    def _rating_events_for_result(self, run_id: str, result: AgentResult) -> tuple[NewEvent, ...]:
+        """Persist authoritative rating changes for a complete match contract."""
+
+        if result.skill_id != "ranking":
+            return ()
+        required = {
+            "match_id",
+            "epoch_id",
+            "left_id",
+            "right_id",
+            "decision",
+            "research_plan_version",
+            "evaluation_rules_hash",
+            "ranking_prompt_hash",
+            "judge_profile_hash",
+            "rating_policy_version",
+            "admission_policy_version",
+        }
+        missing = sorted(required.difference(result.payload))
+        if missing:
+            raise ValueError(f"completed ranking result is missing required fields: {missing}")
+        stream = self.uow.load(run_id)
+        match = MatchResult.model_validate(result.payload)
+        if result.prompt_hash != result.payload.get("ranking_prompt_hash"):
+            raise ValueError("ranking execution prompt hash does not match match contract")
+        epoch = self._active_epoch(run_id)
+        if match.epoch_id != epoch.epoch_id:
+            raise ValueError(
+                f"match {match.match_id} epoch {match.epoch_id} is not active epoch {epoch.epoch_id}"
+            )
+        validate_match_contract(
+            epoch,
+            plan_version=int(result.payload["research_plan_version"]),
+            rules_hash=str(result.payload["evaluation_rules_hash"]),
+            prompt_hash=str(result.payload["ranking_prompt_hash"]),
+            judge_hash=str(result.payload["judge_profile_hash"]),
+            rating_policy=str(result.payload["rating_policy_version"]),
+            admission_policy=str(result.payload["admission_policy_version"]),
+        )
+        participants = {match.left_id, match.right_id}
+        entry_ids = {
+            str(event.payload.get("hypothesis_id"))
+            for event in stream
+            if event.event_type == "TournamentEntryCreated"
+            and event.payload.get("epoch_id") == epoch.epoch_id
+        }
+        initial_rating_ids = {
+            str(event.payload.get("hypothesis_id"))
+            for event in stream
+            if event.event_type == "InitialRatingAssigned"
+            and event.payload.get("epoch_id") == epoch.epoch_id
+        }
+        if not participants.issubset(entry_ids & initial_rating_ids):
+            raise ValueError(
+                f"match {match.match_id} references a participant not admitted to active epoch"
+            )
+        persisted_matches = [
+            event
+            for event in stream
+            if event.event_type == "MatchEvaluated"
+            and event.payload.get("match_id") == match.match_id
+        ]
+        persisted_ratings = [
+            event
+            for event in stream
+            if event.event_type == "RatingUpdated"
+            and event.payload.get("match_id") == match.match_id
+        ]
+        if persisted_matches or persisted_ratings:
+            expected_payload = {
+                **dict(result.payload),
+                "source_result_id": result.result_id,
+                "source_task_id": result.task_id,
+                "status": result.status,
+            }
+            if (
+                len(persisted_matches) != 1
+                or persisted_matches[0].payload != expected_payload
+                or persisted_matches[0].causation_id != result.result_id
+                or persisted_matches[0].correlation_id != run_id
+            ):
+                raise ValueError(f"conflicting duplicate match_id: {match.match_id}")
+            if match.decision is not MatchDecision.DECISIVE:
+                if persisted_ratings:
+                    raise ValueError(f"non-decisive duplicate match has ratings: {match.match_id}")
+                return ()
+            if len(persisted_ratings) != 2:
+                raise ValueError(f"decisive duplicate match has incomplete ratings: {match.match_id}")
+            match_index = stream.index(persisted_matches[0])
+            prior_ratings = replay_tournament(stream[:match_index]).ratings.get(match.epoch_id, {})
+            try:
+                before_left = float(prior_ratings[match.left_id])
+                before_right = float(prior_ratings[match.right_id])
+            except KeyError as error:
+                raise ValueError(
+                    f"duplicate match {match.match_id} references an unrated TournamentEntry"
+                ) from error
+            policy = get_rating_policy(str(result.payload["rating_policy_version"]))
+            after_left, after_right = apply_match(
+                before_left,
+                before_right,
+                match,
+                k_factor=policy.k_factor,
+            )
+            expected_ratings = {
+                match.left_id: (before_left, after_left),
+                match.right_id: (before_right, after_right),
+            }
+            for offset, event in enumerate(persisted_ratings, start=1):
+                hypothesis_id = event.payload.get("hypothesis_id")
+                expected = expected_ratings.pop(str(hypothesis_id), None)
+                if (
+                    expected is None
+                    or event.sequence != persisted_matches[0].sequence + offset
+                    or event.payload.get("epoch_id") != match.epoch_id
+                    or event.payload.get("rating_policy_version") != policy.version
+                    or _as_float(event.payload.get("before_rating")) != expected[0]
+                    or _as_float(event.payload.get("rating")) != expected[1]
+                    or event.causation_id != result.result_id
+                    or event.correlation_id != run_id
+                ):
+                    raise ValueError(f"duplicate match rating provenance mismatch: {match.match_id}")
+            if expected_ratings:
+                raise ValueError(f"duplicate match rating participants mismatch: {match.match_id}")
+            return tuple(
+                NewEvent(
+                    event_type=event.event_type,
+                    schema_version=event.schema_version,
+                    payload=event.payload,
+                    causation_id=event.causation_id,
+                    correlation_id=event.correlation_id,
+                )
+                for event in persisted_ratings
+            )
+        if match.decision is not MatchDecision.DECISIVE:
+            return ()
+        policy = get_rating_policy(epoch.rating_policy_version)
+        epoch_ratings = replay_tournament(stream).ratings.get(match.epoch_id, {})
+        try:
+            before_left = float(epoch_ratings[match.left_id])
+            before_right = float(epoch_ratings[match.right_id])
+        except KeyError as error:
+            raise ValueError(f"match {match.match_id} references an unrated TournamentEntry") from error
+        after_left, after_right = apply_match(
+            before_left,
+            before_right,
+            match,
+            k_factor=policy.k_factor,
+        )
+        return tuple(
+            NewEvent(
+                event_type="RatingUpdated",
+                payload={
+                    "match_id": match.match_id,
+                    "epoch_id": match.epoch_id,
+                    "hypothesis_id": hypothesis_id,
+                    "before_rating": before,
+                    "rating": after,
+                    "rating_policy_version": policy.version,
+                },
+                causation_id=result.result_id,
+                correlation_id=run_id,
+            )
+            for hypothesis_id, before, after in (
+                (match.left_id, before_left, after_left),
+                (match.right_id, before_right, after_right),
+            )
+        )
+
     def handle_result(
         self,
         run_id: str,
@@ -367,7 +547,8 @@ class Supervisor:
         if call.run_id != run_id or call.task_id != task_id:
             raise ValueError("external call does not match Supervisor command ownership")
         if result.status == "completed":
-            events = self._events_for_result(result)
+            rating_events = self._rating_events_for_result(run_id, result)
+            events = (*self._events_for_result(result), *rating_events)
             followups = self._followup_tasks(run_id=run_id, events=events)
             events = (
                 *events,

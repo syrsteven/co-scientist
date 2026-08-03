@@ -21,6 +21,7 @@ class AgentExecutionContext(BaseModel):
     skill_version: str
     output_schema_version: int
     input_snapshot_hash: str
+    prompt_hash: str | None = None
 
 
 class AgentResult(BaseModel):
@@ -37,6 +38,7 @@ class AgentResult(BaseModel):
     skill_version: str
     output_schema_version: int
     input_snapshot_hash: str
+    prompt_hash: str | None = None
     status: Literal["completed", "partial", "rejected", "failed"]
     payload: Mapping[str, Any]
     evidence_refs: tuple[str, ...] = ()

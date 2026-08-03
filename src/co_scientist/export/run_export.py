@@ -5,16 +5,19 @@ from __future__ import annotations
 import hashlib
 import json
 import shutil
-from collections.abc import Mapping
+from collections.abc import Iterator, Mapping
+from contextlib import AbstractContextManager, contextmanager
 from decimal import Decimal
 from pathlib import Path
 from typing import Any, Protocol
 
 from pydantic import BaseModel, ConfigDict
 from sqlalchemy import select
+from sqlalchemy.orm import Session
 
 from co_scientist.adapters.persistence.sqlite import (
     CostEntryRow,
+    EventRow,
     ExternalCallRow,
     RunRow,
     SqliteUnitOfWork,
@@ -26,12 +29,12 @@ from co_scientist.domain.review import NoveltyAssessment, Review
 from co_scientist.domain.tournament import (
     MatchResult,
     TournamentEpoch,
-    apply_match,
     validate_match_contract,
 )
 from co_scientist.events.models import DomainEvent
 from co_scientist.events.reducers import replay_hypothesis
 from co_scientist.ports.artifact_store import ArtifactRef, ArtifactStore
+from co_scientist.runtime.external_calls import execution_context_fingerprint
 
 
 class RunReadModel(Protocol):
@@ -42,6 +45,8 @@ class RunReadModel(Protocol):
     def events(self, run_id: str) -> list[dict[str, Any]]: ...
 
     def hypotheses(self, run_id: str) -> list[dict[str, Any]]: ...
+
+    def hypothesis_projections(self, run_id: str) -> list[dict[str, Any]]: ...
 
     def reviews(self, run_id: str) -> list[dict[str, Any]]: ...
 
@@ -62,6 +67,8 @@ class RunReadModel(Protocol):
     def costs(self, run_id: str) -> list[dict[str, Any]]: ...
 
     def literature(self, run_id: str) -> dict[str, Any]: ...
+
+    def snapshot(self, run_id: str) -> AbstractContextManager[RunReadModel]: ...
 
 
 _RUN_EVENT_STATES = {
@@ -84,6 +91,15 @@ def _canonical(value: Any) -> str:
     return json.dumps(value, ensure_ascii=False, separators=(",", ":"), sort_keys=True)
 
 
+def _is_sha256(value: object) -> bool:
+    return (
+        isinstance(value, str)
+        and len(value) == 71
+        and value.startswith("sha256:")
+        and all(character in "0123456789abcdef" for character in value[7:])
+    )
+
+
 def _deduplicate(items: list[dict[str, Any]], key: str) -> list[dict[str, Any]]:
     unique: dict[str, dict[str, Any]] = {}
     for item in items:
@@ -102,8 +118,31 @@ class SqliteRunReadModel:
 
     def __init__(self, uow: SqliteUnitOfWork) -> None:
         self.uow = uow
+        self._snapshot_session: Session | None = None
+
+    @contextmanager
+    def snapshot(self, run_id: str) -> Iterator[SqliteRunReadModel]:
+        """Use one explicit SQLite read transaction for every exported projection."""
+
+        if self._snapshot_session is not None:
+            raise RuntimeError("SQLite read snapshot is already active")
+        session = self.uow.session_factory()
+        try:
+            session.connection().exec_driver_sql("BEGIN")
+            self._snapshot_session = session
+            self._run_row(run_id)
+            yield self
+        finally:
+            self._snapshot_session = None
+            session.rollback()
+            session.close()
 
     def _run_row(self, run_id: str) -> RunRow:
+        if self._snapshot_session is not None:
+            row = self._snapshot_session.get(RunRow, run_id)
+            if row is None:
+                raise KeyError(f"unknown run: {run_id}")
+            return row
         with self.uow.session_factory() as session:
             row = session.get(RunRow, run_id)
             if row is None:
@@ -113,6 +152,13 @@ class SqliteRunReadModel:
 
     def _domain_events(self, run_id: str) -> list[DomainEvent]:
         self._run_row(run_id)
+        if self._snapshot_session is not None:
+            rows = self._snapshot_session.scalars(
+                select(EventRow)
+                .where(EventRow.run_id == run_id)
+                .order_by(EventRow.sequence)
+            ).all()
+            return [row.to_domain() for row in rows]
         return self.uow.load(run_id)
 
     def _source_manifest(self, run_id: str) -> dict[str, Any]:
@@ -125,27 +171,38 @@ class SqliteRunReadModel:
         return [event.model_dump(mode="json") for event in self._domain_events(run_id)]
 
     def hypotheses(self, run_id: str) -> list[dict[str, Any]]:
-        events = self._domain_events(run_id)
         exported: list[dict[str, Any]] = []
-        for event in events:
+        for event in self._domain_events(run_id):
             if event.event_type != "HypothesisContentCreated":
                 continue
             hypothesis_id = event.payload.get("hypothesis_id")
             if not isinstance(hypothesis_id, str) or not hypothesis_id:
                 raise ValueError("HypothesisContentCreated is missing hypothesis_id")
             content = HypothesisContent.model_validate(event.payload)
-            projection = replay_hypothesis(hypothesis_id, events)
             item = content.model_dump(mode="json")
             item.update(
                 {
                     "hypothesis_id": hypothesis_id,
                     "content_hash": event.payload.get("content_hash", content.content_hash),
                     "created_sequence": event.sequence,
-                    "projection": projection.model_dump(mode="json"),
                 }
             )
             exported.append(item)
         return exported
+
+    def hypothesis_projections(self, run_id: str) -> list[dict[str, Any]]:
+        events = self._domain_events(run_id)
+        hypothesis_ids = sorted(
+            {
+                str(event.payload["hypothesis_id"])
+                for event in events
+                if event.event_type == "HypothesisContentCreated"
+            }
+        )
+        return [
+            replay_hypothesis(hypothesis_id, events).model_dump(mode="json")
+            for hypothesis_id in hypothesis_ids
+        ]
 
     def reviews(self, run_id: str) -> list[dict[str, Any]]:
         exported: list[dict[str, Any]] = []
@@ -194,13 +251,6 @@ class SqliteRunReadModel:
     def _ratings_and_matches(
         self, run_id: str
     ) -> tuple[dict[str, dict[str, float]], list[dict[str, Any]]]:
-        source_manifest = self._source_manifest(run_id)
-        profile = source_manifest.get("profile", {})
-        tournament = profile.get("tournament", {}) if isinstance(profile, dict) else {}
-        k_factor_value = tournament.get("k_factor", 32) if isinstance(tournament, dict) else 32
-        if isinstance(k_factor_value, bool) or not isinstance(k_factor_value, int | float):
-            raise TypeError("tournament k_factor must be numeric")
-        k_factor = float(k_factor_value)
         events = self._domain_events(run_id)
         epochs = {
             epoch.epoch_id: epoch
@@ -216,6 +266,15 @@ class SqliteRunReadModel:
                 epoch_id = str(event.payload["epoch_id"])
                 hypothesis_id = str(event.payload["hypothesis_id"])
                 ratings.setdefault(epoch_id, {})[hypothesis_id] = float(event.payload["rating"])
+
+        rating_updates: dict[str, list[dict[str, Any]]] = {}
+        for event in events:
+            if event.event_type != "RatingUpdated":
+                continue
+            match_id = event.payload.get("match_id")
+            if not isinstance(match_id, str) or not match_id:
+                raise ValueError("RatingUpdated must reference a match_id")
+            rating_updates.setdefault(match_id, []).append(dict(event.payload))
 
         matches: list[dict[str, Any]] = []
         for event in events:
@@ -245,14 +304,41 @@ class SqliteRunReadModel:
                 ) from error
             after_left, after_right = before_left, before_right
             if result.decision.value == "decisive":
-                after_left, after_right = apply_match(
-                    before_left,
-                    before_right,
-                    result,
-                    k_factor=k_factor,
-                )
+                updates = rating_updates.pop(result.match_id, [])
+                if len(updates) != 2:
+                    raise ValueError(
+                        f"decisive match {result.match_id} requires two persisted RatingUpdated events"
+                    )
+                updates_by_hypothesis = {
+                    str(update["hypothesis_id"]): update for update in updates
+                }
+                if set(updates_by_hypothesis) != {result.left_id, result.right_id}:
+                    raise ValueError(
+                        f"match {result.match_id} rating updates do not match participants"
+                    )
+                left_update = updates_by_hypothesis[result.left_id]
+                right_update = updates_by_hypothesis[result.right_id]
+                if (
+                    left_update.get("epoch_id") != result.epoch_id
+                    or right_update.get("epoch_id") != result.epoch_id
+                    or left_update.get("rating_policy_version")
+                    != epoch.rating_policy_version
+                    or right_update.get("rating_policy_version")
+                    != epoch.rating_policy_version
+                    or float(left_update["before_rating"]) != before_left
+                    or float(right_update["before_rating"]) != before_right
+                ):
+                    raise ValueError(
+                        f"match {result.match_id} persisted rating provenance mismatch"
+                    )
+                after_left = float(left_update["rating"])
+                after_right = float(right_update["rating"])
                 epoch_ratings[result.left_id] = after_left
                 epoch_ratings[result.right_id] = after_right
+            elif rating_updates.pop(result.match_id, []):
+                raise ValueError(
+                    f"non-decisive match {result.match_id} cannot have RatingUpdated events"
+                )
             item = result.model_dump(mode="json")
             item.update(
                 {
@@ -270,6 +356,8 @@ class SqliteRunReadModel:
                 }
             )
             matches.append(item)
+        if rating_updates:
+            raise ValueError("orphan RatingUpdated events reference unknown matches")
         ordered_ratings = {
             epoch_id: dict(sorted(values.items()))
             for epoch_id, values in sorted(ratings.items())
@@ -283,72 +371,82 @@ class SqliteRunReadModel:
         return self._ratings_and_matches(run_id)[0]
 
     def tasks(self, run_id: str) -> list[dict[str, Any]]:
-        with self.uow.session_factory() as session:
-            rows = session.scalars(
-                select(TaskRow).where(TaskRow.run_id == run_id).order_by(TaskRow.task_id)
-            ).all()
-            return [
-                {
-                    "task_id": row.task_id,
-                    "run_id": row.run_id,
-                    "idempotency_key": row.idempotency_key,
-                    "intent_type": row.intent_type,
-                    "state": row.state,
-                    "payload": _loads(row.payload_json),
-                    "attempt": row.attempt,
-                }
-                for row in rows
-            ]
+        statement = select(TaskRow).where(TaskRow.run_id == run_id).order_by(TaskRow.task_id)
+        if self._snapshot_session is not None:
+            rows = self._snapshot_session.scalars(statement).all()
+        else:
+            with self.uow.session_factory() as session:
+                rows = session.scalars(statement).all()
+        return [
+            {
+                "task_id": row.task_id,
+                "run_id": row.run_id,
+                "idempotency_key": row.idempotency_key,
+                "intent_type": row.intent_type,
+                "state": row.state,
+                "payload": _loads(row.payload_json),
+                "attempt": row.attempt,
+            }
+            for row in rows
+        ]
 
     def external_calls(self, run_id: str) -> list[dict[str, Any]]:
-        with self.uow.session_factory() as session:
-            rows = session.scalars(
-                select(ExternalCallRow)
-                .where(ExternalCallRow.run_id == run_id)
-                .order_by(ExternalCallRow.external_call_id)
-            ).all()
-            return [
-                {
-                    "external_call_id": row.external_call_id,
-                    "run_id": row.run_id,
-                    "task_id": row.task_id,
-                    "attempt": row.attempt,
-                    "request_fingerprint": row.request_fingerprint,
-                    "provider": row.provider,
-                    "model_or_tool": row.model_or_tool,
-                    "state": row.state,
-                    "raw_artifact_ref": _loads(row.raw_artifact_ref_json),
-                    "validated_payload": _loads(row.validated_artifact_ref_json),
-                    "agent_result_id": row.agent_result_id,
-                    "agent_result": _loads(row.agent_result_json),
-                    "applied_domain_sequence": row.applied_domain_sequence,
-                    "parent_call_id": row.parent_call_id,
-                    "provider_response_id": row.provider_response_id,
-                    "usage": _loads(row.usage_json),
-                    "execution_context": _loads(row.execution_context_json),
-                }
-                for row in rows
-            ]
+        statement = (
+            select(ExternalCallRow)
+            .where(ExternalCallRow.run_id == run_id)
+            .order_by(ExternalCallRow.external_call_id)
+        )
+        if self._snapshot_session is not None:
+            rows = self._snapshot_session.scalars(statement).all()
+        else:
+            with self.uow.session_factory() as session:
+                rows = session.scalars(statement).all()
+        return [
+            {
+                "external_call_id": row.external_call_id,
+                "run_id": row.run_id,
+                "task_id": row.task_id,
+                "attempt": row.attempt,
+                "request_fingerprint": row.request_fingerprint,
+                "provider": row.provider,
+                "model_or_tool": row.model_or_tool,
+                "state": row.state,
+                "raw_artifact_ref": _loads(row.raw_artifact_ref_json),
+                "validated_payload": _loads(row.validated_artifact_ref_json),
+                "agent_result_id": row.agent_result_id,
+                "agent_result": _loads(row.agent_result_json),
+                "applied_domain_sequence": row.applied_domain_sequence,
+                "parent_call_id": row.parent_call_id,
+                "provider_response_id": row.provider_response_id,
+                "usage": _loads(row.usage_json),
+                "execution_context": _loads(row.execution_context_json),
+            }
+            for row in rows
+        ]
 
     def costs(self, run_id: str) -> list[dict[str, Any]]:
-        with self.uow.session_factory() as session:
-            rows = session.scalars(
-                select(CostEntryRow)
-                .where(CostEntryRow.run_id == run_id)
-                .order_by(CostEntryRow.cost_entry_id)
-            ).all()
-            return [
-                {
-                    "cost_entry_id": row.cost_entry_id,
-                    "run_id": row.run_id,
-                    "external_call_id": row.external_call_id,
-                    "input_tokens": row.input_tokens,
-                    "output_tokens": row.output_tokens,
-                    "cost_usd": row.cost_usd,
-                    "pricing_version": row.pricing_version,
-                }
-                for row in rows
-            ]
+        statement = (
+            select(CostEntryRow)
+            .where(CostEntryRow.run_id == run_id)
+            .order_by(CostEntryRow.cost_entry_id)
+        )
+        if self._snapshot_session is not None:
+            rows = self._snapshot_session.scalars(statement).all()
+        else:
+            with self.uow.session_factory() as session:
+                rows = session.scalars(statement).all()
+        return [
+            {
+                "cost_entry_id": row.cost_entry_id,
+                "run_id": row.run_id,
+                "external_call_id": row.external_call_id,
+                "input_tokens": row.input_tokens,
+                "output_tokens": row.output_tokens,
+                "cost_usd": row.cost_usd,
+                "pricing_version": row.pricing_version,
+            }
+            for row in rows
+        ]
 
     def literature(self, run_id: str) -> dict[str, Any]:
         queries: set[str] = set()
@@ -416,6 +514,60 @@ class SqliteRunReadModel:
         literature = self.literature(run_id)
         epochs = self.epochs(run_id)
         ratings = self.ratings(run_id)
+        raw_anchor_sets = source_manifest.get("anchor_sets", [])
+        if not isinstance(raw_anchor_sets, list):
+            raise TypeError("anchor_sets must be a list")
+        anchor_sets: list[dict[str, Any]] = []
+        anchor_sets_by_id: dict[str, dict[str, Any]] = {}
+        for raw_anchor_set in raw_anchor_sets:
+            if not isinstance(raw_anchor_set, Mapping):
+                raise TypeError("anchor set must be an object")
+            anchor_set = dict(raw_anchor_set)
+            anchor_set_id = anchor_set.get("anchor_set_id")
+            members = anchor_set.get("members")
+            if (
+                not isinstance(anchor_set_id, str)
+                or not anchor_set_id
+                or not isinstance(members, list)
+                or not members
+            ):
+                raise ValueError("anchor set must contain frozen members")
+            normalized_members: list[dict[str, Any]] = []
+            anchor_ids: set[str] = set()
+            for member in members:
+                if not isinstance(member, Mapping):
+                    raise TypeError("anchor set member must be an object")
+                anchor_id = member.get("anchor_id")
+                if (
+                    not isinstance(anchor_id, str)
+                    or not anchor_id
+                    or anchor_id in anchor_ids
+                    or not _is_sha256(member.get("content_hash"))
+                ):
+                    raise ValueError("anchor set must contain unique frozen members")
+                anchor_ids.add(anchor_id)
+                normalized_members.append(dict(member))
+            if anchor_set_id in anchor_sets_by_id:
+                raise ValueError(f"duplicate anchor set: {anchor_set_id}")
+            normalized = {
+                **anchor_set,
+                "members": normalized_members,
+            }
+            anchor_sets_by_id[anchor_set_id] = normalized
+            anchor_sets.append(normalized)
+        for epoch in epochs:
+            anchor_set_id = epoch.get("anchor_set_id")
+            if anchor_set_id is not None and anchor_set_id not in anchor_sets_by_id:
+                raise ValueError(f"anchor set {anchor_set_id} has no frozen members")
+        profile = source_manifest.get("profile")
+        tournament = profile.get("tournament") if isinstance(profile, Mapping) else None
+        required_anchor_count = (
+            tournament.get("anchor_count") if isinstance(tournament, Mapping) else None
+        )
+        if isinstance(required_anchor_count, int) and not isinstance(required_anchor_count, bool):
+            for anchor_set in anchor_sets:
+                if len(anchor_set["members"]) != required_anchor_count:
+                    raise ValueError("anchor set member count does not match frozen profile")
         metadata = []
         for call in calls:
             context = call.get("execution_context")
@@ -431,6 +583,7 @@ class SqliteRunReadModel:
                     "skill_version": context.get("skill_version"),
                     "output_schema_version": context.get("output_schema_version"),
                     "input_snapshot_hash": context.get("input_snapshot_hash"),
+                    "prompt_hash": context.get("prompt_hash"),
                 }
             )
         return {
@@ -443,6 +596,7 @@ class SqliteRunReadModel:
             "completeness": completeness,
             "finalization_state": "completed" if completeness is not None else "not_completed",
             "tournament_epochs": epochs,
+            "anchor_sets": sorted(anchor_sets, key=lambda item: str(item["anchor_set_id"])),
             "anchor_set_ids": sorted(
                 str(epoch["anchor_set_id"])
                 for epoch in epochs
@@ -457,7 +611,7 @@ class SqliteRunReadModel:
                 )
                 for epoch_id, values in ratings.items()
             },
-            "hypothesis_count": len(self.hypotheses(run_id)),
+            "hypothesis_count": len(self.hypothesis_projections(run_id)),
             "review_count": len(self.reviews(run_id)),
             "novelty_assessment_count": len(self.novelty_assessments(run_id)),
             "proximity_edge_count": len(self.proximity(run_id)),
@@ -516,6 +670,23 @@ def _export_artifacts(
         manifest = artifacts.discover_raw(str(call["external_call_id"]))
         if manifest is None:
             raise ValueError(f"raw manifest missing for {call['external_call_id']}")
+        context = call.get("execution_context")
+        if not isinstance(context, Mapping):
+            raise TypeError(f"raw manifest has no persisted call context for {manifest.call_id}")
+        if (
+            manifest.call_id != call["external_call_id"]
+            or manifest.artifact_ref != ref
+            or manifest.run_id != call["run_id"]
+            or manifest.task_id != call["task_id"]
+            or manifest.request_fingerprint != call["request_fingerprint"]
+            or manifest.execution_context_fingerprint
+            != execution_context_fingerprint(context)
+            or manifest.provider_response_id != call["provider_response_id"]
+            or manifest.usage != call["usage"]
+        ):
+            raise ValueError(
+                f"raw manifest does not match persisted call {call['external_call_id']}"
+            )
         artifacts.confirm_raw(manifest)
         exported.append(
             {
@@ -543,24 +714,32 @@ def export_run(
     staging = output_dir.with_name(f".{output_dir.name}.partial")
     staging.mkdir(parents=False, exist_ok=False)
     try:
-        calls = read_model.external_calls(run_id)
-        _write_json(staging / "manifest.json", read_model.run_manifest(run_id))
-        _write_jsonl(staging / "events.jsonl", read_model.events(run_id))
-        _write_json(staging / "hypotheses.json", read_model.hypotheses(run_id))
-        _write_json(staging / "reviews.json", read_model.reviews(run_id))
-        _write_json(
-            staging / "novelty_assessments.json",
-            read_model.novelty_assessments(run_id),
-        )
-        _write_json(staging / "proximity.json", read_model.proximity(run_id))
-        _write_json(staging / "tournament_epochs.json", read_model.epochs(run_id))
-        _write_json(staging / "matches.json", read_model.matches(run_id))
-        _write_json(staging / "ratings.json", read_model.ratings(run_id))
-        _write_json(staging / "tasks.json", read_model.tasks(run_id))
-        _write_json(staging / "external_calls.json", calls)
-        _write_json(staging / "costs.json", read_model.costs(run_id))
-        _write_json(staging / "literature.json", read_model.literature(run_id))
-        _write_json(staging / "artifacts.json", _export_artifacts(staging, calls, artifacts))
+        with read_model.snapshot(run_id) as snapshot:
+            calls = snapshot.external_calls(run_id)
+            _write_json(staging / "manifest.json", snapshot.run_manifest(run_id))
+            _write_jsonl(staging / "events.jsonl", snapshot.events(run_id))
+            _write_json(staging / "hypotheses.json", snapshot.hypotheses(run_id))
+            _write_json(
+                staging / "hypothesis_projections.json",
+                snapshot.hypothesis_projections(run_id),
+            )
+            _write_json(staging / "reviews.json", snapshot.reviews(run_id))
+            _write_json(
+                staging / "novelty_assessments.json",
+                snapshot.novelty_assessments(run_id),
+            )
+            _write_json(staging / "proximity.json", snapshot.proximity(run_id))
+            _write_json(staging / "tournament_epochs.json", snapshot.epochs(run_id))
+            _write_json(staging / "matches.json", snapshot.matches(run_id))
+            _write_json(staging / "ratings.json", snapshot.ratings(run_id))
+            _write_json(staging / "tasks.json", snapshot.tasks(run_id))
+            _write_json(staging / "external_calls.json", calls)
+            _write_json(staging / "costs.json", snapshot.costs(run_id))
+            _write_json(staging / "literature.json", snapshot.literature(run_id))
+            _write_json(
+                staging / "artifacts.json",
+                _export_artifacts(staging, calls, artifacts),
+            )
         if output_dir.exists():
             raise FileExistsError(output_dir)
         staging.rename(output_dir)
@@ -642,22 +821,27 @@ def verify_core_release_invariants(
         )
         cross_epoch += not participants_share_epoch or not contract_matches
 
-    projected_matches = read_model.matches(run_id) if cross_epoch == 0 else []
     non_decisive_ids = {
         str(event["payload"].get("match_id"))
         for event in events
         if event["event_type"] == "MatchEvaluated"
         and event["payload"].get("decision") != "decisive"
     }
-    non_decisive_rating_updates = sum(
-        bool(match["rating_updated"])
-        for match in projected_matches
-        if match["decision"] != "decisive"
-    ) + sum(
+    persisted_non_decisive_updates = sum(
         event["event_type"] == "RatingUpdated"
         and str(event["payload"].get("match_id")) in non_decisive_ids
         for event in events
     )
+    projected_matches = (
+        read_model.matches(run_id)
+        if cross_epoch == 0 and persisted_non_decisive_updates == 0
+        else []
+    )
+    non_decisive_rating_updates = sum(
+        bool(match["rating_updated"])
+        for match in projected_matches
+        if match["decision"] != "decisive"
+    ) + persisted_non_decisive_updates
 
     proximity_result_ids = {
         str(event["payload"].get("source_result_id"))

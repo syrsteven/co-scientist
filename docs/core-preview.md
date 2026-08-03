@@ -25,6 +25,12 @@ through `SkillExecutor`/`ExternalCallRunner`, raw persistence, SQLite external-c
 state, `Supervisor.handle_result`, admission, convergence stop, and finalization before
 `export_run` reads the durable state.
 
+The test's only direct domain seed is the first `TournamentEpochOpened` event, including
+its frozen baseline-anchor IDs and content hashes. Core Preview has no public Supervisor
+command for opening the initial epoch, so the fixture commits that event atomically
+through the unit of work. Worker results, task admission, stop selection, and
+finalization still pass through the Supervisor boundary.
+
 ```bash
 PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 python3.11 -m pytest \
   -p pytest_asyncio.plugin \
@@ -62,10 +68,12 @@ The default tool name is `co-scientist-core`; no email is sent unless configured
 
 The online lens smoke sends one schema-constrained OpenAI request and one PubMed
 E-Search request through the raw-first runner and applies both results through the
-Supervisor. Expected evidence includes provider response IDs, raw artifact manifests,
-at least two generated hypotheses, at least one PMID, ExternalCall terminal states,
-and one logical cost entry per applied call. Online behavior remains unverified unless
-this opt-in command actually passes in the operator's configured environment.
+Supervisor. It checks the configured OpenAI model and PubMed E-Search provider, nonempty
+provider response IDs, manifest-to-call cross-binding for every raw artifact, at least
+two generated hypotheses, at least one PMID, terminal ExternalCall states, positive
+OpenAI token usage, and exactly one logical cost entry per applied call. Online behavior
+remains unverified unless this opt-in command actually passes in the operator's
+configured environment.
 
 ## Durable export
 
@@ -76,11 +84,19 @@ existing output directory and writes the following deterministic bundle:
   epoch/anchor/ranking state, counts, provider/model/skill/request metadata, cost total,
   and PubMed cutoff/access issues;
 - `events.jsonl`, `tasks.json`, and `external_calls.json`;
-- immutable `hypotheses.json` content plus event-rebuilt projections;
+- immutable `hypotheses.json` revisions and event-rebuilt current state in
+  `hypothesis_projections.json`;
 - `reviews.json`, `novelty_assessments.json`, `proximity.json`;
 - `tournament_epochs.json`, `matches.json`, and `ratings.json`;
 - `costs.json`, `literature.json`, and `artifacts.json`;
 - byte-preserved raw response files under `raw_artifacts/`.
+
+All database-backed files are read inside one explicit SQLite transaction snapshot.
+Artifact export additionally rejects any raw manifest whose run, task, request,
+execution context, provider response, usage, or artifact reference differs from its
+persisted ExternalCall. Ratings come only from Supervisor-persisted, versioned
+`RatingUpdated` events; prompt hashes and frozen anchor members are carried into the
+manifest rather than reconstructed from mutable configuration.
 
 The Task 14 bundle is currently a production Python interface:
 

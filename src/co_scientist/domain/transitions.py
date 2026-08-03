@@ -1,3 +1,7 @@
+from collections.abc import Mapping
+from collections.abc import Set as AbstractSet
+from typing import TypeVar
+
 from co_scientist.domain.states import ExternalCallState, RunState, TaskState
 
 
@@ -5,7 +9,14 @@ class InvalidTransition(ValueError):
     pass
 
 
-def _transition(current: object, target: object, allowed: dict[object, set[object]]) -> object:
+StateT = TypeVar("StateT")
+
+
+def _transition(
+    current: StateT,
+    target: StateT,
+    allowed: Mapping[StateT, AbstractSet[StateT]],
+) -> StateT:
     if target not in allowed[current]:
         raise InvalidTransition(f"{current} -> {target}")
     return target
@@ -79,14 +90,14 @@ EXTERNAL_CALL_TRANSITIONS = {
 
 
 def transition_run(current: RunState, target: RunState) -> RunState:
-    return _transition(current, target, RUN_TRANSITIONS)  # type: ignore[return-value]
+    return _transition(current, target, RUN_TRANSITIONS)
 
 
 def transition_task(current: TaskState, target: TaskState) -> TaskState:
-    return _transition(current, target, TASK_TRANSITIONS)  # type: ignore[return-value]
+    return _transition(current, target, TASK_TRANSITIONS)
 
 
 def transition_external_call(
     current: ExternalCallState, target: ExternalCallState
 ) -> ExternalCallState:
-    return _transition(current, target, EXTERNAL_CALL_TRANSITIONS)  # type: ignore[return-value]
+    return _transition(current, target, EXTERNAL_CALL_TRANSITIONS)

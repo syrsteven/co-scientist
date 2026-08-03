@@ -18,7 +18,7 @@ class HypothesisContent(BaseModel):
     parent_content_ids: tuple[str, ...] = ()
     supersedes_content_id: str | None = None
 
-    @computed_field
+    @computed_field  # type: ignore[prop-decorator]  # Pydantic computed property
     @property
     def content_hash(self) -> str:
         canonical = json.dumps(

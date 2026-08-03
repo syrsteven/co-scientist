@@ -11,13 +11,22 @@ from sqlalchemy import func, select
 from co_scientist.adapters.artifacts.filesystem import FilesystemArtifactStore
 from co_scientist.adapters.literature.pubmed import PubMedProvider
 from co_scientist.adapters.llm.openai_responses import OpenAIResponsesProvider
-from co_scientist.adapters.persistence.sqlite import ExternalCallRow, SqliteUnitOfWork
+from co_scientist.adapters.persistence.sqlite import (
+    CostEntryRow,
+    ExternalCallRow,
+    SqliteUnitOfWork,
+)
 from co_scientist.agents.result import AgentExecutionContext
 from co_scientist.domain.review import ReviewPolicy
 from co_scientist.domain.states import TaskState
 from co_scientist.domain.task import NewTask
 from co_scientist.ports.external_provider import RawExternalResponse
-from co_scientist.runtime.external_calls import ExternalCallRunner, request_fingerprint
+from co_scientist.runtime.external_calls import (
+    ExternalCallRunner,
+    execution_context_fingerprint,
+    prompt_hash,
+    request_fingerprint,
+)
 from co_scientist.supervisor.orchestrator import Supervisor
 
 
@@ -158,6 +167,7 @@ class OnlineCoreCli:
             skill_version="0.1.0",
             output_schema_version=1,
             input_snapshot_hash="sha256:online-lens-goal",
+            prompt_hash=prompt_hash(str(generation_request["system_prompt"])),
         )
         uow.plan_external_call(
             "online-openai-call",
@@ -243,6 +253,7 @@ class OnlineCoreCli:
             expected_sequence=scheduled.last_sequence,
         )
         self.uow = uow
+        self.artifacts = artifacts
         return run_id
 
     def status(self, run_id: str) -> SimpleNamespace:
@@ -268,11 +279,53 @@ class OnlineCoreCli:
                 )
                 or 0
             )
+            costs = session.scalars(
+                select(CostEntryRow).where(CostEntryRow.run_id == run_id)
+            ).all()
+        raw_manifests = []
+        for row in calls:
+            manifest = self.artifacts.discover_raw(row.external_call_id)
+            assert manifest is not None
+            self.artifacts.confirm_raw(manifest)
+            context = json.loads(row.execution_context_json or "null")
+            assert isinstance(context, dict)
+            assert manifest.call_id == row.external_call_id
+            assert manifest.run_id == row.run_id
+            assert manifest.task_id == row.task_id
+            assert manifest.request_fingerprint == row.request_fingerprint
+            assert manifest.execution_context_fingerprint == execution_context_fingerprint(
+                context
+            )
+            assert manifest.provider_response_id == row.provider_response_id
+            assert manifest.usage == json.loads(row.usage_json)
+            assert row.raw_artifact_ref_json is not None
+            assert manifest.artifact_ref.model_dump(mode="json") == json.loads(
+                row.raw_artifact_ref_json
+            )
+            raw_manifests.append(manifest)
         return SimpleNamespace(
             hypothesis_count=hypothesis_count,
             pubmed_source_count=pubmed_source_count,
             raw_artifact_count=sum(row.raw_artifact_ref_json is not None for row in calls),
             completed_external_call_count=completed_external_call_count,
+            provider_models={(row.provider, row.model_or_tool) for row in calls},
+            provider_response_ids={
+                row.external_call_id: row.provider_response_id for row in calls
+            },
+            external_call_ids={row.external_call_id for row in calls},
+            raw_manifest_count=len(raw_manifests),
+            logical_cost_count=len(costs),
+            logical_cost_call_ids={row.external_call_id for row in costs},
+            openai_input_tokens=next(
+                row.input_tokens
+                for row in costs
+                if row.external_call_id == "online-openai-call"
+            ),
+            openai_output_tokens=next(
+                row.output_tokens
+                for row in costs
+                if row.external_call_id == "online-openai-call"
+            ),
         )
 
 
@@ -301,3 +354,13 @@ async def test_lens_smoke_with_openai_and_pubmed(
     assert summary.hypothesis_count >= 2
     assert summary.pubmed_source_count >= 1
     assert summary.raw_artifact_count == summary.completed_external_call_count
+    assert summary.provider_models == {
+        ("openai", os.environ["CO_SCIENTIST_OPENAI_MODEL"]),
+        ("pubmed", "esearch"),
+    }
+    assert all(summary.provider_response_ids.values())
+    assert summary.raw_manifest_count == summary.completed_external_call_count
+    assert summary.logical_cost_count == summary.completed_external_call_count
+    assert summary.logical_cost_call_ids == summary.external_call_ids
+    assert summary.openai_input_tokens > 0
+    assert summary.openai_output_tokens > 0

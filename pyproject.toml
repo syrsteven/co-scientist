@@ -24,6 +24,7 @@ dev = [
   "respx>=0.21,<1",
   "ruff>=0.5,<1",
   "mypy>=1.10,<2",
+  "types-PyYAML>=6.0.12,<7",
 ]
 
 [project.scripts]

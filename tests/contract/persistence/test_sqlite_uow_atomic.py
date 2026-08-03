@@ -788,3 +788,52 @@ def test_atomic_result_rejects_traceability_mismatch_without_advancing(tmp_path)
     assert call.state == "raw_response_persisted"
     assert call.validated_payload is None
     assert call.agent_result is None
+
+
+# Mutation caught: omitting prompt_hash from persisted-call/result trace matching.
+def test_atomic_result_rejects_prompt_hash_mismatch_without_advancing(tmp_path) -> None:
+    store = _store(tmp_path)
+    store.create_run("r-1", manifest={})
+    store.enqueue_tasks(
+        [
+            NewTask(
+                task_id="task-1",
+                run_id="r-1",
+                idempotency_key="source",
+                intent_type="reflect",
+                payload={},
+            )
+        ]
+    )
+    context = {**_execution_context(), "prompt_hash": "sha256:expected-prompt"}
+    store.plan_external_call(
+        "call-1",
+        "sha256:request",
+        run_id="r-1",
+        task_id="task-1",
+        execution_context=context,
+    )
+    store.transition_call("call-1", "started")
+    ref = ArtifactRef(
+        path="raw/call-1/digest",
+        sha256="sha256:digest",
+        mime_type="application/json",
+        byte_length=2,
+    )
+    store.record_raw_and_transition("call-1", ref, "raw_response_persisted")
+    mismatched = AgentResult(
+        result_id="result-1",
+        external_call_id="call-1",
+        status="completed",
+        payload={"hypotheses": []},
+        raw_artifact_ref=ref,
+        **{**context, "prompt_hash": "sha256:different-prompt"},
+    )
+
+    with pytest.raises(ValueError, match="does not match external call"):
+        store.record_validated_and_submitted("call-1", {"hypotheses": []}, mismatched)
+
+    call = store.get_external_call("call-1")
+    assert call.state == "raw_response_persisted"
+    assert call.validated_payload is None
+    assert call.agent_result is None

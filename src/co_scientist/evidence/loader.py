@@ -1,7 +1,7 @@
 from pathlib import Path
 from typing import Literal
 
-import yaml
+import yaml  # type: ignore[import-untyped]  # types-PyYAML is a dev dependency
 from pydantic import BaseModel, ConfigDict, TypeAdapter
 
 SourceLevel = Literal[

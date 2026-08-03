@@ -9,7 +9,7 @@ from co_scientist.adapters.llm.openai_responses import OpenAIResponsesProvider
 from co_scientist.adapters.persistence.sqlite import SqliteUnitOfWork
 from co_scientist.agents.result import AgentExecutionContext
 from co_scientist.domain.task import NewTask
-from co_scientist.runtime.external_calls import ExternalCallRunner
+from co_scientist.runtime.external_calls import ExternalCallRunner, prompt_hash
 
 
 class OutputValidationError(ValueError):
@@ -64,6 +64,7 @@ def _context() -> AgentExecutionContext:
         skill_version="0.1.0",
         output_schema_version=1,
         input_snapshot_hash="sha256:input",
+        prompt_hash=prompt_hash("Return JSON."),
     )
 
 

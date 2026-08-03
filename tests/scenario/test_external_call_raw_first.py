@@ -1,3 +1,4 @@
+import hashlib
 from types import SimpleNamespace
 
 import pytest
@@ -208,6 +209,27 @@ async def test_execute_rejects_task_run_mismatch_before_provider_call(tmp_path) 
             provider=provider,
             validator=lambda raw: {"hypotheses": []},
             context=_context(run_id="r-2"),
+        )
+
+    assert provider.call_count == 0
+
+
+# Mutation caught: allowing a persisted prompt hash to describe different prompt bytes.
+@pytest.mark.asyncio
+async def test_execute_rejects_prompt_hash_mismatch_before_provider_call(tmp_path) -> None:
+    _, _, runtime = _runtime(tmp_path)
+    provider = StubProvider()
+    context = _context().model_copy(
+        update={"prompt_hash": "sha256:" + hashlib.sha256(b"other prompt").hexdigest()}
+    )
+
+    with pytest.raises(ValueError, match="prompt hash"):
+        await ExternalCallRunner(runtime).execute(
+            call_id="call-1",
+            request={"system_prompt": "actual prompt"},
+            provider=provider,
+            validator=lambda raw: {"hypotheses": []},
+            context=context,
         )
 
     assert provider.call_count == 0

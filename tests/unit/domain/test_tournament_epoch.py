@@ -3,8 +3,10 @@ from pydantic import ValidationError
 
 from co_scientist.domain.tournament import (
     EpochContractMismatch,
+    MatchResult,
     TournamentEpoch,
     admit_entry,
+    get_rating_policy,
     validate_match_contract,
 )
 
@@ -79,3 +81,30 @@ def test_epoch_contract_is_frozen() -> None:
 
     with pytest.raises(ValidationError):
         epoch.ranking_prompt_hash = "prompt-b"
+
+
+# Mutation caught: silently remapping a persisted policy version to current defaults.
+def test_rating_policy_version_resolves_frozen_elo_parameters() -> None:
+    policy = get_rating_policy("elo-32-v1")
+
+    assert policy.version == "elo-32-v1"
+    assert policy.initial_rating == 1200.0
+    assert policy.k_factor == 32.0
+
+
+def test_unknown_rating_policy_version_fails_closed() -> None:
+    with pytest.raises(ValueError, match="unknown rating policy"):
+        get_rating_policy("elo-current-default")
+
+
+# Mutation caught: treating one hypothesis as both tournament participants.
+def test_match_result_rejects_identical_participants() -> None:
+    with pytest.raises(ValidationError, match="distinct participants"):
+        MatchResult(
+            match_id="self-match",
+            epoch_id="epoch-1",
+            left_id="h-1",
+            right_id="h-1",
+            decision="decisive",
+            winner_id="h-1",
+        )

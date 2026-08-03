@@ -7,7 +7,7 @@ from typing import Any
 
 from co_scientist.agents.result import AgentExecutionContext, AgentResult
 from co_scientist.ports.external_provider import ExternalProvider
-from co_scientist.runtime.external_calls import ExternalCallRunner
+from co_scientist.runtime.external_calls import ExternalCallRunner, prompt_hash
 from co_scientist.skills.loader import load_skill
 
 
@@ -44,10 +44,15 @@ class SkillExecutor:
             raise ValueError("execution context skill version does not match manifest")
         if context.output_schema_version != 1:
             raise ValueError("Core Preview skill output schema version must be 1")
+        system_prompt = (skill_directory / manifest.prompt_path).read_text(encoding="utf-8")
+        bound_prompt_hash = prompt_hash(system_prompt)
+        if context.prompt_hash not in {None, bound_prompt_hash}:
+            raise ValueError("execution context prompt hash does not match skill prompt")
+        context = context.model_copy(update={"prompt_hash": bound_prompt_hash})
         request: dict[str, Any] = {
             "skill_id": manifest.id,
             "skill_version": manifest.version,
-            "system_prompt": (skill_directory / manifest.prompt_path).read_text(encoding="utf-8"),
+            "system_prompt": system_prompt,
             "input_schema": manifest.input_schema,
             "output_schema": manifest.output_schema,
             "allowed_tools": list(manifest.allowed_tools),

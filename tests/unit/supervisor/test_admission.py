@@ -8,8 +8,171 @@ from co_scientist.agents.result import AgentResult
 from co_scientist.domain.review import NoveltyAssessment, NoveltyVerdict, ReviewPolicy
 from co_scientist.domain.states import ExternalCallState, TaskState
 from co_scientist.domain.task import NewTask
+from co_scientist.domain.tournament import TournamentEpoch
+from co_scientist.events.models import NewEvent
 from co_scientist.ports.artifact_store import ArtifactRef
 from co_scientist.supervisor.orchestrator import Supervisor, evaluate_admission
+
+
+def _ranking_result(
+    *, result_id: str, prompt_hash: str, winner_id: str = "h-1"
+) -> AgentResult:
+    return AgentResult(
+        result_id=result_id,
+        external_call_id=f"call-{result_id}",
+        run_id="run-1",
+        task_id=f"task-{result_id}",
+        idempotency_key=f"ranking:{result_id}",
+        skill_id="ranking",
+        skill_version="0.1.0",
+        output_schema_version=1,
+        input_snapshot_hash="sha256:input",
+        prompt_hash=prompt_hash,
+        status="completed",
+        payload={
+            "match_id": "match-1",
+            "epoch_id": "epoch-1",
+            "left_id": "h-1",
+            "right_id": "h-2",
+            "decision": "decisive",
+            "winner_id": winner_id,
+            "research_plan_version": 1,
+            "evaluation_rules_hash": "sha256:rules",
+            "ranking_prompt_hash": "sha256:ranking-prompt",
+            "judge_profile_hash": "sha256:judge",
+            "rating_policy_version": "elo-32-v1",
+            "admission_policy_version": "admission-v1",
+        },
+        raw_artifact_ref=ArtifactRef(
+            path=f"raw/{result_id}",
+            sha256="sha256:" + "a" * 64,
+            mime_type="application/json",
+            byte_length=2,
+        ),
+    )
+
+
+def _ranking_uow(tmp_path) -> SqliteUnitOfWork:
+    uow = SqliteUnitOfWork(f"sqlite:///{tmp_path / 'ranking.db'}")
+    uow.create_schema()
+    uow.create_run("run-1", manifest={})
+    epoch = TournamentEpoch(
+        epoch_id="epoch-1",
+        research_plan_version=1,
+        evaluation_rules_hash="sha256:rules",
+        ranking_prompt_hash="sha256:ranking-prompt",
+        judge_profile_hash="sha256:judge",
+        rating_policy_version="elo-32-v1",
+        admission_policy_version="admission-v1",
+        anchor_set_id="anchors-1",
+    )
+    uow.commit_domain_batch(
+        run_id="run-1",
+        expected_sequence=0,
+        events=(
+            NewEvent(event_type="TournamentEpochOpened", payload=epoch.model_dump()),
+            NewEvent(
+                event_type="TournamentEntryCreated",
+                payload={"epoch_id": "epoch-1", "hypothesis_id": "h-1", "rating": 1200.0},
+            ),
+            NewEvent(
+                event_type="TournamentEntryCreated",
+                payload={"epoch_id": "epoch-1", "hypothesis_id": "h-2", "rating": 1200.0},
+            ),
+            NewEvent(
+                event_type="InitialRatingAssigned",
+                payload={"epoch_id": "epoch-1", "hypothesis_id": "h-1", "rating": 1200.0},
+            ),
+            NewEvent(
+                event_type="InitialRatingAssigned",
+                payload={"epoch_id": "epoch-1", "hypothesis_id": "h-2", "rating": 1200.0},
+            ),
+        ),
+        idempotency_key="ranking-seed",
+    )
+    return uow
+
+
+# Mutation caught: trusting the payload's epoch prompt hash without binding execution bytes.
+def test_ranking_result_prompt_hash_must_match_epoch_contract(tmp_path) -> None:
+    supervisor = Supervisor(
+        uow=_ranking_uow(tmp_path),
+        review_policy=ReviewPolicy(profile_id="minimal"),
+    )
+
+    with pytest.raises(ValueError, match="execution prompt hash"):
+        supervisor._rating_events_for_result(
+            "run-1",
+            _ranking_result(result_id="result-1", prompt_hash="sha256:different-prompt"),
+        )
+
+
+# Mutation caught: replaying ratings solely because an unrelated task reused match_id.
+def test_conflicting_duplicate_match_id_cannot_reuse_persisted_ratings(tmp_path) -> None:
+    uow = _ranking_uow(tmp_path)
+    first = _ranking_result(
+        result_id="result-1",
+        prompt_hash="sha256:ranking-prompt",
+    )
+    uow.commit_domain_batch(
+        run_id="run-1",
+        expected_sequence=5,
+        events=(
+            NewEvent(
+                event_type="MatchEvaluated",
+                payload={
+                    **dict(first.payload),
+                    "source_result_id": first.result_id,
+                    "source_task_id": first.task_id,
+                    "status": first.status,
+                },
+                causation_id=first.result_id,
+                correlation_id="run-1",
+            ),
+            NewEvent(
+                event_type="RatingUpdated",
+                payload={
+                    "match_id": "match-1",
+                    "epoch_id": "epoch-1",
+                    "hypothesis_id": "h-1",
+                    "before_rating": 1200.0,
+                    "rating": 1216.0,
+                    "rating_policy_version": "elo-32-v1",
+                },
+                causation_id=first.result_id,
+                correlation_id="run-1",
+            ),
+            NewEvent(
+                event_type="RatingUpdated",
+                payload={
+                    "match_id": "match-1",
+                    "epoch_id": "epoch-1",
+                    "hypothesis_id": "h-2",
+                    "before_rating": 1200.0,
+                    "rating": 1184.0,
+                    "rating_policy_version": "elo-32-v1",
+                },
+                causation_id=first.result_id,
+                correlation_id="run-1",
+            ),
+        ),
+        idempotency_key="first-match",
+    )
+    supervisor = Supervisor(uow=uow, review_policy=ReviewPolicy(profile_id="minimal"))
+    replayed = supervisor._rating_events_for_result(
+        "run-1", first
+    )
+    assert [event.payload["hypothesis_id"] for event in replayed] == ["h-1", "h-2"]
+    conflicting = _ranking_result(
+        result_id="result-2",
+        prompt_hash="sha256:ranking-prompt",
+        winner_id="h-2",
+    )
+
+    with pytest.raises(ValueError, match="duplicate match_id"):
+        supervisor._rating_events_for_result(
+            "run-1", conflicting
+        )
 
 
 def test_minimal_policy_admits_without_deep_review() -> None:

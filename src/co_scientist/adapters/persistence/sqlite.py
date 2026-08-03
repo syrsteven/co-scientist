@@ -515,6 +515,7 @@ class SqliteUnitOfWork:
             "skill_version",
             "output_schema_version",
             "input_snapshot_hash",
+            "prompt_hash",
         )
         if result_data.get("external_call_id") != row.external_call_id or any(
             result_data.get(field) != context.get(field) for field in trace_fields
