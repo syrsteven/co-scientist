@@ -44,6 +44,8 @@ class PubMedProvider:
         return self._raw_response(response)
 
     async def fetch_summaries(self, pmids: tuple[str, ...]) -> RawExternalResponse:
+        if not pmids:
+            raise ValueError("at least one PMID is required")
         response = await self.client.get(
             self.SUMMARY_URL,
             params={

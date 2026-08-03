@@ -74,6 +74,19 @@ async def test_pubmed_summary_caps_comma_delimited_pmids_at_fifty(respx_mock) ->
     }
 
 
+@pytest.mark.asyncio
+async def test_pubmed_summary_rejects_empty_pmids_without_a_request(respx_mock) -> None:
+    route = respx_mock.get(PubMedProvider.SUMMARY_URL).respond(
+        200, json={"result": {"uids": []}}
+    )
+    async with httpx.AsyncClient() as client:
+        provider = PubMedProvider(client, tool="co-scientist-core", email=None)
+        with pytest.raises(ValueError, match="at least one PMID"):
+            await provider.fetch_summaries(())
+
+    assert not route.called
+
+
 def test_pubmed_parser_creates_source_documents_without_proximity_edges() -> None:
     raw = b'{"result":{"uids":["123"],"123":{"title":"Lens study","authors":[]}}}'
 
