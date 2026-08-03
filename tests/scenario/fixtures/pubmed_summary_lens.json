@@ -1,0 +1,17 @@
+{
+  "result": {
+    "uids": ["1001", "1002"],
+    "1001": {
+      "uid": "1001",
+      "title": "Lens epithelial cell state after minimally invasive surgery",
+      "authors": [{"name": "Replay A"}],
+      "pubdate": "2020"
+    },
+    "1002": {
+      "uid": "1002",
+      "title": "Fibrotic versus transparent lens regeneration",
+      "authors": [{"name": "Replay B"}],
+      "pubdate": "2021"
+    }
+  }
+}
