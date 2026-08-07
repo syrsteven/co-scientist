@@ -1,6 +1,6 @@
 # Co-Scientist Core Preview Integrity Remediation Design
 
-**Status:** Approved design direction; written specification pending final user review
+**Status:** Approved for implementation planning
 
 **Date:** 2026-08-07
 
