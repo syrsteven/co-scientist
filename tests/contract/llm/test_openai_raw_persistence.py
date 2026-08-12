@@ -61,8 +61,12 @@ def _context() -> AgentExecutionContext:
         task_id="task-1",
         idempotency_key="generation:r-1:1",
         skill_id="generation",
-        skill_version="0.1.0",
+        skill_version="0.2.0",
+        output_schema_id="GenerationResultV1",
         output_schema_version=1,
+        research_plan_version=1,
+        provider="openai",
+        model_or_tool="configured-model",
         input_snapshot_hash="sha256:input",
         prompt_hash=prompt_hash("Return JSON."),
     )

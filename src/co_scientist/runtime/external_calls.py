@@ -63,6 +63,8 @@ class ExternalCallRunner:
             context.run_id != call.run_id
             or context.task_id != call.task_id
             or context.idempotency_key != call.task_idempotency_key
+            or context.provider != call.provider
+            or context.model_or_tool != call.model_or_tool
             or (
                 call.execution_context is None
                 and not allows_legacy_reconstruction
@@ -347,6 +349,8 @@ class ExternalCallRunner:
                 run_id=context.run_id,
                 task_id=context.task_id,
                 execution_context=self._context_data(context),
+                provider=context.provider,
+                model_or_tool=context.model_or_tool,
             )
             self.uow.transition_call(call_id, ExternalCallState.STARTED)
             return await self._invoke_provider(

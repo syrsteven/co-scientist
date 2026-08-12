@@ -157,6 +157,8 @@ class PersistedExternalCall(BaseModel):
     task_id: str
     task_idempotency_key: str
     request_fingerprint: str
+    provider: str
+    model_or_tool: str
     state: ExternalCallState
     execution_context: Mapping[str, Any] | None
     raw_artifact_ref: ArtifactRef | None = None
@@ -410,8 +412,8 @@ class SqliteUnitOfWork:
         task_id: str,
         execution_context: Mapping[str, Any],
         attempt: int = 1,
-        provider: str = "unknown",
-        model_or_tool: str = "unknown",
+        provider: str | None = None,
+        model_or_tool: str | None = None,
         parent_call_id: str | None = None,
     ) -> None:
         with self.session_factory.begin() as session:
@@ -431,6 +433,15 @@ class SqliteUnitOfWork:
                 raise ValueError("execution context does not match external call ownership")
             if context.get("idempotency_key") != task.idempotency_key:
                 raise ValueError("execution context does not match task idempotency key")
+            context_provider = context.get("provider", "unknown")
+            context_model_or_tool = context.get("model_or_tool", "unknown")
+            resolved_provider = provider or str(context_provider)
+            resolved_model_or_tool = model_or_tool or str(context_model_or_tool)
+            if (
+                context_provider != resolved_provider
+                or context_model_or_tool != resolved_model_or_tool
+            ):
+                raise ValueError("execution context does not match external call provider")
             session.add(
                 ExternalCallRow(
                     external_call_id=call_id,
@@ -438,8 +449,8 @@ class SqliteUnitOfWork:
                     task_id=task_id,
                     attempt=attempt,
                     request_fingerprint=request_fingerprint,
-                    provider=provider,
-                    model_or_tool=model_or_tool,
+                    provider=resolved_provider,
+                    model_or_tool=resolved_model_or_tool,
                     state=ExternalCallState.PLANNED.value,
                     parent_call_id=parent_call_id,
                     usage_json="{}",
@@ -513,7 +524,11 @@ class SqliteUnitOfWork:
             "idempotency_key",
             "skill_id",
             "skill_version",
+            "output_schema_id",
             "output_schema_version",
+            "research_plan_version",
+            "provider",
+            "model_or_tool",
             "input_snapshot_hash",
             "prompt_hash",
         )
@@ -605,6 +620,8 @@ class SqliteUnitOfWork:
                 task_id=row.task_id,
                 task_idempotency_key=task.idempotency_key,
                 request_fingerprint=row.request_fingerprint,
+                provider=row.provider,
+                model_or_tool=row.model_or_tool,
                 state=ExternalCallState(row.state),
                 execution_context=(
                     json.loads(row.execution_context_json)

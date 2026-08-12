@@ -1,6 +1,6 @@
 id: proximity
 agent_type: proximity
-version: 0.1.0
+version: 0.2.0
 prompt_path: prompts/system.md
 input_schema: ProximityInputV1
 output_schema: ProximityResultV1

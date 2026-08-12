@@ -1,3 +1,4 @@
-Execute only the requested review_stage. Return scores, critical_flaws,
-evidence_refs, recommendation, and a NoveltyAssessment only for a literature
-novelty/full review. Do not infer literature novelty from Proximity.
+Return only exact ReflectionResultV1 JSON (schema_version 1). Execute only the
+requested review stage, bind the hypothesis/content/plan identifiers, and provide
+an assessed safety_status for initial_review. Do not add fields or infer literature
+novelty from Proximity.

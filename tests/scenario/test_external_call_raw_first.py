@@ -1,11 +1,15 @@
 import hashlib
+import json
+from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
 from pydantic import ValidationError
 
 from co_scientist.adapters.artifacts.filesystem import FilesystemArtifactStore
+from co_scientist.adapters.llm.fake import FakeLLMProvider
 from co_scientist.adapters.persistence.sqlite import SqliteUnitOfWork
+from co_scientist.agents.executor import SkillExecutor
 from co_scientist.agents.result import AgentExecutionContext, AgentResult
 from co_scientist.domain.task import NewTask
 from co_scientist.ports.artifact_store import ArtifactRef
@@ -20,7 +24,7 @@ class StubProvider:
     async def invoke(self, request):
         self.call_count += 1
         return RawExternalResponse(
-            body=b'{"hypotheses":[]}',
+            body=json.dumps(_valid_generation_payload(), separators=(",", ":")).encode(),
             mime_type="application/json",
             provider_response_id="stub-1",
             usage={"tokens": {"input": 7}},
@@ -46,6 +50,28 @@ class AtomicResultFailingUnitOfWork(SqliteUnitOfWork):
         raise RuntimeError("database unavailable")
 
 
+def _valid_generation_payload() -> dict[str, object]:
+    return {
+        "schema_version": 1,
+        "research_plan_version": 1,
+        "hypotheses": [
+            {
+                "schema_version": 1,
+                "hypothesis_id": "h-1",
+                "content_id": "c-1",
+                "research_plan_version": 1,
+                "title": "Mechanical gate",
+                "claim": "Capsule strain precedes EMT commitment.",
+                "mechanism_chain": ["strain", "YAP", "cell fate"],
+                "assumptions": ["strain is sensed before commitment"],
+                "predictions": ["normalizing strain reduces fibrosis"],
+                "falsifiers": ["cell fate changes before strain"],
+                "generation_strategy": "causal contrast",
+            }
+        ],
+    }
+
+
 def _context(
     *, run_id: str = "r-1", task_id: str = "task-1"
 ) -> AgentExecutionContext:
@@ -54,8 +80,12 @@ def _context(
         task_id=task_id,
         idempotency_key="generation:r-1:1",
         skill_id="generation",
-        skill_version="0.1.0",
+        skill_version="0.2.0",
+        output_schema_id="GenerationResultV1",
         output_schema_version=1,
+        research_plan_version=1,
+        provider="stub",
+        model_or_tool="stub-v1",
         input_snapshot_hash="sha256:input",
     )
 
@@ -79,6 +109,95 @@ def _runtime(tmp_path, *, uow_type=SqliteUnitOfWork, artifacts=None):
     return uow, artifact_store, SimpleNamespace(uow=uow, artifacts=artifact_store)
 
 
+@pytest.mark.parametrize(
+    ("skill_id", "schema_id", "malformed_payload"),
+    [
+        (
+            "generation",
+            "GenerationResultV1",
+            {
+                "schema_version": 1,
+                "research_plan_version": 1,
+                "hypotheses": [{"hypothesis_id": "h-1"}],
+            },
+        ),
+        (
+            "reflection",
+            "ReflectionResultV1",
+            {
+                "schema_version": 1,
+                "research_plan_version": 1,
+                "review_id": "review-1",
+                "hypothesis_id": "h-1",
+                "content_hash": "sha256:" + "a" * 64,
+                "stage": "initial_review",
+                "recommendation": "pass",
+                "safety_status": "not_assessed",
+            },
+        ),
+    ],
+)
+@pytest.mark.asyncio
+async def test_skill_executor_rejects_malformed_scientific_json_after_raw_persistence(
+    tmp_path: Path,
+    skill_id: str,
+    schema_id: str,
+    malformed_payload: dict[str, object],
+) -> None:
+    uow = SqliteUnitOfWork(f"sqlite:///{tmp_path / f'{skill_id}.db'}")
+    uow.create_schema()
+    uow.create_run("run-1", manifest={})
+    task_id = f"{skill_id}-task"
+    uow.enqueue_tasks(
+        [
+            NewTask(
+                task_id=task_id,
+                run_id="run-1",
+                idempotency_key=f"{skill_id}:run-1:1",
+                intent_type=f"run_{skill_id}",
+                payload={},
+            )
+        ]
+    )
+    artifacts = FilesystemArtifactStore(tmp_path / f"{skill_id}-artifacts")
+    raw_body = json.dumps(malformed_payload, separators=(",", ":")).encode("utf-8")
+    provider = FakeLLMProvider([raw_body])
+    context = AgentExecutionContext(
+        run_id="run-1",
+        task_id=task_id,
+        idempotency_key=f"{skill_id}:run-1:1",
+        skill_id=skill_id,
+        skill_version="0.2.0",
+        output_schema_id=schema_id,
+        output_schema_version=1,
+        research_plan_version=1,
+        provider="fake",
+        model_or_tool="fake-v1",
+        input_snapshot_hash="sha256:input",
+    )
+
+    with pytest.raises(ValidationError):
+        await SkillExecutor(
+            ExternalCallRunner(SimpleNamespace(uow=uow, artifacts=artifacts)), provider
+        ).execute(
+            call_id=f"{skill_id}-call",
+            skill_directory=Path("skills") / skill_id,
+            inputs={},
+            context=context,
+        )
+
+    call = uow.get_external_call(f"{skill_id}-call")
+    assert provider.call_count == 1
+    assert call.state == "validation_failed"
+    assert call.raw_artifact_ref is not None
+    assert artifacts.read(call.raw_artifact_ref) == raw_body
+    assert call.validated_payload is None
+    assert call.agent_result is None
+    assert uow.load("run-1") == []
+    assert uow.task_state(task_id) == "pending"
+    assert call.usage == {}
+
+
 @pytest.mark.asyncio
 async def test_validator_observes_persisted_raw_artifact(tmp_path) -> None:
     uow, artifacts, runtime = _runtime(tmp_path)
@@ -87,7 +206,7 @@ async def test_validator_observes_persisted_raw_artifact(tmp_path) -> None:
 
     def validator(raw: bytes):
         observed.append(uow.external_call_state("call-1"))
-        return {"hypotheses": []}
+        return _valid_generation_payload()
 
     result = await ExternalCallRunner(runtime).execute(
         call_id="call-1",
@@ -104,12 +223,15 @@ async def test_validator_observes_persisted_raw_artifact(tmp_path) -> None:
     assert result.task_id == "task-1"
     assert result.idempotency_key == "generation:r-1:1"
     assert result.skill_id == "generation"
-    assert result.skill_version == "0.1.0"
+    assert result.skill_version == "0.2.0"
+    assert result.output_schema_id == "GenerationResultV1"
     assert result.output_schema_version == 1
     assert result.input_snapshot_hash == "sha256:input"
     assert result.raw_artifact_ref.path.startswith("raw/call-1/")
     assert not result.raw_artifact_ref.path.startswith("/")
-    assert artifacts.read(result.raw_artifact_ref) == b'{"hypotheses":[]}'
+    assert artifacts.read(result.raw_artifact_ref) == json.dumps(
+        _valid_generation_payload(), separators=(",", ":")
+    ).encode()
     assert uow.external_call_state("call-1") == "agent_result_submitted"
 
     with pytest.raises(ValidationError, match="frozen"):
@@ -126,7 +248,7 @@ async def test_provider_failure_before_response_is_durable(tmp_path) -> None:
             call_id="call-1",
             request={"prompt": "generate"},
             provider=provider,
-            validator=lambda raw: {"hypotheses": []},
+            validator=lambda raw: _valid_generation_payload(),
             context=_context(),
         )
 
@@ -172,7 +294,9 @@ async def test_validator_failure_is_terminal_with_raw_artifact_intact(tmp_path) 
     persisted = uow.get_external_call("call-1")
     assert persisted.state == "validation_failed"
     assert persisted.raw_artifact_ref is not None
-    assert artifacts.read(persisted.raw_artifact_ref) == b'{"hypotheses":[]}'
+    assert artifacts.read(persisted.raw_artifact_ref) == json.dumps(
+        _valid_generation_payload(), separators=(",", ":")
+    ).encode()
 
 
 @pytest.mark.asyncio
@@ -184,14 +308,16 @@ async def test_infrastructure_failure_after_durable_raw_remains_recoverable(tmp_
             call_id="call-1",
             request={"prompt": "generate"},
             provider=StubProvider(),
-            validator=lambda raw: {"hypotheses": []},
+            validator=lambda raw: _valid_generation_payload(),
             context=_context(),
         )
 
     call = uow.get_external_call("call-1")
     assert call.state == "raw_response_persisted"
     assert call.raw_artifact_ref is not None
-    assert artifacts.read(call.raw_artifact_ref) == b'{"hypotheses":[]}'
+    assert artifacts.read(call.raw_artifact_ref) == json.dumps(
+        _valid_generation_payload(), separators=(",", ":")
+    ).encode()
     assert call.validated_payload is None
     assert call.agent_result is None
 
@@ -252,11 +378,15 @@ def test_agent_result_payload_is_deeply_immutable_and_json_serializable() -> Non
         task_id="task-1",
         idempotency_key="generation:r-1:1",
         skill_id="generation",
-        skill_version="0.1.0",
+        skill_version="0.2.0",
+        output_schema_id="GenerationResultV1",
         output_schema_version=1,
+        research_plan_version=1,
+        provider="stub",
+        model_or_tool="stub-v1",
         input_snapshot_hash="sha256:input",
         status="completed",
-        payload={"nested": {"score": 1}, "items": ["a", "b"]},
+        payload=_valid_generation_payload(),
         raw_artifact_ref=ArtifactRef(
             path="raw/call-1/digest",
             sha256="sha256:digest",
@@ -266,14 +396,11 @@ def test_agent_result_payload_is_deeply_immutable_and_json_serializable() -> Non
     )
 
     with pytest.raises(TypeError):
-        result.payload["nested"]["score"] = 2
+        result.payload["hypotheses"][0]["title"] = "mutated"
     with pytest.raises(AttributeError):
-        result.payload["items"].append("c")
+        result.payload["hypotheses"].append("extra")
     assert result.run_id == "r-1"
-    assert result.model_dump(mode="json")["payload"] == {
-        "nested": {"score": 1},
-        "items": ["a", "b"],
-    }
+    assert result.model_dump(mode="json")["payload"] == _valid_generation_payload()
 
 
 def test_raw_response_usage_is_deeply_immutable_and_json_serializable() -> None:
@@ -303,11 +430,23 @@ def test_agent_result_payload_rejects_non_json_values(invalid) -> None:
             task_id="task-1",
             idempotency_key="generation:r-1:1",
             skill_id="generation",
-            skill_version="0.1.0",
+            skill_version="0.2.0",
+            output_schema_id="GenerationResultV1",
             output_schema_version=1,
+            research_plan_version=1,
+            provider="stub",
+            model_or_tool="stub-v1",
             input_snapshot_hash="sha256:input",
             status="completed",
-            payload={"invalid": invalid},
+            payload={
+                **_valid_generation_payload(),
+                "hypotheses": [
+                    {
+                        **_valid_generation_payload()["hypotheses"][0],
+                        "title": invalid,
+                    }
+                ],
+            },
             raw_artifact_ref=ArtifactRef(
                 path="raw/call-1/digest",
                 sha256="sha256:digest",

@@ -14,6 +14,39 @@ from co_scientist.ports.artifact_store import ArtifactRef
 from co_scientist.supervisor.orchestrator import Supervisor, evaluate_admission
 
 
+def _generation_payload() -> dict[str, object]:
+    return {
+        "schema_version": 1,
+        "research_plan_version": 1,
+        "hypotheses": [
+            {
+                "schema_version": 1,
+                "hypothesis_id": "h-1",
+                "content_id": "content-1",
+                "research_plan_version": 1,
+                "title": "Candidate",
+                "claim": "The candidate preserves typed scientific provenance.",
+                "mechanism_chain": ["typed", "validated", "applied"],
+                "assumptions": [],
+                "predictions": [],
+                "falsifiers": [],
+                "generation_strategy": "admission fixture",
+            }
+        ],
+    }
+
+
+def _non_scientific_payload(status: str) -> dict[str, object]:
+    return {
+        "schema_version": 1,
+        "outcome": status,
+        "reason_code": f"fixture_{status}",
+        "message": f"The fixture returned {status}.",
+        "retryable": status == "partial",
+        "missing_requirements": [],
+    }
+
+
 def _ranking_result(
     *, result_id: str, prompt_hash: str, winner_id: str = "h-1"
 ) -> AgentResult:
@@ -24,24 +57,34 @@ def _ranking_result(
         task_id=f"task-{result_id}",
         idempotency_key=f"ranking:{result_id}",
         skill_id="ranking",
-        skill_version="0.1.0",
+        skill_version="0.2.0",
+        output_schema_id="RankingResultV1",
         output_schema_version=1,
+        research_plan_version=1,
+        provider="stub",
+        model_or_tool="stub-model",
         input_snapshot_hash="sha256:input",
         prompt_hash=prompt_hash,
         status="completed",
         payload={
+            "schema_version": 1,
+            "research_plan_version": 1,
             "match_id": "match-1",
             "epoch_id": "epoch-1",
             "left_id": "h-1",
+            "left_content_hash": "sha256:" + "1" * 64,
             "right_id": "h-2",
-            "decision": "decisive",
-            "winner_id": winner_id,
-            "research_plan_version": 1,
+            "right_content_hash": "sha256:" + "2" * 64,
             "evaluation_rules_hash": "sha256:rules",
             "ranking_prompt_hash": "sha256:ranking-prompt",
             "judge_profile_hash": "sha256:judge",
             "rating_policy_version": "elo-32-v1",
             "admission_policy_version": "admission-v1",
+            "decision_status": "decisive",
+            "winner_slot": 1 if winner_id == "h-1" else 2,
+            "dimension_reasons": {},
+            "confidence": 0.9,
+            "unresolved_disagreements": [],
         },
         raw_artifact_ref=ArtifactRef(
             path=f"raw/{result_id}",
@@ -120,9 +163,11 @@ def test_conflicting_duplicate_match_id_cannot_reuse_persisted_ratings(tmp_path)
         events=(
             NewEvent(
                 event_type="MatchEvaluated",
-                payload={
-                    **dict(first.payload),
-                    "source_result_id": first.result_id,
+                    payload={
+                        **dict(first.payload),
+                        "decision": "decisive",
+                        "winner_id": "h-1",
+                        "source_result_id": first.result_id,
                     "source_task_id": first.task_id,
                     "status": first.status,
                 },
@@ -385,8 +430,12 @@ def test_handle_result_atomically_applies_policy_owned_work_and_ignores_agent_ac
         "task_id": "generate-1",
         "idempotency_key": "generation:run-1:1",
         "skill_id": "generation",
-        "skill_version": "0.1.0",
+        "skill_version": "0.2.0",
+        "output_schema_id": "GenerationResultV1",
         "output_schema_version": 1,
+        "research_plan_version": 1,
+        "provider": "stub",
+        "model_or_tool": "stub-model",
         "input_snapshot_hash": "sha256:input",
     }
     uow.plan_external_call(
@@ -414,15 +463,7 @@ def test_handle_result_atomically_applies_policy_owned_work_and_ignores_agent_ac
             "pricing_version": "2026-07",
         },
     )
-    payload = {
-        "hypotheses": [
-            {
-                "hypothesis_id": "h-1",
-                "content_hash": "sha256:content",
-                "title": "Candidate",
-            }
-        ]
-    }
+    payload = _generation_payload()
     result = AgentResult(
         result_id="result-1",
         external_call_id="call-1",
@@ -430,8 +471,12 @@ def test_handle_result_atomically_applies_policy_owned_work_and_ignores_agent_ac
         task_id="generate-1",
         idempotency_key="generation:run-1:1",
         skill_id="generation",
-        skill_version="0.1.0",
+        skill_version="0.2.0",
+        output_schema_id="GenerationResultV1",
         output_schema_version=1,
+        research_plan_version=1,
+        provider="stub",
+        model_or_tool="stub-model",
         input_snapshot_hash="sha256:input",
         status="completed",
         payload=payload,
@@ -498,8 +543,12 @@ def _submitted_generation_result(tmp_path, status: str):
         "task_id": "generate-1",
         "idempotency_key": "generation:run-1:1",
         "skill_id": "generation",
-        "skill_version": "0.1.0",
+        "skill_version": "0.2.0",
+        "output_schema_id": "GenerationResultV1",
         "output_schema_version": 1,
+        "research_plan_version": 1,
+        "provider": "stub",
+        "model_or_tool": "stub-model",
         "input_snapshot_hash": "sha256:input",
     }
     uow.plan_external_call(
@@ -522,15 +571,11 @@ def _submitted_generation_result(tmp_path, status: str):
         ExternalCallState.RAW_RESPONSE_PERSISTED,
         usage={"input_tokens": 3, "output_tokens": 2, "pricing_version": "test"},
     )
-    payload = {
-        "hypotheses": [
-            {
-                "hypothesis_id": "h-1",
-                "content_id": "content-1",
-                "content_hash": "sha256:content",
-            }
-        ]
-    }
+    payload = (
+        _generation_payload()
+        if status == "completed"
+        else _non_scientific_payload(status)
+    )
     result = AgentResult(
         result_id=f"result-{status}",
         external_call_id="call-1",
@@ -538,8 +583,12 @@ def _submitted_generation_result(tmp_path, status: str):
         task_id="generate-1",
         idempotency_key="generation:run-1:1",
         skill_id="generation",
-        skill_version="0.1.0",
+        skill_version="0.2.0",
+        output_schema_id="GenerationResultV1",
         output_schema_version=1,
+        research_plan_version=1,
+        provider="stub",
+        model_or_tool="stub-model",
         input_snapshot_hash="sha256:input",
         status=status,
         payload=payload,

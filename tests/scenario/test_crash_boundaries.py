@@ -31,17 +31,21 @@ class _CountingProvider:
         return RawExternalResponse(
             body=json.dumps(
                 {
+                    "schema_version": 1,
+                    "research_plan_version": 1,
                     "hypotheses": [
                         {
+                            "schema_version": 1,
                             "hypothesis_id": "h-crash",
                             "content_id": "content-crash-v1",
+                            "research_plan_version": 1,
                             "title": "Crash-safe hypothesis",
                             "claim": "The domain result is applied exactly once.",
                             "mechanism_chain": ["raw", "validated", "applied"],
                             "assumptions": [],
                             "predictions": [],
                             "falsifiers": [],
-                            "content_hash": "sha256:crash-content",
+                            "generation_strategy": "crash recovery fixture",
                         }
                     ]
                 },
@@ -138,8 +142,12 @@ class CrashHarness:
             task_id=task.task_id,
             idempotency_key=task.idempotency_key,
             skill_id="generation",
-            skill_version="0.1.0",
+            skill_version="0.2.0",
+            output_schema_id="GenerationResultV1",
             output_schema_version=1,
+            research_plan_version=1,
+            provider="stub",
+            model_or_tool="stub-model",
             input_snapshot_hash="sha256:crash-input",
         )
         validator = (

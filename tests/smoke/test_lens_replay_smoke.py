@@ -54,6 +54,15 @@ MECHANISM_CHAIN = [
     "final_morphology_and_transparency",
 ]
 
+OUTPUT_SCHEMAS = {
+    "generation": "GenerationResultV1",
+    "reflection": "ReflectionResultV1",
+    "ranking": "RankingResultV1",
+    "evolution": "EvolutionResultV1",
+    "proximity": "ProximityResultV1",
+    "meta_review": "MetaReviewResultV1",
+}
+
 
 def _sha256_json(value: object) -> str:
     canonical = json.dumps(value, ensure_ascii=False, separators=(",", ":"), sort_keys=True)
@@ -231,9 +240,13 @@ class LensReplayHarness:
 
         contents = self._hypothesis_contents()
         generation_payload = {
+            "schema_version": 1,
+            "research_plan_version": 1,
             "hypotheses": [
                 {
+                    "schema_version": 1,
                     "hypothesis_id": hypothesis_id,
+                    "research_plan_version": 1,
                     **content.model_dump(mode="json"),
                     "content_hash": content.content_hash,
                     "generation_strategy": "causal-chain contrast",
@@ -266,13 +279,20 @@ class LensReplayHarness:
             provider_name="replay_pubmed",
             model_or_tool="esearch",
             validator=lambda raw: {
-                "pubmed_query": query,
-                "pubmed_query_cutoff": "2026-07-30",
-                "pmids": json.loads(raw)["esearchresult"]["idlist"],
-                "access_issues": [],
+                "schema_version": 1,
+                "research_plan_version": 1,
+                "source_content_hashes": {},
+                "system_feedback": ["PubMed search response persisted for review."],
+                "overview": json.dumps(
+                    {"pmids": json.loads(raw)["esearchresult"]["idlist"]},
+                    separators=(",", ":"),
+                    sort_keys=True,
+                ),
+                "coverage_gaps": [],
+                "safety_direction_check": "insufficient_evidence",
             },
         )
-        pmids = tuple(search_result.payload["pmids"])
+        pmids = tuple(json.loads(str(search_result.payload["overview"]))["pmids"])
         await self._run_external(
             supervisor,
             runner,
@@ -284,17 +304,15 @@ class LensReplayHarness:
             provider_name="replay_pubmed",
             model_or_tool="esummary",
             validator=lambda raw: {
-                "pubmed_query": query,
-                "pubmed_query_cutoff": "2026-07-30",
-                "source_documents": [
-                    document.model_dump(mode="json")
-                    for document in parse_pubmed_records(
-                        raw,
-                        query=query,
-                        raw_artifact_ref="external-call:call-pubmed-summary",
-                    )
+                "schema_version": 1,
+                "research_plan_version": 1,
+                "source_content_hashes": {},
+                "system_feedback": [
+                    f"Parsed {len(parse_pubmed_records(raw, query=query, raw_artifact_ref='external-call:call-pubmed-summary'))} PubMed summaries."
                 ],
-                "access_issues": [],
+                "overview": "PubMed summaries were retrieved and persisted as raw evidence.",
+                "coverage_gaps": [],
+                "safety_direction_check": "insufficient_evidence",
             },
         )
 
@@ -307,6 +325,8 @@ class LensReplayHarness:
                 skill_id="reflection",
                 inputs={"hypothesis_id": hypothesis_id, "review_stage": "initial_review"},
                 payload={
+                    "schema_version": 1,
+                    "research_plan_version": 1,
                     "review_id": f"review-initial-{hypothesis_id}",
                     "hypothesis_id": hypothesis_id,
                     "content_hash": content.content_hash,
@@ -315,7 +335,7 @@ class LensReplayHarness:
                     "dimension_scores": {"mechanistic_specificity": 0.9},
                     "critical_flaws": [],
                     "evidence_ids": [],
-                    "safety_passed": True,
+                    "safety_status": "passed",
                 },
             )
             assessment = NoveltyAssessment(
@@ -339,6 +359,8 @@ class LensReplayHarness:
                     "source_ids": ["pubmed:1001", "pubmed:1002"],
                 },
                 payload={
+                    "schema_version": 1,
+                    "research_plan_version": 1,
                     "review_id": f"review-full-{hypothesis_id}",
                     "hypothesis_id": hypothesis_id,
                     "content_hash": content.content_hash,
@@ -347,6 +369,7 @@ class LensReplayHarness:
                     "dimension_scores": {"novelty": 0.8, "testability": 0.9},
                     "critical_flaws": [],
                     "evidence_ids": ["pubmed:1001", "pubmed:1002"],
+                    "safety_status": "not_assessed",
                     "novelty_assessment": assessment.model_dump(mode="json"),
                 },
             )
@@ -358,12 +381,19 @@ class LensReplayHarness:
             skill_id="proximity",
             inputs={"left_id": "h-1", "right_id": "h-2"},
             payload={
+                "schema_version": 1,
+                "research_plan_version": 1,
+                "edge_id": "edge:h-1:h-2",
                 "left_id": "h-1",
+                "left_content_hash": contents["h-1"].content_hash,
                 "right_id": "h-2",
+                "right_content_hash": contents["h-2"].content_hash,
                 "similarity": 2,
                 "mechanism_overlap": ["early_postoperative_cell_state"],
                 "duplicate_likelihood": 0.05,
                 "cluster_suggestion": "distinct_mechanisms",
+                "rationale": "The candidates diverge after their early cell-state mechanism.",
+                "access_issues": [],
             },
         )
 
@@ -406,18 +436,26 @@ class LensReplayHarness:
                     "right_id": "h-2",
                 },
                 payload={
+                    "schema_version": 1,
+                    "research_plan_version": epoch.research_plan_version,
                     "match_id": f"match-{index}",
                     "epoch_id": epoch.epoch_id,
                     "left_id": "h-1",
+                    "left_content_hash": contents["h-1"].content_hash,
                     "right_id": "h-2",
-                    "decision": decision,
-                    "winner_id": winner_id,
-                    "research_plan_version": epoch.research_plan_version,
+                    "right_content_hash": contents["h-2"].content_hash,
                     "evaluation_rules_hash": epoch.evaluation_rules_hash,
                     "ranking_prompt_hash": epoch.ranking_prompt_hash,
                     "judge_profile_hash": epoch.judge_profile_hash,
                     "rating_policy_version": epoch.rating_policy_version,
                     "admission_policy_version": epoch.admission_policy_version,
+                    "decision_status": decision,
+                    "winner_slot": (
+                        1 if winner_id == "h-1" else 2 if winner_id == "h-2" else None
+                    ),
+                    "dimension_reasons": {"mechanism": "Replay fixture comparison."},
+                    "confidence": 0.8,
+                    "unresolved_disagreements": [],
                 },
             )
 
@@ -518,8 +556,12 @@ class LensReplayHarness:
             task_id=task_id,
             idempotency_key=task_id,
             skill_id=skill_id,
-            skill_version="0.1.0",
+            skill_version="0.2.0",
+            output_schema_id=OUTPUT_SCHEMAS[skill_id],
             output_schema_version=1,
+            research_plan_version=1,
+            provider="replay",
+            model_or_tool="core-preview-fixture-v1",
             input_snapshot_hash=_sha256_json(inputs),
             prompt_hash=prompt_hash(str(request["system_prompt"])),
         )
@@ -573,8 +615,12 @@ class LensReplayHarness:
             task_id=task_id,
             idempotency_key=task_id,
             skill_id=skill_id,
-            skill_version="0.1.0",
+            skill_version="0.2.0",
+            output_schema_id=OUTPUT_SCHEMAS[skill_id],
             output_schema_version=1,
+            research_plan_version=1,
+            provider=provider_name,
+            model_or_tool=model_or_tool,
             input_snapshot_hash=_sha256_json(request),
         )
         self.run.uow.plan_external_call(
@@ -662,12 +708,11 @@ def test_lens_replay_exports_a_traceable_ranked_result(
     assert all(call["state"] == "domain_result_applied" for call in bundle.external_calls)
     assert len(bundle.artifacts) == len(bundle.external_calls) == len(bundle.costs)
     assert all((bundle.root / item["exported_path"]).is_file() for item in bundle.artifacts)
-    assert bundle.literature["pubmed_query_cutoffs"] == ["2026-07-30"]
+    # Literature responses remain available through their durable raw artifacts;
+    # the closed MetaReviewResultV1 contract no longer copies provider fields into events.
+    assert bundle.literature["pubmed_query_cutoffs"] == []
     assert bundle.literature["access_issues"] == []
-    assert {source["canonical_id"] for source in bundle.literature["source_documents"]} == {
-        "PMID:1001",
-        "PMID:1002",
-    }
+    assert bundle.literature["source_documents"] == []
     event_types = [
         json.loads(line)["event_type"]
         for line in (bundle.root / "events.jsonl").read_text(encoding="utf-8").splitlines()
@@ -767,11 +812,19 @@ def test_export_uses_one_explicit_sqlite_snapshot_during_concurrent_commit(
                     "concurrent-request",
                     run_id=run_id,
                     task_id=task.task_id,
-                    execution_context={
-                        "run_id": run_id,
-                        "task_id": task.task_id,
-                        "idempotency_key": task.idempotency_key,
-                    },
+                        execution_context={
+                            "run_id": run_id,
+                            "task_id": task.task_id,
+                            "idempotency_key": task.idempotency_key,
+                            "skill_id": "meta_review",
+                            "skill_version": "0.2.0",
+                            "output_schema_id": "MetaReviewResultV1",
+                            "output_schema_version": 1,
+                            "research_plan_version": 1,
+                            "provider": "concurrent-provider",
+                            "model_or_tool": "concurrent-model",
+                            "input_snapshot_hash": "sha256:concurrent-input",
+                        },
                     provider="concurrent-provider",
                     model_or_tool="concurrent-model",
                 )

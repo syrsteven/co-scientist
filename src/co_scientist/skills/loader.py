@@ -8,6 +8,8 @@ from typing import Literal
 import yaml  # type: ignore[import-untyped]
 from pydantic import BaseModel, ConfigDict
 
+from co_scientist.agents.payloads import CoreOutputSchemaId, resolve_output_schema
+
 
 class SkillManifest(BaseModel):
     """Immutable capability boundary for one worker skill."""
@@ -26,7 +28,7 @@ class SkillManifest(BaseModel):
     version: str
     prompt_path: str
     input_schema: str
-    output_schema: str
+    output_schema: CoreOutputSchemaId
     allowed_tools: tuple[str, ...] = ()
     allowed_capabilities: tuple[Literal["return_agent_result"], ...]
 
@@ -36,7 +38,7 @@ CORE_SKILL_CONTRACTS: Mapping[str, SkillManifest] = MappingProxyType(
         "generation": SkillManifest(
             id="generation",
             agent_type="generation",
-            version="0.1.0",
+            version="0.2.0",
             prompt_path="prompts/system.md",
             input_schema="GenerationInputV1",
             output_schema="GenerationResultV1",
@@ -46,7 +48,7 @@ CORE_SKILL_CONTRACTS: Mapping[str, SkillManifest] = MappingProxyType(
         "reflection": SkillManifest(
             id="reflection",
             agent_type="reflection",
-            version="0.1.0",
+            version="0.2.0",
             prompt_path="prompts/system.md",
             input_schema="ReflectionInputV1",
             output_schema="ReflectionResultV1",
@@ -56,7 +58,7 @@ CORE_SKILL_CONTRACTS: Mapping[str, SkillManifest] = MappingProxyType(
         "ranking": SkillManifest(
             id="ranking",
             agent_type="ranking",
-            version="0.1.0",
+            version="0.2.0",
             prompt_path="prompts/system.md",
             input_schema="RankingInputV1",
             output_schema="RankingResultV1",
@@ -66,7 +68,7 @@ CORE_SKILL_CONTRACTS: Mapping[str, SkillManifest] = MappingProxyType(
         "proximity": SkillManifest(
             id="proximity",
             agent_type="proximity",
-            version="0.1.0",
+            version="0.2.0",
             prompt_path="prompts/system.md",
             input_schema="ProximityInputV1",
             output_schema="ProximityResultV1",
@@ -76,7 +78,7 @@ CORE_SKILL_CONTRACTS: Mapping[str, SkillManifest] = MappingProxyType(
         "evolution": SkillManifest(
             id="evolution",
             agent_type="evolution",
-            version="0.1.0",
+            version="0.2.0",
             prompt_path="prompts/system.md",
             input_schema="EvolutionInputV1",
             output_schema="EvolutionResultV1",
@@ -86,7 +88,7 @@ CORE_SKILL_CONTRACTS: Mapping[str, SkillManifest] = MappingProxyType(
         "meta_review": SkillManifest(
             id="meta_review",
             agent_type="meta_review",
-            version="0.1.0",
+            version="0.2.0",
             prompt_path="prompts/system.md",
             input_schema="MetaReviewInputV1",
             output_schema="MetaReviewResultV1",
@@ -111,4 +113,5 @@ def load_skill(directory: Path) -> SkillManifest:
         raise FileNotFoundError(prompt)
     if manifest.allowed_capabilities != ("return_agent_result",):
         raise ValueError("skills may only return AgentResult")
+    resolve_output_schema(manifest.output_schema, 1)
     return manifest

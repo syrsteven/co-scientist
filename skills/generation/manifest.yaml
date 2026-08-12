@@ -1,6 +1,6 @@
 id: generation
 agent_type: generation
-version: 0.1.0
+version: 0.2.0
 prompt_path: prompts/system.md
 input_schema: GenerationInputV1
 output_schema: GenerationResultV1

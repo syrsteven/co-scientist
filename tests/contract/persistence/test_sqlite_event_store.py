@@ -31,6 +31,31 @@ class ProviderMustNotRun:
         raise AssertionError("provider must not be called")
 
 
+def _valid_generation_payload() -> dict[str, object]:
+    return {
+        "schema_version": 1,
+        "research_plan_version": 1,
+        "hypotheses": [
+            {
+                "schema_version": 1,
+                "hypothesis_id": "h-legacy",
+                "content_id": "c-legacy",
+                "research_plan_version": 1,
+                "title": "Legacy recovery",
+                "claim": "Legacy calls recover from their durable typed payload.",
+                "mechanism_chain": ["persist", "upgrade", "recover"],
+                "assumptions": [],
+                "predictions": [],
+                "falsifiers": [],
+                "generation_strategy": "migration fixture",
+                "parent_content_ids": [],
+                "supersedes_content_id": None,
+                "content_hash": None,
+            }
+        ],
+    }
+
+
 def test_append_rejects_stale_expected_sequence(tmp_path) -> None:
     store = SqliteUnitOfWork(f"sqlite:///{tmp_path / 'core.db'}")
     store.create_schema()
@@ -146,15 +171,21 @@ def test_upgrade_existing_0001_database_supports_legacy_runtime_recovery(tmp_pat
         task_id="task-1",
         idempotency_key="generation:r-1:1",
         skill_id="generation",
-        skill_version="0.1.0",
+        skill_version="0.2.0",
+        output_schema_id="GenerationResultV1",
         output_schema_version=1,
+        research_plan_version=1,
+        provider="legacy",
+        model_or_tool="legacy",
         input_snapshot_hash="sha256:input",
     )
     artifacts = FilesystemArtifactStore(tmp_path / "artifacts")
     fingerprint = request_fingerprint({"prompt": "generate"})
+    payload = _valid_generation_payload()
+    raw_payload = json.dumps(payload, separators=(",", ":"), sort_keys=True).encode()
     ref = artifacts.persist_raw(
         "call-1",
-        b'{"hypotheses":[]}',
+        raw_payload,
         "application/json",
         request_fingerprint=fingerprint,
         run_id=context.run_id,
@@ -193,7 +224,7 @@ def test_upgrade_existing_0001_database_supports_legacy_runtime_recovery(tmp_pat
                 "task_id": "task-1",
                 "fingerprint": fingerprint,
                 "raw_ref": ref.model_dump_json(),
-                "payload": json.dumps({"hypotheses": []}),
+                "payload": json.dumps(payload),
                 "result_id": "legacy-result-1",
             },
         )
@@ -224,7 +255,7 @@ def test_upgrade_existing_0001_database_supports_legacy_runtime_recovery(tmp_pat
         )
     )
     assert result.result_id == "legacy-result-1"
-    assert result.payload == {"hypotheses": []}
+    assert result.model_dump(mode="json")["payload"] == payload
     assert provider.call_count == 0
 
     command.downgrade(config, "0001_core_tables")

@@ -31,9 +31,38 @@ def _execution_context(
         "task_id": task_id,
         "idempotency_key": idempotency_key,
         "skill_id": "generation",
-        "skill_version": "0.1.0",
+        "skill_version": "0.2.0",
+        "output_schema_id": "GenerationResultV1",
         "output_schema_version": 1,
+        "research_plan_version": 1,
+        "provider": "stub",
+        "model_or_tool": "stub-model",
         "input_snapshot_hash": "sha256:input",
+    }
+
+
+def _valid_generation_payload() -> dict[str, object]:
+    return {
+        "schema_version": 1,
+        "research_plan_version": 1,
+        "hypotheses": [
+            {
+                "schema_version": 1,
+                "hypothesis_id": "h-1",
+                "content_id": "c-1",
+                "research_plan_version": 1,
+                "title": "Atomic result",
+                "claim": "Typed results remain atomic with their call transition.",
+                "mechanism_chain": ["validate", "persist", "submit"],
+                "assumptions": [],
+                "predictions": [],
+                "falsifiers": [],
+                "generation_strategy": "atomicity fixture",
+                "parent_content_ids": [],
+                "supersedes_content_id": None,
+                "content_hash": None,
+            }
+        ],
     }
 
 
@@ -682,7 +711,7 @@ def test_validated_payload_and_full_result_commit_atomically(tmp_path) -> None:
         result_id="result-1",
         external_call_id="call-1",
         status="completed",
-        payload={"nested": {"values": [1, 2]}},
+        payload=_valid_generation_payload(),
         raw_artifact_ref=ref,
         **context,
     )
@@ -695,7 +724,7 @@ def test_validated_payload_and_full_result_commit_atomically(tmp_path) -> None:
     assert call.task_id == "task-1"
     assert call.request_fingerprint == "sha256:request"
     assert call.execution_context == context
-    assert call.validated_payload == {"nested": {"values": [1, 2]}}
+    assert call.validated_payload == _valid_generation_payload()
     assert call.agent_result == result.model_dump(mode="json")
 
 
@@ -776,13 +805,15 @@ def test_atomic_result_rejects_traceability_mismatch_without_advancing(tmp_path)
         result_id="result-1",
         external_call_id="different-call",
         status="completed",
-        payload={"hypotheses": []},
+        payload=_valid_generation_payload(),
         raw_artifact_ref=ref,
         **context,
     )
 
     with pytest.raises(ValueError, match="does not match external call"):
-        store.record_validated_and_submitted("call-1", {"hypotheses": []}, mismatched)
+        store.record_validated_and_submitted(
+            "call-1", _valid_generation_payload(), mismatched
+        )
 
     call = store.get_external_call("call-1")
     assert call.state == "raw_response_persisted"
@@ -825,13 +856,15 @@ def test_atomic_result_rejects_prompt_hash_mismatch_without_advancing(tmp_path) 
         result_id="result-1",
         external_call_id="call-1",
         status="completed",
-        payload={"hypotheses": []},
+        payload=_valid_generation_payload(),
         raw_artifact_ref=ref,
         **{**context, "prompt_hash": "sha256:different-prompt"},
     )
 
     with pytest.raises(ValueError, match="does not match external call"):
-        store.record_validated_and_submitted("call-1", {"hypotheses": []}, mismatched)
+        store.record_validated_and_submitted(
+            "call-1", _valid_generation_payload(), mismatched
+        )
 
     call = store.get_external_call("call-1")
     assert call.state == "raw_response_persisted"

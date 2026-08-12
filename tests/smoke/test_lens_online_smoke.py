@@ -16,6 +16,7 @@ from co_scientist.adapters.persistence.sqlite import (
     ExternalCallRow,
     SqliteUnitOfWork,
 )
+from co_scientist.agents.payloads import GenerationResultV1
 from co_scientist.agents.result import AgentExecutionContext
 from co_scientist.domain.review import ReviewPolicy
 from co_scientist.domain.states import TaskState
@@ -101,71 +102,28 @@ class OnlineCoreCli:
             "model": os.environ["CO_SCIENTIST_OPENAI_MODEL"],
             "system_prompt": (
                 "Return two mechanistically distinct, falsifiable hypotheses about transparent "
-                "versus fibrotic lens regeneration."
+                "versus fibrotic lens regeneration using the exact GenerationResultV1 schema. "
+                "Use schema_version 1 and research_plan_version 1; omit content_hash unless "
+                "you can reproduce the system's canonical SHA-256."
             ),
             "user_prompt": (
                 "Include surgical configuration, host age, early cell state, tissue "
                 "organization, and final morphology in every mechanism chain."
             ),
             "schema_name": "lens_hypotheses",
-            "json_schema": {
-                "type": "object",
-                "properties": {
-                    "hypotheses": {
-                        "type": "array",
-                        "minItems": 2,
-                        "maxItems": 2,
-                        "items": {
-                            "type": "object",
-                            "properties": {
-                                "hypothesis_id": {"type": "string"},
-                                "content_id": {"type": "string"},
-                                "content_hash": {"type": "string"},
-                                "title": {"type": "string"},
-                                "claim": {"type": "string"},
-                                "mechanism_chain": {
-                                    "type": "array",
-                                    "items": {"type": "string"},
-                                },
-                                "assumptions": {
-                                    "type": "array",
-                                    "items": {"type": "string"},
-                                },
-                                "predictions": {
-                                    "type": "array",
-                                    "items": {"type": "string"},
-                                },
-                                "falsifiers": {
-                                    "type": "array",
-                                    "items": {"type": "string"},
-                                },
-                            },
-                            "required": [
-                                "hypothesis_id",
-                                "content_id",
-                                "content_hash",
-                                "title",
-                                "claim",
-                                "mechanism_chain",
-                                "assumptions",
-                                "predictions",
-                                "falsifiers",
-                            ],
-                            "additionalProperties": False,
-                        },
-                    }
-                },
-                "required": ["hypotheses"],
-                "additionalProperties": False,
-            },
+            "json_schema": GenerationResultV1.model_json_schema(),
         }
         generation_context = AgentExecutionContext(
             run_id=run_id,
             task_id=generation_task.task_id,
             idempotency_key=generation_task.idempotency_key,
             skill_id="generation",
-            skill_version="0.1.0",
+            skill_version="0.2.0",
+            output_schema_id="GenerationResultV1",
             output_schema_version=1,
+            research_plan_version=1,
+            provider="openai",
+            model_or_tool=os.environ["CO_SCIENTIST_OPENAI_MODEL"],
             input_snapshot_hash="sha256:online-lens-goal",
             prompt_hash=prompt_hash(str(generation_request["system_prompt"])),
         )
@@ -214,8 +172,12 @@ class OnlineCoreCli:
             task_id=literature_task.task_id,
             idempotency_key=literature_task.idempotency_key,
             skill_id="meta_review",
-            skill_version="0.1.0",
+            skill_version="0.2.0",
+            output_schema_id="MetaReviewResultV1",
             output_schema_version=1,
+            research_plan_version=1,
+            provider="pubmed",
+            model_or_tool="esearch",
             input_snapshot_hash="sha256:online-pubmed-query",
         )
         uow.plan_external_call(
@@ -239,9 +201,17 @@ class OnlineCoreCli:
                     )
                 ),
                 validator=lambda raw: {
-                    "pubmed_query": pubmed_request["query"],
-                    "pmids": json.loads(raw)["esearchresult"]["idlist"],
-                    "access_issues": [],
+                    "schema_version": 1,
+                    "research_plan_version": 1,
+                    "source_content_hashes": {},
+                    "system_feedback": ["PubMed search response persisted for review."],
+                    "overview": json.dumps(
+                        {"pmids": json.loads(raw)["esearchresult"]["idlist"]},
+                        separators=(",", ":"),
+                        sort_keys=True,
+                    ),
+                    "coverage_gaps": [],
+                    "safety_direction_check": "insufficient_evidence",
                 },
                 context=pubmed_context,
             )
@@ -262,7 +232,7 @@ class OnlineCoreCli:
             event.event_type == "HypothesisContentCreated" for event in events
         )
         pubmed_source_count = sum(
-            len(event.payload.get("pmids", ()))
+            len(json.loads(str(event.payload.get("overview", "{}"))).get("pmids", ()))
             for event in events
             if event.event_type == "MetaReviewCompleted"
         )

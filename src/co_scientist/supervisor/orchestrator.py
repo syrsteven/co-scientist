@@ -10,9 +10,19 @@ from typing import Any, Literal
 from pydantic import BaseModel, ConfigDict
 
 from co_scientist.adapters.persistence.sqlite import CommitResult, SqliteUnitOfWork
-from co_scientist.agents.result import AgentResult
+from co_scientist.agents.payloads import (
+    EvolutionResultV1,
+    GenerationResultV1,
+    RankingResultV1,
+    validate_output_payload,
+)
+from co_scientist.agents.result import AgentExecutionContext, AgentResult
 from co_scientist.domain.budget import BudgetLedger, CostEntry
 from co_scientist.domain.convergence import ConvergenceSnapshot, StopDecision, evaluate_stop
+from co_scientist.domain.hypothesis import (
+    compute_hypothesis_content_hash,
+    hypothesis_content_from_draft,
+)
 from co_scientist.domain.research_plan import ResearchPlan
 from co_scientist.domain.review import (
     NoveltyAssessment,
@@ -261,33 +271,54 @@ class Supervisor:
         }
         payload = result.payload
         if result.skill_id == "generation":
-            hypotheses = payload.get("hypotheses")
-            if not isinstance(hypotheses, Sequence) or isinstance(hypotheses, str | bytes):
-                raise ValueError("generation result requires hypotheses")
+            generation = GenerationResultV1.model_validate(payload)
             events: list[NewEvent] = []
-            for item in hypotheses:
-                if not isinstance(item, Mapping):
-                    raise TypeError("generation hypothesis must be an object")
-                hypothesis_id = item.get("hypothesis_id")
-                if not isinstance(hypothesis_id, str) or not hypothesis_id:
-                    raise ValueError("generation hypothesis requires hypothesis_id")
+            for draft in generation.hypotheses:
+                content = hypothesis_content_from_draft(draft)
                 events.append(
                     NewEvent(
                         event_type="HypothesisContentCreated",
-                        payload={**dict(item), **common, "hypothesis_id": hypothesis_id},
+                        schema_version=2,
+                        payload={
+                            **content.model_dump(mode="json"),
+                            "content_hash": compute_hypothesis_content_hash(content),
+                            "hypothesis_id": draft.hypothesis_id,
+                            "research_plan_version": generation.research_plan_version,
+                            "generation_strategy": draft.generation_strategy,
+                            **common,
+                        },
                         causation_id=result.result_id,
                         correlation_id=result.run_id,
                     )
                 )
-            if not events:
-                raise ValueError("generation result must contain at least one hypothesis")
             return tuple(events)
+
+        if result.skill_id == "evolution":
+            evolution = EvolutionResultV1.model_validate(payload)
+            return tuple(
+                NewEvent(
+                    event_type="HypothesisContentCreated",
+                    schema_version=2,
+                    payload={
+                        **content.model_dump(mode="json"),
+                        "content_hash": compute_hypothesis_content_hash(content),
+                        "hypothesis_id": draft.hypothesis_id,
+                        "research_plan_version": evolution.research_plan_version,
+                        "generation_strategy": draft.generation_strategy,
+                        "change_rationale": evolution.change_rationales[draft.hypothesis_id],
+                        **common,
+                    },
+                    causation_id=result.result_id,
+                    correlation_id=result.run_id,
+                )
+                for draft in evolution.children
+                for content in (hypothesis_content_from_draft(draft),)
+            )
 
         event_types = {
             "reflection": "ReviewCompleted",
             "ranking": "MatchEvaluated",
             "proximity": "ProximityAssessed",
-            "evolution": "HypothesisContentCreated",
             "meta_review": "MetaReviewCompleted",
         }
         try:
@@ -295,10 +326,22 @@ class Supervisor:
         except KeyError as error:
             raise ValueError(f"unsupported skill result: {result.skill_id}") from error
         event_payload = {**dict(payload), **common}
-        if event_type == "HypothesisContentCreated":
-            hypothesis_id = payload.get("hypothesis_id")
-            if not isinstance(hypothesis_id, str) or not hypothesis_id:
-                raise ValueError("evolution result requires hypothesis_id")
+        if (
+            event_type == "ReviewCompleted"
+            and payload.get("stage") == ReviewStage.INITIAL.value
+        ):
+            safety_status = payload.get("safety_status")
+            event_payload["safety_passed"] = safety_status == "passed"
+        elif event_type == "MatchEvaluated":
+            ranking = RankingResultV1.model_validate(payload)
+            event_payload["decision"] = ranking.decision_status.value
+            event_payload["winner_id"] = (
+                ranking.left_id
+                if ranking.winner_slot == 1
+                else ranking.right_id
+                if ranking.winner_slot == 2
+                else None
+            )
         return (
             NewEvent(
                 event_type=event_type,
@@ -366,8 +409,10 @@ class Supervisor:
             "match_id",
             "epoch_id",
             "left_id",
+            "left_content_hash",
             "right_id",
-            "decision",
+            "right_content_hash",
+            "decision_status",
             "research_plan_version",
             "evaluation_rules_hash",
             "ranking_prompt_hash",
@@ -379,7 +424,22 @@ class Supervisor:
         if missing:
             raise ValueError(f"completed ranking result is missing required fields: {missing}")
         stream = self.uow.load(run_id)
-        match = MatchResult.model_validate(result.payload)
+        ranking = RankingResultV1.model_validate(result.payload)
+        winner_id = (
+            ranking.left_id
+            if ranking.winner_slot == 1
+            else ranking.right_id
+            if ranking.winner_slot == 2
+            else None
+        )
+        match = MatchResult(
+            match_id=ranking.match_id,
+            epoch_id=ranking.epoch_id,
+            left_id=ranking.left_id,
+            right_id=ranking.right_id,
+            decision=ranking.decision_status,
+            winner_id=winner_id,
+        )
         if result.prompt_hash != result.payload.get("ranking_prompt_hash"):
             raise ValueError("ranking execution prompt hash does not match match contract")
         epoch = self._active_epoch(run_id)
@@ -428,6 +488,8 @@ class Supervisor:
         if persisted_matches or persisted_ratings:
             expected_payload = {
                 **dict(result.payload),
+                "decision": match.decision.value,
+                "winner_id": match.winner_id,
                 "source_result_id": result.result_id,
                 "source_task_id": result.task_id,
                 "status": result.status,
@@ -536,6 +598,30 @@ class Supervisor:
         """Validate and atomically apply a durably submitted worker result."""
 
         call = self.uow.get_external_call(result.external_call_id)
+        if call.execution_context is None or call.agent_result is None:
+            raise ValueError("external call has no durable typed result context")
+        persisted_context = AgentExecutionContext.model_validate(call.execution_context)
+        persisted_data = dict(call.agent_result)
+        context_data = persisted_context.model_dump(mode="json")
+        for field, value in context_data.items():
+            if persisted_data.get(field) != value:
+                raise ValueError("durable AgentResult does not match execution context")
+        persisted_status = persisted_data.get("status")
+        if persisted_status not in {"completed", "partial", "rejected", "failed"}:
+            raise ValueError("durable AgentResult has an invalid status")
+        typed_payload = validate_output_payload(
+            status=persisted_status,
+            schema_id=persisted_context.output_schema_id,
+            schema_version=persisted_context.output_schema_version,
+            payload=persisted_data.get("payload", {}),
+        )
+        typed_plan_version = getattr(typed_payload, "research_plan_version", None)
+        if (
+            typed_plan_version is not None
+            and typed_plan_version != persisted_context.research_plan_version
+        ):
+            raise ValueError("durable payload does not match execution research plan")
+        durable_result = AgentResult.model_validate(persisted_data)
         self._validate_submitted_result(
             run_id=run_id,
             task_id=task_id,
@@ -546,6 +632,7 @@ class Supervisor:
         )
         if call.run_id != run_id or call.task_id != task_id:
             raise ValueError("external call does not match Supervisor command ownership")
+        result = durable_result
         if result.status == "completed":
             rating_events = self._rating_events_for_result(run_id, result)
             events = (*self._events_for_result(result), *rating_events)

@@ -13,6 +13,37 @@ from co_scientist.ports.external_provider import RawExternalResponse
 from co_scientist.runtime.external_calls import ExternalCallRunner, request_fingerprint
 
 
+def _valid_generation_payload() -> dict[str, object]:
+    return {
+        "schema_version": 1,
+        "research_plan_version": 1,
+        "hypotheses": [
+            {
+                "schema_version": 1,
+                "hypothesis_id": "h-recovery",
+                "content_id": "c-recovery",
+                "research_plan_version": 1,
+                "title": "Recovery hypothesis",
+                "claim": "Durable raw responses permit replay without provider recall.",
+                "mechanism_chain": ["persist", "resume", "submit"],
+                "assumptions": [],
+                "predictions": [],
+                "falsifiers": [],
+                "generation_strategy": "recovery fixture",
+                "parent_content_ids": [],
+                "supersedes_content_id": None,
+                "content_hash": None,
+            }
+        ],
+    }
+
+
+def _valid_generation_bytes() -> bytes:
+    return json.dumps(
+        _valid_generation_payload(), separators=(",", ":"), sort_keys=True
+    ).encode()
+
+
 class CountingProvider:
     def __init__(self) -> None:
         self.call_count = 0
@@ -20,7 +51,7 @@ class CountingProvider:
     async def invoke(self, request):
         self.call_count += 1
         return RawExternalResponse(
-            body=b'{"hypotheses":[]}',
+            body=_valid_generation_bytes(),
             mime_type="application/json",
             provider_response_id=f"stub-{self.call_count}",
             usage={"input_tokens": 7},
@@ -96,8 +127,12 @@ def _context() -> AgentExecutionContext:
         task_id="task-1",
         idempotency_key="generation:r-1:1",
         skill_id="generation",
-        skill_version="0.1.0",
+        skill_version="0.2.0",
+        output_schema_id="GenerationResultV1",
         output_schema_version=1,
+        research_plan_version=1,
+        provider="stub",
+        model_or_tool="stub-model",
         input_snapshot_hash="sha256:input",
     )
 
@@ -174,7 +209,7 @@ async def test_resume_validates_existing_raw_without_provider_recall(tmp_path) -
     _plan_started(uow)
     ref = artifacts.persist_raw(
         "call-1",
-        b'{"hypotheses":[]}',
+        _valid_generation_bytes(),
         "application/json",
         **_provenance(),
     )
@@ -188,7 +223,7 @@ async def test_resume_validates_existing_raw_without_provider_recall(tmp_path) -
         context=_context(),
     )
 
-    assert result.payload == {"hypotheses": []}
+    assert result.model_dump(mode="json")["payload"] == _valid_generation_payload()
     assert provider.call_count == 0
     assert uow.external_call_state("call-1") == "agent_result_submitted"
 
@@ -199,7 +234,7 @@ async def test_started_call_recovers_durable_manifest_without_provider_recall(tm
     _plan_started(uow)
     artifacts.persist_raw(
         "call-1",
-        b'{"hypotheses":[]}',
+        _valid_generation_bytes(),
         "application/json",
         provider_response_id="response-1",
         usage={"input_tokens": 7},
@@ -214,7 +249,7 @@ async def test_started_call_recovers_durable_manifest_without_provider_recall(tm
         context=_context(),
     )
 
-    assert result.payload == {"hypotheses": []}
+    assert result.model_dump(mode="json")["payload"] == _valid_generation_payload()
     assert provider.call_count == 0
     assert uow.external_call_state("call-1") == "agent_result_submitted"
     persisted = uow.get_external_call("call-1")
@@ -247,7 +282,7 @@ async def test_execute_recovers_after_raw_metadata_crash_without_second_provider
         validator=lambda raw: json.loads(raw),
         context=_context(),
     )
-    assert result.payload == {"hypotheses": []}
+    assert result.model_dump(mode="json")["payload"] == _valid_generation_payload()
     assert provider.call_count == 1
 
 
@@ -273,7 +308,7 @@ async def test_atomic_result_crash_retries_from_raw_without_provider_recall(tmp_
         validator=lambda raw: json.loads(raw),
         context=_context(),
     )
-    assert result.payload == {"hypotheses": []}
+    assert result.model_dump(mode="json")["payload"] == _valid_generation_payload()
     assert provider.call_count == 1
 
 
@@ -347,7 +382,7 @@ async def test_resume_rejects_execution_context_mismatch(tmp_path) -> None:
         validator=lambda raw: json.loads(raw),
         context=_context(),
     )
-    mismatched = _context().model_copy(update={"skill_version": "0.2.0"})
+    mismatched = _context().model_copy(update={"skill_version": "0.1.0"})
 
     with pytest.raises(ValueError, match="execution context"):
         await runner.resume(
@@ -392,12 +427,12 @@ async def test_legacy_validated_call_submits_without_provider_or_validator_recal
     _plan_started(uow)
     ref = artifacts.persist_raw(
         "call-1",
-        b'{"hypotheses":[]}',
+        _valid_generation_bytes(),
         "application/json",
         **_provenance(),
     )
     uow.record_raw_and_transition("call-1", ref, "raw_response_persisted")
-    uow.record_validated("call-1", {"hypotheses": []})
+    uow.record_validated("call-1", _valid_generation_payload())
     provider = FailingProvider()
     validation_count = 0
 
@@ -413,7 +448,7 @@ async def test_legacy_validated_call_submits_without_provider_or_validator_recal
         context=_context(),
     )
 
-    assert result.payload == {"hypotheses": []}
+    assert result.model_dump(mode="json")["payload"] == _valid_generation_payload()
     assert provider.call_count == 0
     assert validation_count == 0
     assert uow.external_call_state("call-1") == "agent_result_submitted"
@@ -583,7 +618,7 @@ async def test_started_recovery_rejects_forged_manifest_provenance(
     provenance[field] = forged_value
     artifacts.persist_raw(
         "call-1",
-        b'{"hypotheses":[]}',
+        _valid_generation_bytes(),
         "application/json",
         **provenance,
     )
@@ -638,7 +673,7 @@ async def test_manifest_installed_before_persist_error_continues_without_termina
         context=_context(),
     )
 
-    assert result.payload == {"hypotheses": []}
+    assert result.model_dump(mode="json")["payload"] == _valid_generation_payload()
     assert provider.call_count == 1
     assert uow.external_call_state("call-1") == "agent_result_submitted"
 
@@ -653,7 +688,7 @@ async def test_started_legacy_call_without_context_rejects_forged_trace_before_m
     forged_context = _forged_trace_context()
     artifacts.persist_raw(
         "call-1",
-        b'{"hypotheses":[]}',
+        _valid_generation_bytes(),
         "application/json",
         **_provenance(context=forged_context),
     )
@@ -686,7 +721,7 @@ async def test_post_raw_legacy_call_without_context_rejects_forged_trace_before_
     _plan_started(uow)
     ref = artifacts.persist_raw(
         "call-1",
-        b'{"hypotheses":[]}',
+        _valid_generation_bytes(),
         "application/json",
         **_provenance(),
     )
@@ -771,7 +806,7 @@ async def test_post_rename_fsync_failure_is_recovered_by_explicit_confirmation(
         context=_context(),
     )
 
-    assert result.payload == {"hypotheses": []}
+    assert result.model_dump(mode="json")["payload"] == _valid_generation_payload()
     assert fsync_count >= 7
     assert provider.call_count == 1
     assert uow.external_call_state("call-1") == "agent_result_submitted"

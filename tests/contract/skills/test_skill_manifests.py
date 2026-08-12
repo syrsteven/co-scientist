@@ -9,7 +9,7 @@ CORE_SKILL_CONTRACTS = {
     "generation": {
         "id": "generation",
         "agent_type": "generation",
-        "version": "0.1.0",
+        "version": "0.2.0",
         "prompt_path": "prompts/system.md",
         "input_schema": "GenerationInputV1",
         "output_schema": "GenerationResultV1",
@@ -19,7 +19,7 @@ CORE_SKILL_CONTRACTS = {
     "reflection": {
         "id": "reflection",
         "agent_type": "reflection",
-        "version": "0.1.0",
+        "version": "0.2.0",
         "prompt_path": "prompts/system.md",
         "input_schema": "ReflectionInputV1",
         "output_schema": "ReflectionResultV1",
@@ -29,7 +29,7 @@ CORE_SKILL_CONTRACTS = {
     "ranking": {
         "id": "ranking",
         "agent_type": "ranking",
-        "version": "0.1.0",
+        "version": "0.2.0",
         "prompt_path": "prompts/system.md",
         "input_schema": "RankingInputV1",
         "output_schema": "RankingResultV1",
@@ -39,7 +39,7 @@ CORE_SKILL_CONTRACTS = {
     "proximity": {
         "id": "proximity",
         "agent_type": "proximity",
-        "version": "0.1.0",
+        "version": "0.2.0",
         "prompt_path": "prompts/system.md",
         "input_schema": "ProximityInputV1",
         "output_schema": "ProximityResultV1",
@@ -49,7 +49,7 @@ CORE_SKILL_CONTRACTS = {
     "evolution": {
         "id": "evolution",
         "agent_type": "evolution",
-        "version": "0.1.0",
+        "version": "0.2.0",
         "prompt_path": "prompts/system.md",
         "input_schema": "EvolutionInputV1",
         "output_schema": "EvolutionResultV1",
@@ -59,7 +59,7 @@ CORE_SKILL_CONTRACTS = {
     "meta_review": {
         "id": "meta_review",
         "agent_type": "meta_review",
-        "version": "0.1.0",
+        "version": "0.2.0",
         "prompt_path": "prompts/system.md",
         "input_schema": "MetaReviewInputV1",
         "output_schema": "MetaReviewResultV1",
@@ -84,7 +84,7 @@ def test_all_six_core_skills_match_the_independent_canonical_matrix() -> None:
     [
         {"id": "reflection"},
         {"agent_type": "reflection"},
-        {"version": "0.2.0"},
+        {"version": "0.1.0"},
         {"input_schema": "WrongInputV1"},
         {"output_schema": "WrongResultV1"},
         {"allowed_tools": ["literature_search"]},

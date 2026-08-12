@@ -6,6 +6,7 @@ from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
+from pydantic import ValidationError
 from sqlalchemy import text
 
 from co_scientist.adapters.artifacts.filesystem import FilesystemArtifactStore
@@ -13,12 +14,17 @@ from co_scientist.adapters.llm.fake import FakeLLMProvider
 from co_scientist.adapters.llm.replay import ReplayLLMProvider, ReplayMiss
 from co_scientist.adapters.persistence.sqlite import SqliteUnitOfWork
 from co_scientist.agents.executor import SkillExecutor
-from co_scientist.agents.result import AgentExecutionContext
-from co_scientist.domain.review import ReviewPolicy, ReviewStage, required_review_stages
+from co_scientist.agents.result import AgentExecutionContext, AgentResult
+from co_scientist.domain.review import (
+    ReviewPolicy,
+    ReviewStage,
+    required_review_stages,
+)
 from co_scientist.domain.states import RunState, TaskState
 from co_scientist.domain.task import NewTask
 from co_scientist.domain.tournament import TournamentEpoch
 from co_scientist.events.models import NewEvent
+from co_scientist.ports.artifact_store import ArtifactRef
 from co_scientist.runtime.external_calls import (
     ExternalCallRunner,
     prompt_hash,
@@ -26,22 +32,138 @@ from co_scientist.runtime.external_calls import (
 )
 from co_scientist.supervisor.orchestrator import Supervisor
 
+_OUTPUT_SCHEMAS = {
+    "generation": "GenerationResultV1",
+    "reflection": "ReflectionResultV1",
+    "ranking": "RankingResultV1",
+    "proximity": "ProximityResultV1",
+    "evolution": "EvolutionResultV1",
+    "meta_review": "MetaReviewResultV1",
+}
+
+
+def test_supervisor_revalidates_persisted_schema_invalid_agent_result_before_effects(
+    tmp_path: Path,
+) -> None:
+    uow = SqliteUnitOfWork(f"sqlite:///{tmp_path / 'malformed-supervisor.db'}")
+    uow.create_schema()
+    uow.create_run("run-1", manifest={})
+    task = NewTask(
+        task_id="generation-task",
+        run_id="run-1",
+        idempotency_key="generation:run-1:1",
+        intent_type="generate",
+        payload={},
+    )
+    uow.enqueue_tasks([task])
+    uow.transition_task(task.task_id, TaskState.LEASED)
+    uow.transition_task(task.task_id, TaskState.RUNNING)
+    uow.transition_task(task.task_id, TaskState.RESULT_RECEIVED)
+    context = {
+        "run_id": "run-1",
+        "task_id": task.task_id,
+        "idempotency_key": task.idempotency_key,
+        "skill_id": "generation",
+        "skill_version": "0.2.0",
+        "output_schema_id": "GenerationResultV1",
+        "output_schema_version": 1,
+        "research_plan_version": 1,
+        "provider": "fake",
+        "model_or_tool": "fake-v1",
+        "input_snapshot_hash": "sha256:input",
+        "prompt_hash": "sha256:prompt",
+    }
+    uow.plan_external_call(
+        "call-1",
+        "sha256:request",
+        run_id="run-1",
+        task_id=task.task_id,
+        execution_context=context,
+    )
+    uow.transition_call("call-1", "started")
+    raw_ref = ArtifactRef(
+        path="raw/call-1/digest",
+        sha256="sha256:digest",
+        mime_type="application/json",
+        byte_length=2,
+    )
+    uow.record_raw_and_transition(
+        "call-1",
+        raw_ref,
+        "raw_response_persisted",
+        usage={"input_tokens": 9, "output_tokens": 4, "cost_usd": "0.01"},
+    )
+    malformed_payload = {
+        "schema_version": 1,
+        "research_plan_version": 1,
+        "hypotheses": [{"hypothesis_id": "h-1", "content_id": "c-1"}],
+    }
+    forged = AgentResult.model_construct(
+        result_id="result-1",
+        external_call_id="call-1",
+        status="completed",
+        payload=malformed_payload,
+        raw_artifact_ref=raw_ref,
+        **context,
+    )
+    uow.record_validated_and_submitted("call-1", malformed_payload, forged)
+
+    with pytest.raises(ValidationError):
+        Supervisor(uow=uow, review_policy=ReviewPolicy(profile_id="minimal")).handle_result(
+            "run-1", task.task_id, forged, expected_sequence=0
+        )
+
+    assert uow.load("run-1") == []
+    assert uow.task_state(task.task_id) == "result_received"
+    assert uow.external_call_state("call-1") == "agent_result_submitted"
+    with uow.engine.connect() as connection:
+        assert connection.execute(text("SELECT COUNT(*) FROM tasks")).scalar_one() == 1
+        assert connection.execute(text("SELECT COUNT(*) FROM cost_entries")).scalar_one() == 0
+
 
 def _valid_ranking_payload() -> dict[str, object]:
     ranking_prompt = Path("skills/ranking/prompts/system.md").read_text(encoding="utf-8")
     return {
+        "schema_version": 1,
         "match_id": "match-1",
         "epoch_id": "epoch-1",
         "left_id": "h-1",
+        "left_content_hash": "sha256:" + "a" * 64,
         "right_id": "h-2",
-        "decision": "inconclusive",
-        "winner_id": None,
+        "right_content_hash": "sha256:" + "b" * 64,
+        "decision_status": "inconclusive",
+        "winner_slot": None,
         "research_plan_version": 1,
         "evaluation_rules_hash": "sha256:rules",
         "ranking_prompt_hash": prompt_hash(ranking_prompt),
         "judge_profile_hash": "sha256:judge",
         "rating_policy_version": "elo-32-v1",
         "admission_policy_version": "admission-v1",
+        "dimension_reasons": {},
+        "confidence": 0.8,
+        "unresolved_disagreements": [],
+    }
+
+
+def _valid_generation_payload() -> dict[str, object]:
+    return {
+        "schema_version": 1,
+        "research_plan_version": 1,
+        "hypotheses": [
+            {
+                "schema_version": 1,
+                "hypothesis_id": "h-1",
+                "content_id": "c-1",
+                "research_plan_version": 1,
+                "title": "Mechanical gate",
+                "claim": "Capsule strain precedes EMT commitment.",
+                "mechanism_chain": ["strain", "YAP", "cell fate"],
+                "assumptions": ["strain is sensed before commitment"],
+                "predictions": ["normalizing strain reduces fibrosis"],
+                "falsifiers": ["cell fate changes before strain"],
+                "generation_strategy": "causal contrast",
+            }
+        ],
     }
 
 
@@ -116,25 +238,32 @@ async def _execute_ranking_result(
             artifacts=FilesystemArtifactStore(tmp_path / "ranking-artifacts"),
         )
     )
-    result = await SkillExecutor(
-        runner,
-        FakeLLMProvider(
-            [json.dumps(payload, separators=(",", ":"), sort_keys=True).encode("utf-8")]
-        ),
-    ).execute(
-        call_id="ranking-call",
-        skill_directory=Path("skills/ranking"),
-        inputs={"comparison": "h-1 versus h-2"},
-        context=AgentExecutionContext(
-            run_id="run-1",
-            task_id=task.task_id,
-            idempotency_key=task.idempotency_key,
-            skill_id="ranking",
-            skill_version="0.1.0",
-            output_schema_version=1,
-            input_snapshot_hash="sha256:input",
-        ),
-    )
+    try:
+        result = await SkillExecutor(
+            runner,
+            FakeLLMProvider(
+                [json.dumps(payload, separators=(",", ":"), sort_keys=True).encode("utf-8")]
+            ),
+        ).execute(
+            call_id="ranking-call",
+            skill_directory=Path("skills/ranking"),
+            inputs={"comparison": "h-1 versus h-2"},
+            context=AgentExecutionContext(
+                run_id="run-1",
+                task_id=task.task_id,
+                idempotency_key=task.idempotency_key,
+                skill_id="ranking",
+                skill_version="0.2.0",
+                output_schema_id="RankingResultV1",
+                output_schema_version=1,
+                research_plan_version=1,
+                provider="fake",
+                model_or_tool="fake-v1",
+                input_snapshot_hash="sha256:input",
+            ),
+        )
+    except Exception as caught:  # noqa: BLE001 - fail-closed result is asserted below
+        return uow, caught
     uow.transition_task(task.task_id, TaskState.RESULT_RECEIVED)
     error: Exception | None = None
     try:
@@ -154,7 +283,7 @@ _INCOMPLETE_OR_INVALID_RANKING_CASES = [
     ("missing_epoch_id", "epoch_id", None, True),
     ("missing_left_id", "left_id", None, True),
     ("missing_right_id", "right_id", None, True),
-    ("missing_decision", "decision", None, True),
+    ("missing_decision", "decision_status", None, True),
     ("missing_plan", "research_plan_version", None, True),
     ("missing_rules", "evaluation_rules_hash", None, True),
     ("missing_prompt", "ranking_prompt_hash", None, True),
@@ -202,8 +331,11 @@ async def test_completed_ranking_fails_closed_before_match_event(
     assert "MatchEvaluated" not in event_types
     assert "RatingUpdated" not in event_types
     assert error is not None
-    assert uow.task_state("ranking-task") == "result_received"
-    assert uow.external_call_state("ranking-call") == "agent_result_submitted"
+    assert uow.task_state("ranking-task") in {"running", "result_received"}
+    assert uow.external_call_state("ranking-call") in {
+        "validation_failed",
+        "agent_result_submitted",
+    }
 
 
 # Mutation caught: emitting two RatingUpdated events for one self-matched hypothesis.
@@ -213,8 +345,8 @@ async def test_supervisor_rejects_self_match_without_event_pollution(tmp_path: P
     payload.update(
         {
             "right_id": "h-1",
-            "decision": "decisive",
-            "winner_id": "h-1",
+            "decision_status": "decisive",
+            "winner_slot": 1,
         }
     )
 
@@ -224,8 +356,8 @@ async def test_supervisor_rejects_self_match_without_event_pollution(tmp_path: P
     assert "MatchEvaluated" not in event_types
     assert "RatingUpdated" not in event_types
     assert error is not None
-    assert uow.task_state("ranking-task") == "result_received"
-    assert uow.external_call_state("ranking-call") == "agent_result_submitted"
+    assert uow.task_state("ranking-task") == "running"
+    assert uow.external_call_state("ranking-call") == "validation_failed"
 
 
 @pytest.mark.parametrize(
@@ -255,8 +387,11 @@ async def test_supervisor_rejects_empty_identity_and_bogus_epoch_before_events(
     assert "MatchEvaluated" not in event_types
     assert "RatingUpdated" not in event_types
     assert error is not None
-    assert uow.task_state("ranking-task") == "result_received"
-    assert uow.external_call_state("ranking-call") == "agent_result_submitted"
+    assert uow.task_state("ranking-task") in {"running", "result_received"}
+    assert uow.external_call_state("ranking-call") in {
+        "validation_failed",
+        "agent_result_submitted",
+    }
 
 
 @pytest.mark.parametrize("decision", ["inconclusive", "invalid", "needs_tiebreaker"])
@@ -269,7 +404,7 @@ async def test_non_decisive_ranking_rejects_unadmitted_participant_without_event
     unadmitted_id: str,
 ) -> None:
     payload = _valid_ranking_payload()
-    payload["decision"] = decision
+    payload["decision_status"] = decision
     admitted_ids = frozenset({"h-1", "h-2"} - {unadmitted_id})
 
     uow, error = await _execute_ranking_result(
@@ -341,25 +476,28 @@ async def test_skill_executor_uses_raw_first_runner_and_returns_agent_result(tmp
     runner = ExternalCallRunner(SimpleNamespace(uow=uow, artifacts=artifacts))
     expected_request = {
         "skill_id": "generation",
-        "skill_version": "0.1.0",
-        "system_prompt": (
-            "Return JSON hypotheses containing title, claim, mechanism_chain, assumptions,\n"
-            "predictions, falsifiers, and generation_strategy. Do not create tasks.\n"
+        "skill_version": "0.2.0",
+        "system_prompt": Path("skills/generation/prompts/system.md").read_text(
+            encoding="utf-8"
         ),
         "input_schema": "GenerationInputV1",
         "output_schema": "GenerationResultV1",
         "allowed_tools": [],
         "input": {"research_goal": "test regeneration"},
     }
-    raw_body = b'{"hypotheses":[{"hypothesis_id":"h-1"}]}'
+    raw_body = json.dumps(_valid_generation_payload(), separators=(",", ":")).encode()
     provider = ReplayLLMProvider({request_fingerprint(expected_request): raw_body})
     context = AgentExecutionContext(
         run_id="run-1",
         task_id="task-1",
         idempotency_key="generation:run-1:1",
         skill_id="generation",
-        skill_version="0.1.0",
+        skill_version="0.2.0",
+        output_schema_id="GenerationResultV1",
         output_schema_version=1,
+        research_plan_version=1,
+        provider="replay",
+        model_or_tool="replay-v1",
         input_snapshot_hash="sha256:input",
     )
 
@@ -370,7 +508,8 @@ async def test_skill_executor_uses_raw_first_runner_and_returns_agent_result(tmp
         context=context,
     )
 
-    assert result.payload == {"hypotheses": [{"hypothesis_id": "h-1"}]}
+    assert result.payload["schema_version"] == 1
+    assert result.payload["hypotheses"][0]["hypothesis_id"] == "h-1"
     assert result.raw_artifact_ref.path.startswith("raw/call-1/")
     assert artifacts.read(result.raw_artifact_ref) == raw_body
     assert uow.external_call_state("call-1") == "agent_result_submitted"
@@ -388,8 +527,8 @@ async def test_skill_executor_uses_raw_first_runner_and_returns_agent_result(tmp
     ("context_override", "message"),
     [
         ({"skill_id": "reflection"}, "skill does not match"),
-        ({"skill_version": "0.2.0"}, "skill version does not match"),
-        ({"output_schema_version": 2}, "schema version must be 1"),
+        ({"skill_version": "0.1.0"}, "skill version does not match"),
+        ({"output_schema_version": 2}, "unknown output schema"),
     ],
 )
 # Mutation caught: allowing execution context identity or schema version to drift from a skill.
@@ -425,8 +564,12 @@ async def test_skill_executor_rejects_incompatible_context_before_provider_call(
         "task_id": "task-1",
         "idempotency_key": "generation:run-1:1",
         "skill_id": "generation",
-        "skill_version": "0.1.0",
+        "skill_version": "0.2.0",
+        "output_schema_id": "GenerationResultV1",
         "output_schema_version": 1,
+        "research_plan_version": 1,
+        "provider": "fake",
+        "model_or_tool": "fake-v1",
         "input_snapshot_hash": "sha256:input",
         **context_override,
     }
@@ -488,8 +631,12 @@ async def test_skill_executor_rejects_non_object_or_nonstandard_json_after_raw_p
                 task_id="task-1",
                 idempotency_key="generation:run-1:1",
                 skill_id="generation",
-                skill_version="0.1.0",
+                skill_version="0.2.0",
+                output_schema_id="GenerationResultV1",
                 output_schema_version=1,
+                research_plan_version=1,
+                provider="fake",
+                model_or_tool="fake-v1",
                 input_snapshot_hash="sha256:input",
             ),
         )
@@ -509,53 +656,13 @@ class _CoreHarness:
     @staticmethod
     def _enrich_payloads(responses: list[dict]) -> list[dict]:
         payloads: list[dict] = []
-        for index, response in enumerate(responses):
+        for response in responses:
             payload = copy.deepcopy(response["payload"])
-            if response["skill"] == "generation":
-                for hypothesis_index, hypothesis in enumerate(payload["hypotheses"], start=1):
-                    hypothesis_id = f"h-{hypothesis_index}"
-                    hypothesis["hypothesis_id"] = hypothesis_id
-                    hypothesis["content_hash"] = _content_hash(hypothesis)
-            elif response["skill"] == "reflection":
-                payload.update(
-                    {
-                        "hypothesis_id": response["hypothesis_id"],
-                        "stage": response["stage"],
-                        "review_id": f"review-{index}",
-                    }
-                )
-            elif response["skill"] == "evolution":
-                payload.update(
-                    {
-                        "hypothesis_id": "h-3",
-                        "content_id": payload["child_content_id"],
-                    }
-                )
-                payload["content_hash"] = _content_hash(payload)
-            elif response["skill"] == "ranking":
-                decision = payload.pop("decision_status")
-                winner_slot = payload.pop("winner_slot", None)
+            if response["skill"] == "ranking":
                 ranking_prompt = Path("skills/ranking/prompts/system.md").read_text(
                     encoding="utf-8"
                 )
-                payload.update(
-                    {
-                        "match_id": f"trace-match-{index}",
-                        "epoch_id": "epoch-1",
-                        "left_id": "h-1",
-                        "right_id": "h-2",
-                        "decision": decision,
-                        "winner_id": (
-                            f"h-{winner_slot}" if decision == "decisive" else None
-                        ),
-                        "research_plan_version": 1,
-                        "evaluation_rules_hash": "sha256:rules",
-                        "ranking_prompt_hash": prompt_hash(ranking_prompt),
-                        "judge_profile_hash": "sha256:judge",
-                        "rating_policy_version": "elo-32-v1",
-                        "admission_policy_version": "admission-v1",
-                    }
-                )
+                payload["ranking_prompt_hash"] = prompt_hash(ranking_prompt)
             payloads.append(payload)
         return payloads
 
@@ -755,12 +862,15 @@ class _CoreHarness:
                     task_id=task_id,
                     idempotency_key=task_id,
                     skill_id=response["skill"],
-                    skill_version="0.1.0",
+                    skill_version="0.2.0",
+                    output_schema_id=_OUTPUT_SCHEMAS[response["skill"]],
                     output_schema_version=1,
+                    research_plan_version=1,
+                    provider="fake",
+                    model_or_tool="fake-v1",
                     input_snapshot_hash=input_hash,
                 ),
             )
-            assert result.payload == payload
             uow.transition_task(task_id, TaskState.RESULT_RECEIVED)
             committed = supervisor.handle_result(
                 run_id="run-1",
@@ -900,7 +1010,7 @@ def _write_trace_variant(tmp_path: Path, mutate) -> Path:
     return destination
 
 
-@pytest.mark.parametrize("missing_field", ["safety_passed", "duplicate_likelihood"])
+@pytest.mark.parametrize("missing_field", ["safety_status", "duplicate_likelihood"])
 # Mutation caught: admitting when a required scientific verdict is absent from committed results.
 def test_fake_trace_fails_closed_when_admission_evidence_is_missing(
     core_harness,
@@ -908,7 +1018,7 @@ def test_fake_trace_fails_closed_when_admission_evidence_is_missing(
     missing_field: str,
 ) -> None:
     def remove_field(trace: dict) -> None:
-        if missing_field == "safety_passed":
+        if missing_field == "safety_status":
             response = next(
                 item
                 for item in trace["responses"]
