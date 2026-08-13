@@ -163,11 +163,16 @@ def test_conflicting_duplicate_match_id_cannot_reuse_persisted_ratings(tmp_path)
         events=(
             NewEvent(
                 event_type="MatchEvaluated",
-                    payload={
-                        **dict(first.payload),
-                        "decision": "decisive",
-                        "winner_id": "h-1",
-                        "source_result_id": first.result_id,
+                schema_version=2,
+                payload={
+                    **{
+                        key: value
+                        for key, value in first.model_dump(mode="json")["payload"].items()
+                        if key not in {"schema_version", "decision_status", "winner_slot"}
+                    },
+                    "decision": "decisive",
+                    "winner_id": "h-1",
+                    "source_result_id": first.result_id,
                     "source_task_id": first.task_id,
                     "status": first.status,
                 },

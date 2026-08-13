@@ -38,6 +38,7 @@ from co_scientist.events.models import DomainEvent, NewEvent
 from co_scientist.ports.artifact_store import ArtifactRef
 from co_scientist.ports.event_store import ConcurrencyConflict
 from co_scientist.ports.external_provider import thaw_json
+from co_scientist.skills.loader import resolve_core_skill_contract
 
 
 class Base(DeclarativeBase):
@@ -429,6 +430,11 @@ class SqliteUnitOfWork:
                 expected_run_id=run_id,
             )
             context = dict(execution_context)
+            resolve_core_skill_contract(
+                skill_id=str(context.get("skill_id", "")),
+                skill_version=str(context.get("skill_version", "")),
+                output_schema_id=str(context.get("output_schema_id", "")),
+            )
             if context.get("run_id") != run_id or context.get("task_id") != task_id:
                 raise ValueError("execution context does not match external call ownership")
             if context.get("idempotency_key") != task.idempotency_key:

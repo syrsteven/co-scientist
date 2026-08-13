@@ -229,6 +229,15 @@ class SqliteRunReadModel:
             if isinstance(plural, list | tuple):
                 candidates.extend(plural)
             for candidate in candidates:
+                if event.event_type in {
+                    "NoveltyAssessmentCreated",
+                    "NoveltyAssessmentRecorded",
+                } and candidate is event.payload:
+                    candidate = {
+                        key: value
+                        for key, value in candidate.items()
+                        if key not in {"source_result_id", "source_task_id", "status"}
+                    }
                 assessment = NoveltyAssessment.model_validate(candidate)
                 exported.append(assessment.model_dump(mode="json"))
         return _deduplicate(exported, "assessment_id")

@@ -13,7 +13,10 @@ from co_scientist.adapters.persistence.sqlite import CommitResult, SqliteUnitOfW
 from co_scientist.agents.payloads import (
     EvolutionResultV1,
     GenerationResultV1,
+    MetaReviewResultV1,
+    ProximityResultV1,
     RankingResultV1,
+    ReflectionResultV1,
     validate_output_payload,
 )
 from co_scientist.agents.result import AgentExecutionContext, AgentResult
@@ -45,6 +48,7 @@ from co_scientist.domain.tournament import (
 )
 from co_scientist.events.models import NewEvent
 from co_scientist.events.reducers import replay_tournament
+from co_scientist.skills.loader import resolve_core_skill_contract
 from co_scientist.supervisor.followups import FollowupIntent, derive_followup_intents
 
 
@@ -284,7 +288,6 @@ class Supervisor:
                             "content_hash": compute_hypothesis_content_hash(content),
                             "hypothesis_id": draft.hypothesis_id,
                             "research_plan_version": generation.research_plan_version,
-                            "generation_strategy": draft.generation_strategy,
                             **common,
                         },
                         causation_id=result.result_id,
@@ -304,7 +307,6 @@ class Supervisor:
                         "content_hash": compute_hypothesis_content_hash(content),
                         "hypothesis_id": draft.hypothesis_id,
                         "research_plan_version": evolution.research_plan_version,
-                        "generation_strategy": draft.generation_strategy,
                         "change_rationale": evolution.change_rationales[draft.hypothesis_id],
                         **common,
                     },
@@ -315,37 +317,84 @@ class Supervisor:
                 for content in (hypothesis_content_from_draft(draft),)
             )
 
-        event_types = {
-            "reflection": "ReviewCompleted",
-            "ranking": "MatchEvaluated",
-            "proximity": "ProximityAssessed",
-            "meta_review": "MetaReviewCompleted",
-        }
-        try:
-            event_type = event_types[result.skill_id]
-        except KeyError as error:
-            raise ValueError(f"unsupported skill result: {result.skill_id}") from error
-        event_payload = {**dict(payload), **common}
-        if (
-            event_type == "ReviewCompleted"
-            and payload.get("stage") == ReviewStage.INITIAL.value
-        ):
-            safety_status = payload.get("safety_status")
-            event_payload["safety_passed"] = safety_status == "passed"
-        elif event_type == "MatchEvaluated":
+        if result.skill_id == "reflection":
+            reflection = ReflectionResultV1.model_validate(payload)
+            review_payload = reflection.model_dump(
+                mode="json",
+                exclude={"schema_version", "novelty_assessment"},
+            )
+            if reflection.stage is ReviewStage.INITIAL:
+                review_payload["safety_passed"] = reflection.safety_status == "passed"
+            events = [
+                NewEvent(
+                    event_type="ReviewCompleted",
+                    schema_version=2,
+                    payload={**review_payload, **common},
+                    causation_id=result.result_id,
+                    correlation_id=result.run_id,
+                )
+            ]
+            if reflection.novelty_assessment is not None:
+                events.append(
+                    NewEvent(
+                        event_type="NoveltyAssessmentRecorded",
+                        schema_version=1,
+                        payload={
+                            **reflection.novelty_assessment.model_dump(mode="json"),
+                            **common,
+                        },
+                        causation_id=result.result_id,
+                        correlation_id=result.run_id,
+                    )
+                )
+            return tuple(events)
+
+        if result.skill_id == "ranking":
             ranking = RankingResultV1.model_validate(payload)
-            event_payload["decision"] = ranking.decision_status.value
-            event_payload["winner_id"] = (
+            winner_id = (
                 ranking.left_id
                 if ranking.winner_slot == 1
                 else ranking.right_id
                 if ranking.winner_slot == 2
                 else None
             )
+            ranking_payload = ranking.model_dump(
+                mode="json",
+                exclude={"schema_version", "decision_status", "winner_slot"},
+            )
+            return (
+                NewEvent(
+                    event_type="MatchEvaluated",
+                    schema_version=2,
+                    payload={
+                        **ranking_payload,
+                        "decision": ranking.decision_status.value,
+                        "winner_id": winner_id,
+                        **common,
+                    },
+                    causation_id=result.result_id,
+                    correlation_id=result.run_id,
+                ),
+            )
+
+        if result.skill_id == "proximity":
+            event_type = "ProximityAssessed"
+            terminal_payload: ProximityResultV1 | MetaReviewResultV1 = (
+                ProximityResultV1.model_validate(payload)
+            )
+        elif result.skill_id == "meta_review":
+            event_type = "MetaReviewCompleted"
+            terminal_payload = MetaReviewResultV1.model_validate(payload)
+        else:
+            raise ValueError(f"unsupported skill result: {result.skill_id}")
         return (
             NewEvent(
                 event_type=event_type,
-                payload=event_payload,
+                schema_version=2,
+                payload={
+                    **terminal_payload.model_dump(mode="json", exclude={"schema_version"}),
+                    **common,
+                },
                 causation_id=result.result_id,
                 correlation_id=result.run_id,
             ),
@@ -486,17 +535,26 @@ class Supervisor:
             and event.payload.get("match_id") == match.match_id
         ]
         if persisted_matches or persisted_ratings:
+            persisted_ranking_payload = ranking.model_dump(
+                mode="json",
+                exclude={"schema_version", "decision_status", "winner_slot"},
+            )
             expected_payload = {
-                **dict(result.payload),
+                **persisted_ranking_payload,
                 "decision": match.decision.value,
                 "winner_id": match.winner_id,
                 "source_result_id": result.result_id,
                 "source_task_id": result.task_id,
                 "status": result.status,
             }
+            normalized_expected_payload = NewEvent(
+                event_type="MatchEvaluated",
+                schema_version=2,
+                payload=expected_payload,
+            ).payload
             if (
                 len(persisted_matches) != 1
-                or persisted_matches[0].payload != expected_payload
+                or persisted_matches[0].payload != normalized_expected_payload
                 or persisted_matches[0].causation_id != result.result_id
                 or persisted_matches[0].correlation_id != run_id
             ):
@@ -601,6 +659,11 @@ class Supervisor:
         if call.execution_context is None or call.agent_result is None:
             raise ValueError("external call has no durable typed result context")
         persisted_context = AgentExecutionContext.model_validate(call.execution_context)
+        resolve_core_skill_contract(
+            skill_id=persisted_context.skill_id,
+            skill_version=persisted_context.skill_version,
+            output_schema_id=persisted_context.output_schema_id,
+        )
         persisted_data = dict(call.agent_result)
         context_data = persisted_context.model_dump(mode="json")
         for field, value in context_data.items():

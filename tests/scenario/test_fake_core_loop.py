@@ -167,6 +167,268 @@ def _valid_generation_payload() -> dict[str, object]:
     }
 
 
+def _event_result(
+    *, skill_id: str, output_schema_id: str, payload: dict[str, object]
+) -> AgentResult:
+    return AgentResult(
+        result_id="result-1",
+        external_call_id="call-1",
+        run_id="run-1",
+        task_id="task-1",
+        idempotency_key="task-1",
+        skill_id=skill_id,
+        skill_version="0.2.0",
+        output_schema_id=output_schema_id,
+        output_schema_version=1,
+        research_plan_version=1,
+        provider="fake",
+        model_or_tool="fake-v1",
+        input_snapshot_hash="sha256:input",
+        prompt_hash="sha256:prompt",
+        status="completed",
+        payload=payload,
+        raw_artifact_ref=ArtifactRef(
+            path="raw/call-1/digest",
+            sha256="sha256:digest",
+            mime_type="application/json",
+            byte_length=2,
+        ),
+    )
+
+
+def test_reflection_builds_v2_review_and_independent_v1_novelty_events() -> None:
+    novelty = {
+        "assessment_id": "novelty-1",
+        "hypothesis_id": "h-1",
+        "content_hash": "sha256:content",
+        "research_plan_version": 1,
+        "verdict": "novel",
+        "closest_prior_work_ids": ["paper-1"],
+        "evidence_ids": ["evidence-1"],
+    }
+    payload = {
+        "schema_version": 1,
+        "research_plan_version": 1,
+        "review_id": "review-1",
+        "hypothesis_id": "h-1",
+        "content_hash": "sha256:content",
+        "stage": "full_review",
+        "recommendation": "pass",
+        "safety_status": "passed",
+        "dimension_scores": {"novelty": 0.9},
+        "critical_flaws": [],
+        "evidence_ids": ["evidence-1"],
+        "novelty_assessment": novelty,
+    }
+
+    review, novelty_event = Supervisor._events_for_result(
+        _event_result(
+            skill_id="reflection",
+            output_schema_id="ReflectionResultV1",
+            payload=payload,
+        )
+    )
+
+    assert (review.event_type, review.schema_version) == ("ReviewCompleted", 2)
+    assert review.model_dump(mode="json")["payload"] == {
+        "research_plan_version": 1,
+        "review_id": "review-1",
+        "hypothesis_id": "h-1",
+        "content_hash": "sha256:content",
+        "stage": "full_review",
+        "recommendation": "pass",
+        "safety_status": "passed",
+        "dimension_scores": {"novelty": 0.9},
+        "critical_flaws": [],
+        "evidence_ids": ["evidence-1"],
+        "source_result_id": "result-1",
+        "source_task_id": "task-1",
+        "status": "completed",
+    }
+    assert (novelty_event.event_type, novelty_event.schema_version) == (
+        "NoveltyAssessmentRecorded",
+        1,
+    )
+    assert novelty_event.model_dump(mode="json")["payload"] == {
+        **novelty,
+        "source_result_id": "result-1",
+        "source_task_id": "task-1",
+        "status": "completed",
+    }
+
+
+@pytest.mark.parametrize(
+    ("skill_id", "schema_id", "payload", "event_type", "expected_payload"),
+    [
+        (
+            "ranking",
+            "RankingResultV1",
+            {
+                **_valid_ranking_payload(),
+                "decision_status": "decisive",
+                "winner_slot": 2,
+            },
+            "MatchEvaluated",
+            {
+                key: value
+                for key, value in _valid_ranking_payload().items()
+                if key not in {"schema_version", "decision_status", "winner_slot"}
+            }
+            | {"decision": "decisive", "winner_id": "h-2"},
+        ),
+        (
+            "proximity",
+            "ProximityResultV1",
+            {
+                "schema_version": 1,
+                "research_plan_version": 1,
+                "edge_id": "edge-1",
+                "left_id": "h-1",
+                "left_content_hash": "sha256:" + "a" * 64,
+                "right_id": "h-2",
+                "right_content_hash": "sha256:" + "b" * 64,
+                "similarity": 2,
+                "mechanism_overlap": ["YAP"],
+                "duplicate_likelihood": 0.1,
+                "cluster_suggestion": "distinct",
+                "rationale": "Mechanisms differ.",
+                "access_issues": [],
+            },
+            "ProximityAssessed",
+            {
+                "research_plan_version": 1,
+                "edge_id": "edge-1",
+                "left_id": "h-1",
+                "left_content_hash": "sha256:" + "a" * 64,
+                "right_id": "h-2",
+                "right_content_hash": "sha256:" + "b" * 64,
+                "similarity": 2,
+                "mechanism_overlap": ["YAP"],
+                "duplicate_likelihood": 0.1,
+                "cluster_suggestion": "distinct",
+                "rationale": "Mechanisms differ.",
+                "access_issues": [],
+            },
+        ),
+        (
+            "meta_review",
+            "MetaReviewResultV1",
+            {
+                "schema_version": 1,
+                "research_plan_version": 1,
+                "source_content_hashes": {"h-1": "sha256:" + "a" * 64},
+                "system_feedback": ["Add early timepoints."],
+                "overview": "Coverage is broad.",
+                "coverage_gaps": ["No early timepoint."],
+                "safety_direction_check": "clear",
+            },
+            "MetaReviewCompleted",
+            {
+                "research_plan_version": 1,
+                "source_content_hashes": {"h-1": "sha256:" + "a" * 64},
+                "system_feedback": ["Add early timepoints."],
+                "overview": "Coverage is broad.",
+                "coverage_gaps": ["No early timepoint."],
+                "safety_direction_check": "clear",
+            },
+        ),
+    ],
+)
+def test_scientific_results_build_explicit_v2_events(
+    skill_id: str,
+    schema_id: str,
+    payload: dict[str, object],
+    event_type: str,
+    expected_payload: dict[str, object],
+) -> None:
+    (event,) = Supervisor._events_for_result(
+        _event_result(skill_id=skill_id, output_schema_id=schema_id, payload=payload)
+    )
+
+    assert (event.event_type, event.schema_version) == (event_type, 2)
+    assert event.model_dump(mode="json")["payload"] == {
+        **expected_payload,
+        "source_result_id": "result-1",
+        "source_task_id": "task-1",
+        "status": "completed",
+    }
+
+
+def test_supervisor_rejects_persisted_noncanonical_skill_schema_pair_before_effects(
+    tmp_path: Path,
+) -> None:
+    uow = SqliteUnitOfWork(f"sqlite:///{tmp_path / 'schema-routing.db'}")
+    uow.create_schema()
+    uow.create_run("run-1", manifest={})
+    task = NewTask(
+        task_id="task-1",
+        run_id="run-1",
+        idempotency_key="task-1",
+        intent_type="run_reflection",
+        payload={},
+    )
+    uow.enqueue_tasks([task])
+    for state in (TaskState.LEASED, TaskState.RUNNING, TaskState.RESULT_RECEIVED):
+        uow.transition_task(task.task_id, state)
+    context = {
+        "run_id": "run-1",
+        "task_id": "task-1",
+        "idempotency_key": "task-1",
+        "skill_id": "reflection",
+        "skill_version": "0.2.0",
+        "output_schema_id": "GenerationResultV1",
+        "output_schema_version": 1,
+        "research_plan_version": 1,
+        "provider": "fake",
+        "model_or_tool": "fake-v1",
+        "input_snapshot_hash": "sha256:input",
+        "prompt_hash": "sha256:prompt",
+    }
+    valid_context = {**context, "skill_id": "generation"}
+    uow.plan_external_call(
+        "call-1",
+        "sha256:request",
+        run_id="run-1",
+        task_id="task-1",
+        execution_context=valid_context,
+    )
+    with uow.engine.begin() as connection:
+        connection.execute(
+            text(
+                "UPDATE external_calls SET execution_context_json = :context "
+                "WHERE external_call_id = 'call-1'"
+            ),
+            {"context": json.dumps(context, separators=(",", ":"), sort_keys=True)},
+        )
+    uow.transition_call("call-1", "started")
+    raw_ref = ArtifactRef(
+        path="raw/call-1/digest",
+        sha256="sha256:digest",
+        mime_type="application/json",
+        byte_length=2,
+    )
+    uow.record_raw_and_transition("call-1", raw_ref, "raw_response_persisted")
+    forged = AgentResult.model_construct(
+        result_id="result-1",
+        external_call_id="call-1",
+        status="completed",
+        payload=_valid_generation_payload(),
+        raw_artifact_ref=raw_ref,
+        **context,
+    )
+    uow.record_validated_and_submitted(
+        "call-1", _valid_generation_payload(), forged
+    )
+
+    with pytest.raises(ValueError, match="canonical skill contract"):
+        Supervisor(uow=uow, review_policy=ReviewPolicy(profile_id="minimal")).handle_result(
+            "run-1", "task-1", forged, expected_sequence=0
+        )
+
+    assert uow.load("run-1") == []
+    assert uow.task_state("task-1") == "result_received"
+
+
 async def _execute_ranking_result(
     tmp_path: Path,
     payload: dict[str, object],
@@ -526,8 +788,8 @@ async def test_skill_executor_uses_raw_first_runner_and_returns_agent_result(tmp
 @pytest.mark.parametrize(
     ("context_override", "message"),
     [
-        ({"skill_id": "reflection"}, "skill does not match"),
-        ({"skill_version": "0.1.0"}, "skill version does not match"),
+        ({"skill_id": "reflection"}, "canonical skill contract"),
+        ({"skill_version": "0.1.0"}, "canonical skill contract"),
         ({"output_schema_version": 2}, "unknown output schema"),
     ],
 )

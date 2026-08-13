@@ -99,6 +99,24 @@ CORE_SKILL_CONTRACTS: Mapping[str, SkillManifest] = MappingProxyType(
 )
 
 
+def resolve_core_skill_contract(
+    *,
+    skill_id: str,
+    skill_version: str,
+    output_schema_id: str,
+) -> SkillManifest:
+    """Resolve one exact skill/version/schema identity from the closed Core matrix."""
+
+    contract = CORE_SKILL_CONTRACTS.get(skill_id)
+    if (
+        contract is None
+        or contract.version != skill_version
+        or contract.output_schema != output_schema_id
+    ):
+        raise ValueError("execution identity does not match canonical skill contract")
+    return contract
+
+
 def load_skill(directory: Path) -> SkillManifest:
     """Load a skill and fail closed when its prompt or authority is invalid."""
 
@@ -113,5 +131,10 @@ def load_skill(directory: Path) -> SkillManifest:
         raise FileNotFoundError(prompt)
     if manifest.allowed_capabilities != ("return_agent_result",):
         raise ValueError("skills may only return AgentResult")
+    resolve_core_skill_contract(
+        skill_id=manifest.id,
+        skill_version=manifest.version,
+        output_schema_id=manifest.output_schema,
+    )
     resolve_output_schema(manifest.output_schema, 1)
     return manifest

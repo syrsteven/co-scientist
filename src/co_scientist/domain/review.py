@@ -1,7 +1,12 @@
 from enum import StrEnum
-from typing import Literal
+from typing import Annotated, Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, StringConstraints
+
+NonEmptyReviewStr = Annotated[
+    str,
+    StringConstraints(strict=True, strip_whitespace=True, min_length=1),
+]
 
 
 class ReviewStage(StrEnum):
@@ -46,12 +51,12 @@ class NoveltyVerdict(StrEnum):
 
 
 class NoveltyAssessment(BaseModel):
-    model_config = ConfigDict(frozen=True)
+    model_config = ConfigDict(frozen=True, extra="forbid")
 
-    assessment_id: str
-    hypothesis_id: str
-    content_hash: str
-    research_plan_version: int
+    assessment_id: NonEmptyReviewStr
+    hypothesis_id: NonEmptyReviewStr
+    content_hash: NonEmptyReviewStr
+    research_plan_version: int = Field(ge=1)
     verdict: NoveltyVerdict
-    closest_prior_work_ids: tuple[str, ...]
-    evidence_ids: tuple[str, ...] = ()
+    closest_prior_work_ids: tuple[NonEmptyReviewStr, ...]
+    evidence_ids: tuple[NonEmptyReviewStr, ...] = ()

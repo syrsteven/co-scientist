@@ -15,6 +15,7 @@ def canonical_hypothesis_bytes(content: "HypothesisContent") -> bytes:
             "assumptions": content.assumptions,
             "claim": content.claim,
             "falsifiers": content.falsifiers,
+            "generation_strategy": content.generation_strategy,
             "mechanism_chain": content.mechanism_chain,
             "predictions": content.predictions,
             "title": content.title,
@@ -41,6 +42,7 @@ class HypothesisContent(BaseModel):
     assumptions: tuple[str, ...]
     predictions: tuple[str, ...]
     falsifiers: tuple[str, ...]
+    generation_strategy: str
     parent_content_ids: tuple[str, ...] = ()
     supersedes_content_id: str | None = None
 
@@ -61,6 +63,7 @@ def hypothesis_content_from_draft(draft: HypothesisDraftV1) -> HypothesisContent
         assumptions=draft.assumptions,
         predictions=draft.predictions,
         falsifiers=draft.falsifiers,
+        generation_strategy=draft.generation_strategy,
         parent_content_ids=draft.parent_content_ids,
         supersedes_content_id=draft.supersedes_content_id,
     )

@@ -15,6 +15,7 @@ from pydantic import (
 from co_scientist.agents.payloads import CoreOutputSchemaId, validate_output_payload
 from co_scientist.ports.artifact_store import ArtifactRef
 from co_scientist.ports.external_provider import freeze_json, thaw_json
+from co_scientist.skills.loader import resolve_core_skill_contract
 
 
 class AgentExecutionContext(BaseModel):
@@ -34,6 +35,15 @@ class AgentExecutionContext(BaseModel):
     model_or_tool: str
     input_snapshot_hash: str
     prompt_hash: str | None = None
+
+    @model_validator(mode="after")
+    def validate_skill_contract(self) -> "AgentExecutionContext":
+        resolve_core_skill_contract(
+            skill_id=self.skill_id,
+            skill_version=self.skill_version,
+            output_schema_id=self.output_schema_id,
+        )
+        return self
 
 
 class AgentResult(BaseModel):
@@ -72,6 +82,11 @@ class AgentResult(BaseModel):
 
     @model_validator(mode="after")
     def validate_typed_payload(self) -> "AgentResult":
+        resolve_core_skill_contract(
+            skill_id=self.skill_id,
+            skill_version=self.skill_version,
+            output_schema_id=self.output_schema_id,
+        )
         validated = validate_output_payload(
             status=self.status,
             schema_id=self.output_schema_id,

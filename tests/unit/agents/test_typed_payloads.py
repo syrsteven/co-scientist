@@ -7,6 +7,7 @@ from co_scientist.agents.payloads import (
     ReflectionResultV1,
     validate_output_payload,
 )
+from co_scientist.agents.result import AgentExecutionContext
 
 
 def _draft(*, hypothesis_id: str = "h-1", content_id: str = "c-1") -> dict[str, object]:
@@ -233,3 +234,52 @@ def test_generation_rejects_blank_nested_identifiers_and_mismatched_plan() -> No
         GenerationResultV1.model_validate(blank)
     with pytest.raises(ValidationError):
         GenerationResultV1.model_validate(wrong_plan)
+
+
+@pytest.mark.parametrize(
+    "novelty_mutation",
+    [
+        {"unexpected": True},
+        {"assessment_id": " "},
+        {"closest_prior_work_ids": [" "]},
+        {"evidence_ids": [""]},
+    ],
+)
+def test_reflection_rejects_extra_or_blank_nested_novelty_fields(
+    novelty_mutation: dict[str, object],
+) -> None:
+    novelty = {
+        "assessment_id": "novelty-1",
+        "hypothesis_id": "h-1",
+        "content_hash": "sha256:content",
+        "research_plan_version": 1,
+        "verdict": "novel",
+        "closest_prior_work_ids": ["paper-1"],
+        "evidence_ids": ["evidence-1"],
+        **novelty_mutation,
+    }
+    payload = {
+        **VALID_PAYLOADS["ReflectionResultV1"],
+        "stage": "full_review",
+        "novelty_assessment": novelty,
+    }
+
+    with pytest.raises(ValidationError):
+        ReflectionResultV1.model_validate(payload)
+
+
+def test_execution_context_rejects_noncanonical_skill_schema_pair() -> None:
+    with pytest.raises(ValidationError, match="canonical skill contract"):
+        AgentExecutionContext(
+            run_id="run-1",
+            task_id="task-1",
+            idempotency_key="task-1",
+            skill_id="reflection",
+            skill_version="0.2.0",
+            output_schema_id="GenerationResultV1",
+            output_schema_version=1,
+            research_plan_version=1,
+            provider="fake",
+            model_or_tool="fake-v1",
+            input_snapshot_hash="sha256:input",
+        )

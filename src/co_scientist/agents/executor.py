@@ -9,7 +9,7 @@ from co_scientist.agents.payloads import resolve_output_schema
 from co_scientist.agents.result import AgentExecutionContext, AgentResult
 from co_scientist.ports.external_provider import ExternalProvider
 from co_scientist.runtime.external_calls import ExternalCallRunner, prompt_hash
-from co_scientist.skills.loader import load_skill
+from co_scientist.skills.loader import load_skill, resolve_core_skill_contract
 
 
 def _reject_non_json_constant(value: str) -> None:
@@ -39,6 +39,11 @@ class SkillExecutor:
         context: AgentExecutionContext,
     ) -> AgentResult:
         manifest = load_skill(skill_directory)
+        resolve_core_skill_contract(
+            skill_id=context.skill_id,
+            skill_version=context.skill_version,
+            output_schema_id=context.output_schema_id,
+        )
         if context.skill_id != manifest.id:
             raise ValueError("execution context skill does not match manifest")
         if context.skill_version != manifest.version:

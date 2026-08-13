@@ -249,7 +249,6 @@ class LensReplayHarness:
                     "research_plan_version": 1,
                     **content.model_dump(mode="json"),
                     "content_hash": content.content_hash,
-                    "generation_strategy": "causal-chain contrast",
                 }
                 for hypothesis_id, content in contents.items()
             ]
@@ -497,6 +496,7 @@ class LensReplayHarness:
                 assumptions=("capsule mechanics alter early cell-state trajectories",),
                 predictions=("early anti-EMT intervention rescues transparency",),
                 falsifiers=("late-only intervention fully rescues transparency",),
+                generation_strategy="causal contrast",
             ),
             "h-2": HypothesisContent(
                 content_id="content-h-2-v1",
@@ -509,6 +509,7 @@ class LensReplayHarness:
                 assumptions=("capsular geometry persists through early healing",),
                 predictions=("geometry correction restores radial organization",),
                 falsifiers=("matched geometry leaves morphology unchanged across ages",),
+                generation_strategy="mechanistic decomposition",
             ),
         }
 
@@ -922,6 +923,7 @@ def test_export_separates_immutable_content_revisions_from_current_projection(
         "assumptions": [],
         "predictions": [],
         "falsifiers": [],
+        "generation_strategy": "revision fixture",
     }
     uow.commit_domain_batch(
         run_id="revision-run",

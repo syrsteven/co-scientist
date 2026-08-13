@@ -3,6 +3,7 @@ from pathlib import Path
 
 import pytest
 
+from co_scientist.skills import loader
 from co_scientist.skills.loader import load_skill
 
 CORE_SKILL_CONTRACTS = {
@@ -77,6 +78,22 @@ def test_all_six_core_skills_match_the_independent_canonical_matrix() -> None:
     }
 
     assert actual == CORE_SKILL_CONTRACTS
+
+
+def test_canonical_skill_resolver_binds_version_and_output_schema() -> None:
+    resolver = loader.resolve_core_skill_contract
+
+    assert resolver(
+        skill_id="reflection",
+        skill_version="0.2.0",
+        output_schema_id="ReflectionResultV1",
+    ).id == "reflection"
+    with pytest.raises(ValueError, match="canonical skill contract"):
+        resolver(
+            skill_id="reflection",
+            skill_version="0.2.0",
+            output_schema_id="GenerationResultV1",
+        )
 
 
 @pytest.mark.parametrize(
