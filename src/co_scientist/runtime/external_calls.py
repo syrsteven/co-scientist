@@ -72,10 +72,7 @@ class ExternalCallRunner:
             or context.idempotency_key != call.task_idempotency_key
             or context.provider != call.provider
             or context.model_or_tool != call.model_or_tool
-            or (
-                call.execution_context is None
-                and not allows_legacy_reconstruction
-            )
+            or (call.execution_context is None and not allows_legacy_reconstruction)
             or (
                 call.execution_context is not None
                 and dict(call.execution_context) != self._context_data(context)
@@ -116,9 +113,7 @@ class ExternalCallRunner:
             or manifest.task_id != call.task_id
             or manifest.execution_context_fingerprint != expected_context_fingerprint
         ):
-            raise ValueError(
-                f"call {call.external_call_id} raw manifest provenance mismatch"
-            )
+            raise ValueError(f"call {call.external_call_id} raw manifest provenance mismatch")
 
     @staticmethod
     def _assert_manifest_matches_response(
@@ -180,6 +175,7 @@ class ExternalCallRunner:
         ref: ArtifactRef,
         validator: Validator,
         context: AgentExecutionContext,
+        reservation_id: str,
         fence: TaskLeaseFence,
         write_guard: WriteGuard | None,
     ) -> AgentResult:
@@ -190,12 +186,19 @@ class ExternalCallRunner:
         except Exception:
             self._guard(write_guard)
             self.uow.transition_call(
-                call_id, ExternalCallState.VALIDATION_FAILED, fence=fence
+                call_id,
+                ExternalCallState.VALIDATION_FAILED,
+                reservation_id=reservation_id,
+                fence=fence,
             )
             raise
         self._guard(write_guard)
         self.uow.record_validated_and_submitted(
-            call_id, payload, result, fence=fence
+            call_id,
+            payload,
+            result,
+            reservation_id=reservation_id,
+            fence=fence,
         )
         return result
 
@@ -203,6 +206,7 @@ class ExternalCallRunner:
         self,
         call: PersistedExternalCall,
         context: AgentExecutionContext,
+        reservation_id: str,
         fence: TaskLeaseFence,
         write_guard: WriteGuard | None,
     ) -> AgentResult:
@@ -216,7 +220,10 @@ class ExternalCallRunner:
         )
         self._guard(write_guard)
         self.uow.record_submitted_result(
-            call.external_call_id, result, fence=fence
+            call.external_call_id,
+            result,
+            reservation_id=reservation_id,
+            fence=fence,
         )
         return result
 
@@ -228,6 +235,7 @@ class ExternalCallRunner:
         provider: ExternalProvider,
         validator: Validator,
         context: AgentExecutionContext,
+        reservation_id: str,
         fence: TaskLeaseFence,
         write_guard: WriteGuard | None,
     ) -> AgentResult:
@@ -236,12 +244,19 @@ class ExternalCallRunner:
         except Exception:
             self._guard(write_guard)
             self.uow.transition_call(
-                call_id, ExternalCallState.FAILED_BEFORE_RESPONSE, fence=fence
+                call_id,
+                ExternalCallState.FAILED_BEFORE_RESPONSE,
+                reservation_id=reservation_id,
+                fence=fence,
             )
             raise
         try:
             self._guard(write_guard)
-            self.uow.assert_task_fence(fence=fence)
+            self.uow.assert_external_call_fence(
+                call_id=call_id,
+                reservation_id=reservation_id,
+                fence=fence,
+            )
             ref = self.artifacts.persist_raw(
                 call_id,
                 raw.body,
@@ -266,7 +281,10 @@ class ExternalCallRunner:
             except (AttributeError, OSError, ValueError):
                 self._guard(write_guard)
                 self.uow.transition_call(
-                    call_id, ExternalCallState.RAW_PERSIST_FAILED, fence=fence
+                    call_id,
+                    ExternalCallState.RAW_PERSIST_FAILED,
+                    reservation_id=reservation_id,
+                    fence=fence,
                 )
                 raise persist_error
             self.artifacts.confirm_raw(manifest)
@@ -277,6 +295,7 @@ class ExternalCallRunner:
                 ExternalCallState.RAW_RESPONSE_PERSISTED,
                 provider_response_id=manifest.provider_response_id,
                 usage=manifest.usage,
+                reservation_id=reservation_id,
                 fence=fence,
             )
             return self._validate_and_submit(
@@ -284,6 +303,7 @@ class ExternalCallRunner:
                 manifest.artifact_ref,
                 validator,
                 context,
+                reservation_id,
                 fence,
                 write_guard,
             )
@@ -294,10 +314,17 @@ class ExternalCallRunner:
             ExternalCallState.RAW_RESPONSE_PERSISTED,
             provider_response_id=raw.provider_response_id,
             usage=raw.usage,
+            reservation_id=reservation_id,
             fence=fence,
         )
         return self._validate_and_submit(
-            call_id, ref, validator, context, fence, write_guard
+            call_id,
+            ref,
+            validator,
+            context,
+            reservation_id,
+            fence,
+            write_guard,
         )
 
     async def _continue(
@@ -309,6 +336,7 @@ class ExternalCallRunner:
         validator: Validator,
         context: AgentExecutionContext,
         allow_provider_call: bool,
+        reservation_id: str,
         fence: TaskLeaseFence,
         write_guard: WriteGuard | None,
     ) -> AgentResult:
@@ -318,7 +346,10 @@ class ExternalCallRunner:
                 raise ValueError(f"call {call.external_call_id} has no durable raw response")
             self._guard(write_guard)
             self.uow.transition_call(
-                call.external_call_id, ExternalCallState.STARTED, fence=fence
+                call.external_call_id,
+                ExternalCallState.STARTED,
+                reservation_id=reservation_id,
+                fence=fence,
             )
             return await self._invoke_provider(
                 call_id=call.external_call_id,
@@ -326,6 +357,7 @@ class ExternalCallRunner:
                 provider=provider,
                 validator=validator,
                 context=context,
+                reservation_id=reservation_id,
                 fence=fence,
                 write_guard=write_guard,
             )
@@ -341,6 +373,7 @@ class ExternalCallRunner:
                     ExternalCallState.RAW_RESPONSE_PERSISTED,
                     provider_response_id=manifest.provider_response_id,
                     usage=manifest.usage,
+                    reservation_id=reservation_id,
                     fence=fence,
                 )
                 return self._validate_and_submit(
@@ -348,6 +381,7 @@ class ExternalCallRunner:
                     manifest.artifact_ref,
                     validator,
                     context,
+                    reservation_id,
                     fence,
                     write_guard,
                 )
@@ -359,6 +393,7 @@ class ExternalCallRunner:
                 provider=provider,
                 validator=validator,
                 context=context,
+                reservation_id=reservation_id,
                 fence=fence,
                 write_guard=write_guard,
             )
@@ -370,13 +405,12 @@ class ExternalCallRunner:
                 call.raw_artifact_ref,
                 validator,
                 context,
+                reservation_id,
                 fence,
                 write_guard,
             )
         if state is ExternalCallState.VALIDATED:
-            return self._submit_legacy_validated(
-                call, context, fence, write_guard
-            )
+            return self._submit_legacy_validated(call, context, reservation_id, fence, write_guard)
         if state in {
             ExternalCallState.AGENT_RESULT_SUBMITTED,
             ExternalCallState.DOMAIN_RESULT_APPLIED,
@@ -399,7 +433,6 @@ class ExternalCallRunner:
         if (
             context.attempt != fence.attempt
             or context.reservation_id != reservation_id
-            or context.lease_fence_fingerprint != lease_fence_fingerprint(fence)
             or context.run_id != fence.run_id
             or context.task_id != fence.task_id
         ):
@@ -409,6 +442,8 @@ class ExternalCallRunner:
         try:
             call = self.uow.get_external_call(call_id)
         except KeyError:
+            if context.lease_fence_fingerprint != lease_fence_fingerprint(fence):
+                raise ValueError("execution context does not match task lease fence")
             self._guard(write_guard)
             self.uow.plan_external_call(
                 call_id,
@@ -424,7 +459,10 @@ class ExternalCallRunner:
             )
             self._guard(write_guard)
             self.uow.transition_call(
-                call_id, ExternalCallState.STARTED, fence=fence
+                call_id,
+                ExternalCallState.STARTED,
+                reservation_id=reservation_id,
+                fence=fence,
             )
             return await self._invoke_provider(
                 call_id=call_id,
@@ -432,6 +470,7 @@ class ExternalCallRunner:
                 provider=provider,
                 validator=validator,
                 context=context,
+                reservation_id=reservation_id,
                 fence=fence,
                 write_guard=write_guard,
             )
@@ -446,6 +485,7 @@ class ExternalCallRunner:
             validator=validator,
             context=context,
             allow_provider_call=True,
+            reservation_id=reservation_id,
             fence=fence,
             write_guard=write_guard,
         )
@@ -464,7 +504,8 @@ class ExternalCallRunner:
         if (
             context.attempt != fence.attempt
             or context.reservation_id != reservation_id
-            or context.lease_fence_fingerprint != lease_fence_fingerprint(fence)
+            or context.run_id != fence.run_id
+            or context.task_id != fence.task_id
         ):
             raise ValueError("execution context does not match task lease fence")
         call = self.uow.get_external_call(call_id)
@@ -478,6 +519,7 @@ class ExternalCallRunner:
             validator=validator,
             context=context,
             allow_provider_call=False,
+            reservation_id=reservation_id,
             fence=fence,
             write_guard=write_guard,
         )

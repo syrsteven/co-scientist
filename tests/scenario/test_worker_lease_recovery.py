@@ -1,9 +1,12 @@
 import json
 from datetime import UTC, datetime, timedelta
+from pathlib import Path
+from types import SimpleNamespace
 
 import pytest
 from sqlalchemy import text
 
+from co_scientist.adapters.artifacts.filesystem import FilesystemArtifactStore
 from co_scientist.adapters.persistence.sqlite import SqliteUnitOfWork
 from co_scientist.agents.result import AgentExecutionContext, AgentResult
 from co_scientist.domain.review import ReviewPolicy
@@ -14,7 +17,10 @@ from co_scientist.domain.task import (
     lease_fence_fingerprint,
 )
 from co_scientist.ports.artifact_store import ArtifactRef
-from co_scientist.runtime.external_calls import request_fingerprint
+from co_scientist.ports.external_provider import RawExternalResponse
+from co_scientist.runtime.external_calls import prompt_hash, request_fingerprint
+from co_scientist.runtime.registry import ProviderRegistry, SkillRegistry
+from co_scientist.runtime.worker import Worker
 from co_scientist.supervisor.orchestrator import Supervisor
 
 NOW = datetime(2026, 8, 17, 10, 0, tzinfo=UTC)
@@ -97,7 +103,12 @@ def test_reclaimed_task_rejects_every_old_worker_write_boundary(tmp_path) -> Non
         reservation_id=first.reservation_id,
         fence=first,
     )
-    uow.transition_call("call-old", ExternalCallState.STARTED, fence=first)
+    uow.transition_call(
+        "call-old",
+        ExternalCallState.STARTED,
+        reservation_id=first.reservation_id,
+        fence=first,
+    )
     uow.recover_expired_leases(run_id="r-1", now=NOW + timedelta(seconds=10))
     second = uow.claim_next_task(
         run_id="r-1",
@@ -123,9 +134,18 @@ def test_reclaimed_task_rejects_every_old_worker_write_boundary(tmp_path) -> Non
 
     mutations = (
         lambda: uow.record_raw_and_transition(
-            "call-old", ref, ExternalCallState.RAW_RESPONSE_PERSISTED, fence=stale
+            "call-old",
+            ref,
+            ExternalCallState.RAW_RESPONSE_PERSISTED,
+            reservation_id=first.reservation_id,
+            fence=stale,
         ),
-        lambda: uow.record_validated("call-old", {"forged": True}, fence=stale),
+        lambda: uow.record_validated(
+            "call-old",
+            {"forged": True},
+            reservation_id=first.reservation_id,
+            fence=stale,
+        ),
         lambda: uow.record_submitted_result(
             "call-old",
             AgentResult.model_construct(
@@ -136,6 +156,7 @@ def test_reclaimed_task_rejects_every_old_worker_write_boundary(tmp_path) -> Non
                 payload={"forged": True},
                 **context.model_dump(),
             ),
+            reservation_id=first.reservation_id,
             fence=stale,
         ),
         lambda: supervisor.handle_result(
@@ -208,6 +229,112 @@ def test_reclaim_reuses_reservation_but_requires_new_attempt_token_and_call_iden
     assert row.version >= 2
 
 
+# Mutation caught: same-owner process restart increments attempt or leaves old token valid.
+def test_same_owner_adopts_durable_call_with_fresh_token_and_invalidates_old_fence(
+    tmp_path,
+) -> None:
+    uow, _, first = _setup(tmp_path)
+    context = _context(first, first.reservation_id)
+    uow.plan_external_call(
+        "call-adopt",
+        request_fingerprint({"prompt": "adopt"}),
+        run_id="r-1",
+        task_id="task-1",
+        execution_context=context.model_dump(mode="json"),
+        reservation_id=first.reservation_id,
+        fence=first,
+    )
+    uow.transition_call(
+        "call-adopt",
+        ExternalCallState.STARTED,
+        reservation_id=first.reservation_id,
+        fence=first,
+    )
+    uow.record_raw_and_transition(
+        "call-adopt",
+        ArtifactRef(
+            path="raw/adopt.json",
+            sha256="sha256:" + "2" * 64,
+            byte_length=2,
+            mime_type="application/json",
+        ),
+        ExternalCallState.RAW_RESPONSE_PERSISTED,
+        reservation_id=first.reservation_id,
+        fence=first,
+    )
+
+    adopted = uow.adopt_recoverable_task(
+        run_id="r-1",
+        worker_id="worker-old",
+        lease_token="fresh-secret",
+        now=NOW + timedelta(seconds=1),
+        lease_duration=timedelta(minutes=5),
+    ).task
+
+    assert adopted is not None
+    assert adopted.attempt == first.attempt
+    assert adopted.reservation_id == first.reservation_id
+    with pytest.raises(ValueError, match="stale task lease fence"):
+        uow.heartbeat_task(
+            fence=first,
+            now=NOW + timedelta(seconds=2),
+            lease_duration=timedelta(minutes=5),
+        )
+    uow.heartbeat_task(
+        fence=adopted,
+        now=NOW + timedelta(seconds=2),
+        lease_duration=timedelta(minutes=5),
+    )
+
+
+def test_recoverable_call_adoption_respects_paused_run_fence(tmp_path) -> None:
+    uow, supervisor, first = _setup(tmp_path)
+    context = _context(first, first.reservation_id)
+    uow.plan_external_call(
+        "call-paused",
+        request_fingerprint({"prompt": "paused"}),
+        run_id="r-1",
+        task_id="task-1",
+        execution_context=context.model_dump(mode="json"),
+        reservation_id=first.reservation_id,
+        fence=first,
+    )
+    uow.transition_call(
+        "call-paused",
+        ExternalCallState.STARTED,
+        reservation_id=first.reservation_id,
+        fence=first,
+    )
+    uow.record_raw_and_transition(
+        "call-paused",
+        ArtifactRef(
+            path="raw/paused.json",
+            sha256="sha256:" + "3" * 64,
+            byte_length=2,
+            mime_type="application/json",
+        ),
+        ExternalCallState.RAW_RESPONSE_PERSISTED,
+        reservation_id=first.reservation_id,
+        fence=first,
+    )
+    supervisor.pause_run("r-1", expected_sequence=uow.load("r-1")[-1].sequence)
+
+    outcome = uow.adopt_recoverable_task(
+        run_id="r-1",
+        worker_id="worker-new",
+        lease_token="new-secret",
+        now=NOW + timedelta(seconds=1),
+        lease_duration=timedelta(minutes=5),
+    )
+
+    assert outcome.status == "paused"
+    uow.heartbeat_task(
+        fence=first,
+        now=NOW + timedelta(seconds=2),
+        lease_duration=timedelta(minutes=5),
+    )
+
+
 # Mutation caught: reusable lease secrets leak into durable event/export surfaces.
 def test_lease_events_store_only_one_way_fingerprints(tmp_path) -> None:
     uow, _, _ = _setup(tmp_path)
@@ -218,3 +345,231 @@ def test_lease_events_store_only_one_way_fingerprints(tmp_path) -> None:
 
     assert "old-secret" not in serialized
     assert "lease_fence_fingerprint" in serialized
+
+
+@pytest.mark.parametrize(
+    "operation",
+    ["started", "failure", "raw", "validation", "submission", "atomic_submission"],
+)
+# Mutation caught: a call write trusts token/attempt after reservation binding changes.
+def test_every_external_call_write_rechecks_exact_reservation_binding(
+    tmp_path, operation: str
+) -> None:
+    uow, _, fence = _setup(tmp_path)
+    context = _context(fence, fence.reservation_id)
+    uow.plan_external_call(
+        "call-reservation",
+        request_fingerprint({"prompt": "reservation"}),
+        run_id="r-1",
+        task_id="task-1",
+        execution_context=context.model_dump(mode="json"),
+        reservation_id=fence.reservation_id,
+        fence=fence,
+    )
+    ref = ArtifactRef(
+        path="raw/reservation.json",
+        sha256="sha256:" + "1" * 64,
+        byte_length=2,
+        mime_type="application/json",
+    )
+    payload = {"schema_version": 1, "research_plan_version": 1, "hypotheses": []}
+    result = AgentResult.model_construct(
+        result_id="result-reservation",
+        external_call_id="call-reservation",
+        raw_artifact_ref=ref,
+        status="completed",
+        payload=payload,
+        **context.model_dump(),
+    )
+    if operation in {"raw", "validation", "submission", "atomic_submission"}:
+        uow.transition_call(
+            "call-reservation",
+            ExternalCallState.STARTED,
+            reservation_id=fence.reservation_id,
+            fence=fence,
+        )
+    if operation in {"validation", "submission", "atomic_submission"}:
+        uow.record_raw_and_transition(
+            "call-reservation",
+            ref,
+            ExternalCallState.RAW_RESPONSE_PERSISTED,
+            reservation_id=fence.reservation_id,
+            fence=fence,
+        )
+    if operation == "submission":
+        uow.record_validated(
+            "call-reservation",
+            payload,
+            reservation_id=fence.reservation_id,
+            fence=fence,
+        )
+    with uow.engine.begin() as connection:
+        connection.execute(
+            text(
+                "UPDATE budget_reservations SET external_call_id = 'foreign-call' "
+                "WHERE reservation_id = :reservation_id"
+            ),
+            {"reservation_id": fence.reservation_id},
+        )
+
+    mutations = {
+        "started": lambda: uow.transition_call(
+            "call-reservation",
+            ExternalCallState.STARTED,
+            reservation_id=fence.reservation_id,
+            fence=fence,
+        ),
+        "failure": lambda: uow.transition_call(
+            "call-reservation",
+            ExternalCallState.FAILED_BEFORE_RESPONSE,
+            reservation_id=fence.reservation_id,
+            fence=fence,
+        ),
+        "raw": lambda: uow.record_raw_and_transition(
+            "call-reservation",
+            ref,
+            ExternalCallState.RAW_RESPONSE_PERSISTED,
+            reservation_id=fence.reservation_id,
+            fence=fence,
+        ),
+        "validation": lambda: uow.record_validated(
+            "call-reservation",
+            payload,
+            reservation_id=fence.reservation_id,
+            fence=fence,
+        ),
+        "submission": lambda: uow.record_submitted_result(
+            "call-reservation",
+            result,
+            reservation_id=fence.reservation_id,
+            fence=fence,
+        ),
+        "atomic_submission": lambda: uow.record_validated_and_submitted(
+            "call-reservation",
+            payload,
+            result,
+            reservation_id=fence.reservation_id,
+            fence=fence,
+        ),
+    }
+    before = uow.external_call_state("call-reservation")
+
+    with pytest.raises(ValueError, match="reservation"):
+        mutations[operation]()
+
+    assert uow.external_call_state("call-reservation") == before
+
+
+class _InvalidProvider:
+    def __init__(self) -> None:
+        self.call_count = 0
+
+    async def invoke(self, request):
+        self.call_count += 1
+        return RawExternalResponse(
+            body=b"{}",
+            mime_type="application/json",
+            provider_response_id=f"invalid-{self.call_count}",
+            usage={"input_tokens": 1, "output_tokens": 1, "cost_usd": "0.01"},
+        )
+
+
+@pytest.mark.asyncio
+# Mutation caught: invalid typed output stops after one attempt or pollutes cost/science.
+async def test_real_workers_exhaust_invalid_output_without_scientific_pollution(
+    tmp_path,
+) -> None:
+    database_url = f"sqlite:///{tmp_path / 'invalid-exhaustion.db'}"
+    uow = SqliteUnitOfWork(database_url)
+    uow.create_schema()
+    supervisor = Supervisor(uow=uow, review_policy=ReviewPolicy(profile_id="invalid"))
+    started = supervisor.create_and_start_run(
+        "run-invalid",
+        manifest={"execution_contract_version": 3, "budget": {}},
+        start_payload={},
+    )
+    skill_directory = Path("skills/generation")
+    inputs = {"research_question": "reject malformed output"}
+    supervisor.enqueue_task(
+        task=NewTask(
+            task_id="task-invalid",
+            run_id="run-invalid",
+            idempotency_key="generation:invalid:1",
+            intent_type="run_generation",
+            payload={
+                "skill_id": "generation",
+                "skill_version": "0.2.0",
+                "output_schema_id": "GenerationResultV1",
+                "output_schema_version": 1,
+                "research_plan_version": 1,
+                "provider_id": "provider-invalid",
+                "model_or_tool": "model-invalid",
+                "inputs": inputs,
+                "input_snapshot_hash": request_fingerprint(inputs),
+                "prompt_hash": prompt_hash(
+                    (skill_directory / "prompts/system.md").read_text(encoding="utf-8")
+                ),
+                "budget_estimate": {
+                    "model_calls": 1,
+                    "input_tokens": 1,
+                    "output_tokens": 1,
+                    "cost_usd": "0.01",
+                    "hypotheses": 1,
+                    "matches": 0,
+                },
+            },
+        ),
+        expected_sequence=started.last_sequence,
+    )
+    provider = _InvalidProvider()
+
+    def worker(attempt: int, now: datetime) -> Worker:
+        current = SqliteUnitOfWork(database_url)
+        return Worker(
+            runtime=SimpleNamespace(
+                uow=current,
+                artifacts=FilesystemArtifactStore(tmp_path / "invalid-artifacts"),
+            ),
+            task_runtime=current,
+            supervisor=Supervisor(uow=current, review_policy=ReviewPolicy(profile_id="invalid")),
+            skills=SkillRegistry({("generation", "0.2.0"): skill_directory}),
+            providers=ProviderRegistry({"provider-invalid": provider}),
+            worker_id=f"worker-{attempt}",
+            clock=lambda: now,
+            token_factory=lambda: f"token-{attempt}",
+            call_id_factory=lambda task: f"call-invalid-{task.attempt}",
+            lease_duration=timedelta(seconds=10),
+            heartbeat_interval=timedelta(seconds=1),
+        )
+
+    for attempt in range(1, 4):
+        with pytest.raises(ExceptionGroup):
+            await worker(attempt, NOW + timedelta(seconds=11 * (attempt - 1))).run_once(
+                "run-invalid"
+            )
+
+    exhausted = await worker(4, NOW + timedelta(seconds=33)).run_once("run-invalid")
+
+    assert exhausted.status == "exhausted"
+    assert provider.call_count == 3
+    assert uow.task_state("task-invalid") == "failed"
+    with uow.engine.connect() as connection:
+        call_ids = (
+            connection.execute(
+                text(
+                    "SELECT external_call_id FROM external_calls "
+                    "WHERE run_id = 'run-invalid' ORDER BY attempt"
+                )
+            )
+            .scalars()
+            .all()
+        )
+        cost_count = connection.execute(
+            text("SELECT COUNT(*) FROM cost_entries WHERE run_id = 'run-invalid'")
+        ).scalar_one()
+    assert call_ids == ["call-invalid-1", "call-invalid-2", "call-invalid-3"]
+    assert cost_count == 0
+    assert not any(
+        event.event_type.startswith(("Hypothesis", "Review", "Match"))
+        for event in uow.load("run-invalid")
+    )

@@ -8,21 +8,19 @@ from typing import Any, Literal
 from uuid import uuid4
 
 import anyio
-from pydantic import BaseModel, ConfigDict, Field, model_validator
+from pydantic import BaseModel, ConfigDict
 
 from co_scientist.agents.executor import SkillExecutor
-from co_scientist.agents.payloads import CoreOutputSchemaId
 from co_scientist.agents.result import AgentExecutionContext, AgentResult
-from co_scientist.domain.budget import BudgetEstimate
-from co_scientist.domain.states import TaskState
 from co_scientist.domain.task import (
     ClaimedTask,
     LeaseRecovery,
     TaskLeaseFence,
     lease_fence_fingerprint,
 )
-from co_scientist.runtime.external_calls import ExternalCallRunner, request_fingerprint
+from co_scientist.runtime.external_calls import ExternalCallRunner
 from co_scientist.runtime.registry import ProviderRegistry, SkillRegistry
+from co_scientist.runtime.task_payload import WorkerTaskPayload
 from co_scientist.supervisor.orchestrator import Supervisor
 
 
@@ -42,30 +40,6 @@ class WorkerStep(BaseModel):
     run_id: str
     task_id: str | None = None
     attempt: int | None = None
-
-
-class WorkerTaskPayload(BaseModel):
-    """Immutable execution identity frozen into a Supervisor-created task."""
-
-    model_config = ConfigDict(frozen=True, extra="forbid")
-
-    skill_id: str
-    skill_version: str
-    output_schema_id: CoreOutputSchemaId
-    output_schema_version: int = Field(ge=1)
-    research_plan_version: int = Field(ge=1)
-    provider_id: str
-    model_or_tool: str
-    inputs: dict[str, Any]
-    input_snapshot_hash: str
-    prompt_hash: str
-    budget_estimate: BudgetEstimate
-
-    @model_validator(mode="after")
-    def validate_input_snapshot(self) -> WorkerTaskPayload:
-        if request_fingerprint(self.inputs) != self.input_snapshot_hash:
-            raise ValueError("task input snapshot hash does not match inputs")
-        return self
 
 
 class _HeartbeatGuard:
@@ -119,13 +93,9 @@ class Worker:
         self.heartbeat_interval = heartbeat_interval
 
     async def recover(self, run_id: str) -> tuple[LeaseRecovery, ...]:
-        return self.task_runtime.recover_expired_leases(
-            run_id=run_id, now=self.clock()
-        )
+        return self.task_runtime.recover_expired_leases(run_id=run_id, now=self.clock())
 
-    def _context(
-        self, task: ClaimedTask, payload: WorkerTaskPayload
-    ) -> AgentExecutionContext:
+    def _context(self, task: ClaimedTask, payload: WorkerTaskPayload) -> AgentExecutionContext:
         fence = TaskLeaseFence.model_validate(task.model_dump())
         return AgentExecutionContext(
             run_id=task.run_id,
@@ -193,14 +163,24 @@ class Worker:
         return WorkerStep(status=mapping[status], run_id=run_id)  # type: ignore[arg-type]
 
     async def run_once(self, run_id: str) -> WorkerStep:
-        recoveries = await self.recover(run_id)
-        outcome = self.task_runtime.claim_next_task(
+        lease_token = self.token_factory()
+        outcome = self.task_runtime.adopt_recoverable_task(
             run_id=run_id,
             worker_id=self.worker_id,
-            lease_token=self.token_factory(),
+            lease_token=lease_token,
             now=self.clock(),
             lease_duration=self.lease_duration,
         )
+        recoveries: tuple[LeaseRecovery, ...] = ()
+        if outcome.status == "no_task":
+            recoveries = await self.recover(run_id)
+            outcome = self.task_runtime.claim_next_task(
+                run_id=run_id,
+                worker_id=self.worker_id,
+                lease_token=lease_token,
+                now=self.clock(),
+                lease_duration=self.lease_duration,
+            )
         if outcome.status != "claimed":
             if recoveries:
                 recovery = recoveries[-1]
@@ -214,15 +194,20 @@ class Worker:
         task = outcome.task
         if task is None:
             raise RuntimeError("claimed outcome has no task")
-        task = self.task_runtime.mark_task_running(fence=task)
+        if self.task_runtime.task_state(task.task_id) == "leased":
+            task = self.task_runtime.mark_task_running(fence=task)
         payload = WorkerTaskPayload.model_validate(dict(task.payload))
         skill_directory = self.skills.resolve(payload.skill_id, payload.skill_version)
         provider = self.providers.resolve(payload.provider_id)
-        context = self._context(task, payload)
         existing_call = self.runtime.uow.external_call_for_task_attempt(
             run_id=task.run_id,
             task_id=task.task_id,
             attempt=task.attempt,
+        )
+        context = (
+            AgentExecutionContext.model_validate(existing_call.execution_context)
+            if existing_call is not None and existing_call.execution_context is not None
+            else self._context(task, payload)
         )
         call_id = (
             existing_call.external_call_id
@@ -243,9 +228,6 @@ class Worker:
             )
 
         result = await self._execute_with_heartbeat(task=task, execute=execute)
-        self.task_runtime.acknowledge_task(
-            fence=task, target_state=TaskState.RESULT_RECEIVED
-        )
         events = self.runtime.uow.load(run_id)
         expected_sequence = events[-1].sequence if events else 0
         self.supervisor.handle_result(

@@ -47,9 +47,7 @@ def _reservation_id(key: str = "generation:1") -> str:
 
 
 def _fence(*, task_id: str = "generate-1") -> TaskLeaseFence:
-    return TaskLeaseFence(
-        run_id="run-1", task_id=task_id, lease_token="fence-lease", attempt=1
-    )
+    return TaskLeaseFence(run_id="run-1", task_id=task_id, lease_token="fence-lease", attempt=1)
 
 
 def _generation_payload() -> dict[str, object]:
@@ -121,7 +119,12 @@ def _submitted_generation(tmp_path) -> tuple[Supervisor, AgentResult]:
         reservation_id=claimed.reservation_id,
         fence=claimed,
     )
-    uow.transition_call("call-1", ExternalCallState.STARTED, fence=claimed)
+    uow.transition_call(
+        "call-1",
+        ExternalCallState.STARTED,
+        reservation_id=claimed.reservation_id,
+        fence=claimed,
+    )
     raw_ref = ArtifactRef(
         path="raw/call-1/digest",
         sha256="sha256:digest",
@@ -138,6 +141,7 @@ def _submitted_generation(tmp_path) -> tuple[Supervisor, AgentResult]:
             "cost_usd": "0.01",
             "pricing_version": "test",
         },
+        reservation_id=claimed.reservation_id,
         fence=claimed,
     )
     payload = _generation_payload()
@@ -162,7 +166,13 @@ def _submitted_generation(tmp_path) -> tuple[Supervisor, AgentResult]:
         payload=payload,
         raw_artifact_ref=raw_ref,
     )
-    uow.record_validated_and_submitted("call-1", payload, result, fence=claimed)
+    uow.record_validated_and_submitted(
+        "call-1",
+        payload,
+        result,
+        reservation_id=claimed.reservation_id,
+        fence=claimed,
+    )
     uow.acknowledge_task(fence=claimed, target_state=TaskState.RESULT_RECEIVED)
     return Supervisor(uow=uow, review_policy=ReviewPolicy(profile_id="minimal")), result
 
@@ -177,9 +187,7 @@ def _enter_state(supervisor: Supervisor, target: RunState) -> None:
             target_run_state=RunState.STOPPING,
             idempotency_key="enter-stopping",
         )
-        terminal_event = (
-            "RunCompleted" if target is RunState.COMPLETED else "RunCompletedPartial"
-        )
+        terminal_event = "RunCompleted" if target is RunState.COMPLETED else "RunCompletedPartial"
         uow.commit_lifecycle_batch(
             run_id="run-1",
             expected_sequence=stopping.last_sequence,
@@ -401,19 +409,23 @@ def test_stopping_settles_submitted_result_without_exploration_followups(tmp_pat
         fence=_fence(),
     )
 
-    assert [event.event_type for event in committed.events] == [
-        "HypothesisContentCreated"
-    ]
+    assert [event.event_type for event in committed.events] == ["HypothesisContentCreated"]
     assert supervisor.uow.run_state("run-1") == "stopping"
     assert supervisor.uow.task_state("generate-1") == "succeeded"
     assert supervisor.uow.external_call_state("call-1") == "domain_result_applied"
     with supervisor.uow.engine.connect() as connection:
-        assert connection.execute(
-            text("SELECT COUNT(*) FROM tasks WHERE run_id = 'run-1'")
-        ).scalar_one() == 1
-        assert connection.execute(
-            text("SELECT COUNT(*) FROM cost_entries WHERE run_id = 'run-1'")
-        ).scalar_one() == 1
+        assert (
+            connection.execute(
+                text("SELECT COUNT(*) FROM tasks WHERE run_id = 'run-1'")
+            ).scalar_one()
+            == 1
+        )
+        assert (
+            connection.execute(
+                text("SELECT COUNT(*) FROM cost_entries WHERE run_id = 'run-1'")
+            ).scalar_one()
+            == 1
+        )
 
 
 # Mutation caught: allowing non-finalization work creation while a Run is stopping.
@@ -456,9 +468,7 @@ def test_paused_run_preserves_work_without_creating_new_tasks(tmp_path) -> None:
     before = _snapshot(supervisor.uow)
 
     with pytest.raises(ValueError, match="paused.*enqueue_finalization_task"):
-        supervisor.uow.enqueue_tasks(
-            (_late_task("finalize:paused", intent_type="finalize_run"),)
-        )
+        supervisor.uow.enqueue_tasks((_late_task("finalize:paused", intent_type="finalize_run"),))
 
     assert _snapshot(supervisor.uow) == before
 

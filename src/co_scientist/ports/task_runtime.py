@@ -14,6 +14,16 @@ from co_scientist.domain.task import (
 
 
 class TaskRuntimePort(Protocol):
+    def adopt_recoverable_task(
+        self,
+        *,
+        run_id: str,
+        worker_id: str,
+        lease_token: str,
+        now: datetime,
+        lease_duration: timedelta,
+    ) -> ClaimOutcome: ...
+
     def claim_next_task(
         self,
         *,

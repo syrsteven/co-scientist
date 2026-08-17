@@ -133,9 +133,7 @@ class EventRow(Base):
 class TaskRow(Base):
     __tablename__ = "tasks"
     __table_args__ = (
-        UniqueConstraint(
-            "run_id", "idempotency_key", name="uq_tasks_run_id_idempotency_key"
-        ),
+        UniqueConstraint("run_id", "idempotency_key", name="uq_tasks_run_id_idempotency_key"),
         UniqueConstraint("lease_token", name="uq_tasks_lease_token"),
         CheckConstraint("attempt >= 0", name="ck_tasks_attempt_non_negative"),
         CheckConstraint("max_attempts > 0", name="ck_tasks_max_attempts_positive"),
@@ -207,9 +205,7 @@ class BudgetReservationRow(Base):
             "idempotency_key",
             name="uq_budget_reservations_run_id_idempotency_key",
         ),
-        UniqueConstraint(
-            "run_id", "task_id", name="uq_budget_reservations_run_id_task_id"
-        ),
+        UniqueConstraint("run_id", "task_id", name="uq_budget_reservations_run_id_task_id"),
         UniqueConstraint(
             "run_id",
             "external_call_id",
@@ -232,9 +228,7 @@ class BudgetReservationRow(Base):
             "AND actual_hypotheses >= 0 AND actual_matches >= 0",
             name="ck_budget_reservations_actuals_non_negative",
         ),
-        CheckConstraint(
-            "version > 0", name="ck_budget_reservations_version_positive"
-        ),
+        CheckConstraint("version > 0", name="ck_budget_reservations_version_positive"),
         CheckConstraint(
             "state = 'settled' OR (actual_model_calls = 0 AND actual_input_tokens = 0 "
             "AND actual_output_tokens = 0 AND CAST(actual_cost_usd AS NUMERIC) = 0 "
@@ -255,37 +249,19 @@ class BudgetReservationRow(Base):
     external_call_id: Mapped[str | None] = mapped_column(String, nullable=True)
     idempotency_key: Mapped[str] = mapped_column(String, nullable=False)
     state: Mapped[str] = mapped_column(String, nullable=False, server_default="reserved")
-    estimated_model_calls: Mapped[int] = mapped_column(
-        Integer, nullable=False, server_default="0"
-    )
-    estimated_input_tokens: Mapped[int] = mapped_column(
-        Integer, nullable=False, server_default="0"
-    )
+    estimated_model_calls: Mapped[int] = mapped_column(Integer, nullable=False, server_default="0")
+    estimated_input_tokens: Mapped[int] = mapped_column(Integer, nullable=False, server_default="0")
     estimated_output_tokens: Mapped[int] = mapped_column(
         Integer, nullable=False, server_default="0"
     )
-    estimated_cost_usd: Mapped[str] = mapped_column(
-        String, nullable=False, server_default="0"
-    )
-    estimated_hypotheses: Mapped[int] = mapped_column(
-        Integer, nullable=False, server_default="0"
-    )
-    estimated_matches: Mapped[int] = mapped_column(
-        Integer, nullable=False, server_default="0"
-    )
-    actual_model_calls: Mapped[int] = mapped_column(
-        Integer, nullable=False, server_default="0"
-    )
-    actual_input_tokens: Mapped[int] = mapped_column(
-        Integer, nullable=False, server_default="0"
-    )
-    actual_output_tokens: Mapped[int] = mapped_column(
-        Integer, nullable=False, server_default="0"
-    )
+    estimated_cost_usd: Mapped[str] = mapped_column(String, nullable=False, server_default="0")
+    estimated_hypotheses: Mapped[int] = mapped_column(Integer, nullable=False, server_default="0")
+    estimated_matches: Mapped[int] = mapped_column(Integer, nullable=False, server_default="0")
+    actual_model_calls: Mapped[int] = mapped_column(Integer, nullable=False, server_default="0")
+    actual_input_tokens: Mapped[int] = mapped_column(Integer, nullable=False, server_default="0")
+    actual_output_tokens: Mapped[int] = mapped_column(Integer, nullable=False, server_default="0")
     actual_cost_usd: Mapped[str] = mapped_column(String, nullable=False, server_default="0")
-    actual_hypotheses: Mapped[int] = mapped_column(
-        Integer, nullable=False, server_default="0"
-    )
+    actual_hypotheses: Mapped[int] = mapped_column(Integer, nullable=False, server_default="0")
     actual_matches: Mapped[int] = mapped_column(Integer, nullable=False, server_default="0")
     version: Mapped[int] = mapped_column(Integer, nullable=False, server_default="1")
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
@@ -445,8 +421,7 @@ class SqliteUnitOfWork:
         supported = EVENT_SCHEMA_VERSIONS.get(event.event_type)
         if supported is not None and event.schema_version not in supported:
             raise ValueError(
-                "unsupported scientific event version: "
-                f"{event.event_type} v{event.schema_version}"
+                f"unsupported scientific event version: {event.event_type} v{event.schema_version}"
             )
 
     def append(
@@ -473,9 +448,7 @@ class SqliteUnitOfWork:
                 for event in events:
                     if event.event_type not in EVENT_SCHEMA_VERSIONS:
                         continue
-                    validate_run_mutation(
-                        state, RunMutationKind.APPEND_SCIENTIFIC_EVENT
-                    )
+                    validate_run_mutation(state, RunMutationKind.APPEND_SCIENTIFIC_EVENT)
             if events:
                 persisted = self._insert_events(session, run_id, expected_sequence, events)
                 self._set_run_sequence(session, run_id, persisted[-1].sequence)
@@ -564,20 +537,23 @@ class SqliteUnitOfWork:
 
         if event.event_type != "RunStarted":
             raise ValueError("started Run initialization requires RunStarted")
-        initialization_fingerprint = "sha256:" + hashlib.sha256(
-            _json(
-                {
-                    "run_id": run_id,
-                    "manifest": manifest,
-                    "event": {
-                        "event_type": event.event_type,
-                        "schema_version": event.schema_version,
-                        "payload": event.model_dump(mode="json")["payload"],
-                    },
-                    "idempotency_key": idempotency_key,
-                }
-            ).encode("utf-8")
-        ).hexdigest()
+        initialization_fingerprint = (
+            "sha256:"
+            + hashlib.sha256(
+                _json(
+                    {
+                        "run_id": run_id,
+                        "manifest": manifest,
+                        "event": {
+                            "event_type": event.event_type,
+                            "schema_version": event.schema_version,
+                            "payload": event.model_dump(mode="json")["payload"],
+                        },
+                        "idempotency_key": idempotency_key,
+                    }
+                ).encode("utf-8")
+            ).hexdigest()
+        )
         with self.session_factory.begin() as session:
             self._begin_immediate(session)
             existing_run = session.get(RunRow, run_id)
@@ -684,9 +660,7 @@ class SqliteUnitOfWork:
         )
 
     @classmethod
-    def _assert_exact_reservation(
-        cls, task: TaskRow, reservation: BudgetReservationRow
-    ) -> None:
+    def _assert_exact_reservation(cls, task: TaskRow, reservation: BudgetReservationRow) -> None:
         if (
             reservation.idempotency_key != task.idempotency_key
             or reservation.state != "reserved"
@@ -727,9 +701,7 @@ class SqliteUnitOfWork:
         return usage
 
     @staticmethod
-    def _fits_budget(
-        policy: BudgetPolicy, usage: BudgetUsage, estimate: BudgetEstimate
-    ) -> bool:
+    def _fits_budget(policy: BudgetPolicy, usage: BudgetUsage, estimate: BudgetEstimate) -> bool:
         checks = (
             (policy.max_model_calls, usage.model_calls + estimate.model_calls),
             (policy.max_input_tokens, usage.input_tokens + estimate.input_tokens),
@@ -870,9 +842,7 @@ class SqliteUnitOfWork:
                 if reservation is None:
                     raise ValueError("leased task has no budget reservation")
                 self._assert_exact_reservation(replay, reservation)
-                return ClaimOutcome(
-                    status="claimed", task=self._claimed_task(replay, reservation)
-                )
+                return ClaimOutcome(status="claimed", task=self._claimed_task(replay, reservation))
 
             query = select(TaskRow).where(
                 TaskRow.run_id == run_id,
@@ -886,20 +856,14 @@ class SqliteUnitOfWork:
                 if not allowed_intents:
                     return ClaimOutcome(
                         status=(
-                            "stopping_no_finalization"
-                            if state is RunState.STOPPING
-                            else "no_task"
+                            "stopping_no_finalization" if state is RunState.STOPPING else "no_task"
                         )
                     )
                 query = query.where(TaskRow.intent_type.in_(sorted(allowed_intents)))
             task = session.scalar(query.order_by(TaskRow.task_id).limit(1))
             if task is None:
                 return ClaimOutcome(
-                    status=(
-                        "stopping_no_finalization"
-                        if state is RunState.STOPPING
-                        else "no_task"
-                    )
+                    status=("stopping_no_finalization" if state is RunState.STOPPING else "no_task")
                 )
 
             estimate = self._task_budget_estimate(task)
@@ -917,9 +881,7 @@ class SqliteUnitOfWork:
                 if not self._fits_budget(policy, self._budget_usage(session, run_id), estimate):
                     return ClaimOutcome(status="budget_exhausted")
 
-                task.state = validate_task_transition(
-                    TaskState(task.state), TaskState.LEASED
-                ).value
+                task.state = validate_task_transition(TaskState(task.state), TaskState.LEASED).value
                 task.lease_owner = worker_id
                 task.lease_token = lease_token
                 task.heartbeat_at = now
@@ -930,9 +892,7 @@ class SqliteUnitOfWork:
                 )
 
             if existing_reservation is not None:
-                task.state = validate_task_transition(
-                    TaskState(task.state), TaskState.LEASED
-                ).value
+                task.state = validate_task_transition(TaskState(task.state), TaskState.LEASED).value
                 task.lease_owner = worker_id
                 task.lease_token = lease_token
                 task.heartbeat_at = now
@@ -977,18 +937,133 @@ class SqliteUnitOfWork:
             )
             self._set_run_sequence(session, run_id, events[-1].sequence, required=True)
             session.flush()
-            return ClaimOutcome(
-                status="claimed", task=self._claimed_task(task, reservation)
+            return ClaimOutcome(status="claimed", task=self._claimed_task(task, reservation))
+
+    def adopt_recoverable_task(
+        self,
+        *,
+        run_id: str,
+        worker_id: str,
+        lease_token: str,
+        now: datetime,
+        lease_duration: timedelta,
+    ) -> ClaimOutcome:
+        """Adopt a durable call without changing its attempt or reservation."""
+
+        if lease_duration <= timedelta(0):
+            raise ValueError("lease_duration must be positive")
+        now = self._runtime_utc(now)
+        durable_states = (
+            ExternalCallState.RAW_RESPONSE_PERSISTED.value,
+            ExternalCallState.VALIDATED.value,
+            ExternalCallState.AGENT_RESULT_SUBMITTED.value,
+        )
+        with self.session_factory.begin() as session:
+            self._begin_immediate(session)
+            run = session.get(RunRow, run_id)
+            if run is None:
+                raise KeyError(f"unknown run: {run_id}")
+            self._require_execution_contract(run)
+            state = RunState(run.state)
+            if state in {
+                RunState.COMPLETED,
+                RunState.COMPLETED_PARTIAL,
+                RunState.FAILED,
+                RunState.CANCELLED,
+            }:
+                return ClaimOutcome(status="terminal")
+            if state in {
+                RunState.PAUSING,
+                RunState.PAUSED,
+                RunState.NEEDS_ATTENTION,
+            }:
+                return ClaimOutcome(status="paused")
+            if state is RunState.CREATED:
+                raise ValueError("run state created does not allow task adoption")
+            if (
+                session.scalar(select(TaskRow.task_id).where(TaskRow.lease_token == lease_token))
+                is not None
+            ):
+                raise ValueError("lease token already in use")
+            rows = session.scalars(
+                select(TaskRow)
+                .join(
+                    ExternalCallRow,
+                    (ExternalCallRow.run_id == TaskRow.run_id)
+                    & (ExternalCallRow.task_id == TaskRow.task_id)
+                    & (ExternalCallRow.attempt == TaskRow.attempt),
+                )
+                .where(
+                    TaskRow.run_id == run_id,
+                    TaskRow.state.in_((TaskState.RUNNING.value, TaskState.RESULT_RECEIVED.value)),
+                    ExternalCallRow.state.in_(durable_states),
+                )
+                .order_by(TaskRow.task_id)
+            ).all()
+            task = rows[0] if rows else None
+            if task is None:
+                return ClaimOutcome(status="no_task")
+            reservation = self._task_reservation(
+                session,
+                TaskLeaseFence(
+                    run_id=task.run_id,
+                    task_id=task.task_id,
+                    lease_token=cast(str, task.lease_token),
+                    attempt=task.attempt,
+                ),
             )
+            self._assert_exact_reservation(task, reservation)
+            call = session.scalar(
+                select(ExternalCallRow).where(
+                    ExternalCallRow.run_id == task.run_id,
+                    ExternalCallRow.task_id == task.task_id,
+                    ExternalCallRow.attempt == task.attempt,
+                )
+            )
+            if (
+                call is None
+                or reservation.external_call_id != call.external_call_id
+                or reservation.state != "reserved"
+            ):
+                raise ValueError("external call reservation binding is not current")
+            task.lease_owner = worker_id
+            task.lease_token = lease_token
+            task.heartbeat_at = now
+            task.lease_expires_at = now + lease_duration
+            event = self._insert_events(
+                session,
+                run_id,
+                self._current_sequence(session, run_id),
+                (
+                    NewEvent(
+                        event_type="TaskLeaseAdopted",
+                        payload={
+                            "task_id": task.task_id,
+                            "worker_id": worker_id,
+                            "attempt": task.attempt,
+                            "lease_fence_fingerprint": lease_fence_fingerprint(
+                                TaskLeaseFence(
+                                    run_id=task.run_id,
+                                    task_id=task.task_id,
+                                    lease_token=lease_token,
+                                    attempt=task.attempt,
+                                )
+                            ),
+                            "lease_expires_at": task.lease_expires_at.isoformat(),
+                        },
+                    ),
+                ),
+            )[0]
+            self._set_run_sequence(session, run_id, event.sequence, required=True)
+            session.flush()
+            return ClaimOutcome(status="claimed", task=self._claimed_task(task, reservation))
 
     @staticmethod
     def _fenced_task(
         session: Session,
         fence: TaskLeaseFence,
         *,
-        allowed_states: AbstractSet[TaskState] = frozenset(
-            {TaskState.LEASED, TaskState.RUNNING}
-        ),
+        allowed_states: AbstractSet[TaskState] = frozenset({TaskState.LEASED, TaskState.RUNNING}),
     ) -> TaskRow:
         row = session.get(TaskRow, fence.task_id)
         if (
@@ -1026,10 +1101,7 @@ class SqliteUnitOfWork:
         with self.session_factory.begin() as session:
             self._begin_immediate(session)
             row = self._fenced_task(session, fence)
-            if (
-                row.lease_expires_at is None
-                or self._stored_utc(row.lease_expires_at) <= now
-            ):
+            if row.lease_expires_at is None or self._stored_utc(row.lease_expires_at) <= now:
                 raise ValueError("stale task lease fence")
             row.heartbeat_at = now
             row.lease_expires_at = now + lease_duration
@@ -1042,9 +1114,7 @@ class SqliteUnitOfWork:
             self._begin_immediate(session)
             row = self._fenced_task(session, fence)
             if TaskState(row.state) is TaskState.LEASED:
-                row.state = validate_task_transition(
-                    TaskState(row.state), TaskState.RUNNING
-                ).value
+                row.state = validate_task_transition(TaskState(row.state), TaskState.RUNNING).value
             reservation = self._task_reservation(session, fence)
             session.flush()
             return self._claimed_task(row, reservation)
@@ -1090,9 +1160,7 @@ class SqliteUnitOfWork:
                 select(TaskRow)
                 .where(
                     TaskRow.run_id == run_id,
-                    TaskRow.state.in_(
-                        (TaskState.LEASED.value, TaskState.RUNNING.value)
-                    ),
+                    TaskRow.state.in_((TaskState.LEASED.value, TaskState.RUNNING.value)),
                     TaskRow.lease_expires_at <= now,
                 )
                 .order_by(TaskRow.lease_expires_at, TaskRow.task_id)
@@ -1124,12 +1192,8 @@ class SqliteUnitOfWork:
                 if row.attempt >= row.max_attempts:
                     current_state = TaskState(row.state)
                     if current_state is TaskState.LEASED:
-                        current_state = validate_task_transition(
-                            current_state, TaskState.RUNNING
-                        )
-                    row.state = validate_task_transition(
-                        current_state, TaskState.FAILED
-                    ).value
+                        current_state = validate_task_transition(current_state, TaskState.RUNNING)
+                    row.state = validate_task_transition(current_state, TaskState.FAILED).value
                     action = "exhausted"
                     new_events.append(
                         NewEvent(
@@ -1168,12 +1232,8 @@ class SqliteUnitOfWork:
                 )
             if new_events:
                 current_sequence = self._current_sequence(session, run_id)
-                events = self._insert_events(
-                    session, run_id, current_sequence, new_events
-                )
-                self._set_run_sequence(
-                    session, run_id, events[-1].sequence, required=True
-                )
+                events = self._insert_events(session, run_id, current_sequence, new_events)
+                self._set_run_sequence(session, run_id, events[-1].sequence, required=True)
             session.flush()
             return tuple(recoveries)
 
@@ -1195,9 +1255,7 @@ class SqliteUnitOfWork:
 
     def task_intent(self, task_id: str) -> str:
         with self.session_factory() as session:
-            intent = session.scalar(
-                select(TaskRow.intent_type).where(TaskRow.task_id == task_id)
-            )
+            intent = session.scalar(select(TaskRow.intent_type).where(TaskRow.task_id == task_id))
         if intent is None:
             raise KeyError(f"unknown task: {task_id}")
         return intent
@@ -1273,8 +1331,7 @@ class SqliteUnitOfWork:
             if (
                 context.get("attempt") != fence.attempt
                 or context.get("reservation_id") != reservation_id
-                or context.get("lease_fence_fingerprint")
-                != lease_fence_fingerprint(fence)
+                or context.get("lease_fence_fingerprint") != lease_fence_fingerprint(fence)
                 or "lease_token" in context
             ):
                 raise ValueError("execution context does not match task lease fence")
@@ -1328,13 +1385,12 @@ class SqliteUnitOfWork:
         cls,
         session: Session,
         call_id: str,
+        reservation_id: str,
         fence: TaskLeaseFence,
         *,
         allowed_task_states: AbstractSet[TaskState] = frozenset({TaskState.RUNNING}),
     ) -> ExternalCallRow:
-        task = cls._fenced_task(
-            session, fence, allowed_states=allowed_task_states
-        )
+        task = cls._fenced_task(session, fence, allowed_states=allowed_task_states)
         row = cls._external_call(session, call_id)
         if (
             row.run_id != fence.run_id
@@ -1343,6 +1399,18 @@ class SqliteUnitOfWork:
             or task.run_id != row.run_id
         ):
             raise ValueError("stale task lease fence")
+        reservation = session.get(BudgetReservationRow, reservation_id)
+        task_reservation = cls._task_reservation(session, fence)
+        cls._assert_exact_reservation(task, task_reservation)
+        if (
+            reservation is None
+            or reservation.reservation_id != task_reservation.reservation_id
+            or reservation.run_id != row.run_id
+            or reservation.task_id != row.task_id
+            or reservation.external_call_id != row.external_call_id
+            or reservation.state != "reserved"
+        ):
+            raise ValueError("external call reservation binding is not current")
         return row
 
     def assert_task_fence(self, *, fence: TaskLeaseFence) -> None:
@@ -1350,21 +1418,31 @@ class SqliteUnitOfWork:
 
         with self.session_factory.begin() as session:
             self._begin_immediate(session)
-            self._fenced_task(
-                session, fence, allowed_states=frozenset({TaskState.RUNNING})
-            )
+            self._fenced_task(session, fence, allowed_states=frozenset({TaskState.RUNNING}))
+
+    def assert_external_call_fence(
+        self,
+        *,
+        call_id: str,
+        reservation_id: str,
+        fence: TaskLeaseFence,
+    ) -> None:
+        with self.session_factory.begin() as session:
+            self._begin_immediate(session)
+            self._fenced_external_call(session, call_id, reservation_id, fence)
 
     def transition_call(
         self,
         call_id: str,
         target_state: ExternalCallState | str,
         *,
+        reservation_id: str,
         fence: TaskLeaseFence,
     ) -> None:
         target = ExternalCallState(target_state)
         with self.session_factory.begin() as session:
             self._begin_immediate(session)
-            row = self._fenced_external_call(session, call_id, fence)
+            row = self._fenced_external_call(session, call_id, reservation_id, fence)
             row.state = transition_external_call(ExternalCallState(row.state), target).value
 
     def external_call_state(self, call_id: str) -> str:
@@ -1384,12 +1462,13 @@ class SqliteUnitOfWork:
         *,
         provider_response_id: str | None = None,
         usage: Mapping[str, Any] | None = None,
+        reservation_id: str,
         fence: TaskLeaseFence,
     ) -> None:
         target = ExternalCallState(target_state)
         with self.session_factory.begin() as session:
             self._begin_immediate(session)
-            row = self._fenced_external_call(session, call_id, fence)
+            row = self._fenced_external_call(session, call_id, reservation_id, fence)
             row.raw_artifact_ref_json = ref.model_dump_json()
             row.provider_response_id = provider_response_id
             row.usage_json = _json(thaw_json(usage or {}))
@@ -1400,11 +1479,12 @@ class SqliteUnitOfWork:
         call_id: str,
         payload: Mapping[str, Any],
         *,
+        reservation_id: str,
         fence: TaskLeaseFence,
     ) -> None:
         with self.session_factory.begin() as session:
             self._begin_immediate(session)
-            row = self._fenced_external_call(session, call_id, fence)
+            row = self._fenced_external_call(session, call_id, reservation_id, fence)
             row.validated_artifact_ref_json = _json(dict(payload))
             row.state = transition_external_call(
                 ExternalCallState(row.state), ExternalCallState.VALIDATED
@@ -1442,9 +1522,7 @@ class SqliteUnitOfWork:
         ):
             raise ValueError("submitted result does not match external call traceability")
         raw_ref = (
-            json.loads(row.raw_artifact_ref_json)
-            if row.raw_artifact_ref_json is not None
-            else None
+            json.loads(row.raw_artifact_ref_json) if row.raw_artifact_ref_json is not None else None
         )
         if result_data.get("raw_artifact_ref") != raw_ref:
             raise ValueError("submitted result does not match external call raw artifact")
@@ -1456,13 +1534,14 @@ class SqliteUnitOfWork:
         call_id: str,
         result: BaseModel,
         *,
+        reservation_id: str,
         fence: TaskLeaseFence,
     ) -> None:
         result_data = result.model_dump(mode="json")
         result_json = _json(result_data)
         with self.session_factory.begin() as session:
             self._begin_immediate(session)
-            row = self._fenced_external_call(session, call_id, fence)
+            row = self._fenced_external_call(session, call_id, reservation_id, fence)
             self._assert_result_matches_call(row, result_data)
             result_id = getattr(result, "result_id", None)
             if not isinstance(result_id, str):
@@ -1479,6 +1558,7 @@ class SqliteUnitOfWork:
         payload: Mapping[str, Any],
         result: BaseModel,
         *,
+        reservation_id: str,
         fence: TaskLeaseFence,
     ) -> None:
         payload_json = _json(dict(payload))
@@ -1489,7 +1569,7 @@ class SqliteUnitOfWork:
             raise TypeError("submitted result must have a string result_id")
         with self.session_factory.begin() as session:
             self._begin_immediate(session)
-            row = self._fenced_external_call(session, call_id, fence)
+            row = self._fenced_external_call(session, call_id, reservation_id, fence)
             self._assert_result_matches_call(row, result_data, payload=payload)
             validated = transition_external_call(
                 ExternalCallState(row.state), ExternalCallState.VALIDATED
@@ -1584,7 +1664,12 @@ class SqliteUnitOfWork:
 
     @classmethod
     def _apply_task_mutations(
-        cls, session: Session, run_id: str, mutations: Sequence[TaskMutation]
+        cls,
+        session: Session,
+        run_id: str,
+        mutations: Sequence[TaskMutation],
+        *,
+        source_external_call_id: str | None = None,
     ) -> None:
         for mutation in mutations:
             row = session.get(TaskRow, mutation.task_id)
@@ -1596,9 +1681,13 @@ class SqliteUnitOfWork:
                 actual_run_id=row.run_id,
                 expected_run_id=run_id,
             )
-            row.state = validate_task_transition(
-                TaskState(row.state), mutation.target_state
-            ).value
+            current = TaskState(row.state)
+            if source_external_call_id is not None and current is TaskState.RUNNING:
+                call = cls._external_call(session, source_external_call_id)
+                if call.task_id != mutation.task_id:
+                    raise ValueError("domain result task mutation does not match external call")
+                current = validate_task_transition(current, TaskState.RESULT_RECEIVED)
+            row.state = validate_task_transition(current, mutation.target_state).value
 
     @staticmethod
     def _apply_run_transition(
@@ -1751,9 +1840,11 @@ class SqliteUnitOfWork:
         cls._fenced_external_call(
             session,
             external_call_id,
+            reservation_id,
             fence,
             allowed_task_states=frozenset(
                 {
+                    TaskState.RUNNING,
                     TaskState.RESULT_RECEIVED,
                     TaskState.SUCCEEDED,
                     TaskState.PENDING,
@@ -1879,17 +1970,13 @@ class SqliteUnitOfWork:
         target_run_state: RunState | None,
     ) -> None:
         lifecycle_events = [
-            event.event_type
-            for event in events
-            if event.event_type in _LIFECYCLE_EVENT_TARGETS
+            event.event_type for event in events if event.event_type in _LIFECYCLE_EVENT_TARGETS
         ]
         if target_run_state is None:
             if lifecycle_events:
                 event_type = lifecycle_events[0]
                 required = _LIFECYCLE_EVENT_TARGETS[event_type]
-                raise ValueError(
-                    f"lifecycle event {event_type} requires target {required.value}"
-                )
+                raise ValueError(f"lifecycle event {event_type} requires target {required.value}")
             return
 
         state = self._run_state_in_transaction(session, run_id)
@@ -1897,9 +1984,7 @@ class SqliteUnitOfWork:
         for event_type in lifecycle_events:
             required = _LIFECYCLE_EVENT_TARGETS[event_type]
             if required is not target_run_state:
-                raise ValueError(
-                    f"lifecycle event {event_type} requires target {required.value}"
-                )
+                raise ValueError(f"lifecycle event {event_type} requires target {required.value}")
         expected_event = _LIFECYCLE_TRANSITION_EVENTS.get((state, target_run_state))
         if expected_event is None:
             raise ValueError(
@@ -1980,7 +2065,12 @@ class SqliteUnitOfWork:
             )
             self._apply_run_transition(session, run_id, run_target)
             persisted = self._insert_events(session, run_id, expected_sequence, events)
-            self._apply_task_mutations(session, run_id, task_mutations)
+            self._apply_task_mutations(
+                session,
+                run_id,
+                task_mutations,
+                source_external_call_id=external_call_id,
+            )
             self._insert_followup_tasks(session, run_id, followup_tasks)
             self._insert_cost_entries(session, run_id, cost_entries)
             last_sequence = persisted[-1].sequence

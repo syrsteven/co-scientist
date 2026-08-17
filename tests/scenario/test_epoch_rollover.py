@@ -182,33 +182,38 @@ def _apply_scientific_result(
         uow.task_state(task_id)
     except KeyError:
         scheduled = supervisor.enqueue_task(
-            task=budgeted_task(NewTask(
-                task_id=task_id,
-                run_id="run-1",
-                idempotency_key=task_id,
-                intent_type=f"run_{skill_id}",
-                payload={},
-            )),
+            task=budgeted_task(
+                NewTask(
+                    task_id=task_id,
+                    run_id="run-1",
+                    idempotency_key=task_id,
+                    intent_type=f"run_{skill_id}",
+                    payload={},
+                )
+            ),
             expected_sequence=expected_sequence,
         )
         expected_sequence = scheduled.last_sequence
     claimed = claim_running_task(uow, run_id="run-1", task_id=task_id)
     expected_sequence = uow.load("run-1")[-1].sequence
     call_id = f"call:{task_id}:{plan_version}"
-    context = fenced_context({
-        "run_id": "run-1",
-        "task_id": task_id,
-        "idempotency_key": task_id,
-        "skill_id": skill_id,
-        "skill_version": "0.2.0",
-        "output_schema_id": output_schema_id,
-        "output_schema_version": 1,
-        "research_plan_version": plan_version,
-        "provider": "scenario",
-        "model_or_tool": "typed-fixture",
-        "input_snapshot_hash": "sha256:input",
-        "prompt_hash": "sha256:prompt",
-    }, claimed).model_dump(mode="json")
+    context = fenced_context(
+        {
+            "run_id": "run-1",
+            "task_id": task_id,
+            "idempotency_key": task_id,
+            "skill_id": skill_id,
+            "skill_version": "0.2.0",
+            "output_schema_id": output_schema_id,
+            "output_schema_version": 1,
+            "research_plan_version": plan_version,
+            "provider": "scenario",
+            "model_or_tool": "typed-fixture",
+            "input_snapshot_hash": "sha256:input",
+            "prompt_hash": "sha256:prompt",
+        },
+        claimed,
+    ).model_dump(mode="json")
     uow.plan_external_call(
         call_id,
         "sha256:request",
@@ -218,7 +223,12 @@ def _apply_scientific_result(
         reservation_id=claimed.reservation_id,
         fence=claimed,
     )
-    uow.transition_call(call_id, ExternalCallState.STARTED, fence=claimed)
+    uow.transition_call(
+        call_id,
+        ExternalCallState.STARTED,
+        reservation_id=claimed.reservation_id,
+        fence=claimed,
+    )
     raw_ref = ArtifactRef(
         path=f"raw/{call_id}",
         sha256="sha256:" + "f" * 64,
@@ -230,6 +240,7 @@ def _apply_scientific_result(
         raw_ref,
         ExternalCallState.RAW_RESPONSE_PERSISTED,
         usage={"input_tokens": 1, "output_tokens": 1, "pricing_version": "scenario"},
+        reservation_id=claimed.reservation_id,
         fence=claimed,
     )
     result = AgentResult(
@@ -240,7 +251,13 @@ def _apply_scientific_result(
         raw_artifact_ref=raw_ref,
         **context,
     )
-    uow.record_validated_and_submitted(call_id, payload, result, fence=claimed)
+    uow.record_validated_and_submitted(
+        call_id,
+        payload,
+        result,
+        reservation_id=claimed.reservation_id,
+        fence=claimed,
+    )
     acknowledge_result(uow, claimed)
     committed = supervisor.handle_result(
         "run-1",

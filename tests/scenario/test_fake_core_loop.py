@@ -64,29 +64,34 @@ def test_supervisor_revalidates_persisted_schema_invalid_agent_result_before_eff
     uow = SqliteUnitOfWork(f"sqlite:///{tmp_path / 'malformed-supervisor.db'}")
     uow.create_schema()
     _create_running(uow)
-    task = budgeted_task(NewTask(
-        task_id="generation-task",
-        run_id="run-1",
-        idempotency_key="generation:run-1:1",
-        intent_type="generate",
-        payload={},
-    ))
+    task = budgeted_task(
+        NewTask(
+            task_id="generation-task",
+            run_id="run-1",
+            idempotency_key="generation:run-1:1",
+            intent_type="generate",
+            payload={},
+        )
+    )
     uow.enqueue_tasks([task])
     claimed = claim_running_task(uow, run_id="run-1", task_id=task.task_id)
-    context = fenced_context({
-        "run_id": "run-1",
-        "task_id": task.task_id,
-        "idempotency_key": task.idempotency_key,
-        "skill_id": "generation",
-        "skill_version": "0.2.0",
-        "output_schema_id": "GenerationResultV1",
-        "output_schema_version": 1,
-        "research_plan_version": 1,
-        "provider": "fake",
-        "model_or_tool": "fake-v1",
-        "input_snapshot_hash": "sha256:input",
-        "prompt_hash": "sha256:prompt",
-    }, claimed).model_dump(mode="json")
+    context = fenced_context(
+        {
+            "run_id": "run-1",
+            "task_id": task.task_id,
+            "idempotency_key": task.idempotency_key,
+            "skill_id": "generation",
+            "skill_version": "0.2.0",
+            "output_schema_id": "GenerationResultV1",
+            "output_schema_version": 1,
+            "research_plan_version": 1,
+            "provider": "fake",
+            "model_or_tool": "fake-v1",
+            "input_snapshot_hash": "sha256:input",
+            "prompt_hash": "sha256:prompt",
+        },
+        claimed,
+    ).model_dump(mode="json")
     uow.plan_external_call(
         "call-1",
         "sha256:request",
@@ -96,7 +101,7 @@ def test_supervisor_revalidates_persisted_schema_invalid_agent_result_before_eff
         reservation_id=claimed.reservation_id,
         fence=claimed,
     )
-    uow.transition_call("call-1", "started", fence=claimed)
+    uow.transition_call("call-1", "started", reservation_id=claimed.reservation_id, fence=claimed)
     raw_ref = ArtifactRef(
         path="raw/call-1/digest",
         sha256="sha256:digest",
@@ -108,6 +113,7 @@ def test_supervisor_revalidates_persisted_schema_invalid_agent_result_before_eff
         raw_ref,
         "raw_response_persisted",
         usage={"input_tokens": 9, "output_tokens": 4, "cost_usd": "0.01"},
+        reservation_id=claimed.reservation_id,
         fence=claimed,
     )
     malformed_payload = {
@@ -124,7 +130,11 @@ def test_supervisor_revalidates_persisted_schema_invalid_agent_result_before_eff
         **context,
     )
     uow.record_validated_and_submitted(
-        "call-1", malformed_payload, forged, fence=claimed
+        "call-1",
+        malformed_payload,
+        forged,
+        reservation_id=claimed.reservation_id,
+        fence=claimed,
     )
     acknowledge_result(uow, claimed)
 
@@ -138,9 +148,7 @@ def test_supervisor_revalidates_persisted_schema_invalid_agent_result_before_eff
             fence=claimed,
         )
 
-    assert not any(
-        event.event_type == "HypothesisContentCreated" for event in uow.load("run-1")
-    )
+    assert not any(event.event_type == "HypothesisContentCreated" for event in uow.load("run-1"))
     assert uow.task_state(task.task_id) == "result_received"
     assert uow.external_call_state("call-1") == "agent_result_submitted"
     with uow.engine.connect() as connection:
@@ -387,29 +395,34 @@ def test_supervisor_rejects_persisted_noncanonical_skill_schema_pair_before_effe
     uow = SqliteUnitOfWork(f"sqlite:///{tmp_path / 'schema-routing.db'}")
     uow.create_schema()
     _create_running(uow)
-    task = budgeted_task(NewTask(
-        task_id="task-1",
-        run_id="run-1",
-        idempotency_key="task-1",
-        intent_type="run_reflection",
-        payload={},
-    ))
+    task = budgeted_task(
+        NewTask(
+            task_id="task-1",
+            run_id="run-1",
+            idempotency_key="task-1",
+            intent_type="run_reflection",
+            payload={},
+        )
+    )
     uow.enqueue_tasks([task])
     claimed = claim_running_task(uow, run_id="run-1", task_id=task.task_id)
-    valid_context = fenced_context({
-        "run_id": "run-1",
-        "task_id": "task-1",
-        "idempotency_key": "task-1",
-        "skill_id": "generation",
-        "skill_version": "0.2.0",
-        "output_schema_id": "GenerationResultV1",
-        "output_schema_version": 1,
-        "research_plan_version": 1,
-        "provider": "fake",
-        "model_or_tool": "fake-v1",
-        "input_snapshot_hash": "sha256:input",
-        "prompt_hash": "sha256:prompt",
-    }, claimed).model_dump(mode="json")
+    valid_context = fenced_context(
+        {
+            "run_id": "run-1",
+            "task_id": "task-1",
+            "idempotency_key": "task-1",
+            "skill_id": "generation",
+            "skill_version": "0.2.0",
+            "output_schema_id": "GenerationResultV1",
+            "output_schema_version": 1,
+            "research_plan_version": 1,
+            "provider": "fake",
+            "model_or_tool": "fake-v1",
+            "input_snapshot_hash": "sha256:input",
+            "prompt_hash": "sha256:prompt",
+        },
+        claimed,
+    ).model_dump(mode="json")
     context = {**valid_context, "skill_id": "reflection"}
     uow.plan_external_call(
         "call-1",
@@ -428,7 +441,7 @@ def test_supervisor_rejects_persisted_noncanonical_skill_schema_pair_before_effe
             ),
             {"context": json.dumps(context, separators=(",", ":"), sort_keys=True)},
         )
-    uow.transition_call("call-1", "started", fence=claimed)
+    uow.transition_call("call-1", "started", reservation_id=claimed.reservation_id, fence=claimed)
     raw_ref = ArtifactRef(
         path="raw/call-1/digest",
         sha256="sha256:digest",
@@ -436,7 +449,11 @@ def test_supervisor_rejects_persisted_noncanonical_skill_schema_pair_before_effe
         byte_length=2,
     )
     uow.record_raw_and_transition(
-        "call-1", raw_ref, "raw_response_persisted", fence=claimed
+        "call-1",
+        raw_ref,
+        "raw_response_persisted",
+        reservation_id=claimed.reservation_id,
+        fence=claimed,
     )
     forged = AgentResult.model_construct(
         result_id="result-1",
@@ -447,7 +464,11 @@ def test_supervisor_rejects_persisted_noncanonical_skill_schema_pair_before_effe
         **context,
     )
     uow.record_validated_and_submitted(
-        "call-1", _valid_generation_payload(), forged, fence=claimed
+        "call-1",
+        _valid_generation_payload(),
+        forged,
+        reservation_id=claimed.reservation_id,
+        fence=claimed,
     )
     acknowledge_result(uow, claimed)
 
@@ -461,9 +482,7 @@ def test_supervisor_rejects_persisted_noncanonical_skill_schema_pair_before_effe
             fence=claimed,
         )
 
-    assert not any(
-        event.event_type == "HypothesisContentCreated" for event in uow.load("run-1")
-    )
+    assert not any(event.event_type == "HypothesisContentCreated" for event in uow.load("run-1"))
     assert uow.task_state("task-1") == "result_received"
 
 
@@ -521,13 +540,15 @@ async def _execute_ranking_result(
         )
         expected_sequence = seeded.last_sequence
     supervisor = Supervisor(uow=uow, review_policy=ReviewPolicy(profile_id="minimal"))
-    task = budgeted_task(NewTask(
-        task_id="ranking-task",
-        run_id="run-1",
-        idempotency_key="ranking-task",
-        intent_type="run_ranking",
-        payload={},
-    ))
+    task = budgeted_task(
+        NewTask(
+            task_id="ranking-task",
+            run_id="run-1",
+            idempotency_key="ranking-task",
+            intent_type="run_ranking",
+            payload={},
+        )
+    )
     scheduled = supervisor.enqueue_task(task=task, expected_sequence=expected_sequence)
     expected_sequence = scheduled.last_sequence
     claimed = claim_running_task(uow, run_id="run-1", task_id=task.task_id)
@@ -548,19 +569,22 @@ async def _execute_ranking_result(
             call_id="ranking-call",
             skill_directory=Path("skills/ranking"),
             inputs={"comparison": "h-1 versus h-2"},
-            context=fenced_context(AgentExecutionContext(
-                run_id="run-1",
-                task_id=task.task_id,
-                idempotency_key=task.idempotency_key,
-                skill_id="ranking",
-                skill_version="0.2.0",
-                output_schema_id="RankingResultV1",
-                output_schema_version=1,
-                research_plan_version=1,
-                provider="fake",
-                model_or_tool="fake-v1",
-                input_snapshot_hash="sha256:input",
-            ), claimed),
+            context=fenced_context(
+                AgentExecutionContext(
+                    run_id="run-1",
+                    task_id=task.task_id,
+                    idempotency_key=task.idempotency_key,
+                    skill_id="ranking",
+                    skill_version="0.2.0",
+                    output_schema_id="RankingResultV1",
+                    output_schema_version=1,
+                    research_plan_version=1,
+                    provider="fake",
+                    model_or_tool="fake-v1",
+                    input_snapshot_hash="sha256:input",
+                ),
+                claimed,
+            ),
             reservation_id=claimed.reservation_id,
             fence=claimed,
         )
@@ -767,13 +791,15 @@ async def test_skill_executor_uses_raw_first_runner_and_returns_agent_result(tmp
     _create_running(uow)
     uow.enqueue_tasks(
         [
-            budgeted_task(NewTask(
-                task_id="task-1",
-                run_id="run-1",
-                idempotency_key="generation:run-1:1",
-                intent_type="generate",
-                payload={},
-            ))
+            budgeted_task(
+                NewTask(
+                    task_id="task-1",
+                    run_id="run-1",
+                    idempotency_key="generation:run-1:1",
+                    intent_type="generate",
+                    payload={},
+                )
+            )
         ]
     )
     claimed = claim_running_task(uow, run_id="run-1", task_id="task-1")
@@ -782,9 +808,7 @@ async def test_skill_executor_uses_raw_first_runner_and_returns_agent_result(tmp
     expected_request = {
         "skill_id": "generation",
         "skill_version": "0.2.0",
-        "system_prompt": Path("skills/generation/prompts/system.md").read_text(
-            encoding="utf-8"
-        ),
+        "system_prompt": Path("skills/generation/prompts/system.md").read_text(encoding="utf-8"),
         "input_schema": "GenerationInputV1",
         "output_schema": "GenerationResultV1",
         "allowed_tools": [],
@@ -792,19 +816,22 @@ async def test_skill_executor_uses_raw_first_runner_and_returns_agent_result(tmp
     }
     raw_body = json.dumps(_valid_generation_payload(), separators=(",", ":")).encode()
     provider = ReplayLLMProvider({request_fingerprint(expected_request): raw_body})
-    context = fenced_context(AgentExecutionContext(
-        run_id="run-1",
-        task_id="task-1",
-        idempotency_key="generation:run-1:1",
-        skill_id="generation",
-        skill_version="0.2.0",
-        output_schema_id="GenerationResultV1",
-        output_schema_version=1,
-        research_plan_version=1,
-        provider="replay",
-        model_or_tool="replay-v1",
-        input_snapshot_hash="sha256:input",
-    ), claimed)
+    context = fenced_context(
+        AgentExecutionContext(
+            run_id="run-1",
+            task_id="task-1",
+            idempotency_key="generation:run-1:1",
+            skill_id="generation",
+            skill_version="0.2.0",
+            output_schema_id="GenerationResultV1",
+            output_schema_version=1,
+            research_plan_version=1,
+            provider="replay",
+            model_or_tool="replay-v1",
+            input_snapshot_hash="sha256:input",
+        ),
+        claimed,
+    )
 
     result = await SkillExecutor(runner, provider).execute(
         call_id="call-1",
@@ -820,9 +847,9 @@ async def test_skill_executor_uses_raw_first_runner_and_returns_agent_result(tmp
     assert result.raw_artifact_ref.path.startswith("raw/call-1/")
     assert artifacts.read(result.raw_artifact_ref) == raw_body
     assert uow.external_call_state("call-1") == "agent_result_submitted"
-    expected_prompt_hash = "sha256:" + hashlib.sha256(
-        expected_request["system_prompt"].encode("utf-8")
-    ).hexdigest()
+    expected_prompt_hash = (
+        "sha256:" + hashlib.sha256(expected_request["system_prompt"].encode("utf-8")).hexdigest()
+    )
     assert result.prompt_hash == expected_prompt_hash
     assert uow.get_external_call("call-1").execution_context == {
         **context.model_dump(mode="json"),
@@ -850,13 +877,15 @@ async def test_skill_executor_rejects_incompatible_context_before_provider_call(
     _create_running(uow)
     uow.enqueue_tasks(
         [
-            budgeted_task(NewTask(
-                task_id="task-1",
-                run_id="run-1",
-                idempotency_key="generation:run-1:1",
-                intent_type="generate",
-                payload={},
-            ))
+            budgeted_task(
+                NewTask(
+                    task_id="task-1",
+                    run_id="run-1",
+                    idempotency_key="generation:run-1:1",
+                    intent_type="generate",
+                    payload={},
+                )
+            )
         ]
     )
     claimed = claim_running_task(uow, run_id="run-1", task_id="task-1")
@@ -915,13 +944,15 @@ async def test_skill_executor_rejects_non_object_or_nonstandard_json_after_raw_p
     _create_running(uow)
     uow.enqueue_tasks(
         [
-            budgeted_task(NewTask(
-                task_id="task-1",
-                run_id="run-1",
-                idempotency_key="generation:run-1:1",
-                intent_type="generate",
-                payload={},
-            ))
+            budgeted_task(
+                NewTask(
+                    task_id="task-1",
+                    run_id="run-1",
+                    idempotency_key="generation:run-1:1",
+                    intent_type="generate",
+                    payload={},
+                )
+            )
         ]
     )
     claimed = claim_running_task(uow, run_id="run-1", task_id="task-1")
@@ -937,19 +968,22 @@ async def test_skill_executor_rejects_non_object_or_nonstandard_json_after_raw_p
             call_id="call-1",
             skill_directory=Path("skills/generation"),
             inputs={},
-            context=fenced_context(AgentExecutionContext(
-                run_id="run-1",
-                task_id="task-1",
-                idempotency_key="generation:run-1:1",
-                skill_id="generation",
-                skill_version="0.2.0",
-                output_schema_id="GenerationResultV1",
-                output_schema_version=1,
-                research_plan_version=1,
-                provider="fake",
-                model_or_tool="fake-v1",
-                input_snapshot_hash="sha256:input",
-            ), claimed),
+            context=fenced_context(
+                AgentExecutionContext(
+                    run_id="run-1",
+                    task_id="task-1",
+                    idempotency_key="generation:run-1:1",
+                    skill_id="generation",
+                    skill_version="0.2.0",
+                    output_schema_id="GenerationResultV1",
+                    output_schema_version=1,
+                    research_plan_version=1,
+                    provider="fake",
+                    model_or_tool="fake-v1",
+                    input_snapshot_hash="sha256:input",
+                ),
+                claimed,
+            ),
             reservation_id=claimed.reservation_id,
             fence=claimed,
         )
@@ -1006,9 +1040,7 @@ class _CoreHarness:
                 idempotency_key=f"admit:epoch-1:{hypothesis_id}",
             )
             if admission.entry is None or admission.commit is None:
-                raise AssertionError(
-                    f"ranking participant admission failed: {admission.decision}"
-                )
+                raise AssertionError(f"ranking participant admission failed: {admission.decision}")
             expected_sequence = admission.commit.last_sequence
         return expected_sequence
 
@@ -1031,9 +1063,7 @@ class _CoreHarness:
                 required_before_admission=(ReviewStage.FULL,),
             ),
             literature_novelty_required=trace["policy"]["novelty_required"],
-            duplicate_likelihood_threshold=trace["policy"][
-                "duplicate_likelihood_threshold"
-            ],
+            duplicate_likelihood_threshold=trace["policy"]["duplicate_likelihood_threshold"],
         )
         uow.create_run(
             "run-1",
@@ -1105,15 +1135,17 @@ class _CoreHarness:
                 uow.task_state(task_id)
             except KeyError:
                 scheduled = supervisor.enqueue_task(
-                    task=budgeted_task(NewTask(
-                        task_id=task_id,
-                        run_id="run-1",
-                        idempotency_key=task_id,
-                        intent_type=f"run_{response['skill']}",
-                        payload={
-                            key: value for key, value in response.items() if key != "payload"
-                        },
-                    )),
+                    task=budgeted_task(
+                        NewTask(
+                            task_id=task_id,
+                            run_id="run-1",
+                            idempotency_key=task_id,
+                            intent_type=f"run_{response['skill']}",
+                            payload={
+                                key: value for key, value in response.items() if key != "payload"
+                            },
+                        )
+                    ),
                     expected_sequence=expected_sequence,
                 )
                 expected_sequence = scheduled.last_sequence
@@ -1128,19 +1160,22 @@ class _CoreHarness:
                 call_id=f"call-{index}",
                 skill_directory=Path("skills") / response["skill"],
                 inputs=inputs,
-                context=fenced_context(AgentExecutionContext(
-                    run_id="run-1",
-                    task_id=task_id,
-                    idempotency_key=task_id,
-                    skill_id=response["skill"],
-                    skill_version="0.2.0",
-                    output_schema_id=_OUTPUT_SCHEMAS[response["skill"]],
-                    output_schema_version=1,
-                    research_plan_version=1,
-                    provider="fake",
-                    model_or_tool="fake-v1",
-                    input_snapshot_hash=input_hash,
-                ), claimed),
+                context=fenced_context(
+                    AgentExecutionContext(
+                        run_id="run-1",
+                        task_id=task_id,
+                        idempotency_key=task_id,
+                        skill_id=response["skill"],
+                        skill_version="0.2.0",
+                        output_schema_id=_OUTPUT_SCHEMAS[response["skill"]],
+                        output_schema_version=1,
+                        research_plan_version=1,
+                        provider="fake",
+                        model_or_tool="fake-v1",
+                        input_snapshot_hash=input_hash,
+                    ),
+                    claimed,
+                ),
                 reservation_id=claimed.reservation_id,
                 fence=claimed,
             )
@@ -1221,10 +1256,7 @@ def test_fake_trace_reaches_finalization_without_agent_created_tasks(core_harnes
     assert result.persisted_task_ids == {
         event.payload["task_id"] for event in result.task_enqueued_events
     }
-    assert all(
-        event.payload["created_by"] == "supervisor"
-        for event in result.task_enqueued_events
-    )
+    assert all(event.payload["created_by"] == "supervisor" for event in result.task_enqueued_events)
     assert result.child.initial_rating == 1200.0
 
 

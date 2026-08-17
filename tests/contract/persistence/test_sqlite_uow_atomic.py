@@ -526,13 +526,15 @@ def test_domain_batch_commits_events_task_followup_cost_call_and_run_sequence(tm
     _create_running(store, "r-1", manifest={"goal": "discover"})
     store.enqueue_tasks(
         [
-            budgeted_task(NewTask(
-                task_id="task-1",
-                run_id="r-1",
-                idempotency_key="source",
-                intent_type="reflect",
-                payload={"candidate": "h-1"},
-            ))
+            budgeted_task(
+                NewTask(
+                    task_id="task-1",
+                    run_id="r-1",
+                    idempotency_key="source",
+                    intent_type="reflect",
+                    payload={"candidate": "h-1"},
+                )
+            )
         ]
     )
     claimed = claim_running_task(store, run_id="r-1", task_id="task-1")
@@ -547,13 +549,29 @@ def test_domain_batch_commits_events_task_followup_cost_call_and_run_sequence(tm
         reservation_id=claimed.reservation_id,
         fence=claimed,
     )
-    store.transition_call("call-1", ExternalCallState.STARTED, fence=claimed)
     store.transition_call(
-        "call-1", ExternalCallState.RAW_RESPONSE_PERSISTED, fence=claimed
+        "call-1",
+        ExternalCallState.STARTED,
+        reservation_id=claimed.reservation_id,
+        fence=claimed,
     )
-    store.transition_call("call-1", ExternalCallState.VALIDATED, fence=claimed)
     store.transition_call(
-        "call-1", ExternalCallState.AGENT_RESULT_SUBMITTED, fence=claimed
+        "call-1",
+        ExternalCallState.RAW_RESPONSE_PERSISTED,
+        reservation_id=claimed.reservation_id,
+        fence=claimed,
+    )
+    store.transition_call(
+        "call-1",
+        ExternalCallState.VALIDATED,
+        reservation_id=claimed.reservation_id,
+        fence=claimed,
+    )
+    store.transition_call(
+        "call-1",
+        ExternalCallState.AGENT_RESULT_SUBMITTED,
+        reservation_id=claimed.reservation_id,
+        fence=claimed,
     )
     acknowledge_result(store, claimed)
 
@@ -569,13 +587,15 @@ def test_domain_batch_commits_events_task_followup_cost_call_and_run_sequence(tm
         ],
         task_mutations=[TaskMutation.succeed("task-1")],
         followup_tasks=[
-            budgeted_task(NewTask(
-                task_id="task-2",
-                run_id="r-1",
-                idempotency_key="followup",
-                intent_type="rank",
-                payload={"hypothesis_id": "h-1"},
-            ))
+            budgeted_task(
+                NewTask(
+                    task_id="task-2",
+                    run_id="r-1",
+                    idempotency_key="followup",
+                    intent_type="rank",
+                    payload={"hypothesis_id": "h-1"},
+                )
+            )
         ],
         idempotency_key="source",
         external_call_id="call-1",
@@ -613,7 +633,9 @@ def test_domain_batch_commits_events_task_followup_cost_call_and_run_sequence(tm
             )
         ).scalar_one()
         call_sequence = connection.execute(
-            text("SELECT applied_domain_sequence FROM external_calls WHERE external_call_id = 'call-1'")
+            text(
+                "SELECT applied_domain_sequence FROM external_calls WHERE external_call_id = 'call-1'"
+            )
         ).scalar_one()
     assert run.current_sequence == 4
     assert json.loads(run.manifest_json) == {
@@ -771,7 +793,9 @@ def test_failed_followup_insert_rolls_back_only_the_domain_batch(tmp_path) -> No
         current_sequence = connection.execute(
             text("SELECT current_sequence FROM runs WHERE run_id = 'r-1'")
         ).scalar_one()
-        commit_count = connection.execute(text("SELECT COUNT(*) FROM idempotency_commits")).scalar_one()
+        commit_count = connection.execute(
+            text("SELECT COUNT(*) FROM idempotency_commits")
+        ).scalar_one()
     assert current_sequence == 1
     assert commit_count == 1
 
@@ -828,20 +852,24 @@ def test_cross_run_batch_member_rolls_back_the_whole_batch(tmp_path, foreign_wri
     _create_running(store, "r-2")
     store.enqueue_tasks(
         [
-            budgeted_task(NewTask(
-                task_id="task-1",
-                run_id="r-1",
-                idempotency_key="source-1",
-                intent_type="reflect",
-                payload={},
-            )),
-            budgeted_task(NewTask(
-                task_id="task-2",
-                run_id="r-2",
-                idempotency_key="source-2",
-                intent_type="reflect",
-                payload={},
-            )),
+            budgeted_task(
+                NewTask(
+                    task_id="task-1",
+                    run_id="r-1",
+                    idempotency_key="source-1",
+                    intent_type="reflect",
+                    payload={},
+                )
+            ),
+            budgeted_task(
+                NewTask(
+                    task_id="task-2",
+                    run_id="r-2",
+                    idempotency_key="source-2",
+                    intent_type="reflect",
+                    payload={},
+                )
+            ),
         ]
     )
     claimed = claim_running_task(store, run_id="r-2", task_id="task-2")
@@ -859,19 +887,33 @@ def test_cross_run_batch_member_rolls_back_the_whole_batch(tmp_path, foreign_wri
         reservation_id=claimed.reservation_id,
         fence=claimed,
     )
-    store.transition_call("call-2", ExternalCallState.STARTED, fence=claimed)
     store.transition_call(
-        "call-2", ExternalCallState.RAW_RESPONSE_PERSISTED, fence=claimed
+        "call-2",
+        ExternalCallState.STARTED,
+        reservation_id=claimed.reservation_id,
+        fence=claimed,
     )
-    store.transition_call("call-2", ExternalCallState.VALIDATED, fence=claimed)
     store.transition_call(
-        "call-2", ExternalCallState.AGENT_RESULT_SUBMITTED, fence=claimed
+        "call-2",
+        ExternalCallState.RAW_RESPONSE_PERSISTED,
+        reservation_id=claimed.reservation_id,
+        fence=claimed,
+    )
+    store.transition_call(
+        "call-2",
+        ExternalCallState.VALIDATED,
+        reservation_id=claimed.reservation_id,
+        fence=claimed,
+    )
+    store.transition_call(
+        "call-2",
+        ExternalCallState.AGENT_RESULT_SUBMITTED,
+        reservation_id=claimed.reservation_id,
+        fence=claimed,
     )
     acknowledge_result(store, claimed)
 
-    task_mutations = (
-        [TaskMutation.succeed("task-2")] if foreign_write == "task_mutation" else []
-    )
+    task_mutations = [TaskMutation.succeed("task-2")] if foreign_write == "task_mutation" else []
     external_call_id = "call-2" if foreign_write == "external_call" else None
     followup_tasks = (
         [
@@ -904,18 +946,12 @@ def test_cross_run_batch_member_rolls_back_the_whole_batch(tmp_path, foreign_wri
         store.commit_domain_batch(
             run_id="r-1",
             expected_sequence=1,
-            events=[
-                NewEvent(
-                    event_type="ReviewCompleted", schema_version=2, payload={}
-                )
-            ],
+            events=[NewEvent(event_type="ReviewCompleted", schema_version=2, payload={})],
             task_mutations=task_mutations,
             followup_tasks=followup_tasks,
             idempotency_key=f"source:{foreign_write}",
             external_call_id=external_call_id,
-            reservation_id=(
-                claimed.reservation_id if external_call_id is not None else None
-            ),
+            reservation_id=(claimed.reservation_id if external_call_id is not None else None),
             fence=claimed if external_call_id is not None else None,
             cost_entries=cost_entries,
         )
@@ -945,13 +981,15 @@ def test_external_call_plan_requires_real_run_and_task_ownership(tmp_path) -> No
     _create_running(store, "r-2")
     store.enqueue_tasks(
         [
-            budgeted_task(NewTask(
-                task_id="task-1",
-                run_id="r-1",
-                idempotency_key="source",
-                intent_type="reflect",
-                payload={},
-            ))
+            budgeted_task(
+                NewTask(
+                    task_id="task-1",
+                    run_id="r-1",
+                    idempotency_key="source",
+                    intent_type="reflect",
+                    payload={},
+                )
+            )
         ]
     )
     claimed = claim_running_task(store, run_id="r-1", task_id="task-1")
@@ -984,13 +1022,15 @@ def test_external_call_plan_rejects_execution_context_mismatch(tmp_path) -> None
     _create_running(store, "r-1")
     store.enqueue_tasks(
         [
-            budgeted_task(NewTask(
-                task_id="task-1",
-                run_id="r-1",
-                idempotency_key="source",
-                intent_type="reflect",
-                payload={},
-            ))
+            budgeted_task(
+                NewTask(
+                    task_id="task-1",
+                    run_id="r-1",
+                    idempotency_key="source",
+                    intent_type="reflect",
+                    payload={},
+                )
+            )
         ]
     )
     claimed = claim_running_task(store, run_id="r-1", task_id="task-1")
@@ -1001,9 +1041,7 @@ def test_external_call_plan_rejects_execution_context_mismatch(tmp_path) -> None
             "sha256:request",
             run_id="r-1",
             task_id="task-1",
-            execution_context=_execution_context(
-                run_id="different", claimed=claimed
-            ),
+            execution_context=_execution_context(run_id="different", claimed=claimed),
             reservation_id=claimed.reservation_id,
             fence=claimed,
         )
@@ -1023,7 +1061,7 @@ def test_validated_payload_and_full_result_commit_atomically(tmp_path) -> None:
         reservation_id=claimed.reservation_id,
         fence=claimed,
     )
-    store.transition_call("call-1", "started", fence=claimed)
+    store.transition_call("call-1", "started", reservation_id=claimed.reservation_id, fence=claimed)
     ref = ArtifactRef(
         path="raw/call-1/digest",
         sha256="sha256:digest",
@@ -1031,7 +1069,11 @@ def test_validated_payload_and_full_result_commit_atomically(tmp_path) -> None:
         byte_length=2,
     )
     store.record_raw_and_transition(
-        "call-1", ref, "raw_response_persisted", fence=claimed
+        "call-1",
+        ref,
+        "raw_response_persisted",
+        reservation_id=claimed.reservation_id,
+        fence=claimed,
     )
     result = AgentResult(
         result_id="result-1",
@@ -1043,7 +1085,11 @@ def test_validated_payload_and_full_result_commit_atomically(tmp_path) -> None:
     )
 
     store.record_validated_and_submitted(
-        "call-1", result.payload, result, fence=claimed
+        "call-1",
+        result.payload,
+        result,
+        reservation_id=claimed.reservation_id,
+        fence=claimed,
     )
 
     call = store.get_external_call("call-1")
@@ -1069,7 +1115,7 @@ def test_atomic_result_serialization_failure_leaves_raw_call_recoverable(tmp_pat
         reservation_id=claimed.reservation_id,
         fence=claimed,
     )
-    store.transition_call("call-1", "started", fence=claimed)
+    store.transition_call("call-1", "started", reservation_id=claimed.reservation_id, fence=claimed)
     ref = ArtifactRef(
         path="raw/call-1/digest",
         sha256="sha256:digest",
@@ -1077,7 +1123,11 @@ def test_atomic_result_serialization_failure_leaves_raw_call_recoverable(tmp_pat
         byte_length=2,
     )
     store.record_raw_and_transition(
-        "call-1", ref, "raw_response_persisted", fence=claimed
+        "call-1",
+        ref,
+        "raw_response_persisted",
+        reservation_id=claimed.reservation_id,
+        fence=claimed,
     )
 
     with pytest.raises(Exception, match="serialize|serializ"):
@@ -1085,6 +1135,7 @@ def test_atomic_result_serialization_failure_leaves_raw_call_recoverable(tmp_pat
             "call-1",
             {"hypotheses": []},
             UnserializableResult(result_id="result-1", value=object()),
+            reservation_id=claimed.reservation_id,
             fence=claimed,
         )
 
@@ -1108,7 +1159,7 @@ def test_atomic_result_rejects_traceability_mismatch_without_advancing(tmp_path)
         reservation_id=claimed.reservation_id,
         fence=claimed,
     )
-    store.transition_call("call-1", "started", fence=claimed)
+    store.transition_call("call-1", "started", reservation_id=claimed.reservation_id, fence=claimed)
     ref = ArtifactRef(
         path="raw/call-1/digest",
         sha256="sha256:digest",
@@ -1116,7 +1167,11 @@ def test_atomic_result_rejects_traceability_mismatch_without_advancing(tmp_path)
         byte_length=2,
     )
     store.record_raw_and_transition(
-        "call-1", ref, "raw_response_persisted", fence=claimed
+        "call-1",
+        ref,
+        "raw_response_persisted",
+        reservation_id=claimed.reservation_id,
+        fence=claimed,
     )
     mismatched = AgentResult(
         result_id="result-1",
@@ -1129,7 +1184,11 @@ def test_atomic_result_rejects_traceability_mismatch_without_advancing(tmp_path)
 
     with pytest.raises(ValueError, match="does not match external call"):
         store.record_validated_and_submitted(
-            "call-1", _valid_generation_payload(), mismatched, fence=claimed
+            "call-1",
+            _valid_generation_payload(),
+            mismatched,
+            reservation_id=claimed.reservation_id,
+            fence=claimed,
         )
 
     call = store.get_external_call("call-1")
@@ -1156,7 +1215,7 @@ def test_atomic_result_rejects_prompt_hash_mismatch_without_advancing(tmp_path) 
         reservation_id=claimed.reservation_id,
         fence=claimed,
     )
-    store.transition_call("call-1", "started", fence=claimed)
+    store.transition_call("call-1", "started", reservation_id=claimed.reservation_id, fence=claimed)
     ref = ArtifactRef(
         path="raw/call-1/digest",
         sha256="sha256:digest",
@@ -1164,7 +1223,11 @@ def test_atomic_result_rejects_prompt_hash_mismatch_without_advancing(tmp_path) 
         byte_length=2,
     )
     store.record_raw_and_transition(
-        "call-1", ref, "raw_response_persisted", fence=claimed
+        "call-1",
+        ref,
+        "raw_response_persisted",
+        reservation_id=claimed.reservation_id,
+        fence=claimed,
     )
     mismatched = AgentResult(
         result_id="result-1",
@@ -1177,7 +1240,11 @@ def test_atomic_result_rejects_prompt_hash_mismatch_without_advancing(tmp_path) 
 
     with pytest.raises(ValueError, match="does not match external call"):
         store.record_validated_and_submitted(
-            "call-1", _valid_generation_payload(), mismatched, fence=claimed
+            "call-1",
+            _valid_generation_payload(),
+            mismatched,
+            reservation_id=claimed.reservation_id,
+            fence=claimed,
         )
 
     call = store.get_external_call("call-1")

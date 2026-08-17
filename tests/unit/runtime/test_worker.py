@@ -7,13 +7,13 @@ import anyio
 import pytest
 
 from co_scientist.adapters.artifacts.filesystem import FilesystemArtifactStore
-from co_scientist.adapters.persistence.sqlite import SqliteUnitOfWork
+from co_scientist.adapters.persistence.sqlite import SqliteUnitOfWork, TaskRow
 from co_scientist.domain.review import ReviewPolicy
 from co_scientist.domain.task import NewTask
 from co_scientist.ports.external_provider import RawExternalResponse
 from co_scientist.runtime.external_calls import prompt_hash, request_fingerprint
 from co_scientist.runtime.registry import ProviderRegistry, SkillRegistry
-from co_scientist.runtime.worker import Worker
+from co_scientist.runtime.worker import Worker, WorkerTaskPayload
 from co_scientist.supervisor.orchestrator import Supervisor
 
 NOW = datetime(2026, 8, 17, 10, 0, tzinfo=UTC)
@@ -74,6 +74,38 @@ class _SlowProvider(_Provider):
             await anyio.sleep_forever()
         finally:
             self.cancelled = True
+
+
+class _FollowupProvider(_Provider):
+    async def invoke(self, request):
+        self.call_count += 1
+        if request["skill_id"] == "generation":
+            body = _generation_body()
+        else:
+            inputs = request["input"]
+            body = json.dumps(
+                {
+                    "schema_version": 1,
+                    "research_plan_version": 1,
+                    "review_id": "review-worker",
+                    "hypothesis_id": inputs["hypothesis_id"],
+                    "content_hash": inputs["content_hash"],
+                    "stage": "initial_review",
+                    "recommendation": "pass",
+                    "dimension_scores": {},
+                    "critical_flaws": [],
+                    "evidence_ids": [],
+                    "safety_status": "passed",
+                },
+                separators=(",", ":"),
+                sort_keys=True,
+            ).encode()
+        return RawExternalResponse(
+            body=body,
+            mime_type="application/json",
+            provider_response_id=f"followup-{self.call_count}",
+            usage={"input_tokens": 4, "output_tokens": 8, "cost_usd": "0.01"},
+        )
 
 
 class _RejectingHeartbeatRuntime:
@@ -150,10 +182,14 @@ async def test_worker_executes_only_existing_supervisor_task_through_fenced_life
     tokens = iter(("unused-idle-token", "lease-secret"))
     call_ids = iter(("call-worker-attempt-1",))
     worker = Worker(
-        runtime=type("Runtime", (), {
-            "uow": uow,
-            "artifacts": FilesystemArtifactStore(tmp_path / "artifacts"),
-        })(),
+        runtime=type(
+            "Runtime",
+            (),
+            {
+                "uow": uow,
+                "artifacts": FilesystemArtifactStore(tmp_path / "artifacts"),
+            },
+        )(),
         task_runtime=uow,
         supervisor=supervisor,
         skills=SkillRegistry({("generation", "0.2.0"): GENERATION_DIRECTORY}),
@@ -192,7 +228,9 @@ async def test_worker_executes_only_existing_supervisor_task_through_fenced_life
     }
     assert provider.call_count == 1
     assert uow.task_state("task-worker") == "succeeded"
-    assert sum(event.event_type == "HypothesisContentCreated" for event in uow.load("r-worker")) == 1
+    assert (
+        sum(event.event_type == "HypothesisContentCreated" for event in uow.load("r-worker")) == 1
+    )
     call = uow.get_external_call("call-worker-attempt-1")
     assert call.state.value == "domain_result_applied"
     assert call.execution_context is not None
@@ -201,8 +239,7 @@ async def test_worker_executes_only_existing_supervisor_task_through_fenced_life
     serialized_context = json.dumps(call.execution_context, sort_keys=True)
     assert "lease-secret" not in serialized_context
     assert call.execution_context["lease_fence_fingerprint"] == (
-        "sha256:"
-        + hashlib.sha256(b"r-worker\0task-worker\0" + b"1\0lease-secret").hexdigest()
+        "sha256:" + hashlib.sha256(b"r-worker\0task-worker\0" + b"1\0lease-secret").hexdigest()
     )
 
 
@@ -224,10 +261,14 @@ async def test_worker_rejects_mutated_task_snapshot_before_provider_invocation(t
         expected_sequence=started.last_sequence,
     )
     worker = Worker(
-        runtime=type("Runtime", (), {
-            "uow": uow,
-            "artifacts": FilesystemArtifactStore(tmp_path / "artifacts"),
-        })(),
+        runtime=type(
+            "Runtime",
+            (),
+            {
+                "uow": uow,
+                "artifacts": FilesystemArtifactStore(tmp_path / "artifacts"),
+            },
+        )(),
         task_runtime=uow,
         supervisor=supervisor,
         skills=SkillRegistry({("generation", "0.2.0"): GENERATION_DIRECTORY}),
@@ -263,10 +304,14 @@ async def test_heartbeat_failure_cancels_provider_and_blocks_later_writes(tmp_pa
     )
     task_runtime = _RejectingHeartbeatRuntime(uow)
     worker = Worker(
-        runtime=type("Runtime", (), {
-            "uow": uow,
-            "artifacts": FilesystemArtifactStore(tmp_path / "artifacts"),
-        })(),
+        runtime=type(
+            "Runtime",
+            (),
+            {
+                "uow": uow,
+                "artifacts": FilesystemArtifactStore(tmp_path / "artifacts"),
+            },
+        )(),
         task_runtime=task_runtime,
         supervisor=supervisor,
         skills=SkillRegistry({("generation", "0.2.0"): GENERATION_DIRECTORY}),
@@ -290,6 +335,62 @@ async def test_heartbeat_failure_cancels_provider_and_blocks_later_writes(tmp_pa
     assert call.state.value == "started"
     assert call.raw_artifact_ref is None
     assert uow.task_state("task-heartbeat") == "running"
-    assert not any(
-        event.event_type == "HypothesisContentCreated" for event in uow.load("r-worker")
+    assert not any(event.event_type == "HypothesisContentCreated" for event in uow.load("r-worker"))
+
+
+@pytest.mark.asyncio
+# Mutation caught: Supervisor review follow-ups omit the immutable Worker execution snapshot.
+async def test_supervisor_followup_is_a_complete_executable_worker_task(tmp_path) -> None:
+    uow, supervisor, started = _runtime(tmp_path)
+    provider = _FollowupProvider()
+    supervisor.enqueue_task(
+        task=NewTask(
+            task_id="task-generation",
+            run_id="r-worker",
+            idempotency_key="generation:r-worker:followup",
+            intent_type="run_generation",
+            payload=_task_payload(),
+        ),
+        expected_sequence=started.last_sequence,
     )
+    call_ids = iter(("call-generation", "call-reflection"))
+
+    def new_worker(worker_id: str, token: str) -> Worker:
+        return Worker(
+            runtime=type(
+                "Runtime",
+                (),
+                {
+                    "uow": uow,
+                    "artifacts": FilesystemArtifactStore(tmp_path / "followup-artifacts"),
+                },
+            )(),
+            task_runtime=uow,
+            supervisor=Supervisor(uow=uow, review_policy=ReviewPolicy(profile_id="worker")),
+            skills=SkillRegistry(
+                {
+                    ("generation", "0.2.0"): GENERATION_DIRECTORY,
+                    ("reflection", "0.2.0"): Path("skills/reflection"),
+                }
+            ),
+            providers=ProviderRegistry({"provider-fixed": provider}),
+            worker_id=worker_id,
+            clock=lambda: NOW,
+            token_factory=lambda: token,
+            call_id_factory=lambda _task: next(call_ids),
+        )
+
+    await new_worker("worker-generation", "token-generation").run_once("r-worker")
+    followup_id = "review:initial_review:h-worker"
+    with uow.session_factory() as session:
+        row = session.get(TaskRow, followup_id)
+        assert row is not None
+        payload = json.loads(row.payload_json)
+    WorkerTaskPayload.model_validate(payload)
+
+    completed = await new_worker("worker-reflection", "token-reflection").run_once("r-worker")
+
+    assert completed.task_id == followup_id
+    assert uow.task_state(followup_id) == "succeeded"
+    assert provider.call_count == 2
+    assert sum(event.event_type == "ReviewCompleted" for event in uow.load("r-worker")) == 1

@@ -14,6 +14,7 @@ from co_scientist.domain.tournament import TournamentEpoch
 from co_scientist.events.models import NewEvent
 from co_scientist.ports.artifact_store import ArtifactRef
 from co_scientist.ports.event_store import ConcurrencyConflict
+from co_scientist.runtime.task_payload import WorkerTaskPayload
 from co_scientist.supervisor.orchestrator import Supervisor
 from tests._fenced_runtime import (
     acknowledge_result,
@@ -57,9 +58,7 @@ def _non_scientific_payload(status: str) -> dict[str, object]:
     }
 
 
-def _ranking_result(
-    *, result_id: str, prompt_hash: str, winner_id: str = "h-1"
-) -> AgentResult:
+def _ranking_result(*, result_id: str, prompt_hash: str, winner_id: str = "h-1") -> AgentResult:
     return AgentResult(
         result_id=result_id,
         external_call_id=f"call-{result_id}",
@@ -224,9 +223,7 @@ def test_conflicting_duplicate_match_id_cannot_reuse_persisted_ratings(tmp_path)
         idempotency_key="first-match",
     )
     supervisor = Supervisor(uow=uow, review_policy=ReviewPolicy(profile_id="minimal"))
-    replayed = supervisor._rating_events_for_result(
-        "run-1", first
-    )
+    replayed = supervisor._rating_events_for_result("run-1", first)
     assert [event.payload["hypothesis_id"] for event in replayed] == ["h-1", "h-2"]
     conflicting = _ranking_result(
         result_id="result-2",
@@ -235,9 +232,7 @@ def test_conflicting_duplicate_match_id_cannot_reuse_persisted_ratings(tmp_path)
     )
 
     with pytest.raises(ValueError, match="duplicate match_id"):
-        supervisor._rating_events_for_result(
-            "run-1", conflicting
-        )
+        supervisor._rating_events_for_result("run-1", conflicting)
 
 
 def test_supervisor_is_available_from_its_public_package() -> None:
@@ -386,9 +381,7 @@ def test_admission_command_accepts_only_metadata_and_loads_manifest_evidence(tmp
 
 
 # Mutation caught: committing against a sequence newer than the evidence snapshot.
-def test_admission_sequence_race_fails_with_normal_concurrency_error(
-    tmp_path, monkeypatch
-) -> None:
+def test_admission_sequence_race_fails_with_normal_concurrency_error(tmp_path, monkeypatch) -> None:
     database_url = f"sqlite:///{tmp_path / 'admission-race.db'}"
     uow = _admission_uow(tmp_path, filename="admission-race.db")
     competing = SqliteUnitOfWork(database_url)
@@ -592,29 +585,34 @@ def test_handle_result_atomically_applies_policy_owned_work_and_ignores_agent_ac
     )
     uow.enqueue_tasks(
         [
-            budgeted_task(NewTask(
-                task_id="generate-1",
-                run_id="run-1",
-                idempotency_key="generation:run-1:1",
-                intent_type="generate",
-                payload={},
-            ))
+            budgeted_task(
+                NewTask(
+                    task_id="generate-1",
+                    run_id="run-1",
+                    idempotency_key="generation:run-1:1",
+                    intent_type="generate",
+                    payload={},
+                )
+            )
         ]
     )
     claimed = claim_running_task(uow, run_id="run-1", task_id="generate-1")
-    context = fenced_context({
-        "run_id": "run-1",
-        "task_id": "generate-1",
-        "idempotency_key": "generation:run-1:1",
-        "skill_id": "generation",
-        "skill_version": "0.2.0",
-        "output_schema_id": "GenerationResultV1",
-        "output_schema_version": 1,
-        "research_plan_version": 1,
-        "provider": "stub",
-        "model_or_tool": "stub-model",
-        "input_snapshot_hash": "sha256:input",
-    }, claimed).model_dump(mode="json")
+    context = fenced_context(
+        {
+            "run_id": "run-1",
+            "task_id": "generate-1",
+            "idempotency_key": "generation:run-1:1",
+            "skill_id": "generation",
+            "skill_version": "0.2.0",
+            "output_schema_id": "GenerationResultV1",
+            "output_schema_version": 1,
+            "research_plan_version": 1,
+            "provider": "stub",
+            "model_or_tool": "stub-model",
+            "input_snapshot_hash": "sha256:input",
+        },
+        claimed,
+    ).model_dump(mode="json")
     uow.plan_external_call(
         "call-1",
         "sha256:request",
@@ -624,7 +622,12 @@ def test_handle_result_atomically_applies_policy_owned_work_and_ignores_agent_ac
         reservation_id=claimed.reservation_id,
         fence=claimed,
     )
-    uow.transition_call("call-1", ExternalCallState.STARTED, fence=claimed)
+    uow.transition_call(
+        "call-1",
+        ExternalCallState.STARTED,
+        reservation_id=claimed.reservation_id,
+        fence=claimed,
+    )
     raw_ref = ArtifactRef(
         path="raw/call-1/digest",
         sha256="sha256:digest",
@@ -641,6 +644,7 @@ def test_handle_result_atomically_applies_policy_owned_work_and_ignores_agent_ac
             "cost_usd": "0.0123",
             "pricing_version": "2026-07",
         },
+        reservation_id=claimed.reservation_id,
         fence=claimed,
     )
     payload = _generation_payload()
@@ -666,7 +670,13 @@ def test_handle_result_atomically_applies_policy_owned_work_and_ignores_agent_ac
         recommended_actions=("run_deep_verification",),
         raw_artifact_ref=raw_ref,
     )
-    uow.record_validated_and_submitted("call-1", payload, result, fence=claimed)
+    uow.record_validated_and_submitted(
+        "call-1",
+        payload,
+        result,
+        reservation_id=claimed.reservation_id,
+        fence=claimed,
+    )
     acknowledge_result(uow, claimed)
 
     commit = Supervisor(
@@ -685,24 +695,24 @@ def test_handle_result_atomically_applies_policy_owned_work_and_ignores_agent_ac
         "HypothesisContentCreated",
         "TaskEnqueued",
     ]
-    assert commit.events[1].payload == {
+    followup_event = commit.events[1].payload
+    assert {
+        key: followup_event[key]
+        for key in ("task_id", "run_id", "idempotency_key", "intent_type", "created_by")
+    } == {
         "task_id": "review:initial_review:h-1",
         "run_id": "run-1",
         "idempotency_key": "review:initial_review:h-1",
         "intent_type": "run_initial_review",
-        "payload": {
-            "hypothesis_id": "h-1",
-            "review_stage": "initial_review",
-            "budget_estimate": {
-                "model_calls": 1,
-                "input_tokens": 0,
-                "output_tokens": 0,
-                "cost_usd": "0",
-                "hypotheses": 0,
-                "matches": 0,
-            },
-        },
         "created_by": "supervisor",
+    }
+    followup_payload = WorkerTaskPayload.model_validate(followup_event["payload"])
+    assert followup_payload.skill_id == "reflection"
+    assert followup_payload.provider_id == "stub"
+    assert followup_payload.inputs == {
+        "hypothesis_id": "h-1",
+        "content_hash": commit.events[0].payload["content_hash"],
+        "review_stage": "initial_review",
     }
     assert uow.task_state("generate-1") == "succeeded"
     assert uow.task_state("review:initial_review:h-1") == "pending"
@@ -728,29 +738,34 @@ def _submitted_generation_result(tmp_path, status: str):
     )
     uow.enqueue_tasks(
         [
-            budgeted_task(NewTask(
-                task_id="generate-1",
-                run_id="run-1",
-                idempotency_key="generation:run-1:1",
-                intent_type="generate",
-                payload={},
-            ))
+            budgeted_task(
+                NewTask(
+                    task_id="generate-1",
+                    run_id="run-1",
+                    idempotency_key="generation:run-1:1",
+                    intent_type="generate",
+                    payload={},
+                )
+            )
         ]
     )
     claimed = claim_running_task(uow, run_id="run-1", task_id="generate-1")
-    context = fenced_context({
-        "run_id": "run-1",
-        "task_id": "generate-1",
-        "idempotency_key": "generation:run-1:1",
-        "skill_id": "generation",
-        "skill_version": "0.2.0",
-        "output_schema_id": "GenerationResultV1",
-        "output_schema_version": 1,
-        "research_plan_version": 1,
-        "provider": "stub",
-        "model_or_tool": "stub-model",
-        "input_snapshot_hash": "sha256:input",
-    }, claimed).model_dump(mode="json")
+    context = fenced_context(
+        {
+            "run_id": "run-1",
+            "task_id": "generate-1",
+            "idempotency_key": "generation:run-1:1",
+            "skill_id": "generation",
+            "skill_version": "0.2.0",
+            "output_schema_id": "GenerationResultV1",
+            "output_schema_version": 1,
+            "research_plan_version": 1,
+            "provider": "stub",
+            "model_or_tool": "stub-model",
+            "input_snapshot_hash": "sha256:input",
+        },
+        claimed,
+    ).model_dump(mode="json")
     uow.plan_external_call(
         "call-1",
         "sha256:request",
@@ -760,7 +775,12 @@ def _submitted_generation_result(tmp_path, status: str):
         reservation_id=claimed.reservation_id,
         fence=claimed,
     )
-    uow.transition_call("call-1", ExternalCallState.STARTED, fence=claimed)
+    uow.transition_call(
+        "call-1",
+        ExternalCallState.STARTED,
+        reservation_id=claimed.reservation_id,
+        fence=claimed,
+    )
     raw_ref = ArtifactRef(
         path="raw/call-1/digest",
         sha256="sha256:digest",
@@ -772,13 +792,10 @@ def _submitted_generation_result(tmp_path, status: str):
         raw_ref,
         ExternalCallState.RAW_RESPONSE_PERSISTED,
         usage={"input_tokens": 3, "output_tokens": 2, "pricing_version": "test"},
+        reservation_id=claimed.reservation_id,
         fence=claimed,
     )
-    payload = (
-        _generation_payload()
-        if status == "completed"
-        else _non_scientific_payload(status)
-    )
+    payload = _generation_payload() if status == "completed" else _non_scientific_payload(status)
     result = AgentResult(
         result_id=f"result-{status}",
         external_call_id="call-1",
@@ -801,7 +818,13 @@ def _submitted_generation_result(tmp_path, status: str):
         recommended_actions=("run_deep_verification",),
         raw_artifact_ref=raw_ref,
     )
-    uow.record_validated_and_submitted("call-1", payload, result, fence=claimed)
+    uow.record_validated_and_submitted(
+        "call-1",
+        payload,
+        result,
+        reservation_id=claimed.reservation_id,
+        fence=claimed,
+    )
     acknowledge_result(uow, claimed)
     supervisor = Supervisor(uow=uow, review_policy=ReviewPolicy(profile_id="minimal"))
     return supervisor, result, claimed

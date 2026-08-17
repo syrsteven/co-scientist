@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
 from decimal import Decimal
+from pathlib import Path
 from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict
@@ -52,7 +53,9 @@ from co_scientist.domain.tournament import (
 from co_scientist.events.models import DomainEvent, NewEvent
 from co_scientist.events.reducers import replay_tournament
 from co_scientist.ports.event_store import ConcurrencyConflict
-from co_scientist.skills.loader import resolve_core_skill_contract
+from co_scientist.runtime.external_calls import prompt_hash, request_fingerprint
+from co_scientist.runtime.task_payload import WorkerTaskPayload
+from co_scientist.skills.loader import load_skill, resolve_core_skill_contract
 from co_scientist.supervisor.followups import FollowupIntent, derive_followup_intents
 
 
@@ -84,11 +87,7 @@ def plan_revision_action(
         raise ValueError("ResearchPlan revision must belong to the same run")
     if new.version <= old.version:
         raise ValueError("ResearchPlan version must increase")
-    return (
-        "fork_run"
-        if old.scientific_scope_hash != new.scientific_scope_hash
-        else "new_epoch"
-    )
+    return "fork_run" if old.scientific_scope_hash != new.scientific_scope_hash else "new_epoch"
 
 
 class PlanRevisionOutcome(BaseModel):
@@ -260,7 +259,7 @@ class Supervisor:
             "failed": TaskState.FAILED,
         }[result.status]
         valid_task_state = (
-            task_state is TaskState.RESULT_RECEIVED
+            task_state in {TaskState.RUNNING, TaskState.RESULT_RECEIVED}
             if call_state is ExternalCallState.AGENT_RESULT_SUBMITTED
             else task_state is terminal_task_state
         )
@@ -424,6 +423,7 @@ class Supervisor:
         *,
         run_id: str,
         events: Sequence[NewEvent],
+        source_result: AgentResult,
     ) -> tuple[NewTask, ...]:
         approved: dict[str, FollowupIntent] = {}
         for event in events:
@@ -435,22 +435,51 @@ class Supervisor:
             for intent in intents:
                 key = f"review:{intent.intent_type.removeprefix('run_')}:{intent.target_id}"
                 approved[key] = intent
-        return tuple(
-            NewTask(
-                task_id=task_id,
-                run_id=run_id,
-                idempotency_key=task_id,
-                intent_type=intent.intent_type,
-                payload={
-                    "hypothesis_id": intent.target_id,
-                    "review_stage": intent.intent_type.removeprefix("run_"),
-                    "budget_estimate": BudgetEstimate(model_calls=1).model_dump(
-                        mode="json"
-                    ),
-                },
+        tasks: list[NewTask] = []
+        for task_id, intent in approved.items():
+            content_hash = next(
+                (
+                    str(event.payload["content_hash"])
+                    for event in events
+                    if event.event_type == "HypothesisContentCreated"
+                    and event.payload.get("hypothesis_id") == intent.target_id
+                ),
+                None,
             )
-            for task_id, intent in approved.items()
-        )
+            if content_hash is None:
+                raise ValueError("follow-up task requires immutable hypothesis content")
+            directory = Path("skills/reflection")
+            manifest = load_skill(directory)
+            inputs = {
+                "hypothesis_id": intent.target_id,
+                "content_hash": content_hash,
+                "review_stage": intent.intent_type.removeprefix("run_"),
+            }
+            payload = WorkerTaskPayload(
+                skill_id=manifest.id,
+                skill_version=manifest.version,
+                output_schema_id=manifest.output_schema,
+                output_schema_version=1,
+                research_plan_version=source_result.research_plan_version,
+                provider_id=source_result.provider,
+                model_or_tool=source_result.model_or_tool,
+                inputs=inputs,
+                input_snapshot_hash=request_fingerprint(inputs),
+                prompt_hash=prompt_hash(
+                    (directory / manifest.prompt_path).read_text(encoding="utf-8")
+                ),
+                budget_estimate=BudgetEstimate(model_calls=1),
+            )
+            tasks.append(
+                NewTask(
+                    task_id=task_id,
+                    run_id=run_id,
+                    idempotency_key=task_id,
+                    intent_type=intent.intent_type,
+                    payload=payload.model_dump(mode="json"),
+                )
+            )
+        return tuple(tasks)
 
     @staticmethod
     def _cost_entry(
@@ -586,7 +615,9 @@ class Supervisor:
                     raise ValueError(f"non-decisive duplicate match has ratings: {match.match_id}")
                 return ()
             if len(persisted_ratings) != 2:
-                raise ValueError(f"decisive duplicate match has incomplete ratings: {match.match_id}")
+                raise ValueError(
+                    f"decisive duplicate match has incomplete ratings: {match.match_id}"
+                )
             match_index = stream.index(persisted_matches[0])
             prior_ratings = replay_tournament(stream[:match_index]).ratings.get(match.epoch_id, {})
             try:
@@ -620,7 +651,9 @@ class Supervisor:
                     or event.causation_id != result.result_id
                     or event.correlation_id != run_id
                 ):
-                    raise ValueError(f"duplicate match rating provenance mismatch: {match.match_id}")
+                    raise ValueError(
+                        f"duplicate match rating provenance mismatch: {match.match_id}"
+                    )
             if expected_ratings:
                 raise ValueError(f"duplicate match rating participants mismatch: {match.match_id}")
             return tuple(
@@ -641,7 +674,9 @@ class Supervisor:
             before_left = float(epoch_ratings[match.left_id])
             before_right = float(epoch_ratings[match.right_id])
         except KeyError as error:
-            raise ValueError(f"match {match.match_id} references an unrated TournamentEntry") from error
+            raise ValueError(
+                f"match {match.match_id} references an unrated TournamentEntry"
+            ) from error
         after_left, after_right = apply_match(
             before_left,
             before_right,
@@ -745,7 +780,7 @@ class Supervisor:
             followups = (
                 ()
                 if run_state is RunState.STOPPING
-                else self._followup_tasks(run_id=run_id, events=events)
+                else self._followup_tasks(run_id=run_id, events=events, source_result=result)
             )
             events = (
                 *events,
@@ -762,9 +797,7 @@ class Supervisor:
         else:
             events = (self._audit_event_for_result(result),)
             followups = ()
-            task_target = (
-                TaskState.PENDING if result.status == "partial" else TaskState.FAILED
-            )
+            task_target = TaskState.PENDING if result.status == "partial" else TaskState.FAILED
         return self.uow.commit_domain_batch(
             run_id=run_id,
             expected_sequence=expected_sequence,
@@ -921,8 +954,7 @@ class Supervisor:
             policy=admission_policy,
         )
         decision = AdmissionDecision(
-            admitted=not snapshot.missing_requirements
-            and not snapshot.conflicting_evidence,
+            admitted=not snapshot.missing_requirements and not snapshot.conflicting_evidence,
             missing_requirements=snapshot.missing_requirements,
             conflicting_evidence=snapshot.conflicting_evidence,
         )
@@ -1019,9 +1051,7 @@ class Supervisor:
                 NewEvent(event_type=terminal, payload={"completeness": completeness}),
             ),
             target_run_state=(
-                RunState.COMPLETED
-                if completeness == "complete"
-                else RunState.COMPLETED_PARTIAL
+                RunState.COMPLETED if completeness == "complete" else RunState.COMPLETED_PARTIAL
             ),
             task_mutations=(TaskMutation.succeed(f"finalize:{run_id}"),),
             idempotency_key=f"finalization:{run_id}:{expected_sequence}",
