@@ -1,11 +1,15 @@
 import pytest
 
 from co_scientist.adapters.persistence.sqlite import SqliteUnitOfWork
+from co_scientist.agents.result import AgentResult
+from co_scientist.domain.admission import AdmissionPolicy
 from co_scientist.domain.research_plan import ResearchPlan
 from co_scientist.domain.review import ReviewPolicy
-from co_scientist.domain.states import RunState
+from co_scientist.domain.states import ExternalCallState, RunState, TaskState
+from co_scientist.domain.task import NewTask
 from co_scientist.domain.tournament import TournamentEpoch
 from co_scientist.events.models import NewEvent
+from co_scientist.ports.artifact_store import ArtifactRef
 from co_scientist.supervisor.orchestrator import Supervisor, plan_revision_action
 
 
@@ -17,7 +21,7 @@ def _plan(*, version: int, scope: str = "scope-a", rules: str = "rules-a") -> Re
         evaluation_rules_hash=rules,
         ranking_prompt_hash=f"prompt-{version}",
         judge_profile_hash=f"judge-{version}",
-        rating_policy_version=f"rating-{version}",
+        rating_policy_version="elo-32-v1",
         admission_policy_version=f"admission-{version}",
         review_policy=ReviewPolicy(profile_id="minimal"),
         literature_novelty_required=False,
@@ -40,7 +44,16 @@ def _epoch(plan: ResearchPlan) -> TournamentEpoch:
 def _supervisor(tmp_path) -> Supervisor:
     uow = SqliteUnitOfWork(f"sqlite:///{tmp_path / 'epoch.db'}")
     uow.create_schema()
-    uow.create_run("run-1", manifest={})
+    policies = {
+        f"admission-{version}": AdmissionPolicy(
+            version=f"admission-{version}",
+            review_policy=ReviewPolicy(profile_id="minimal"),
+            literature_novelty_required=False,
+            duplicate_likelihood_threshold=0.5,
+        ).model_dump(mode="json")
+        for version in (1, 2, 3)
+    }
+    uow.create_run("run-1", manifest={"admission_policies": policies})
     started = uow.commit_domain_batch(
         run_id="run-1",
         expected_sequence=0,
@@ -61,6 +74,168 @@ def _supervisor(tmp_path) -> Supervisor:
         idempotency_key="open:epoch-1",
     )
     return Supervisor(uow=uow, review_policy=ReviewPolicy(profile_id="minimal"))
+
+
+def _append_admission_evidence(
+    supervisor: Supervisor,
+    *,
+    expected_sequence: int,
+    plan_version: int,
+) -> int:
+    generation = _apply_scientific_result(
+        supervisor,
+        expected_sequence=expected_sequence,
+        task_id=f"generation:{plan_version}",
+        skill_id="generation",
+        output_schema_id="GenerationResultV1",
+        plan_version=plan_version,
+        payload={
+            "schema_version": 1,
+            "research_plan_version": plan_version,
+            "hypotheses": [
+                {
+                    "schema_version": 1,
+                    "hypothesis_id": "h-1",
+                    "content_id": f"content-{plan_version}",
+                    "research_plan_version": plan_version,
+                    "title": "Epoch candidate",
+                    "claim": "The epoch candidate remains independently testable.",
+                    "mechanism_chain": ["candidate", "test", "result"],
+                    "assumptions": [],
+                    "predictions": [],
+                    "falsifiers": [],
+                    "generation_strategy": "epoch scenario",
+                }
+            ],
+        },
+    )
+    content_event = next(
+        event
+        for event in reversed(supervisor.uow.load("run-1"))
+        if event.event_type == "HypothesisContentCreated"
+        and event.payload.get("hypothesis_id") == "h-1"
+    )
+    content_hash = str(content_event.payload["content_hash"])
+    reviewed = _apply_scientific_result(
+        supervisor,
+        expected_sequence=generation,
+        task_id="review:initial_review:h-1",
+        skill_id="reflection",
+        output_schema_id="ReflectionResultV1",
+        plan_version=plan_version,
+        payload={
+            "schema_version": 1,
+            "research_plan_version": plan_version,
+            "review_id": f"review-{plan_version}",
+            "hypothesis_id": "h-1",
+            "content_hash": content_hash,
+            "stage": "initial_review",
+            "recommendation": "pass",
+            "safety_status": "passed",
+            "critical_flaws": [],
+        },
+    )
+    return _apply_scientific_result(
+        supervisor,
+        expected_sequence=reviewed,
+        task_id=f"proximity:{plan_version}",
+        skill_id="proximity",
+        output_schema_id="ProximityResultV1",
+        plan_version=plan_version,
+        payload={
+            "schema_version": 1,
+            "research_plan_version": plan_version,
+            "edge_id": f"edge-{plan_version}",
+            "left_id": "h-1",
+            "left_content_hash": content_hash,
+            "right_id": "anchor-1",
+            "right_content_hash": "sha256:" + "a" * 64,
+            "similarity": 1,
+            "duplicate_likelihood": 0.1,
+            "rationale": "Distinct from the anchor.",
+        },
+    )
+
+
+def _apply_scientific_result(
+    supervisor: Supervisor,
+    *,
+    expected_sequence: int,
+    task_id: str,
+    skill_id: str,
+    output_schema_id: str,
+    plan_version: int,
+    payload: dict[str, object],
+) -> int:
+    uow = supervisor.uow
+    try:
+        uow.task_state(task_id)
+    except KeyError:
+        scheduled = supervisor.enqueue_task(
+            task=NewTask(
+                task_id=task_id,
+                run_id="run-1",
+                idempotency_key=task_id,
+                intent_type=f"run_{skill_id}",
+                payload={},
+            ),
+            expected_sequence=expected_sequence,
+        )
+        expected_sequence = scheduled.last_sequence
+    uow.transition_task(task_id, TaskState.LEASED)
+    uow.transition_task(task_id, TaskState.RUNNING)
+    uow.transition_task(task_id, TaskState.RESULT_RECEIVED)
+    call_id = f"call:{task_id}:{plan_version}"
+    context = {
+        "run_id": "run-1",
+        "task_id": task_id,
+        "idempotency_key": task_id,
+        "skill_id": skill_id,
+        "skill_version": "0.2.0",
+        "output_schema_id": output_schema_id,
+        "output_schema_version": 1,
+        "research_plan_version": plan_version,
+        "provider": "scenario",
+        "model_or_tool": "typed-fixture",
+        "input_snapshot_hash": "sha256:input",
+        "prompt_hash": "sha256:prompt",
+    }
+    uow.plan_external_call(
+        call_id,
+        "sha256:request",
+        run_id="run-1",
+        task_id=task_id,
+        execution_context=context,
+    )
+    uow.transition_call(call_id, ExternalCallState.STARTED)
+    raw_ref = ArtifactRef(
+        path=f"raw/{call_id}",
+        sha256="sha256:" + "f" * 64,
+        mime_type="application/json",
+        byte_length=2,
+    )
+    uow.record_raw_and_transition(
+        call_id,
+        raw_ref,
+        ExternalCallState.RAW_RESPONSE_PERSISTED,
+        usage={"input_tokens": 1, "output_tokens": 1, "pricing_version": "scenario"},
+    )
+    result = AgentResult(
+        result_id=f"result:{task_id}:{plan_version}",
+        external_call_id=call_id,
+        status="completed",
+        payload=payload,
+        raw_artifact_ref=raw_ref,
+        **context,
+    )
+    uow.record_validated_and_submitted(call_id, payload, result)
+    committed = supervisor.handle_result(
+        "run-1",
+        task_id,
+        result,
+        expected_sequence,
+    )
+    return committed.last_sequence
 
 
 # Mutation caught: trusting a caller-provided epoch instead of the durable open epoch.
@@ -85,18 +260,16 @@ def test_evaluation_revision_closes_durable_epoch_and_opens_fresh_epoch(tmp_path
         "TournamentEpochOpened",
     ]
     assert outcome.next_epoch.anchor_set_id == "anchors-2"
+    evidence_sequence = _append_admission_evidence(
+        supervisor,
+        expected_sequence=outcome.commit.last_sequence,
+        plan_version=2,
+    )
     admission = supervisor.admit_hypothesis(
         run_id="run-1",
-        expected_sequence=outcome.commit.last_sequence,
         hypothesis_id="h-1",
-        content_hash="sha256:content",
-        safety_passed=True,
-        required_stages={"initial_review"},
-        completed_stages={"initial_review"},
-        novelty_required=False,
-        novelty_assessment=None,
-        proximity_complete=True,
-        duplicate=False,
+        expected_sequence=evidence_sequence,
+        idempotency_key="admit:h-1:epoch-2",
     )
     assert admission.entry is not None
     assert (admission.entry.rating, admission.entry.matches_played) == (1200.0, 0)
@@ -176,21 +349,19 @@ def test_plan_revision_rejects_any_previously_used_epoch_id(tmp_path) -> None:
 
 
 # Mutation caught: leaving admission and initial Elo assignment to a caller-side helper.
-def test_supervisor_atomically_admits_into_active_epoch_at_internal_1200(tmp_path) -> None:
+def test_supervisor_atomically_admits_into_active_epoch_at_policy_rating(tmp_path) -> None:
     supervisor = _supervisor(tmp_path)
+    evidence_sequence = _append_admission_evidence(
+        supervisor,
+        expected_sequence=2,
+        plan_version=1,
+    )
 
     outcome = supervisor.admit_hypothesis(
         run_id="run-1",
-        expected_sequence=2,
         hypothesis_id="h-1",
-        content_hash="sha256:content",
-        safety_passed=True,
-        required_stages={"initial_review"},
-        completed_stages={"initial_review"},
-        novelty_required=False,
-        novelty_assessment=None,
-        proximity_complete=True,
-        duplicate=False,
+        expected_sequence=evidence_sequence,
+        idempotency_key="admit:h-1:epoch-1",
     )
 
     assert outcome.decision.admitted
@@ -206,6 +377,7 @@ def test_supervisor_atomically_admits_into_active_epoch_at_internal_1200(tmp_pat
         outcome.commit.events[1].payload["rating"],
         outcome.commit.events[2].payload["rating"],
     ] == [1200.0, 1200.0]
+    assert outcome.commit.events[2].payload["rating_policy_version"] == "elo-32-v1"
 
 
 # Mutation caught: applying a plan revision while ignoring the durable Run state.

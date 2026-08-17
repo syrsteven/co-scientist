@@ -307,6 +307,18 @@ class SqliteUnitOfWork:
             ).all()
             return [row.to_domain() for row in rows]
 
+    def run_manifest(self, run_id: str) -> dict[str, Any]:
+        """Load the immutable manifest frozen when the Run was created."""
+
+        with self.session_factory() as session:
+            row = session.get(RunRow, run_id)
+            if row is None:
+                raise KeyError(f"unknown run: {run_id}")
+            manifest = json.loads(row.manifest_json)
+        if not isinstance(manifest, dict):
+            raise TypeError(f"Run manifest is not an object: {run_id}")
+        return cast(dict[str, Any], manifest)
+
     def create_run(self, run_id: str, manifest: dict[str, Any]) -> None:
         with self.session_factory.begin() as session:
             self._begin_immediate(session)

@@ -7,7 +7,6 @@ from co_scientist.supervisor.orchestrator import (
     PlanRevisionOutcome,
     Supervisor,
     TickOutcome,
-    evaluate_admission,
     plan_revision_action,
 )
 
@@ -19,6 +18,5 @@ __all__ = [
     "Supervisor",
     "TickOutcome",
     "derive_followup_intents",
-    "evaluate_admission",
     "plan_revision_action",
 ]

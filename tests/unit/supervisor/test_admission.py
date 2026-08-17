@@ -1,3 +1,4 @@
+import inspect
 from decimal import Decimal
 
 import pytest
@@ -5,13 +6,15 @@ from sqlalchemy import text
 
 from co_scientist.adapters.persistence.sqlite import SqliteUnitOfWork
 from co_scientist.agents.result import AgentResult
-from co_scientist.domain.review import NoveltyAssessment, NoveltyVerdict, ReviewPolicy
-from co_scientist.domain.states import ExternalCallState, TaskState
+from co_scientist.domain.admission import AdmissionPolicy
+from co_scientist.domain.review import ReviewPolicy, ReviewStage
+from co_scientist.domain.states import ExternalCallState, RunState, TaskState
 from co_scientist.domain.task import NewTask
 from co_scientist.domain.tournament import TournamentEpoch
 from co_scientist.events.models import NewEvent
 from co_scientist.ports.artifact_store import ArtifactRef
-from co_scientist.supervisor.orchestrator import Supervisor, evaluate_admission
+from co_scientist.ports.event_store import ConcurrencyConflict
+from co_scientist.supervisor.orchestrator import Supervisor
 
 
 def _generation_payload() -> dict[str, object]:
@@ -225,168 +228,200 @@ def test_conflicting_duplicate_match_id_cannot_reuse_persisted_ratings(tmp_path)
         )
 
 
-def test_minimal_policy_admits_without_deep_review() -> None:
-    decision = evaluate_admission(
-        safety_passed=True,
-        required_stages={"initial_review"},
-        completed_stages={"initial_review"},
-        novelty_required=False,
-        novelty_assessment=None,
-        proximity_complete=True,
-        duplicate=False,
-    )
-
-    assert decision.admitted
-
-
 def test_supervisor_is_available_from_its_public_package() -> None:
     from co_scientist.supervisor import Supervisor as PublicSupervisor
 
     assert PublicSupervisor is Supervisor
 
 
-def test_initial_review_is_mandatory_even_when_caller_omits_it() -> None:
-    decision = evaluate_admission(
-        safety_passed=True,
-        required_stages=set(),
-        completed_stages=set(),
-        novelty_required=False,
-        novelty_assessment=None,
-        proximity_complete=True,
-        duplicate=False,
+def _admission_policy() -> AdmissionPolicy:
+    return AdmissionPolicy(
+        version="admission-v1",
+        review_policy=ReviewPolicy(
+            profile_id="manifest-policy",
+            required_before_admission=(ReviewStage.FULL,),
+        ),
+        literature_novelty_required=False,
+        duplicate_likelihood_threshold=0.5,
     )
 
-    assert not decision.admitted
-    assert decision.missing_requirements == ("initial_review",)
+
+def _admission_uow(tmp_path, *, filename: str = "admission.db") -> SqliteUnitOfWork:
+    uow = SqliteUnitOfWork(f"sqlite:///{tmp_path / filename}")
+    uow.create_schema()
+    policy = _admission_policy()
+    uow.create_run(
+        "run-1",
+        manifest={
+            "admission_policies": {
+                policy.version: policy.model_dump(mode="json"),
+            }
+        },
+    )
+    uow.commit_domain_batch(
+        run_id="run-1",
+        expected_sequence=0,
+        events=(
+            NewEvent(event_type="RunStarted", payload={}),
+            NewEvent(
+                event_type="TournamentEpochOpened",
+                payload={
+                    "epoch_id": "epoch-1",
+                    "research_plan_version": 1,
+                    "evaluation_rules_hash": "sha256:rules",
+                    "ranking_prompt_hash": "sha256:prompt",
+                    "judge_profile_hash": "sha256:judge",
+                    "rating_policy_version": "elo-32-v1",
+                    "admission_policy_version": "admission-v1",
+                },
+            ),
+            NewEvent(
+                event_type="HypothesisContentCreated",
+                schema_version=2,
+                payload={
+                    "hypothesis_id": "h-1",
+                    "content_id": "content-1",
+                    "content_hash": "sha256:" + "a" * 64,
+                    "research_plan_version": 1,
+                    "generation_strategy": "causal contrast",
+                },
+            ),
+            NewEvent(
+                event_type="ReviewCompleted",
+                schema_version=2,
+                payload={
+                    "review_id": "review-initial",
+                    "hypothesis_id": "h-1",
+                    "content_hash": "sha256:" + "a" * 64,
+                    "research_plan_version": 1,
+                    "stage": "initial_review",
+                    "recommendation": "pass",
+                    "safety_status": "passed",
+                    "critical_flaws": [],
+                },
+            ),
+            NewEvent(
+                event_type="ReviewCompleted",
+                schema_version=2,
+                payload={
+                    "review_id": "review-full",
+                    "hypothesis_id": "h-1",
+                    "content_hash": "sha256:" + "a" * 64,
+                    "research_plan_version": 1,
+                    "stage": "full_review",
+                    "recommendation": "pass",
+                    "safety_status": "not_assessed",
+                    "critical_flaws": [],
+                },
+            ),
+            NewEvent(
+                event_type="ProximityAssessed",
+                schema_version=2,
+                payload={
+                    "edge_id": "edge-1-2",
+                    "research_plan_version": 1,
+                    "left_id": "h-1",
+                    "left_content_hash": "sha256:" + "a" * 64,
+                    "right_id": "h-2",
+                    "right_content_hash": "sha256:" + "b" * 64,
+                    "similarity": 2,
+                    "duplicate_likelihood": 0.1,
+                    "rationale": "Distinct mechanisms.",
+                },
+            ),
+        ),
+        target_run_state=RunState.RUNNING,
+        idempotency_key="admission-evidence",
+    )
+    return uow
 
 
-def test_novelty_and_candidate_proximity_remain_separate_admission_gates() -> None:
-    novelty = NoveltyAssessment(
-        assessment_id="novelty-1",
+# Mutation caught: retaining any public caller-supplied scientific verdict.
+def test_admission_command_accepts_only_metadata_and_loads_manifest_evidence(tmp_path) -> None:
+    uow = _admission_uow(tmp_path)
+    supervisor = Supervisor(uow=uow, review_policy=ReviewPolicy(profile_id="constructor-only"))
+
+    assert tuple(inspect.signature(Supervisor.admit_hypothesis).parameters) == (
+        "self",
+        "run_id",
+        "hypothesis_id",
+        "expected_sequence",
+        "idempotency_key",
+    )
+    outcome = supervisor.admit_hypothesis(
+        run_id="run-1",
         hypothesis_id="h-1",
-        content_hash="sha256:content",
-        research_plan_version=1,
-        verdict=NoveltyVerdict.NOVEL,
-        closest_prior_work_ids=(),
+        expected_sequence=6,
+        idempotency_key="admit-h-1",
     )
 
-    missing_novelty = evaluate_admission(
-        safety_passed=True,
-        required_stages={"initial_review"},
-        completed_stages={"initial_review"},
-        novelty_required=True,
-        novelty_assessment=None,
-        proximity_complete=True,
-        duplicate=False,
-    )
-    missing_proximity = evaluate_admission(
-        hypothesis_id="h-1",
-        content_hash="sha256:content",
-        research_plan_version=1,
-        safety_passed=True,
-        required_stages={"initial_review"},
-        completed_stages={"initial_review"},
-        novelty_required=True,
-        novelty_assessment=novelty,
-        proximity_complete=False,
-        duplicate=False,
-    )
-
-    assert missing_novelty.missing_requirements == ("novelty_assessment",)
-    assert missing_proximity.missing_requirements == ("proximity",)
+    assert outcome.decision.admitted
+    assert outcome.entry is not None
+    assert (outcome.entry.rating, outcome.entry.matches_played) == (1200.0, 0)
+    assert outcome.commit is not None
+    ready, entry, rating = outcome.commit.events
+    assert (ready.event_type, ready.schema_version) == ("HypothesisTournamentReady", 2)
+    assert ready.payload["review_ids"] == ("review-initial", "review-full")
+    assert ready.payload["proximity_edge_ids"] == ("edge-1-2",)
+    assert ready.payload["source_event_sequences"] == (2, 3, 4, 5, 6)
+    assert entry.payload["content_hash"] == "sha256:" + "a" * 64
+    assert rating.payload == {
+        "epoch_id": "epoch-1",
+        "hypothesis_id": "h-1",
+        "rating": 1200.0,
+        "rating_policy_version": "elo-32-v1",
+    }
 
 
-# Mutation caught: treating any non-null NoveltyAssessment as applicable and qualifying.
-@pytest.mark.parametrize(
-    "assessment",
-    [
-        NoveltyAssessment(
-            assessment_id="wrong-hypothesis",
-            hypothesis_id="h-other",
-            content_hash="sha256:content",
-            research_plan_version=2,
-            verdict=NoveltyVerdict.NOVEL,
-            closest_prior_work_ids=(),
-        ),
-        NoveltyAssessment(
-            assessment_id="stale-content",
-            hypothesis_id="h-1",
-            content_hash="sha256:stale",
-            research_plan_version=2,
-            verdict=NoveltyVerdict.NOVEL,
-            closest_prior_work_ids=(),
-        ),
-        NoveltyAssessment(
-            assessment_id="stale-plan",
-            hypothesis_id="h-1",
-            content_hash="sha256:content",
-            research_plan_version=1,
-            verdict=NoveltyVerdict.NOVEL,
-            closest_prior_work_ids=(),
-        ),
-        NoveltyAssessment(
-            assessment_id="not-novel",
-            hypothesis_id="h-1",
-            content_hash="sha256:content",
-            research_plan_version=2,
-            verdict=NoveltyVerdict.NOT_NOVEL,
-            closest_prior_work_ids=("paper-1",),
-        ),
-        NoveltyAssessment(
-            assessment_id="insufficient",
-            hypothesis_id="h-1",
-            content_hash="sha256:content",
-            research_plan_version=2,
-            verdict=NoveltyVerdict.INSUFFICIENT_EVIDENCE,
-            closest_prior_work_ids=(),
-        ),
-    ],
-)
-def test_required_novelty_rejects_inapplicable_or_nonqualifying_assessment(
-    assessment: NoveltyAssessment,
+# Mutation caught: committing against a sequence newer than the evidence snapshot.
+def test_admission_sequence_race_fails_with_normal_concurrency_error(
+    tmp_path, monkeypatch
 ) -> None:
-    decision = evaluate_admission(
-        hypothesis_id="h-1",
-        content_hash="sha256:content",
-        research_plan_version=2,
-        safety_passed=True,
-        required_stages={"initial_review"},
-        completed_stages={"initial_review"},
-        novelty_required=True,
-        novelty_assessment=assessment,
-        proximity_complete=True,
-        duplicate=False,
+    database_url = f"sqlite:///{tmp_path / 'admission-race.db'}"
+    uow = _admission_uow(tmp_path, filename="admission-race.db")
+    competing = SqliteUnitOfWork(database_url)
+    original_load = uow.load
+    load_count = 0
+
+    def load_then_advance(run_id: str, after_sequence: int = 0):
+        nonlocal load_count
+        load_count += 1
+        events = original_load(run_id, after_sequence)
+        competing.commit_domain_batch(
+            run_id=run_id,
+            expected_sequence=6,
+            events=(
+                NewEvent(
+                    event_type="HypothesisContentCreated",
+                    schema_version=2,
+                    payload={
+                        "hypothesis_id": "h-1",
+                        "content_id": "content-2",
+                        "content_hash": "sha256:" + "c" * 64,
+                        "research_plan_version": 1,
+                        "generation_strategy": "revision",
+                    },
+                ),
+            ),
+            idempotency_key="competing-revision",
+        )
+        return events
+
+    monkeypatch.setattr(uow, "load", load_then_advance)
+    supervisor = Supervisor(uow=uow, review_policy=ReviewPolicy(profile_id="minimal"))
+
+    with pytest.raises(ConcurrencyConflict, match="expected 6, got 7"):
+        supervisor.admit_hypothesis(
+            run_id="run-1",
+            hypothesis_id="h-1",
+            expected_sequence=6,
+            idempotency_key="admit-racing-h-1",
+        )
+
+    assert load_count == 1
+    assert not any(
+        event.event_type == "HypothesisTournamentReady" for event in original_load("run-1")
     )
-
-    assert not decision.admitted
-    assert decision.missing_requirements == ("novelty_assessment",)
-
-
-# Mutation caught: rejecting the policy-qualified partially_novel verdict.
-def test_required_novelty_accepts_matching_partially_novel_assessment() -> None:
-    assessment = NoveltyAssessment(
-        assessment_id="novelty-1",
-        hypothesis_id="h-1",
-        content_hash="sha256:content",
-        research_plan_version=2,
-        verdict=NoveltyVerdict.PARTIALLY_NOVEL,
-        closest_prior_work_ids=("paper-1",),
-    )
-
-    decision = evaluate_admission(
-        hypothesis_id="h-1",
-        content_hash="sha256:content",
-        research_plan_version=2,
-        safety_passed=True,
-        required_stages={"initial_review"},
-        completed_stages={"initial_review"},
-        novelty_required=True,
-        novelty_assessment=assessment,
-        proximity_complete=True,
-        duplicate=False,
-    )
-
-    assert decision.admitted
 
 
 # Mutation caught: inserting a task without atomic, full Supervisor creator provenance.

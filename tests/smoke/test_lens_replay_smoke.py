@@ -26,12 +26,7 @@ from co_scientist.agents.executor import SkillExecutor
 from co_scientist.agents.result import AgentExecutionContext, AgentResult
 from co_scientist.domain.convergence import ConvergenceSnapshot
 from co_scientist.domain.hypothesis import HypothesisContent
-from co_scientist.domain.review import (
-    NoveltyAssessment,
-    ReviewPolicy,
-    ReviewStage,
-    required_review_stages,
-)
+from co_scientist.domain.review import NoveltyAssessment, ReviewPolicy
 from co_scientist.domain.states import TaskState
 from co_scientist.domain.task import NewTask
 from co_scientist.domain.tournament import TournamentEpoch
@@ -222,7 +217,7 @@ class LensReplayHarness:
             ),
             judge_profile_hash="sha256:replay-judge-v1",
             rating_policy_version="elo-32-v1",
-            admission_policy_version="core-preview-v1",
+            admission_policy_version=profile["admission_policy_version"],
             anchor_set_id="lens-anchors-v1",
         )
         opened = uow.commit_domain_batch(
@@ -315,7 +310,6 @@ class LensReplayHarness:
             },
         )
 
-        assessments: dict[str, NoveltyAssessment] = {}
         for hypothesis_id, content in contents.items():
             await self._run_skill(
                 supervisor,
@@ -346,7 +340,6 @@ class LensReplayHarness:
                 closest_prior_work_ids=("pubmed:1001", "pubmed:1002"),
                 evidence_ids=("pubmed:1001",),
             )
-            assessments[hypothesis_id] = assessment
             await self._run_skill(
                 supervisor,
                 runner,
@@ -396,20 +389,12 @@ class LensReplayHarness:
             },
         )
 
-        completed_stages = {ReviewStage.INITIAL, ReviewStage.FULL}
-        for hypothesis_id, content in contents.items():
+        for hypothesis_id in contents:
             admission = supervisor.admit_hypothesis(
                 run_id=run_id,
-                expected_sequence=self._expected_sequence,
                 hypothesis_id=hypothesis_id,
-                content_hash=content.content_hash,
-                safety_passed=True,
-                required_stages=required_review_stages(supervisor.review_policy),
-                completed_stages=completed_stages,
-                novelty_required=profile["literature_novelty_required"],
-                novelty_assessment=assessments[hypothesis_id],
-                proximity_complete=True,
-                duplicate=False,
+                expected_sequence=self._expected_sequence,
+                idempotency_key=f"admit:epoch-1:{hypothesis_id}",
             )
             assert admission.commit is not None
             self._expected_sequence = admission.commit.last_sequence

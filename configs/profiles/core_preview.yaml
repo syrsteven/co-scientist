@@ -1,4 +1,19 @@
 profile_id: core_preview
+admission_policy_id: core-preview-admission
+admission_policy_version: admission-v1
+admission_policies:
+  admission-v1:
+    version: admission-v1
+    review_policy:
+      profile_id: core_preview
+      required_before_admission: [initial_review, full_review]
+      trigger_rules:
+        deep_verification: [critical_assumption_low_confidence]
+        observation_review: [scientist_request]
+        simulation_review: [high_rank_low_testability]
+        recurrent_review: [needs_tiebreaker]
+    literature_novelty_required: true
+    duplicate_likelihood_threshold: 0.5
 review_policy:
   required_before_admission: [initial_review, full_review]
   trigger_rules:

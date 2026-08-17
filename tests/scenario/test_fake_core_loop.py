@@ -15,10 +15,10 @@ from co_scientist.adapters.llm.replay import ReplayLLMProvider, ReplayMiss
 from co_scientist.adapters.persistence.sqlite import SqliteUnitOfWork
 from co_scientist.agents.executor import SkillExecutor
 from co_scientist.agents.result import AgentExecutionContext, AgentResult
+from co_scientist.domain.admission import AdmissionPolicy
 from co_scientist.domain.review import (
     ReviewPolicy,
     ReviewStage,
-    required_review_stages,
 )
 from co_scientist.domain.states import RunState, TaskState
 from co_scientist.domain.task import NewTask
@@ -943,76 +943,16 @@ class _CoreHarness:
     @staticmethod
     def _admit_ranking_participants(
         *,
-        uow: SqliteUnitOfWork,
         supervisor: Supervisor,
         payload: dict,
-        policy: dict,
         expected_sequence: int,
     ) -> int:
-        events = uow.load("run-1")
-        threshold = policy["duplicate_likelihood_threshold"]
         for hypothesis_id in (payload["left_id"], payload["right_id"]):
-            content_events = [
-                event
-                for event in events
-                if event.event_type == "HypothesisContentCreated"
-                and event.payload.get("hypothesis_id") == hypothesis_id
-            ]
-            if len(content_events) != 1:
-                raise ValueError(
-                    f"exactly one committed content event is required for {hypothesis_id}"
-                )
-            content_hash = content_events[0].payload.get("content_hash")
-            if not isinstance(content_hash, str) or not content_hash:
-                raise ValueError(f"committed content_hash is required for {hypothesis_id}")
-            reviews = [
-                event
-                for event in events
-                if event.event_type == "ReviewCompleted"
-                and event.payload.get("hypothesis_id") == hypothesis_id
-            ]
-            completed_stages = {event.payload["stage"] for event in reviews}
-            safety_verdicts = [
-                event.payload["safety_passed"]
-                for event in reviews
-                if event.payload.get("stage") == ReviewStage.INITIAL.value
-                and "safety_passed" in event.payload
-            ]
-            if len(safety_verdicts) != 1 or not isinstance(safety_verdicts[0], bool):
-                raise ValueError(
-                    f"committed Reflection safety_passed verdict is required for {hypothesis_id}"
-                )
-            proximity = [
-                event
-                for event in events
-                if event.event_type == "ProximityAssessed"
-                and hypothesis_id
-                in {event.payload.get("left_id"), event.payload.get("right_id")}
-            ]
-            if len(proximity) != 1:
-                raise ValueError(
-                    f"exactly one committed Proximity result is required for {hypothesis_id}"
-                )
-            duplicate_likelihood = proximity[0].payload.get("duplicate_likelihood")
-            if (
-                isinstance(duplicate_likelihood, bool)
-                or not isinstance(duplicate_likelihood, int | float)
-            ):
-                raise TypeError(
-                    f"committed Proximity duplicate_likelihood must be numeric for {hypothesis_id}"
-                )
             admission = supervisor.admit_hypothesis(
                 run_id="run-1",
-                expected_sequence=expected_sequence,
                 hypothesis_id=hypothesis_id,
-                content_hash=content_hash,
-                safety_passed=safety_verdicts[0],
-                required_stages=required_review_stages(supervisor.review_policy),
-                completed_stages=completed_stages,
-                novelty_required=policy["novelty_required"],
-                novelty_assessment=None,
-                proximity_complete=True,
-                duplicate=duplicate_likelihood >= threshold,
+                expected_sequence=expected_sequence,
+                idempotency_key=f"admit:epoch-1:{hypothesis_id}",
             )
             if admission.entry is None or admission.commit is None:
                 raise AssertionError(
@@ -1033,7 +973,26 @@ class _CoreHarness:
 
         uow = SqliteUnitOfWork(f"sqlite:///{self.root / 'core-loop.db'}")
         uow.create_schema()
-        uow.create_run("run-1", manifest={"trace_version": 1})
+        admission_policy = AdmissionPolicy(
+            version="admission-v1",
+            review_policy=ReviewPolicy(
+                profile_id="core-trace",
+                required_before_admission=(ReviewStage.FULL,),
+            ),
+            literature_novelty_required=trace["policy"]["novelty_required"],
+            duplicate_likelihood_threshold=trace["policy"][
+                "duplicate_likelihood_threshold"
+            ],
+        )
+        uow.create_run(
+            "run-1",
+            manifest={
+                "trace_version": 1,
+                "admission_policies": {
+                    admission_policy.version: admission_policy.model_dump(mode="json")
+                },
+            },
+        )
         state_history = [uow.run_state("run-1")]
         epoch = TournamentEpoch(
             epoch_id="epoch-1",
@@ -1085,10 +1044,8 @@ class _CoreHarness:
         for index, (response, payload) in enumerate(zip(responses, payloads, strict=True)):
             if response["skill"] == "ranking":
                 expected_sequence = self._admit_ranking_participants(
-                    uow=uow,
                     supervisor=supervisor,
                     payload=payload,
-                    policy=trace["policy"],
                     expected_sequence=expected_sequence,
                 )
             task_id = self._task_id(index, response)
@@ -1158,58 +1115,11 @@ class _CoreHarness:
             raise ValueError("committed Evolution child identity is incomplete")
         if not isinstance(child_id, str) or not isinstance(child_content_hash, str):
             raise TypeError("committed Evolution child identity must be strings")
-        child_reviews = [
-            event
-            for event in events
-            if event.event_type == "ReviewCompleted"
-            and event.payload.get("hypothesis_id") == child_id
-        ]
-        completed_stages = {
-            event.payload["stage"]
-            for event in child_reviews
-        }
-        safety_verdicts = [
-            event.payload["safety_passed"]
-            for event in child_reviews
-            if "safety_passed" in event.payload
-        ]
-        if len(safety_verdicts) != 1 or not isinstance(safety_verdicts[0], bool):
-            raise ValueError("committed Reflection safety_passed verdict is required")
-        child_proximity = [
-            event
-            for event in events
-            if event.event_type == "ProximityAssessed"
-            and child_id
-            in {event.payload.get("left_id"), event.payload.get("right_id")}
-        ]
-        if len(child_proximity) != 1:
-            raise ValueError("exactly one committed child Proximity result is required")
-        duplicate_likelihood = child_proximity[0].payload.get("duplicate_likelihood")
-        threshold = trace["policy"].get("duplicate_likelihood_threshold")
-        if duplicate_likelihood is None:
-            raise ValueError("committed Proximity duplicate_likelihood is required")
-        if (
-            isinstance(duplicate_likelihood, bool)
-            or not isinstance(duplicate_likelihood, int | float)
-        ):
-            raise TypeError("committed Proximity duplicate_likelihood must be numeric")
-        if threshold is None:
-            raise ValueError("duplicate_likelihood_threshold policy is required")
-        if isinstance(threshold, bool) or not isinstance(threshold, int | float):
-            raise TypeError("duplicate_likelihood_threshold policy must be numeric")
-        duplicate = duplicate_likelihood >= threshold
         admission = supervisor.admit_hypothesis(
             run_id="run-1",
-            expected_sequence=expected_sequence,
             hypothesis_id=child_id,
-            content_hash=child_content_hash,
-            safety_passed=safety_verdicts[0],
-            required_stages=required_review_stages(supervisor.review_policy),
-            completed_stages=completed_stages,
-            novelty_required=trace["policy"]["novelty_required"],
-            novelty_assessment=None,
-            proximity_complete=True,
-            duplicate=duplicate,
+            expected_sequence=expected_sequence,
+            idempotency_key=f"admit:epoch-1:{child_id}",
         )
         if admission.entry is None or admission.commit is None:
             raise AssertionError(f"child admission failed: {admission.decision}")

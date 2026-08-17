@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 from collections.abc import Mapping, Sequence
-from collections.abc import Set as AbstractSet
 from decimal import Decimal
 from typing import Any, Literal
 
@@ -20,6 +19,10 @@ from co_scientist.agents.payloads import (
     validate_output_payload,
 )
 from co_scientist.agents.result import AgentExecutionContext, AgentResult
+from co_scientist.domain.admission import (
+    admission_policy_from_manifest,
+    reduce_admission_evidence,
+)
 from co_scientist.domain.budget import BudgetLedger, CostEntry
 from co_scientist.domain.convergence import ConvergenceSnapshot, StopDecision, evaluate_stop
 from co_scientist.domain.hypothesis import (
@@ -28,8 +31,6 @@ from co_scientist.domain.hypothesis import (
 )
 from co_scientist.domain.research_plan import ResearchPlan
 from co_scientist.domain.review import (
-    NoveltyAssessment,
-    NoveltyVerdict,
     ReviewPolicy,
     ReviewStage,
 )
@@ -46,7 +47,7 @@ from co_scientist.domain.tournament import (
     get_rating_policy,
     validate_match_contract,
 )
-from co_scientist.events.models import NewEvent
+from co_scientist.events.models import DomainEvent, NewEvent
 from co_scientist.events.reducers import replay_tournament
 from co_scientist.skills.loader import resolve_core_skill_contract
 from co_scientist.supervisor.followups import FollowupIntent, derive_followup_intents
@@ -59,6 +60,7 @@ class AdmissionDecision(BaseModel):
 
     admitted: bool
     missing_requirements: tuple[str, ...] = ()
+    conflicting_evidence: tuple[str, ...] = ()
 
 
 class AdmissionOutcome(BaseModel):
@@ -67,50 +69,6 @@ class AdmissionOutcome(BaseModel):
     decision: AdmissionDecision
     entry: TournamentEntry | None = None
     commit: CommitResult | None = None
-
-
-def evaluate_admission(
-    *,
-    hypothesis_id: str | None = None,
-    content_hash: str | None = None,
-    research_plan_version: int | None = None,
-    safety_passed: bool,
-    required_stages: AbstractSet[str | ReviewStage],
-    completed_stages: AbstractSet[str | ReviewStage],
-    novelty_required: bool,
-    novelty_assessment: NoveltyAssessment | None,
-    proximity_complete: bool,
-    duplicate: bool,
-) -> AdmissionDecision:
-    """Evaluate review, novelty, and candidate-proximity gates independently."""
-
-    required = {ReviewStage(stage).value for stage in required_stages}
-    required.add(ReviewStage.INITIAL.value)
-    completed = {ReviewStage(stage).value for stage in completed_stages}
-
-    missing: list[str] = []
-    if not safety_passed:
-        missing.append("safety")
-    missing.extend(sorted(required - completed))
-    if novelty_required:
-        novelty_qualifies = (
-            novelty_assessment is not None
-            and hypothesis_id is not None
-            and content_hash is not None
-            and research_plan_version is not None
-            and novelty_assessment.hypothesis_id == hypothesis_id
-            and novelty_assessment.content_hash == content_hash
-            and novelty_assessment.research_plan_version == research_plan_version
-            and novelty_assessment.verdict
-            in {NoveltyVerdict.NOVEL, NoveltyVerdict.PARTIALLY_NOVEL}
-        )
-        if not novelty_qualifies:
-            missing.append("novelty_assessment")
-    if not proximity_complete:
-        missing.append("proximity")
-    if duplicate:
-        missing.append("candidate_duplicate")
-    return AdmissionDecision(admitted=not missing, missing_requirements=tuple(missing))
 
 
 def plan_revision_action(
@@ -195,9 +153,15 @@ class Supervisor:
         self,
         run_id: str,
     ) -> tuple[TournamentEpoch | None, tuple[TournamentEpoch, ...]]:
+        return self._epoch_state_from_events(self.uow.load(run_id))
+
+    @staticmethod
+    def _epoch_state_from_events(
+        events: Sequence[DomainEvent],
+    ) -> tuple[TournamentEpoch | None, tuple[TournamentEpoch, ...]]:
         active: TournamentEpoch | None = None
         history: list[TournamentEpoch] = []
-        for event in self.uow.load(run_id):
+        for event in events:
             if event.event_type == "TournamentEpochOpened":
                 active = TournamentEpoch.model_validate(event.payload)
                 history.append(active)
@@ -834,38 +798,51 @@ class Supervisor:
         self,
         *,
         run_id: str,
-        expected_sequence: int,
         hypothesis_id: str,
-        content_hash: str,
-        safety_passed: bool,
-        required_stages: AbstractSet[str | ReviewStage],
-        completed_stages: AbstractSet[str | ReviewStage],
-        novelty_required: bool,
-        novelty_assessment: NoveltyAssessment | None,
-        proximity_complete: bool,
-        duplicate: bool,
+        expected_sequence: int,
+        idempotency_key: str,
     ) -> AdmissionOutcome:
-        """Admit a candidate and assign its epoch-local initial rating atomically."""
+        """Reduce durable evidence and atomically assign an epoch-local entry."""
 
         if RunState(self.uow.run_state(run_id)) is not RunState.RUNNING:
             raise ValueError("admission requires a running Run")
-        epoch = self._active_epoch(run_id)
-        decision = evaluate_admission(
+        events = self.uow.load(run_id)
+        epoch, _ = self._epoch_state_from_events(events)
+        if epoch is None:
+            return AdmissionOutcome(
+                decision=AdmissionDecision(
+                    admitted=False,
+                    missing_requirements=("active_epoch",),
+                )
+            )
+        admission_policy = admission_policy_from_manifest(
+            self.uow.run_manifest(run_id),
+            version=epoch.admission_policy_version,
+        )
+        snapshot = reduce_admission_evidence(
+            run_id=run_id,
             hypothesis_id=hypothesis_id,
-            content_hash=content_hash,
-            research_plan_version=epoch.research_plan_version,
-            safety_passed=safety_passed,
-            required_stages=required_stages,
-            completed_stages=completed_stages,
-            novelty_required=novelty_required,
-            novelty_assessment=novelty_assessment,
-            proximity_complete=proximity_complete,
-            duplicate=duplicate,
+            events=events,
+            policy=admission_policy,
+        )
+        decision = AdmissionDecision(
+            admitted=not snapshot.missing_requirements
+            and not snapshot.conflicting_evidence,
+            missing_requirements=snapshot.missing_requirements,
+            conflicting_evidence=snapshot.conflicting_evidence,
         )
         if not decision.admitted:
             return AdmissionOutcome(decision=decision)
 
-        entry = admit_entry(epoch, hypothesis_id, content_hash)
+        if snapshot.content_hash is None or snapshot.rating_policy_version is None:
+            raise AssertionError("admitted evidence snapshot is incomplete")
+        rating_policy = get_rating_policy(snapshot.rating_policy_version)
+        entry = admit_entry(
+            epoch,
+            hypothesis_id,
+            snapshot.content_hash,
+            initial_rating=rating_policy.initial_rating,
+        )
         entry_payload = entry.model_dump(mode="json")
         commit = self.uow.commit_domain_batch(
             run_id=run_id,
@@ -873,11 +850,8 @@ class Supervisor:
             events=(
                 NewEvent(
                     event_type="HypothesisTournamentReady",
-                    payload={
-                        "hypothesis_id": hypothesis_id,
-                        "content_hash": content_hash,
-                        "epoch_id": epoch.epoch_id,
-                    },
+                    schema_version=2,
+                    payload=snapshot.model_dump(mode="json"),
                 ),
                 NewEvent(event_type="TournamentEntryCreated", payload=entry_payload),
                 NewEvent(
@@ -886,10 +860,11 @@ class Supervisor:
                         "epoch_id": epoch.epoch_id,
                         "hypothesis_id": hypothesis_id,
                         "rating": entry.rating,
+                        "rating_policy_version": rating_policy.version,
                     },
                 ),
             ),
-            idempotency_key=f"admit:{epoch.epoch_id}:{hypothesis_id}:{content_hash}",
+            idempotency_key=idempotency_key,
         )
         return AdmissionOutcome(decision=decision, entry=entry, commit=commit)
 
