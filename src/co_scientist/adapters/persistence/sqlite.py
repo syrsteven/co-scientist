@@ -653,8 +653,14 @@ class SqliteUnitOfWork:
             session.add_all([self._task_row(task) for task in tasks])
 
     @staticmethod
-    def _aware(value: datetime) -> datetime:
-        return value if value.tzinfo is not None else value.replace(tzinfo=UTC)
+    def _runtime_utc(value: datetime) -> datetime:
+        if value.tzinfo is None or value.utcoffset() is None:
+            raise ValueError("now must be timezone-aware")
+        return value.astimezone(UTC)
+
+    @staticmethod
+    def _stored_utc(value: datetime) -> datetime:
+        return value.replace(tzinfo=UTC) if value.tzinfo is None else value.astimezone(UTC)
 
     @staticmethod
     def _task_budget_estimate(row: TaskRow) -> BudgetEstimate:
@@ -673,6 +679,17 @@ class SqliteUnitOfWork:
             hypotheses=row.estimated_hypotheses,
             matches=row.estimated_matches,
         )
+
+    @classmethod
+    def _assert_exact_reservation(
+        cls, task: TaskRow, reservation: BudgetReservationRow
+    ) -> None:
+        if (
+            reservation.idempotency_key != task.idempotency_key
+            or reservation.state != "reserved"
+            or cls._reservation_estimate(reservation) != cls._task_budget_estimate(task)
+        ):
+            raise ValueError("task reservation does not exactly replay")
 
     @staticmethod
     def _budget_usage(session: Session, run_id: str) -> BudgetUsage:
@@ -782,8 +799,8 @@ class SqliteUnitOfWork:
             intent_type=row.intent_type,
             payload=payload,
             reservation_id=reservation.reservation_id,
-            heartbeat_at=SqliteUnitOfWork._aware(row.heartbeat_at),
-            lease_expires_at=SqliteUnitOfWork._aware(row.lease_expires_at),
+            heartbeat_at=SqliteUnitOfWork._stored_utc(row.heartbeat_at),
+            lease_expires_at=SqliteUnitOfWork._stored_utc(row.lease_expires_at),
             max_attempts=row.max_attempts,
         )
 
@@ -809,6 +826,7 @@ class SqliteUnitOfWork:
     ) -> ClaimOutcome:
         if lease_duration <= timedelta(0):
             raise ValueError("lease_duration must be positive")
+        now = self._runtime_utc(now)
         with self.session_factory.begin() as session:
             self._begin_immediate(session)
             run = session.get(RunRow, run_id)
@@ -848,6 +866,7 @@ class SqliteUnitOfWork:
                 )
                 if reservation is None:
                     raise ValueError("leased task has no budget reservation")
+                self._assert_exact_reservation(replay, reservation)
                 return ClaimOutcome(
                     status="claimed", task=self._claimed_task(replay, reservation)
                 )
@@ -888,12 +907,7 @@ class SqliteUnitOfWork:
                 )
             )
             if existing_reservation is not None:
-                if (
-                    existing_reservation.idempotency_key != task.idempotency_key
-                    or existing_reservation.state != "reserved"
-                    or self._reservation_estimate(existing_reservation) != estimate
-                ):
-                    raise ValueError("task reservation does not exactly replay")
+                self._assert_exact_reservation(task, existing_reservation)
                 reservation = existing_reservation
             else:
                 policy = BudgetPolicy.model_validate(manifest.get("budget", {}))
@@ -991,10 +1005,14 @@ class SqliteUnitOfWork:
     ) -> ClaimedTask:
         if lease_duration <= timedelta(0):
             raise ValueError("lease_duration must be positive")
+        now = self._runtime_utc(now)
         with self.session_factory.begin() as session:
             self._begin_immediate(session)
             row = self._fenced_task(session, fence)
-            if row.lease_expires_at is None or self._aware(row.lease_expires_at) < now:
+            if (
+                row.lease_expires_at is None
+                or self._stored_utc(row.lease_expires_at) <= now
+            ):
                 raise ValueError("stale task lease fence")
             row.heartbeat_at = now
             row.lease_expires_at = now + lease_duration
@@ -1044,6 +1062,7 @@ class SqliteUnitOfWork:
     ) -> tuple[LeaseRecovery, ...]:
         if limit <= 0:
             raise ValueError("recovery limit must be positive")
+        now = self._runtime_utc(now)
         with self.session_factory.begin() as session:
             self._begin_immediate(session)
             run = session.get(RunRow, run_id)

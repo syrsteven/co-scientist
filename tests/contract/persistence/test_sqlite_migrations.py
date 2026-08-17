@@ -155,8 +155,54 @@ def test_head_schema_contains_worker_fences_budget_checks_and_indexes(tmp_path) 
         "ix_budget_reservations_run_state",
         "ix_budget_reservations_task",
     }
+    assert {
+        constraint["name"]
+        for constraint in inspector.get_unique_constraints("budget_reservations")
+    } == {
+        "uq_budget_reservations_run_id_idempotency_key",
+        "uq_budget_reservations_run_id_task_id",
+        "uq_budget_reservations_run_id_external_call_id",
+    }
+    assert {
+        constraint["name"]
+        for constraint in inspector.get_check_constraints("budget_reservations")
+    } == {
+        "ck_budget_reservations_state",
+        "ck_budget_reservations_estimates_non_negative",
+        "ck_budget_reservations_actuals_non_negative",
+        "ck_budget_reservations_version_positive",
+        "ck_budget_reservations_state_consistency",
+    }
+    assert {
+        constraint["name"]
+        for constraint in inspector.get_unique_constraints("cost_entries")
+    } == {"uq_cost_entries_run_id_external_call_id"}
     assert len(inspector.get_foreign_keys("budget_reservations")) == 2
     engine.dispose()
+
+
+# Mutation caught: downgrade destroys pre-0003 schema or re-upgrade drifts from original head.
+def test_worker_migration_round_trips_0003_to_0002_to_0003(tmp_path) -> None:
+    database_url = f"sqlite:///{tmp_path / 'round-trip.db'}"
+    config = _config(database_url)
+    command.upgrade(config, "head")
+    head_signature = _schema_signature(database_url)
+
+    command.downgrade(config, "0002_external_call_recovery")
+    assert database_revision(database_url) == "0002_external_call_recovery"
+    engine = create_engine(database_url)
+    inspector = inspect(engine)
+    assert "budget_reservations" not in inspector.get_table_names()
+    assert {column["name"] for column in inspector.get_columns("tasks")} & {
+        "lease_token",
+        "heartbeat_at",
+        "max_attempts",
+    } == set()
+    engine.dispose()
+
+    command.upgrade(config, "head")
+    assert database_at_head(database_url)
+    assert _schema_signature(database_url) == head_signature
 
 
 # Mutation caught: silently treating a pre-0003 Run as executable after schema upgrade.

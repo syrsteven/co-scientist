@@ -1,5 +1,5 @@
 from concurrent.futures import ThreadPoolExecutor
-from datetime import UTC, datetime, timedelta
+from datetime import UTC, datetime, timedelta, timezone
 
 import pytest
 from sqlalchemy import text
@@ -10,6 +10,7 @@ from co_scientist.domain.task import NewTask, TaskLeaseFence
 from co_scientist.events.models import NewEvent
 
 NOW = datetime(2026, 8, 17, 10, 0, tzinfo=UTC)
+EAST_8 = timezone(timedelta(hours=8))
 
 
 def _store(database_url: str) -> SqliteUnitOfWork:
@@ -87,6 +88,122 @@ def test_two_connections_only_one_worker_claims_the_same_task(tmp_path) -> None:
     assert row.attempt == 1
     assert row.heartbeat_at is not None
     assert row.lease_expires_at is not None
+
+
+# Mutation caught: preserving a non-UTC wall clock before SQLite discards its offset.
+def test_claim_normalizes_offset_aware_now_to_utc_in_rows_results_and_events(tmp_path) -> None:
+    _, store = _create_running_store(tmp_path)
+    store.enqueue_tasks([_task("task-1")])
+    local_now = datetime(2026, 8, 17, 18, 0, tzinfo=EAST_8)
+
+    claimed = store.claim_next_task(
+        run_id="r-1",
+        worker_id="worker-1",
+        lease_token="token-1",
+        now=local_now,
+        lease_duration=timedelta(minutes=5),
+    ).task
+
+    assert claimed is not None
+    assert claimed.heartbeat_at == NOW
+    assert claimed.lease_expires_at == NOW + timedelta(minutes=5)
+    with store.engine.connect() as connection:
+        persisted = connection.execute(
+            text(
+                "SELECT heartbeat_at, lease_expires_at FROM tasks "
+                "WHERE task_id = 'task-1'"
+            )
+        ).one()
+    assert str(persisted.heartbeat_at).startswith("2026-08-17 10:00:00")
+    assert str(persisted.lease_expires_at).startswith("2026-08-17 10:05:00")
+    event = next(
+        item for item in store.load("r-1") if item.event_type == "TaskLeaseClaimed"
+    )
+    assert event.payload["heartbeat_at"] == "2026-08-17T10:00:00+00:00"
+    assert event.payload["lease_expires_at"] == "2026-08-17T10:05:00+00:00"
+
+
+@pytest.mark.parametrize("operation", ["claim", "heartbeat", "recovery"])
+# Mutation caught: silently interpreting an ambiguous naive worker clock as UTC.
+def test_runtime_lease_operations_reject_naive_now(tmp_path, operation: str) -> None:
+    _, store = _create_running_store(tmp_path)
+    store.enqueue_tasks([_task("task-1")])
+    naive_now = datetime(2026, 8, 17, 10, 0)  # noqa: DTZ001 - intentional invalid input
+    fence = None
+    if operation != "claim":
+        fence = store.claim_next_task(
+            run_id="r-1",
+            worker_id="worker-1",
+            lease_token="token-1",
+            now=NOW,
+            lease_duration=timedelta(minutes=5),
+        ).task
+        assert fence is not None
+
+    with pytest.raises(ValueError, match="now must be timezone-aware"):
+        if operation == "claim":
+            store.claim_next_task(
+                run_id="r-1",
+                worker_id="worker-1",
+                lease_token="token-1",
+                now=naive_now,
+                lease_duration=timedelta(minutes=5),
+            )
+        elif operation == "heartbeat":
+            store.heartbeat_task(
+                fence=fence,
+                now=naive_now,
+                lease_duration=timedelta(minutes=5),
+            )
+        else:
+            store.recover_expired_leases(run_id="r-1", now=naive_now)
+
+
+# Mutation caught: heartbeat renews at equality while recovery expires at equality.
+def test_heartbeat_rejects_lease_at_exact_expiry_boundary(tmp_path) -> None:
+    _, store = _create_running_store(tmp_path)
+    store.enqueue_tasks([_task("task-1")])
+    claimed = store.claim_next_task(
+        run_id="r-1",
+        worker_id="worker-1",
+        lease_token="token-1",
+        now=NOW,
+        lease_duration=timedelta(minutes=5),
+    ).task
+    assert claimed is not None
+
+    with pytest.raises(ValueError, match="stale task lease fence"):
+        store.heartbeat_task(
+            fence=claimed,
+            now=NOW + timedelta(minutes=5),
+            lease_duration=timedelta(minutes=5),
+        )
+
+    recovered = store.recover_expired_leases(
+        run_id="r-1", now=NOW + timedelta(minutes=5)
+    )
+    assert recovered[0].action == "requeued"
+
+
+# Mutation caught: lease expiry comparison uses different wall-clock offsets as different instants.
+def test_recovery_compares_equivalent_offset_aware_instants_in_utc(tmp_path) -> None:
+    _, store = _create_running_store(tmp_path)
+    store.enqueue_tasks([_task("task-1")])
+    store.claim_next_task(
+        run_id="r-1",
+        worker_id="worker-1",
+        lease_token="token-1",
+        now=datetime(2026, 8, 17, 18, 0, tzinfo=EAST_8),
+        lease_duration=timedelta(minutes=5),
+    )
+
+    assert store.recover_expired_leases(
+        run_id="r-1", now=NOW + timedelta(minutes=4, seconds=59)
+    ) == ()
+    recovered = store.recover_expired_leases(
+        run_id="r-1", now=NOW + timedelta(minutes=5)
+    )
+    assert recovered[0].action == "requeued"
 
 
 # Mutation caught: task selection depends on insertion/connection timing instead of stable ID order.
