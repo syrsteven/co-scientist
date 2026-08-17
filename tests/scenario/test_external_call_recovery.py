@@ -9,6 +9,7 @@ from co_scientist.adapters.artifacts.filesystem import FilesystemArtifactStore
 from co_scientist.adapters.persistence.sqlite import SqliteUnitOfWork
 from co_scientist.agents.result import AgentExecutionContext
 from co_scientist.domain.task import NewTask
+from co_scientist.events.models import NewEvent
 from co_scientist.ports.external_provider import RawExternalResponse
 from co_scientist.runtime.external_calls import ExternalCallRunner, request_fingerprint
 
@@ -140,7 +141,12 @@ def _context() -> AgentExecutionContext:
 def _runtime(tmp_path, *, uow_type=SqliteUnitOfWork, artifacts=None):
     uow = uow_type(f"sqlite:///{tmp_path / 'core.db'}")
     uow.create_schema()
-    uow.create_run("r-1", manifest={})
+    uow.create_started_run(
+        "r-1",
+        manifest={},
+        event=NewEvent(event_type="RunStarted", payload={}),
+        idempotency_key="start:r-1:0",
+    )
     uow.enqueue_tasks(
         [
             NewTask(
@@ -649,7 +655,12 @@ async def test_manifest_installed_before_persist_error_continues_without_termina
 ) -> None:
     uow = SqliteUnitOfWork(f"sqlite:///{tmp_path / 'core.db'}")
     uow.create_schema()
-    uow.create_run("r-1", manifest={})
+    uow.create_started_run(
+        "r-1",
+        manifest={},
+        event=NewEvent(event_type="RunStarted", payload={}),
+        idempotency_key="start:r-1:0",
+    )
     uow.enqueue_tasks(
         [
             NewTask(

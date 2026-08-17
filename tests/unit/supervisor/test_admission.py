@@ -101,7 +101,12 @@ def _ranking_result(
 def _ranking_uow(tmp_path) -> SqliteUnitOfWork:
     uow = SqliteUnitOfWork(f"sqlite:///{tmp_path / 'ranking.db'}")
     uow.create_schema()
-    uow.create_run("run-1", manifest={})
+    uow.create_started_run(
+        "run-1",
+        manifest={},
+        event=NewEvent(event_type="RunStarted", payload={}),
+        idempotency_key="start:run-1:0",
+    )
     epoch = TournamentEpoch(
         epoch_id="epoch-1",
         research_plan_version=1,
@@ -114,7 +119,7 @@ def _ranking_uow(tmp_path) -> SqliteUnitOfWork:
     )
     uow.commit_domain_batch(
         run_id="run-1",
-        expected_sequence=0,
+        expected_sequence=1,
         events=(
             NewEvent(event_type="TournamentEpochOpened", payload=epoch.model_dump()),
             NewEvent(
@@ -162,7 +167,7 @@ def test_conflicting_duplicate_match_id_cannot_reuse_persisted_ratings(tmp_path)
     )
     uow.commit_domain_batch(
         run_id="run-1",
-        expected_sequence=5,
+        expected_sequence=6,
         events=(
             NewEvent(
                 event_type="MatchEvaluated",
@@ -250,19 +255,20 @@ def _admission_uow(tmp_path, *, filename: str = "admission.db") -> SqliteUnitOfW
     uow = SqliteUnitOfWork(f"sqlite:///{tmp_path / filename}")
     uow.create_schema()
     policy = _admission_policy()
-    uow.create_run(
+    uow.create_started_run(
         "run-1",
         manifest={
             "admission_policies": {
                 policy.version: policy.model_dump(mode="json"),
             }
         },
+        event=NewEvent(event_type="RunStarted", payload={}),
+        idempotency_key="start:run-1:0",
     )
     uow.commit_domain_batch(
         run_id="run-1",
-        expected_sequence=0,
+        expected_sequence=1,
         events=(
-            NewEvent(event_type="RunStarted", payload={}),
             NewEvent(
                 event_type="TournamentEpochOpened",
                 payload={
@@ -330,7 +336,6 @@ def _admission_uow(tmp_path, *, filename: str = "admission.db") -> SqliteUnitOfW
                 },
             ),
         ),
-        target_run_state=RunState.RUNNING,
         idempotency_key="admission-evidence",
     )
     return uow
@@ -539,7 +544,12 @@ def test_admission_replay_validates_original_hypothesis_ownership(tmp_path) -> N
 def test_supervisor_enqueue_task_atomically_persists_full_provenance(tmp_path) -> None:
     uow = SqliteUnitOfWork(f"sqlite:///{tmp_path / 'enqueue.db'}")
     uow.create_schema()
-    uow.create_run("run-1", manifest={})
+    uow.create_started_run(
+        "run-1",
+        manifest={},
+        event=NewEvent(event_type="RunStarted", payload={}),
+        idempotency_key="start:run-1:0",
+    )
     supervisor = Supervisor(uow=uow, review_policy=ReviewPolicy(profile_id="minimal"))
     task = NewTask(
         task_id="generate-1",
@@ -549,7 +559,7 @@ def test_supervisor_enqueue_task_atomically_persists_full_provenance(tmp_path) -
         payload={"research_goal": "regeneration"},
     )
 
-    commit = supervisor.enqueue_task(task=task, expected_sequence=0)
+    commit = supervisor.enqueue_task(task=task, expected_sequence=1)
 
     assert [event.event_type for event in commit.events] == ["TaskEnqueued"]
     assert commit.events[0].payload == task.model_dump(mode="json")
@@ -561,7 +571,12 @@ def test_handle_result_atomically_applies_policy_owned_work_and_ignores_agent_ac
 ) -> None:
     uow = SqliteUnitOfWork(f"sqlite:///{tmp_path / 'supervisor.db'}")
     uow.create_schema()
-    uow.create_run("run-1", manifest={})
+    uow.create_started_run(
+        "run-1",
+        manifest={},
+        event=NewEvent(event_type="RunStarted", payload={}),
+        idempotency_key="start:run-1:0",
+    )
     uow.enqueue_tasks(
         [
             NewTask(
@@ -643,7 +658,7 @@ def test_handle_result_atomically_applies_policy_owned_work_and_ignores_agent_ac
         run_id="run-1",
         task_id="generate-1",
         result=result,
-        expected_sequence=0,
+        expected_sequence=1,
     )
 
     assert [event.event_type for event in commit.events] == [
@@ -674,7 +689,12 @@ def test_handle_result_atomically_applies_policy_owned_work_and_ignores_agent_ac
 def _submitted_generation_result(tmp_path, status: str):
     uow = SqliteUnitOfWork(f"sqlite:///{tmp_path / f'{status}.db'}")
     uow.create_schema()
-    uow.create_run("run-1", manifest={})
+    uow.create_started_run(
+        "run-1",
+        manifest={},
+        event=NewEvent(event_type="RunStarted", payload={}),
+        idempotency_key="start:run-1:0",
+    )
     uow.enqueue_tasks(
         [
             NewTask(
@@ -774,7 +794,7 @@ def test_handle_result_applies_each_status_with_explicit_atomic_semantics(
         run_id="run-1",
         task_id="generate-1",
         result=result,
-        expected_sequence=0,
+        expected_sequence=1,
     )
 
     expected_events = [expected_event, "TaskEnqueued"] if followup_exists else [expected_event]

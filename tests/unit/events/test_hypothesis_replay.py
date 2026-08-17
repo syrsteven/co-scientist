@@ -6,35 +6,58 @@ from co_scientist.events.reducers import replay_hypothesis
 
 
 def test_replay_rebuilds_coverage_without_mutating_content() -> None:
+    content_hash = "sha256:" + "a" * 64
     events = [
         DomainEvent(
             sequence=1,
             run_id="r-1",
             event_type="HypothesisContentCreated",
-            payload={"hypothesis_id": "h-1", "content_id": "c-1"},
+            schema_version=2,
+            payload={
+                "hypothesis_id": "h-1",
+                "content_id": "c-1",
+                "content_hash": content_hash,
+                "research_plan_version": 1,
+                "parent_content_ids": [],
+                "supersedes_content_id": None,
+            },
         ),
         DomainEvent(
             sequence=2,
             run_id="r-1",
             event_type="ReviewCompleted",
+            schema_version=2,
             payload={
                 "hypothesis_id": "h-1",
+                "content_hash": content_hash,
+                "research_plan_version": 1,
                 "stage": "initial_review",
                 "review_id": "rev-1",
+                "recommendation": "pass",
+                "safety_status": "passed",
+                "critical_flaws": [],
+                "evidence_ids": [],
             },
         ),
         DomainEvent(
             sequence=3,
             run_id="r-1",
             event_type="HypothesisTournamentReady",
-            payload={"hypothesis_id": "h-1"},
+            schema_version=2,
+            payload={
+                "hypothesis_id": "h-1",
+                "content_hash": content_hash,
+                "research_plan_version": 1,
+            },
         ),
     ]
 
     projection = replay_hypothesis("h-1", events)
 
-    assert projection.content_id == "c-1"
-    assert projection.review_coverage["initial_review"] == ("rev-1",)
+    assert projection.current_content_id == "c-1"
+    assert projection.review_coverage_by_content[content_hash]["initial_review"] == (
+        "rev-1",
+    )
     assert projection.lifecycle_state == "tournament_ready"
 
 

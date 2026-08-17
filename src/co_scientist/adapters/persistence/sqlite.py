@@ -29,11 +29,13 @@ from sqlalchemy.engine.cursor import CursorResult
 from sqlalchemy.orm import DeclarativeBase, Mapped, Session, mapped_column, sessionmaker
 
 from co_scientist.domain.budget import CostEntry
+from co_scientist.domain.run_mutations import RunMutationKind, validate_run_mutation
 from co_scientist.domain.states import ExternalCallState, RunState, TaskState
 from co_scientist.domain.task import NewTask, TaskMutation
 from co_scientist.domain.transitions import transition_external_call
 from co_scientist.domain.transitions import transition_run as validate_run_transition
 from co_scientist.domain.transitions import transition_task as validate_task_transition
+from co_scientist.events.contracts import EVENT_SCHEMA_VERSIONS
 from co_scientist.events.models import DomainEvent, NewEvent
 from co_scientist.ports.artifact_store import ArtifactRef
 from co_scientist.ports.event_store import ConcurrencyConflict
@@ -270,6 +272,22 @@ class SqliteUnitOfWork:
         if session.get(RunRow, run_id) is None:
             raise KeyError(f"unknown run: {run_id}")
 
+    @staticmethod
+    def _run_state_in_transaction(session: Session, run_id: str) -> RunState:
+        row = session.get(RunRow, run_id)
+        if row is None:
+            raise KeyError(f"unknown run: {run_id}")
+        return RunState(row.state)
+
+    @staticmethod
+    def _assert_supported_new_event_version(event: NewEvent) -> None:
+        supported = EVENT_SCHEMA_VERSIONS.get(event.event_type)
+        if supported is not None and event.schema_version not in supported:
+            raise ValueError(
+                "unsupported scientific event version: "
+                f"{event.event_type} v{event.schema_version}"
+            )
+
     def append(
         self,
         run_id: str,
@@ -280,6 +298,16 @@ class SqliteUnitOfWork:
         with self.session_factory.begin() as session:
             self._begin_immediate(session)
             self._assert_sequence(session, run_id, expected_sequence)
+            for event in events:
+                self._assert_supported_new_event_version(event)
+            if any(event.event_type in EVENT_SCHEMA_VERSIONS for event in events):
+                state = self._run_state_in_transaction(session, run_id)
+                for event in events:
+                    if event.event_type not in EVENT_SCHEMA_VERSIONS:
+                        continue
+                    validate_run_mutation(
+                        state, RunMutationKind.APPEND_SCIENTIFIC_EVENT
+                    )
             if events:
                 persisted = self._insert_events(session, run_id, expected_sequence, events)
                 self._set_run_sequence(session, run_id, persisted[-1].sequence)
@@ -368,16 +396,46 @@ class SqliteUnitOfWork:
 
         if event.event_type != "RunStarted":
             raise ValueError("started Run initialization requires RunStarted")
-        batch_fingerprint = self._batch_fingerprint(
-            events=(event,),
-            target_run_state=RunState.RUNNING,
-            task_mutations=(),
-            followup_tasks=(),
-            external_call_id=None,
-            cost_entries=(),
-        )
+        initialization_fingerprint = "sha256:" + hashlib.sha256(
+            _json(
+                {
+                    "run_id": run_id,
+                    "manifest": manifest,
+                    "event": {
+                        "event_type": event.event_type,
+                        "schema_version": event.schema_version,
+                        "payload": event.model_dump(mode="json")["payload"],
+                    },
+                    "idempotency_key": idempotency_key,
+                }
+            ).encode("utf-8")
+        ).hexdigest()
         with self.session_factory.begin() as session:
             self._begin_immediate(session)
+            existing_run = session.get(RunRow, run_id)
+            if existing_run is not None:
+                try:
+                    previous = self._load_idempotency_commit(
+                        session,
+                        run_id,
+                        idempotency_key,
+                        initialization_fingerprint,
+                    )
+                except ValueError:
+                    previous = None
+                if (
+                    previous is not None
+                    and existing_run.state == RunState.RUNNING.value
+                    and existing_run.current_sequence == previous.last_sequence == 1
+                    and existing_run.manifest_json == _json(manifest)
+                    and len(previous.events) == 1
+                    and previous.events[0].event_type == event.event_type
+                    and previous.events[0].schema_version == event.schema_version
+                    and _json(previous.events[0].payload)
+                    == _json(event.model_dump(mode="json")["payload"])
+                ):
+                    return previous
+                raise ValueError("run initialization conflicts with existing state")
             session.add(
                 RunRow(
                     run_id=run_id,
@@ -393,7 +451,7 @@ class SqliteUnitOfWork:
                 session,
                 run_id,
                 idempotency_key,
-                batch_fingerprint,
+                initialization_fingerprint,
                 persisted[0].sequence,
                 persisted[-1].sequence,
             )
@@ -416,6 +474,17 @@ class SqliteUnitOfWork:
     def enqueue_tasks(self, tasks: Sequence[NewTask]) -> None:
         with self.session_factory.begin() as session:
             self._begin_immediate(session)
+            for task in tasks:
+                state = self._run_state_in_transaction(session, task.run_id)
+                validate_run_mutation(
+                    state,
+                    (
+                        RunMutationKind.ENQUEUE_FINALIZATION_TASK
+                        if task.intent_type == "finalize_run"
+                        else RunMutationKind.ENQUEUE_EXPLORATION_TASK
+                    ),
+                    task_intent=task.intent_type,
+                )
             session.add_all([self._task_row(task) for task in tasks])
 
     def transition_task(self, task_id: str, target_state: TaskState | str) -> None:
@@ -433,6 +502,15 @@ class SqliteUnitOfWork:
         if state is None:
             raise KeyError(f"unknown task: {task_id}")
         return state
+
+    def task_intent(self, task_id: str) -> str:
+        with self.session_factory() as session:
+            intent = session.scalar(
+                select(TaskRow.intent_type).where(TaskRow.task_id == task_id)
+            )
+        if intent is None:
+            raise KeyError(f"unknown task: {task_id}")
+        return intent
 
     def run_state(self, run_id: str) -> str:
         with self.session_factory() as session:
@@ -465,6 +543,15 @@ class SqliteUnitOfWork:
                 identifier=task_id,
                 actual_run_id=task.run_id,
                 expected_run_id=run_id,
+            )
+            validate_run_mutation(
+                self._run_state_in_transaction(session, run_id),
+                (
+                    RunMutationKind.PLAN_FINALIZATION_CALL
+                    if task.intent_type == "finalize_run"
+                    else RunMutationKind.PLAN_EXPLORATION_CALL
+                ),
+                task_intent=task.intent_type,
             )
             context = dict(execution_context)
             resolve_core_skill_contract(
@@ -842,6 +929,86 @@ class SqliteUnitOfWork:
         ).value
         row.applied_domain_sequence = sequence
 
+    def _validate_domain_batch_mutations(
+        self,
+        session: Session,
+        *,
+        run_id: str,
+        events: Sequence[NewEvent],
+        task_mutations: Sequence[TaskMutation],
+        followup_tasks: Sequence[NewTask],
+        external_call_id: str | None,
+        cost_entries: Sequence[CostEntry],
+    ) -> None:
+        state = self._run_state_in_transaction(session, run_id)
+        source_task_intent: str | None = None
+        if external_call_id is not None:
+            call = self._external_call(session, external_call_id)
+            self._assert_run_owner(
+                kind="external call",
+                identifier=external_call_id,
+                actual_run_id=call.run_id,
+                expected_run_id=run_id,
+            )
+            if ExternalCallState(call.state) is not ExternalCallState.AGENT_RESULT_SUBMITTED:
+                raise ValueError("scientific result is not durably submitted")
+            task = session.get(TaskRow, call.task_id)
+            if task is None:
+                raise KeyError(f"unknown task: {call.task_id}")
+            source_task_intent = task.intent_type
+            validate_run_mutation(
+                state,
+                RunMutationKind.APPLY_SCIENTIFIC_RESULT,
+                task_intent=source_task_intent,
+            )
+
+        for event in events:
+            self._assert_supported_new_event_version(event)
+            if event.event_type in EVENT_SCHEMA_VERSIONS:
+                validate_run_mutation(
+                    state,
+                    RunMutationKind.APPEND_SCIENTIFIC_EVENT,
+                    task_intent=source_task_intent,
+                )
+
+        for followup_task in followup_tasks:
+            self._assert_run_owner(
+                kind="follow-up task",
+                identifier=followup_task.task_id,
+                actual_run_id=followup_task.run_id,
+                expected_run_id=run_id,
+            )
+            validate_run_mutation(
+                state,
+                (
+                    RunMutationKind.ENQUEUE_FINALIZATION_TASK
+                    if followup_task.intent_type == "finalize_run"
+                    else RunMutationKind.ENQUEUE_EXPLORATION_TASK
+                ),
+                task_intent=followup_task.intent_type,
+            )
+
+        if state is RunState.STOPPING:
+            for mutation in task_mutations:
+                task = session.get(TaskRow, mutation.task_id)
+                if task is None:
+                    raise KeyError(f"unknown task: {mutation.task_id}")
+                self._assert_run_owner(
+                    kind="task",
+                    identifier=mutation.task_id,
+                    actual_run_id=task.run_id,
+                    expected_run_id=run_id,
+                )
+                if task.intent_type != "finalize_run" and external_call_id is None:
+                    raise ValueError("run state stopping does not allow task result mutation")
+
+        if cost_entries:
+            validate_run_mutation(
+                state,
+                RunMutationKind.RECORD_COST,
+                task_intent=source_task_intent,
+            )
+
     def commit_domain_batch(
         self,
         *,
@@ -879,6 +1046,15 @@ class SqliteUnitOfWork:
                 return previous
             if not _validate_sequence_before_replay:
                 self._assert_sequence(session, run_id, expected_sequence)
+            self._validate_domain_batch_mutations(
+                session,
+                run_id=run_id,
+                events=events,
+                task_mutations=task_mutations,
+                followup_tasks=followup_tasks,
+                external_call_id=external_call_id,
+                cost_entries=cost_entries,
+            )
             self._apply_run_transition(session, run_id, run_target)
             persisted = self._insert_events(session, run_id, expected_sequence, events)
             self._apply_task_mutations(session, run_id, task_mutations)

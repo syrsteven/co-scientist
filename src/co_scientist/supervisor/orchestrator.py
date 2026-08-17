@@ -35,6 +35,7 @@ from co_scientist.domain.review import (
     ReviewPolicy,
     ReviewStage,
 )
+from co_scientist.domain.run_mutations import RunMutationKind, validate_run_mutation
 from co_scientist.domain.states import ExternalCallState, RunState, TaskState
 from co_scientist.domain.task import NewTask, TaskMutation
 from co_scientist.domain.tournament import (
@@ -143,6 +144,15 @@ class Supervisor:
     def enqueue_task(self, *, task: NewTask, expected_sequence: int) -> CommitResult:
         """Atomically persist a Supervisor-owned task and its creator provenance."""
 
+        validate_run_mutation(
+            RunState(self.uow.run_state(task.run_id)),
+            (
+                RunMutationKind.ENQUEUE_FINALIZATION_TASK
+                if task.intent_type == "finalize_run"
+                else RunMutationKind.ENQUEUE_EXPLORATION_TASK
+            ),
+            task_intent=task.intent_type,
+        )
         return self.uow.commit_domain_batch(
             run_id=task.run_id,
             expected_sequence=expected_sequence,
@@ -664,6 +674,12 @@ class Supervisor:
     ) -> CommitResult:
         """Validate and atomically apply a durably submitted worker result."""
 
+        run_state = RunState(self.uow.run_state(run_id))
+        validate_run_mutation(
+            run_state,
+            RunMutationKind.APPLY_SCIENTIFIC_RESULT,
+            task_intent=self.uow.task_intent(task_id),
+        )
         call = self.uow.get_external_call(result.external_call_id)
         if call.execution_context is None or call.agent_result is None:
             raise ValueError("external call has no durable typed result context")
@@ -708,7 +724,11 @@ class Supervisor:
         if result.status == "completed":
             rating_events = self._rating_events_for_result(run_id, result)
             events = (*self._events_for_result(result), *rating_events)
-            followups = self._followup_tasks(run_id=run_id, events=events)
+            followups = (
+                ()
+                if run_state is RunState.STOPPING
+                else self._followup_tasks(run_id=run_id, events=events)
+            )
             events = (
                 *events,
                 *(

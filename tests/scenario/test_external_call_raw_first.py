@@ -12,6 +12,7 @@ from co_scientist.adapters.persistence.sqlite import SqliteUnitOfWork
 from co_scientist.agents.executor import SkillExecutor
 from co_scientist.agents.result import AgentExecutionContext, AgentResult
 from co_scientist.domain.task import NewTask
+from co_scientist.events.models import NewEvent
 from co_scientist.ports.artifact_store import ArtifactRef
 from co_scientist.ports.external_provider import RawExternalResponse
 from co_scientist.runtime.external_calls import ExternalCallRunner, request_fingerprint
@@ -93,7 +94,12 @@ def _context(
 def _runtime(tmp_path, *, uow_type=SqliteUnitOfWork, artifacts=None):
     uow = uow_type(f"sqlite:///{tmp_path / 'core.db'}")
     uow.create_schema()
-    uow.create_run("r-1", manifest={})
+    uow.create_started_run(
+        "r-1",
+        manifest={},
+        event=NewEvent(event_type="RunStarted", payload={}),
+        idempotency_key="start:r-1:0",
+    )
     uow.enqueue_tasks(
         [
             NewTask(
@@ -146,7 +152,12 @@ async def test_skill_executor_rejects_malformed_scientific_json_after_raw_persis
 ) -> None:
     uow = SqliteUnitOfWork(f"sqlite:///{tmp_path / f'{skill_id}.db'}")
     uow.create_schema()
-    uow.create_run("run-1", manifest={})
+    uow.create_started_run(
+        "run-1",
+        manifest={},
+        event=NewEvent(event_type="RunStarted", payload={}),
+        idempotency_key="start:run-1:0",
+    )
     task_id = f"{skill_id}-task"
     uow.enqueue_tasks(
         [
@@ -193,7 +204,7 @@ async def test_skill_executor_rejects_malformed_scientific_json_after_raw_persis
     assert artifacts.read(call.raw_artifact_ref) == raw_body
     assert call.validated_payload is None
     assert call.agent_result is None
-    assert uow.load("run-1") == []
+    assert [event.event_type for event in uow.load("run-1")] == ["RunStarted"]
     assert uow.task_state(task_id) == "pending"
     assert call.usage == {}
 
@@ -325,7 +336,12 @@ async def test_infrastructure_failure_after_durable_raw_remains_recoverable(tmp_
 @pytest.mark.asyncio
 async def test_execute_rejects_task_run_mismatch_before_provider_call(tmp_path) -> None:
     uow, _, runtime = _runtime(tmp_path)
-    uow.create_run("r-2", manifest={})
+    uow.create_started_run(
+        "r-2",
+        manifest={},
+        event=NewEvent(event_type="RunStarted", payload={}),
+        idempotency_key="start:r-2:0",
+    )
     provider = StubProvider()
 
     with pytest.raises(ValueError, match="does not belong to run r-2"):

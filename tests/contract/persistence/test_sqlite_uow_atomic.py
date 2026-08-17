@@ -23,6 +23,17 @@ def _store(tmp_path) -> SqliteUnitOfWork:
     return store
 
 
+def _create_running(
+    store: SqliteUnitOfWork, run_id: str, *, manifest: dict[str, object] | None = None
+) -> None:
+    store.create_started_run(
+        run_id,
+        manifest=dict(manifest or {}),
+        event=NewEvent(event_type="RunStarted", payload={}),
+        idempotency_key=f"start:{run_id}:0",
+    )
+
+
 def _execution_context(
     *, run_id: str = "r-1", task_id: str = "task-1", idempotency_key: str = "source"
 ) -> dict[str, object]:
@@ -81,7 +92,7 @@ class UnserializableResult(BaseModel):
 
 def _prepare_replay_store(tmp_path) -> SqliteUnitOfWork:
     store = _store(tmp_path)
-    store.create_run("r-1", manifest={})
+    _create_running(store, "r-1")
     store.enqueue_tasks(
         [
             NewTask(
@@ -102,7 +113,11 @@ def _commit_replay_batch(store, expected_sequence):
         run_id="r-1",
         expected_sequence=expected_sequence,
         events=[
-            NewEvent(event_type="ReviewCompleted", payload={"review_id": "rev-1"}),
+            NewEvent(
+                event_type="ReviewCompleted",
+                schema_version=2,
+                payload={"review_id": "rev-1"},
+            ),
             NewEvent(event_type="ReviewAccepted", payload={"review_id": "rev-1"}),
         ],
         task_mutations=[TaskMutation.succeed("task-1")],
@@ -142,8 +157,8 @@ def _assert_replay_did_not_repeat_writes(store) -> None:
         current_sequence = connection.execute(
             text("SELECT current_sequence FROM runs WHERE run_id = 'r-1'")
         ).scalar_one()
-    assert counts == (2, 2, 1, 1)
-    assert current_sequence == 2
+    assert counts == (3, 2, 1, 2)
+    assert current_sequence == 3
 
 
 # Mutation caught: committing the Run row separately from its initial state/event batch.
@@ -160,6 +175,88 @@ def test_started_run_initialization_is_one_atomic_commit(tmp_path) -> None:
     assert committed.last_sequence == 1
     assert store.run_state("r-started") == "running"
     assert [event.event_type for event in store.load("r-started")] == ["RunStarted"]
+
+
+# Mutation caught: retrying exact run initialization by attempting a second Run insert.
+def test_started_run_initialization_exact_retry_returns_original_commit(tmp_path) -> None:
+    store = _store(tmp_path)
+    event = NewEvent(
+        event_type="RunStarted",
+        schema_version=1,
+        payload={"provider": "replay", "nested": {"profile": ["core", "preview"]}},
+    )
+
+    committed = store.create_started_run(
+        "r-started",
+        manifest={"provider": "replay", "profile": {"name": "core"}},
+        event=event,
+        idempotency_key="start:r-started:0",
+    )
+    replayed = store.create_started_run(
+        "r-started",
+        manifest={"profile": {"name": "core"}, "provider": "replay"},
+        event=event,
+        idempotency_key="start:r-started:0",
+    )
+
+    assert replayed == committed
+    assert len(store.load("r-started")) == 1
+
+
+@pytest.mark.parametrize(
+    ("manifest", "event"),
+    [
+        (
+            {"provider": "changed"},
+            NewEvent(event_type="RunStarted", payload={"provider": "replay"}),
+        ),
+        (
+            {"provider": "replay"},
+            NewEvent(event_type="RunStarted", payload={"provider": "changed"}),
+        ),
+        (
+            {"provider": "replay"},
+            NewEvent(
+                event_type="RunStarted",
+                schema_version=2,
+                payload={"provider": "replay"},
+            ),
+        ),
+    ],
+)
+# Mutation caught: omitting manifest, start payload, or event version from initialization identity.
+def test_started_run_initialization_rejects_changed_fingerprint(
+    tmp_path, manifest: dict[str, object], event: NewEvent
+) -> None:
+    store = _store(tmp_path)
+    store.create_started_run(
+        "r-started",
+        manifest={"provider": "replay"},
+        event=NewEvent(event_type="RunStarted", payload={"provider": "replay"}),
+        idempotency_key="start:r-started:0",
+    )
+
+    with pytest.raises(ValueError, match="run initialization conflicts with existing state"):
+        store.create_started_run(
+            "r-started",
+            manifest=manifest,
+            event=event,
+            idempotency_key="start:r-started:0",
+        )
+
+
+# Mutation caught: treating an orphan Run row as an idempotent initialized Run.
+def test_started_run_initialization_rejects_orphan_existing_run(tmp_path) -> None:
+    store = _store(tmp_path)
+    store.create_run("r-orphan", manifest={"provider": "replay"})
+
+    with pytest.raises(ValueError, match="run initialization conflicts with existing state"):
+        store.create_started_run(
+            "r-orphan",
+            manifest={"provider": "replay"},
+            event=NewEvent(event_type="RunStarted", payload={"provider": "replay"}),
+            idempotency_key="start:r-orphan:0",
+        )
 
 
 # Mutation caught: leaving an orphan created Run when initial event persistence fails.
@@ -212,9 +309,9 @@ def test_lifecycle_batch_checks_sequence_before_idempotent_replay(tmp_path) -> N
 
 def test_exact_idempotency_replay_returns_prior_commit_for_stale_sequence(tmp_path) -> None:
     store = _prepare_replay_store(tmp_path)
-    committed = _commit_replay_batch(store, expected_sequence=0)
+    committed = _commit_replay_batch(store, expected_sequence=1)
 
-    replayed = _commit_replay_batch(store, expected_sequence=0)
+    replayed = _commit_replay_batch(store, expected_sequence=1)
 
     assert replayed == committed
     _assert_replay_did_not_repeat_writes(store)
@@ -222,9 +319,9 @@ def test_exact_idempotency_replay_returns_prior_commit_for_stale_sequence(tmp_pa
 
 def test_exact_idempotency_replay_returns_prior_commit_for_current_sequence(tmp_path) -> None:
     store = _prepare_replay_store(tmp_path)
-    committed = _commit_replay_batch(store, expected_sequence=0)
+    committed = _commit_replay_batch(store, expected_sequence=1)
 
-    replayed = _commit_replay_batch(store, expected_sequence=2)
+    replayed = _commit_replay_batch(store, expected_sequence=3)
 
     assert replayed == committed
     _assert_replay_did_not_repeat_writes(store)
@@ -232,13 +329,19 @@ def test_exact_idempotency_replay_returns_prior_commit_for_current_sequence(tmp_
 
 def test_idempotency_key_reuse_with_different_batch_is_rejected(tmp_path) -> None:
     store = _prepare_replay_store(tmp_path)
-    _commit_replay_batch(store, expected_sequence=0)
+    _commit_replay_batch(store, expected_sequence=1)
 
     with pytest.raises(ValueError, match="idempotency key reused with a different batch"):
         store.commit_domain_batch(
             run_id="r-1",
-            expected_sequence=0,
-            events=[NewEvent(event_type="ReviewCompleted", payload={"review_id": "different"})],
+            expected_sequence=1,
+            events=[
+                NewEvent(
+                    event_type="ReviewCompleted",
+                    schema_version=2,
+                    payload={"review_id": "different"},
+                )
+            ],
             idempotency_key="source",
         )
 
@@ -247,7 +350,7 @@ def test_idempotency_key_reuse_with_different_batch_is_rejected(tmp_path) -> Non
 
 def test_domain_batch_commits_events_task_followup_cost_call_and_run_sequence(tmp_path) -> None:
     store = _store(tmp_path)
-    store.create_run("r-1", manifest={"goal": "discover"})
+    _create_running(store, "r-1", manifest={"goal": "discover"})
     store.enqueue_tasks(
         [
             NewTask(
@@ -276,8 +379,14 @@ def test_domain_batch_commits_events_task_followup_cost_call_and_run_sequence(tm
 
     result = store.commit_domain_batch(
         run_id="r-1",
-        expected_sequence=0,
-        events=[NewEvent(event_type="ReviewCompleted", payload={"review_id": "rev-1"})],
+        expected_sequence=1,
+        events=[
+            NewEvent(
+                event_type="ReviewCompleted",
+                schema_version=2,
+                payload={"review_id": "rev-1"},
+            )
+        ],
         task_mutations=[TaskMutation.succeed("task-1")],
         followup_tasks=[
             NewTask(
@@ -303,7 +412,7 @@ def test_domain_batch_commits_events_task_followup_cost_call_and_run_sequence(tm
         ],
     )
 
-    assert result.last_sequence == 1
+    assert result.last_sequence == 2
     assert [event.event_type for event in result.events] == ["ReviewCompleted"]
     assert store.task_state("task-1") == "succeeded"
     assert store.task_state("task-2") == "pending"
@@ -316,16 +425,19 @@ def test_domain_batch_commits_events_task_followup_cost_call_and_run_sequence(tm
             text("SELECT input_tokens, output_tokens, cost_usd FROM cost_entries")
         ).one()
         committed = connection.execute(
-            text("SELECT last_sequence FROM idempotency_commits WHERE run_id = 'r-1'")
+            text(
+                "SELECT last_sequence FROM idempotency_commits "
+                "WHERE run_id = 'r-1' AND idempotency_key = 'source'"
+            )
         ).scalar_one()
         call_sequence = connection.execute(
             text("SELECT applied_domain_sequence FROM external_calls WHERE external_call_id = 'call-1'")
         ).scalar_one()
-    assert run.current_sequence == 1
+    assert run.current_sequence == 2
     assert json.loads(run.manifest_json) == {"goal": "discover"}
     assert cost == (11, 7, "0.0123")
-    assert committed == 1
-    assert call_sequence == 1
+    assert committed == 2
+    assert call_sequence == 2
 
 
 # Mutation caught: dropping the durable Run transition from an otherwise successful batch.
@@ -347,7 +459,7 @@ def test_domain_batch_persists_validated_run_transition(tmp_path) -> None:
 # Mutation caught: assigning TaskRow.state directly instead of consulting transition_task.
 def test_invalid_task_mutation_rolls_back_the_domain_batch(tmp_path) -> None:
     store = _store(tmp_path)
-    store.create_run("r-1", manifest={})
+    _create_running(store, "r-1")
     store.enqueue_tasks(
         [
             NewTask(
@@ -363,13 +475,13 @@ def test_invalid_task_mutation_rolls_back_the_domain_batch(tmp_path) -> None:
     with pytest.raises(InvalidTransition, match="pending.*succeeded"):
         store.commit_domain_batch(
             run_id="r-1",
-            expected_sequence=0,
+            expected_sequence=1,
             events=[NewEvent(event_type="FinalizationCompleted", payload={})],
             task_mutations=[TaskMutation.succeed("task-1")],
             idempotency_key="finalize:r-1",
         )
 
-    assert store.load("r-1") == []
+    assert [event.event_type for event in store.load("r-1")] == ["RunStarted"]
     assert store.task_state("task-1") == "pending"
 
 
@@ -420,7 +532,7 @@ def test_failed_domain_batch_rolls_back_run_transition(tmp_path) -> None:
 
 def test_failed_followup_insert_rolls_back_only_the_domain_batch(tmp_path) -> None:
     store = _store(tmp_path)
-    store.create_run("r-1", manifest={})
+    _create_running(store, "r-1")
     store.enqueue_tasks(
         [
             NewTask(
@@ -444,8 +556,14 @@ def test_failed_followup_insert_rolls_back_only_the_domain_batch(tmp_path) -> No
     with pytest.raises(IntegrityError):
         store.commit_domain_batch(
             run_id="r-1",
-            expected_sequence=0,
-            events=[NewEvent(event_type="ReviewCompleted", payload={"review_id": "rev-1"})],
+            expected_sequence=1,
+            events=[
+                NewEvent(
+                    event_type="ReviewCompleted",
+                    schema_version=2,
+                    payload={"review_id": "rev-1"},
+                )
+            ],
             task_mutations=[TaskMutation.succeed("task-1")],
             followup_tasks=[
                 NewTask(
@@ -461,15 +579,15 @@ def test_failed_followup_insert_rolls_back_only_the_domain_batch(tmp_path) -> No
             cost_entries=(),
         )
 
-    assert store.load("r-1") == []
+    assert [event.event_type for event in store.load("r-1")] == ["RunStarted"]
     assert store.task_state("task-1") == "result_received"
     with store.engine.connect() as connection:
         current_sequence = connection.execute(
             text("SELECT current_sequence FROM runs WHERE run_id = 'r-1'")
         ).scalar_one()
         commit_count = connection.execute(text("SELECT COUNT(*) FROM idempotency_commits")).scalar_one()
-    assert current_sequence == 0
-    assert commit_count == 0
+    assert current_sequence == 1
+    assert commit_count == 1
 
 
 def test_unknown_run_domain_batch_rolls_back_every_attempted_write(tmp_path) -> None:
@@ -520,8 +638,8 @@ def test_unknown_run_domain_batch_rolls_back_every_attempted_write(tmp_path) -> 
 )
 def test_cross_run_batch_member_rolls_back_the_whole_batch(tmp_path, foreign_write) -> None:
     store = _store(tmp_path)
-    store.create_run("r-1", manifest={})
-    store.create_run("r-2", manifest={})
+    _create_running(store, "r-1")
+    _create_running(store, "r-2")
     store.enqueue_tasks(
         [
             NewTask(
@@ -589,8 +707,12 @@ def test_cross_run_batch_member_rolls_back_the_whole_batch(tmp_path, foreign_wri
     with pytest.raises(ValueError, match="does not belong to run r-1"):
         store.commit_domain_batch(
             run_id="r-1",
-            expected_sequence=0,
-            events=[NewEvent(event_type="ReviewCompleted", payload={})],
+            expected_sequence=1,
+            events=[
+                NewEvent(
+                    event_type="ReviewCompleted", schema_version=2, payload={}
+                )
+            ],
             task_mutations=task_mutations,
             followup_tasks=followup_tasks,
             idempotency_key=f"source:{foreign_write}",
@@ -598,7 +720,7 @@ def test_cross_run_batch_member_rolls_back_the_whole_batch(tmp_path, foreign_wri
             cost_entries=cost_entries,
         )
 
-    assert store.load("r-1") == []
+    assert [event.event_type for event in store.load("r-1")] == ["RunStarted"]
     assert store.task_state("task-2") == "result_received"
     assert store.external_call_state("call-2") == "agent_result_submitted"
     with store.engine.connect() as connection:
@@ -613,14 +735,14 @@ def test_cross_run_batch_member_rolls_back_the_whole_batch(tmp_path, foreign_wri
                 "(SELECT COUNT(*) FROM idempotency_commits)"
             )
         ).one()
-    assert run_sequence == 0
-    assert counts == (2, 0, 0)
+    assert run_sequence == 1
+    assert counts == (2, 0, 2)
 
 
 def test_external_call_plan_requires_real_run_and_task_ownership(tmp_path) -> None:
     store = _store(tmp_path)
-    store.create_run("r-1", manifest={})
-    store.create_run("r-2", manifest={})
+    _create_running(store, "r-1")
+    _create_running(store, "r-2")
     store.enqueue_tasks(
         [
             NewTask(
@@ -654,7 +776,7 @@ def test_external_call_plan_requires_real_run_and_task_ownership(tmp_path) -> No
 
 def test_external_call_plan_rejects_execution_context_mismatch(tmp_path) -> None:
     store = _store(tmp_path)
-    store.create_run("r-1", manifest={})
+    _create_running(store, "r-1")
     store.enqueue_tasks(
         [
             NewTask(
@@ -679,7 +801,7 @@ def test_external_call_plan_rejects_execution_context_mismatch(tmp_path) -> None
 
 def test_validated_payload_and_full_result_commit_atomically(tmp_path) -> None:
     store = _store(tmp_path)
-    store.create_run("r-1", manifest={})
+    _create_running(store, "r-1")
     store.enqueue_tasks(
         [
             NewTask(
@@ -730,7 +852,7 @@ def test_validated_payload_and_full_result_commit_atomically(tmp_path) -> None:
 
 def test_atomic_result_serialization_failure_leaves_raw_call_recoverable(tmp_path) -> None:
     store = _store(tmp_path)
-    store.create_run("r-1", manifest={})
+    _create_running(store, "r-1")
     store.enqueue_tasks(
         [
             NewTask(
@@ -773,7 +895,7 @@ def test_atomic_result_serialization_failure_leaves_raw_call_recoverable(tmp_pat
 
 def test_atomic_result_rejects_traceability_mismatch_without_advancing(tmp_path) -> None:
     store = _store(tmp_path)
-    store.create_run("r-1", manifest={})
+    _create_running(store, "r-1")
     store.enqueue_tasks(
         [
             NewTask(
@@ -824,7 +946,7 @@ def test_atomic_result_rejects_traceability_mismatch_without_advancing(tmp_path)
 # Mutation caught: omitting prompt_hash from persisted-call/result trace matching.
 def test_atomic_result_rejects_prompt_hash_mismatch_without_advancing(tmp_path) -> None:
     store = _store(tmp_path)
-    store.create_run("r-1", manifest={})
+    _create_running(store, "r-1")
     store.enqueue_tasks(
         [
             NewTask(

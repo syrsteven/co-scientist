@@ -662,7 +662,16 @@ def test_lens_replay_exports_a_traceable_ranked_result(
     assert bundle.manifest["tournament_epochs"][0]["research_plan_version"] == 1
     assert bundle.hypotheses[0]["mechanism_chain"] == MECHANISM_CHAIN
     assert "projection" not in bundle.hypotheses[0]
-    assert bundle.projections[0]["lifecycle_state"] == "tournament_ready"
+    projection = bundle.projections[0]
+    assert projection["lifecycle_state"] == "tournament_active"
+    assert projection["current_safety_status"] == "passed"
+    assert projection["current_novelty_assessment_ids"] == ["novelty-h-1"]
+    assert projection["tournament_entries_by_epoch"]["epoch-1"]["initial_rating"] == 1200.0
+    assert projection["current_ratings_by_epoch"]["epoch-1"] == bundle.ratings["epoch-1"]["h-1"]
+    assert len(projection["match_participation"]) == 6
+    assert projection["cluster_ids"] == ["distinct_mechanisms"]
+    assert projection["created_sequence"] == 4
+    assert projection["updated_sequence"] == 46
     assert {review["stage"] for review in bundle.reviews} == {
         "initial_review",
         "full_review",
@@ -828,13 +837,14 @@ def test_export_uses_one_explicit_sqlite_snapshot_during_concurrent_commit(
     finally:
         sqlalchemy_event.remove(uow.engine, "after_cursor_execute", after_cursor_execute)
 
-    assert writer_errors == []
+    assert len(writer_errors) == 1
+    assert "completed" in str(writer_errors[0])
     assert observed_begin
     assert bundle.manifest["external_call_count"] == len(bundle.external_calls)
     assert "concurrent-call" not in {
         call["external_call_id"] for call in bundle.external_calls
     }
-    assert "concurrent-call" in {
+    assert "concurrent-call" not in {
         call["external_call_id"] for call in SqliteRunReadModel(uow).external_calls(run_id)
     }
 
@@ -899,31 +909,47 @@ def test_export_separates_immutable_content_revisions_from_current_projection(
 ) -> None:
     uow = SqliteUnitOfWork(f"sqlite:///{tmp_path / 'revisions.db'}")
     uow.create_schema()
-    uow.create_run("revision-run", manifest={})
+    uow.create_started_run(
+        "revision-run",
+        manifest={},
+        event=NewEvent(event_type="RunStarted", payload={}),
+        idempotency_key="start:revision-run:0",
+    )
     base = {
-        "hypothesis_id": "h-1",
         "title": "Revision",
         "claim": "claim",
-        "mechanism_chain": ["a"],
-        "assumptions": [],
-        "predictions": [],
-        "falsifiers": [],
+        "mechanism_chain": ("a",),
+        "assumptions": (),
+        "predictions": (),
+        "falsifiers": (),
         "generation_strategy": "revision fixture",
     }
+    first = HypothesisContent(content_id="content-v1", **base)
+    second = HypothesisContent(
+        content_id="content-v2",
+        supersedes_content_id="content-v1",
+        **{**base, "claim": "revised claim"},
+    )
     uow.commit_domain_batch(
         run_id="revision-run",
-        expected_sequence=0,
+        expected_sequence=1,
         events=(
             NewEvent(
                 event_type="HypothesisContentCreated",
-                payload={**base, "content_id": "content-v1"},
+                schema_version=2,
+                payload={
+                    **first.model_dump(mode="json"),
+                    "hypothesis_id": "h-1",
+                    "research_plan_version": 1,
+                },
             ),
             NewEvent(
                 event_type="HypothesisContentCreated",
+                schema_version=2,
                 payload={
-                    **base,
-                    "content_id": "content-v2",
-                    "supersedes_content_id": "content-v1",
+                    **second.model_dump(mode="json"),
+                    "hypothesis_id": "h-1",
+                    "research_plan_version": 2,
                 },
             ),
         ),
@@ -942,19 +968,14 @@ def test_export_separates_immutable_content_revisions_from_current_projection(
 
     assert [item["content_id"] for item in contents] == ["content-v1", "content-v2"]
     assert all("projection" not in item for item in contents)
-    assert projections == [
-        {
-            "cluster_ids": [],
-            "content_id": "content-v2",
-            "hypothesis_id": "h-1",
-            "lifecycle_state": "created",
-            "novelty_assessment_ids": [],
-            "ratings_by_epoch": {},
-            "review_coverage": {},
-            "safety_status": "pending",
-            "tournament_entries_by_epoch": {},
-        }
+    assert projections[0]["current_content_id"] == "content-v2"
+    assert projections[0]["current_content_hash"] == second.content_hash
+    assert [item["content_id"] for item in projections[0]["content_revisions"]] == [
+        "content-v1",
+        "content-v2",
     ]
+    assert projections[0]["created_sequence"] == 2
+    assert projections[0]["updated_sequence"] == 3
 
 
 # Mutation caught: accepting an epoch anchor ID that has no frozen member declaration.
@@ -1067,7 +1088,12 @@ def test_export_uses_persisted_rating_updates_not_current_profile(
 def test_export_rejects_persisted_self_match(tmp_path: Path) -> None:
     uow = SqliteUnitOfWork(f"sqlite:///{tmp_path / 'self-match.db'}")
     uow.create_schema()
-    uow.create_run("self-match-run", manifest={})
+    uow.create_started_run(
+        "self-match-run",
+        manifest={},
+        event=NewEvent(event_type="RunStarted", payload={}),
+        idempotency_key="start:self-match-run:0",
+    )
     epoch = TournamentEpoch(
         epoch_id="epoch-1",
         research_plan_version=1,
@@ -1079,7 +1105,7 @@ def test_export_rejects_persisted_self_match(tmp_path: Path) -> None:
     )
     uow.commit_domain_batch(
         run_id="self-match-run",
-        expected_sequence=0,
+        expected_sequence=1,
         events=(
             NewEvent(event_type="TournamentEpochOpened", payload=epoch.model_dump()),
             NewEvent(
@@ -1092,6 +1118,7 @@ def test_export_rejects_persisted_self_match(tmp_path: Path) -> None:
             ),
             NewEvent(
                 event_type="MatchEvaluated",
+                schema_version=2,
                 payload={
                     "match_id": "self-match",
                     "epoch_id": "epoch-1",

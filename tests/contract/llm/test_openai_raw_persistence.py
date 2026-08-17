@@ -9,6 +9,7 @@ from co_scientist.adapters.llm.openai_responses import OpenAIResponsesProvider
 from co_scientist.adapters.persistence.sqlite import SqliteUnitOfWork
 from co_scientist.agents.result import AgentExecutionContext
 from co_scientist.domain.task import NewTask
+from co_scientist.events.models import NewEvent
 from co_scientist.runtime.external_calls import ExternalCallRunner, prompt_hash
 
 
@@ -39,7 +40,12 @@ class FakeClient:
 def _runtime(tmp_path):
     uow = SqliteUnitOfWork(f"sqlite:///{tmp_path / 'core.db'}")
     uow.create_schema()
-    uow.create_run("r-1", manifest={})
+    uow.create_started_run(
+        "r-1",
+        manifest={},
+        event=NewEvent(event_type="RunStarted", payload={}),
+        idempotency_key="start:r-1:0",
+    )
     uow.enqueue_tasks(
         [
             NewTask(

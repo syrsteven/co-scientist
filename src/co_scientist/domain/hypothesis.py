@@ -73,9 +73,119 @@ def hypothesis_content_from_draft(draft: HypothesisDraftV1) -> HypothesisContent
     return content
 
 
-class HypothesisProjection(BaseModel):
-    hypothesis_id: str
+class ContentRevisionProjection(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
     content_id: str
+    content_hash: str
+    research_plan_version: int
+    parent_content_ids: tuple[str, ...] = ()
+    supersedes_content_id: str | None = None
+    created_sequence: int
+
+
+class ReviewProjection(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
+    review_id: str
+    content_hash: str
+    research_plan_version: int
+    stage: str
+    recommendation: str
+    safety_status: str
+    critical_flaws: tuple[str, ...] = ()
+    evidence_ids: tuple[str, ...] = ()
+    sequence: int
+    applies_to_current_revision: bool
+
+
+class SafetyEvidenceProjection(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
+    source_type: Literal["review", "meta_review"]
+    source_id: str
+    content_hash: str
+    status: str
+    sequence: int
+    applies_to_current_revision: bool
+
+
+class NoveltyProjection(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
+    assessment_id: str
+    content_hash: str
+    research_plan_version: int
+    verdict: str
+    closest_prior_work_ids: tuple[str, ...] = ()
+    evidence_ids: tuple[str, ...] = ()
+    sequence: int
+    applies_to_current_revision: bool
+
+
+class ProximityProjection(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
+    edge_id: str
+    own_content_hash: str
+    other_hypothesis_id: str
+    other_content_hash: str
+    research_plan_version: int
+    similarity: int
+    mechanism_overlap: tuple[str, ...] = ()
+    duplicate_likelihood: float
+    cluster_suggestion: str | None = None
+    rationale: str
+    access_issues: tuple[str, ...] = ()
+    sequence: int
+    applies_to_current_revision: bool
+
+
+class TournamentEntryProjection(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
+    epoch_id: str
+    content_hash: str
+    initial_rating: float
+    matches_played: int = 0
+    created_sequence: int
+
+
+class RatingProjection(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
+    epoch_id: str
+    rating: float
+    rating_policy_version: str
+    source: Literal["initial", "match"]
+    sequence: int
+    match_id: str | None = None
+    before_rating: float | None = None
+
+
+class MatchParticipationProjection(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
+    match_id: str
+    epoch_id: str
+    opponent_id: str
+    own_content_hash: str
+    opponent_content_hash: str
+    research_plan_version: int
+    decision: str
+    winner_id: str | None = None
+    sequence: int
+    applies_to_current_revision: bool
+
+
+class HypothesisProjection(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
+    hypothesis_id: str
+    content_revisions: tuple[ContentRevisionProjection, ...] = ()
+    current_content_id: str
+    current_content_hash: str
+    current_research_plan_version: int
     lifecycle_state: Literal[
         "created",
         "screening",
@@ -87,9 +197,22 @@ class HypothesisProjection(BaseModel):
         "duplicate_archived",
         "archived",
     ] = "created"
-    safety_status: str = "pending"
-    review_coverage: dict[str, tuple[str, ...]] = Field(default_factory=dict)
-    novelty_assessment_ids: tuple[str, ...] = ()
-    tournament_entries_by_epoch: dict[str, str] = Field(default_factory=dict)
-    ratings_by_epoch: dict[str, float] = Field(default_factory=dict)
+    current_safety_status: str = "pending"
+    safety_evidence: tuple[SafetyEvidenceProjection, ...] = ()
+    review_history: tuple[ReviewProjection, ...] = ()
+    review_coverage_by_content: dict[str, dict[str, tuple[str, ...]]] = Field(
+        default_factory=dict
+    )
+    novelty_history: tuple[NoveltyProjection, ...] = ()
+    current_novelty_assessment_ids: tuple[str, ...] = ()
+    proximity_history: tuple[ProximityProjection, ...] = ()
     cluster_ids: tuple[str, ...] = ()
+    access_issues: tuple[str, ...] = ()
+    tournament_entries_by_epoch: dict[str, TournamentEntryProjection] = Field(
+        default_factory=dict
+    )
+    rating_history: tuple[RatingProjection, ...] = ()
+    current_ratings_by_epoch: dict[str, float] = Field(default_factory=dict)
+    match_participation: tuple[MatchParticipationProjection, ...] = ()
+    created_sequence: int
+    updated_sequence: int

@@ -42,12 +42,21 @@ _OUTPUT_SCHEMAS = {
 }
 
 
+def _create_running(uow: SqliteUnitOfWork, run_id: str = "run-1") -> None:
+    uow.create_started_run(
+        run_id,
+        manifest={},
+        event=NewEvent(event_type="RunStarted", payload={}),
+        idempotency_key=f"start:{run_id}:0",
+    )
+
+
 def test_supervisor_revalidates_persisted_schema_invalid_agent_result_before_effects(
     tmp_path: Path,
 ) -> None:
     uow = SqliteUnitOfWork(f"sqlite:///{tmp_path / 'malformed-supervisor.db'}")
     uow.create_schema()
-    uow.create_run("run-1", manifest={})
+    _create_running(uow)
     task = NewTask(
         task_id="generation-task",
         run_id="run-1",
@@ -110,10 +119,10 @@ def test_supervisor_revalidates_persisted_schema_invalid_agent_result_before_eff
 
     with pytest.raises(ValidationError):
         Supervisor(uow=uow, review_policy=ReviewPolicy(profile_id="minimal")).handle_result(
-            "run-1", task.task_id, forged, expected_sequence=0
+            "run-1", task.task_id, forged, expected_sequence=1
         )
 
-    assert uow.load("run-1") == []
+    assert [event.event_type for event in uow.load("run-1")] == ["RunStarted"]
     assert uow.task_state(task.task_id) == "result_received"
     assert uow.external_call_state("call-1") == "agent_result_submitted"
     with uow.engine.connect() as connection:
@@ -359,7 +368,7 @@ def test_supervisor_rejects_persisted_noncanonical_skill_schema_pair_before_effe
 ) -> None:
     uow = SqliteUnitOfWork(f"sqlite:///{tmp_path / 'schema-routing.db'}")
     uow.create_schema()
-    uow.create_run("run-1", manifest={})
+    _create_running(uow)
     task = NewTask(
         task_id="task-1",
         run_id="run-1",
@@ -422,10 +431,10 @@ def test_supervisor_rejects_persisted_noncanonical_skill_schema_pair_before_effe
 
     with pytest.raises(ValueError, match="canonical skill contract"):
         Supervisor(uow=uow, review_policy=ReviewPolicy(profile_id="minimal")).handle_result(
-            "run-1", "task-1", forged, expected_sequence=0
+            "run-1", "task-1", forged, expected_sequence=1
         )
 
-    assert uow.load("run-1") == []
+    assert [event.event_type for event in uow.load("run-1")] == ["RunStarted"]
     assert uow.task_state("task-1") == "result_received"
 
 
@@ -438,8 +447,8 @@ async def _execute_ranking_result(
 ) -> tuple[SqliteUnitOfWork, Exception | None]:
     uow = SqliteUnitOfWork(f"sqlite:///{tmp_path / 'ranking-validation.db'}")
     uow.create_schema()
-    uow.create_run("run-1", manifest={})
-    expected_sequence = 0
+    _create_running(uow)
+    expected_sequence = 1
     if active_epoch:
         epoch = TournamentEpoch(
             epoch_id="epoch-1",
@@ -477,7 +486,7 @@ async def _execute_ranking_result(
             )
         seeded = uow.commit_domain_batch(
             run_id="run-1",
-            expected_sequence=0,
+            expected_sequence=1,
             events=tuple(seed_events),
             idempotency_key="ranking-seed",
         )
@@ -722,7 +731,7 @@ async def test_replay_provider_uses_canonical_fingerprint_and_fails_closed() -> 
 async def test_skill_executor_uses_raw_first_runner_and_returns_agent_result(tmp_path) -> None:
     uow = SqliteUnitOfWork(f"sqlite:///{tmp_path / 'executor.db'}")
     uow.create_schema()
-    uow.create_run("run-1", manifest={})
+    _create_running(uow)
     uow.enqueue_tasks(
         [
             NewTask(
@@ -802,7 +811,7 @@ async def test_skill_executor_rejects_incompatible_context_before_provider_call(
 ) -> None:
     uow = SqliteUnitOfWork(f"sqlite:///{tmp_path / 'context.db'}")
     uow.create_schema()
-    uow.create_run("run-1", manifest={})
+    _create_running(uow)
     uow.enqueue_tasks(
         [
             NewTask(
@@ -864,7 +873,7 @@ async def test_skill_executor_rejects_non_object_or_nonstandard_json_after_raw_p
 ) -> None:
     uow = SqliteUnitOfWork(f"sqlite:///{tmp_path / 'strict-json.db'}")
     uow.create_schema()
-    uow.create_run("run-1", manifest={})
+    _create_running(uow)
     uow.enqueue_tasks(
         [
             NewTask(

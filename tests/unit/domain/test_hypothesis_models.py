@@ -3,6 +3,7 @@ from pydantic import ValidationError
 
 from co_scientist.agents.payloads import HypothesisDraftV1
 from co_scientist.domain.hypothesis import (
+    ContentRevisionProjection,
     HypothesisContent,
     HypothesisProjection,
     canonical_hypothesis_bytes,
@@ -25,7 +26,22 @@ def test_scientific_content_is_frozen_but_projection_is_rebuildable() -> None:
     with pytest.raises(ValidationError):
         content.title = "mutated"
 
-    projection = HypothesisProjection(hypothesis_id="h-1", content_id=content.content_id)
+    projection = HypothesisProjection(
+        hypothesis_id="h-1",
+        content_revisions=(
+            ContentRevisionProjection(
+                content_id=content.content_id,
+                content_hash=content.content_hash,
+                research_plan_version=1,
+                created_sequence=1,
+            ),
+        ),
+        current_content_id=content.content_id,
+        current_content_hash=content.content_hash,
+        current_research_plan_version=1,
+        created_sequence=1,
+        updated_sequence=1,
+    )
     updated = projection.model_copy(update={"lifecycle_state": "screening"})
     assert updated.lifecycle_state == "screening"
     assert content.title.startswith("Capsular")
