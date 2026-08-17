@@ -24,7 +24,7 @@ from co_scientist.domain.admission import (
     admission_policy_from_manifest,
     reduce_admission_evidence,
 )
-from co_scientist.domain.budget import BudgetLedger, CostEntry
+from co_scientist.domain.budget import BudgetEstimate, BudgetLedger, CostEntry
 from co_scientist.domain.convergence import ConvergenceSnapshot, StopDecision, evaluate_stop
 from co_scientist.domain.hypothesis import (
     compute_hypothesis_content_hash,
@@ -957,7 +957,10 @@ class Supervisor:
             run_id=run_id,
             idempotency_key=f"finalize:{run_id}",
             intent_type="finalize_run",
-            payload={"reason": reason},
+            payload={
+                "reason": reason,
+                "budget_estimate": BudgetEstimate().model_dump(mode="json"),
+            },
         )
         return self.uow.commit_lifecycle_batch(
             run_id=run_id,

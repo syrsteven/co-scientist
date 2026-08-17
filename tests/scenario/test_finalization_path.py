@@ -199,7 +199,17 @@ def test_normal_completion_atomically_persists_legal_run_and_task_states(tmp_pat
         "run_id": "run-1",
         "idempotency_key": "finalize:run-1",
         "intent_type": "finalize_run",
-        "payload": {"reason": "work_complete"},
+        "payload": {
+            "reason": "work_complete",
+            "budget_estimate": {
+                "model_calls": 0,
+                "input_tokens": 0,
+                "output_tokens": 0,
+                "cost_usd": "0",
+                "hypotheses": 0,
+                "matches": 0,
+            },
+        },
         "created_by": "supervisor",
     }
     assert completed.events[-1].payload["completeness"] == "complete"

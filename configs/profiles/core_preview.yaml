@@ -1,4 +1,5 @@
 profile_id: core_preview
+execution_contract_version: 3
 admission_policy_id: core-preview-admission
 admission_policy_version: admission-v1
 admission_policies:
@@ -35,6 +36,8 @@ stop:
 budget:
   max_usd: null
   max_model_calls: 40
+  max_input_tokens: null
+  max_output_tokens: null
   max_hypotheses: 6
   max_matches: 12
 providers:

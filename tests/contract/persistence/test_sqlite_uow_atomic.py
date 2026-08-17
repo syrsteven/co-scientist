@@ -26,9 +26,11 @@ def _store(tmp_path) -> SqliteUnitOfWork:
 def _create_running(
     store: SqliteUnitOfWork, run_id: str, *, manifest: dict[str, object] | None = None
 ) -> None:
+    resolved_manifest = {"execution_contract_version": 3, "budget": {}}
+    resolved_manifest.update(manifest or {})
     store.create_started_run(
         run_id,
-        manifest=dict(manifest or {}),
+        manifest=resolved_manifest,
         event=NewEvent(event_type="RunStarted", payload={}),
         idempotency_key=f"start:{run_id}:0",
     )
@@ -575,7 +577,11 @@ def test_domain_batch_commits_events_task_followup_cost_call_and_run_sequence(tm
             text("SELECT applied_domain_sequence FROM external_calls WHERE external_call_id = 'call-1'")
         ).scalar_one()
     assert run.current_sequence == 2
-    assert json.loads(run.manifest_json) == {"goal": "discover"}
+    assert json.loads(run.manifest_json) == {
+        "budget": {},
+        "execution_contract_version": 3,
+        "goal": "discover",
+    }
     assert cost == (11, 7, "0.0123")
     assert committed == 2
     assert call_sequence == 2

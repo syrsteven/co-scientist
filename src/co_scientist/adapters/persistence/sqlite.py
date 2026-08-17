@@ -6,12 +6,17 @@ import hashlib
 import json
 import sqlite3
 from collections.abc import Mapping, Sequence
-from datetime import UTC, datetime
-from typing import Any, cast
+from collections.abc import Set as AbstractSet
+from datetime import UTC, datetime, timedelta
+from decimal import Decimal
+from typing import Any, Literal, cast
 
 from pydantic import BaseModel, ConfigDict
 from sqlalchemy import (
+    CheckConstraint,
     DateTime,
+    ForeignKey,
+    Index,
     Integer,
     String,
     Text,
@@ -28,10 +33,18 @@ from sqlalchemy.engine import Engine
 from sqlalchemy.engine.cursor import CursorResult
 from sqlalchemy.orm import DeclarativeBase, Mapped, Session, mapped_column, sessionmaker
 
-from co_scientist.domain.budget import CostEntry
+from co_scientist.adapters.persistence.migrations import execution_contract_diagnostic
+from co_scientist.domain.budget import BudgetEstimate, BudgetPolicy, BudgetUsage, CostEntry
 from co_scientist.domain.run_mutations import RunMutationKind, validate_run_mutation
 from co_scientist.domain.states import ExternalCallState, RunState, TaskState
-from co_scientist.domain.task import NewTask, TaskMutation
+from co_scientist.domain.task import (
+    ClaimedTask,
+    ClaimOutcome,
+    LeaseRecovery,
+    NewTask,
+    TaskLeaseFence,
+    TaskMutation,
+)
 from co_scientist.domain.transitions import transition_external_call
 from co_scientist.domain.transitions import transition_run as validate_run_transition
 from co_scientist.domain.transitions import transition_task as validate_task_transition
@@ -118,7 +131,17 @@ class EventRow(Base):
 
 class TaskRow(Base):
     __tablename__ = "tasks"
-    __table_args__ = (UniqueConstraint("run_id", "idempotency_key"),)
+    __table_args__ = (
+        UniqueConstraint(
+            "run_id", "idempotency_key", name="uq_tasks_run_id_idempotency_key"
+        ),
+        UniqueConstraint("lease_token", name="uq_tasks_lease_token"),
+        CheckConstraint("attempt >= 0", name="ck_tasks_attempt_non_negative"),
+        CheckConstraint("max_attempts > 0", name="ck_tasks_max_attempts_positive"),
+        CheckConstraint("attempt <= max_attempts", name="ck_tasks_attempt_within_max"),
+        Index("ix_tasks_claimable", "run_id", "state", "intent_type", "task_id"),
+        Index("ix_tasks_lease_expiry", "run_id", "state", "lease_expires_at"),
+    )
 
     task_id: Mapped[str] = mapped_column(String, primary_key=True)
     run_id: Mapped[str] = mapped_column(String, nullable=False)
@@ -127,8 +150,11 @@ class TaskRow(Base):
     state: Mapped[str] = mapped_column(String, nullable=False)
     payload_json: Mapped[str] = mapped_column(Text, nullable=False)
     lease_owner: Mapped[str | None] = mapped_column(String, nullable=True)
+    lease_token: Mapped[str | None] = mapped_column(String, nullable=True)
+    heartbeat_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     lease_expires_at: Mapped[datetime | None] = mapped_column(DateTime(timezone=True))
     attempt: Mapped[int] = mapped_column(Integer, nullable=False, server_default="0")
+    max_attempts: Mapped[int] = mapped_column(Integer, nullable=False, server_default="3")
 
 
 class ExternalCallRow(Base):
@@ -155,6 +181,13 @@ class ExternalCallRow(Base):
 
 class CostEntryRow(Base):
     __tablename__ = "cost_entries"
+    __table_args__ = (
+        UniqueConstraint(
+            "run_id",
+            "external_call_id",
+            name="uq_cost_entries_run_id_external_call_id",
+        ),
+    )
 
     cost_entry_id: Mapped[str] = mapped_column(String, primary_key=True)
     run_id: Mapped[str] = mapped_column(String, nullable=False)
@@ -163,6 +196,99 @@ class CostEntryRow(Base):
     output_tokens: Mapped[int] = mapped_column(Integer, nullable=False, server_default="0")
     cost_usd: Mapped[str] = mapped_column(String, nullable=False, server_default="0")
     pricing_version: Mapped[str] = mapped_column(String, nullable=False)
+
+
+class BudgetReservationRow(Base):
+    __tablename__ = "budget_reservations"
+    __table_args__ = (
+        UniqueConstraint(
+            "run_id",
+            "idempotency_key",
+            name="uq_budget_reservations_run_id_idempotency_key",
+        ),
+        UniqueConstraint(
+            "run_id", "task_id", name="uq_budget_reservations_run_id_task_id"
+        ),
+        UniqueConstraint(
+            "run_id",
+            "external_call_id",
+            name="uq_budget_reservations_run_id_external_call_id",
+        ),
+        CheckConstraint(
+            "state IN ('reserved', 'settled', 'released')",
+            name="ck_budget_reservations_state",
+        ),
+        CheckConstraint(
+            "estimated_model_calls >= 0 AND estimated_input_tokens >= 0 "
+            "AND estimated_output_tokens >= 0 "
+            "AND CAST(estimated_cost_usd AS NUMERIC) >= 0 "
+            "AND estimated_hypotheses >= 0 AND estimated_matches >= 0",
+            name="ck_budget_reservations_estimates_non_negative",
+        ),
+        CheckConstraint(
+            "actual_model_calls >= 0 AND actual_input_tokens >= 0 "
+            "AND actual_output_tokens >= 0 AND CAST(actual_cost_usd AS NUMERIC) >= 0 "
+            "AND actual_hypotheses >= 0 AND actual_matches >= 0",
+            name="ck_budget_reservations_actuals_non_negative",
+        ),
+        CheckConstraint(
+            "version > 0", name="ck_budget_reservations_version_positive"
+        ),
+        CheckConstraint(
+            "state = 'settled' OR (actual_model_calls = 0 AND actual_input_tokens = 0 "
+            "AND actual_output_tokens = 0 AND CAST(actual_cost_usd AS NUMERIC) = 0 "
+            "AND actual_hypotheses = 0 AND actual_matches = 0)",
+            name="ck_budget_reservations_state_consistency",
+        ),
+        Index("ix_budget_reservations_run_state", "run_id", "state"),
+        Index("ix_budget_reservations_task", "task_id"),
+    )
+
+    reservation_id: Mapped[str] = mapped_column(String, primary_key=True)
+    run_id: Mapped[str] = mapped_column(
+        ForeignKey("runs.run_id", name="fk_budget_reservations_run"), nullable=False
+    )
+    task_id: Mapped[str] = mapped_column(
+        ForeignKey("tasks.task_id", name="fk_budget_reservations_task"), nullable=False
+    )
+    external_call_id: Mapped[str | None] = mapped_column(String, nullable=True)
+    idempotency_key: Mapped[str] = mapped_column(String, nullable=False)
+    state: Mapped[str] = mapped_column(String, nullable=False, server_default="reserved")
+    estimated_model_calls: Mapped[int] = mapped_column(
+        Integer, nullable=False, server_default="0"
+    )
+    estimated_input_tokens: Mapped[int] = mapped_column(
+        Integer, nullable=False, server_default="0"
+    )
+    estimated_output_tokens: Mapped[int] = mapped_column(
+        Integer, nullable=False, server_default="0"
+    )
+    estimated_cost_usd: Mapped[str] = mapped_column(
+        String, nullable=False, server_default="0"
+    )
+    estimated_hypotheses: Mapped[int] = mapped_column(
+        Integer, nullable=False, server_default="0"
+    )
+    estimated_matches: Mapped[int] = mapped_column(
+        Integer, nullable=False, server_default="0"
+    )
+    actual_model_calls: Mapped[int] = mapped_column(
+        Integer, nullable=False, server_default="0"
+    )
+    actual_input_tokens: Mapped[int] = mapped_column(
+        Integer, nullable=False, server_default="0"
+    )
+    actual_output_tokens: Mapped[int] = mapped_column(
+        Integer, nullable=False, server_default="0"
+    )
+    actual_cost_usd: Mapped[str] = mapped_column(String, nullable=False, server_default="0")
+    actual_hypotheses: Mapped[int] = mapped_column(
+        Integer, nullable=False, server_default="0"
+    )
+    actual_matches: Mapped[int] = mapped_column(Integer, nullable=False, server_default="0")
+    version: Mapped[int] = mapped_column(Integer, nullable=False, server_default="1")
+    created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+    updated_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
 
 class IdempotencyCommitRow(Base):
@@ -525,6 +651,488 @@ class SqliteUnitOfWork:
                     task_intent=task.intent_type,
                 )
             session.add_all([self._task_row(task) for task in tasks])
+
+    @staticmethod
+    def _aware(value: datetime) -> datetime:
+        return value if value.tzinfo is not None else value.replace(tzinfo=UTC)
+
+    @staticmethod
+    def _task_budget_estimate(row: TaskRow) -> BudgetEstimate:
+        payload = json.loads(row.payload_json)
+        if not isinstance(payload, dict) or "budget_estimate" not in payload:
+            raise ValueError(f"task {row.task_id} has no budget_estimate")
+        return BudgetEstimate.model_validate(payload["budget_estimate"])
+
+    @staticmethod
+    def _reservation_estimate(row: BudgetReservationRow) -> BudgetEstimate:
+        return BudgetEstimate(
+            model_calls=row.estimated_model_calls,
+            input_tokens=row.estimated_input_tokens,
+            output_tokens=row.estimated_output_tokens,
+            cost_usd=Decimal(row.estimated_cost_usd),
+            hypotheses=row.estimated_hypotheses,
+            matches=row.estimated_matches,
+        )
+
+    @staticmethod
+    def _budget_usage(session: Session, run_id: str) -> BudgetUsage:
+        usage = BudgetUsage()
+        rows = session.scalars(
+            select(BudgetReservationRow).where(
+                BudgetReservationRow.run_id == run_id,
+                BudgetReservationRow.state.in_(("reserved", "settled")),
+            )
+        ).all()
+        for row in rows:
+            values = (
+                BudgetEstimate(
+                    model_calls=row.actual_model_calls,
+                    input_tokens=row.actual_input_tokens,
+                    output_tokens=row.actual_output_tokens,
+                    cost_usd=Decimal(row.actual_cost_usd),
+                    hypotheses=row.actual_hypotheses,
+                    matches=row.actual_matches,
+                )
+                if row.state == "settled"
+                else SqliteUnitOfWork._reservation_estimate(row)
+            )
+            usage = BudgetUsage(
+                model_calls=usage.model_calls + values.model_calls,
+                input_tokens=usage.input_tokens + values.input_tokens,
+                output_tokens=usage.output_tokens + values.output_tokens,
+                cost_usd=usage.cost_usd + values.cost_usd,
+                hypotheses=usage.hypotheses + values.hypotheses,
+                matches=usage.matches + values.matches,
+            )
+        return usage
+
+    @staticmethod
+    def _fits_budget(
+        policy: BudgetPolicy, usage: BudgetUsage, estimate: BudgetEstimate
+    ) -> bool:
+        checks = (
+            (policy.max_model_calls, usage.model_calls + estimate.model_calls),
+            (policy.max_input_tokens, usage.input_tokens + estimate.input_tokens),
+            (policy.max_output_tokens, usage.output_tokens + estimate.output_tokens),
+            (policy.max_usd, usage.cost_usd + estimate.cost_usd),
+            (policy.max_hypotheses, usage.hypotheses + estimate.hypotheses),
+            (policy.max_matches, usage.matches + estimate.matches),
+        )
+        return all(limit is None or projected <= limit for limit, projected in checks)
+
+    @staticmethod
+    def _reservation_id(run_id: str, idempotency_key: str) -> str:
+        digest = hashlib.sha256(f"{run_id}\0{idempotency_key}".encode()).hexdigest()
+        return f"reservation-{digest}"
+
+    def _insert_budget_reservation(
+        self,
+        session: Session,
+        *,
+        row: TaskRow,
+        estimate: BudgetEstimate,
+        now: datetime,
+    ) -> BudgetReservationRow:
+        reservation = BudgetReservationRow(
+            reservation_id=self._reservation_id(row.run_id, row.idempotency_key),
+            run_id=row.run_id,
+            task_id=row.task_id,
+            external_call_id=None,
+            idempotency_key=row.idempotency_key,
+            state="reserved",
+            estimated_model_calls=estimate.model_calls,
+            estimated_input_tokens=estimate.input_tokens,
+            estimated_output_tokens=estimate.output_tokens,
+            estimated_cost_usd=str(estimate.cost_usd),
+            estimated_hypotheses=estimate.hypotheses,
+            estimated_matches=estimate.matches,
+            actual_model_calls=0,
+            actual_input_tokens=0,
+            actual_output_tokens=0,
+            actual_cost_usd="0",
+            actual_hypotheses=0,
+            actual_matches=0,
+            version=1,
+            created_at=now,
+            updated_at=now,
+        )
+        session.add(reservation)
+        session.flush()
+        return reservation
+
+    @staticmethod
+    def _claimed_task(row: TaskRow, reservation: BudgetReservationRow) -> ClaimedTask:
+        if (
+            row.lease_owner is None
+            or row.lease_token is None
+            or row.heartbeat_at is None
+            or row.lease_expires_at is None
+        ):
+            raise ValueError(f"task {row.task_id} has an incomplete lease")
+        payload = json.loads(row.payload_json)
+        if not isinstance(payload, dict):
+            raise TypeError(f"task payload is not an object: {row.task_id}")
+        return ClaimedTask(
+            run_id=row.run_id,
+            task_id=row.task_id,
+            lease_token=row.lease_token,
+            attempt=row.attempt,
+            worker_id=row.lease_owner,
+            idempotency_key=row.idempotency_key,
+            intent_type=row.intent_type,
+            payload=payload,
+            reservation_id=reservation.reservation_id,
+            heartbeat_at=SqliteUnitOfWork._aware(row.heartbeat_at),
+            lease_expires_at=SqliteUnitOfWork._aware(row.lease_expires_at),
+            max_attempts=row.max_attempts,
+        )
+
+    @staticmethod
+    def _require_execution_contract(row: RunRow) -> dict[str, Any]:
+        manifest = json.loads(row.manifest_json)
+        if not isinstance(manifest, dict):
+            raise TypeError(f"Run manifest is not an object: {row.run_id}")
+        diagnostic = execution_contract_diagnostic(row.run_id, manifest)
+        if diagnostic is not None:
+            raise ValueError(diagnostic)
+        return cast(dict[str, Any], manifest)
+
+    def claim_next_task(
+        self,
+        *,
+        run_id: str,
+        worker_id: str,
+        lease_token: str,
+        now: datetime,
+        lease_duration: timedelta,
+        allowed_intents: AbstractSet[str] | None = None,
+    ) -> ClaimOutcome:
+        if lease_duration <= timedelta(0):
+            raise ValueError("lease_duration must be positive")
+        with self.session_factory.begin() as session:
+            self._begin_immediate(session)
+            run = session.get(RunRow, run_id)
+            if run is None:
+                raise KeyError(f"unknown run: {run_id}")
+            manifest = self._require_execution_contract(run)
+            state = RunState(run.state)
+            if state in {
+                RunState.COMPLETED,
+                RunState.COMPLETED_PARTIAL,
+                RunState.FAILED,
+                RunState.CANCELLED,
+            }:
+                return ClaimOutcome(status="terminal")
+            if state in {
+                RunState.PAUSING,
+                RunState.PAUSED,
+                RunState.NEEDS_ATTENTION,
+            }:
+                return ClaimOutcome(status="paused")
+            if state is RunState.CREATED:
+                raise ValueError("run state created does not allow task claims")
+
+            replay = session.scalar(select(TaskRow).where(TaskRow.lease_token == lease_token))
+            if replay is not None:
+                if (
+                    replay.run_id != run_id
+                    or replay.lease_owner != worker_id
+                    or TaskState(replay.state) not in {TaskState.LEASED, TaskState.RUNNING}
+                ):
+                    raise ValueError("lease token already in use")
+                reservation = session.scalar(
+                    select(BudgetReservationRow).where(
+                        BudgetReservationRow.run_id == run_id,
+                        BudgetReservationRow.task_id == replay.task_id,
+                    )
+                )
+                if reservation is None:
+                    raise ValueError("leased task has no budget reservation")
+                return ClaimOutcome(
+                    status="claimed", task=self._claimed_task(replay, reservation)
+                )
+
+            query = select(TaskRow).where(
+                TaskRow.run_id == run_id,
+                TaskRow.state == TaskState.PENDING.value,
+            )
+            if state is RunState.STOPPING:
+                query = query.where(TaskRow.intent_type == "finalize_run")
+            else:
+                query = query.where(TaskRow.intent_type != "finalize_run")
+            if allowed_intents is not None:
+                if not allowed_intents:
+                    return ClaimOutcome(
+                        status=(
+                            "stopping_no_finalization"
+                            if state is RunState.STOPPING
+                            else "no_task"
+                        )
+                    )
+                query = query.where(TaskRow.intent_type.in_(sorted(allowed_intents)))
+            task = session.scalar(query.order_by(TaskRow.task_id).limit(1))
+            if task is None:
+                return ClaimOutcome(
+                    status=(
+                        "stopping_no_finalization"
+                        if state is RunState.STOPPING
+                        else "no_task"
+                    )
+                )
+
+            estimate = self._task_budget_estimate(task)
+            existing_reservation = session.scalar(
+                select(BudgetReservationRow).where(
+                    BudgetReservationRow.run_id == run_id,
+                    BudgetReservationRow.task_id == task.task_id,
+                )
+            )
+            if existing_reservation is not None:
+                if (
+                    existing_reservation.idempotency_key != task.idempotency_key
+                    or existing_reservation.state != "reserved"
+                    or self._reservation_estimate(existing_reservation) != estimate
+                ):
+                    raise ValueError("task reservation does not exactly replay")
+                reservation = existing_reservation
+            else:
+                policy = BudgetPolicy.model_validate(manifest.get("budget", {}))
+                if not self._fits_budget(policy, self._budget_usage(session, run_id), estimate):
+                    return ClaimOutcome(status="budget_exhausted")
+
+                task.state = validate_task_transition(
+                    TaskState(task.state), TaskState.LEASED
+                ).value
+                task.lease_owner = worker_id
+                task.lease_token = lease_token
+                task.heartbeat_at = now
+                task.lease_expires_at = now + lease_duration
+                task.attempt += 1
+                reservation = self._insert_budget_reservation(
+                    session, row=task, estimate=estimate, now=now
+                )
+
+            if existing_reservation is not None:
+                task.state = validate_task_transition(
+                    TaskState(task.state), TaskState.LEASED
+                ).value
+                task.lease_owner = worker_id
+                task.lease_token = lease_token
+                task.heartbeat_at = now
+                task.lease_expires_at = now + lease_duration
+                task.attempt += 1
+
+            current_sequence = self._current_sequence(session, run_id)
+            events = self._insert_events(
+                session,
+                run_id,
+                current_sequence,
+                (
+                    NewEvent(
+                        event_type="TaskLeaseClaimed",
+                        payload={
+                            "task_id": task.task_id,
+                            "worker_id": worker_id,
+                            "lease_token": lease_token,
+                            "attempt": task.attempt,
+                            "heartbeat_at": now.isoformat(),
+                            "lease_expires_at": (now + lease_duration).isoformat(),
+                            "max_attempts": task.max_attempts,
+                        },
+                    ),
+                    NewEvent(
+                        event_type="BudgetReserved",
+                        payload={
+                            "reservation_id": reservation.reservation_id,
+                            "task_id": task.task_id,
+                            "idempotency_key": task.idempotency_key,
+                            "estimate": estimate.model_dump(mode="json"),
+                        },
+                    ),
+                ),
+            )
+            self._set_run_sequence(session, run_id, events[-1].sequence, required=True)
+            session.flush()
+            return ClaimOutcome(
+                status="claimed", task=self._claimed_task(task, reservation)
+            )
+
+    @staticmethod
+    def _fenced_task(session: Session, fence: TaskLeaseFence) -> TaskRow:
+        row = session.get(TaskRow, fence.task_id)
+        if (
+            row is None
+            or row.run_id != fence.run_id
+            or row.lease_token != fence.lease_token
+            or row.attempt != fence.attempt
+            or TaskState(row.state) not in {TaskState.LEASED, TaskState.RUNNING}
+        ):
+            raise ValueError("stale task lease fence")
+        return row
+
+    @staticmethod
+    def _task_reservation(session: Session, fence: TaskLeaseFence) -> BudgetReservationRow:
+        reservation = session.scalar(
+            select(BudgetReservationRow).where(
+                BudgetReservationRow.run_id == fence.run_id,
+                BudgetReservationRow.task_id == fence.task_id,
+            )
+        )
+        if reservation is None:
+            raise ValueError("leased task has no budget reservation")
+        return reservation
+
+    def heartbeat_task(
+        self,
+        *,
+        fence: TaskLeaseFence,
+        now: datetime,
+        lease_duration: timedelta,
+    ) -> ClaimedTask:
+        if lease_duration <= timedelta(0):
+            raise ValueError("lease_duration must be positive")
+        with self.session_factory.begin() as session:
+            self._begin_immediate(session)
+            row = self._fenced_task(session, fence)
+            if row.lease_expires_at is None or self._aware(row.lease_expires_at) < now:
+                raise ValueError("stale task lease fence")
+            row.heartbeat_at = now
+            row.lease_expires_at = now + lease_duration
+            reservation = self._task_reservation(session, fence)
+            session.flush()
+            return self._claimed_task(row, reservation)
+
+    def mark_task_running(self, *, fence: TaskLeaseFence) -> ClaimedTask:
+        with self.session_factory.begin() as session:
+            self._begin_immediate(session)
+            row = self._fenced_task(session, fence)
+            if TaskState(row.state) is TaskState.LEASED:
+                row.state = validate_task_transition(
+                    TaskState(row.state), TaskState.RUNNING
+                ).value
+            reservation = self._task_reservation(session, fence)
+            session.flush()
+            return self._claimed_task(row, reservation)
+
+    def acknowledge_task(
+        self,
+        *,
+        fence: TaskLeaseFence,
+        target_state: TaskState | str,
+    ) -> None:
+        target = TaskState(target_state)
+        if target not in {
+            TaskState.RESULT_RECEIVED,
+            TaskState.FAILED,
+            TaskState.NEEDS_ATTENTION,
+        }:
+            raise ValueError(f"task acknowledgement does not allow {target.value}")
+        with self.session_factory.begin() as session:
+            self._begin_immediate(session)
+            row = self._fenced_task(session, fence)
+            if TaskState(row.state) is not TaskState.RUNNING:
+                raise ValueError("task acknowledgement requires running lease")
+            row.state = validate_task_transition(TaskState(row.state), target).value
+            session.flush()
+
+    def recover_expired_leases(
+        self,
+        *,
+        run_id: str,
+        now: datetime,
+        limit: int = 100,
+    ) -> tuple[LeaseRecovery, ...]:
+        if limit <= 0:
+            raise ValueError("recovery limit must be positive")
+        with self.session_factory.begin() as session:
+            self._begin_immediate(session)
+            run = session.get(RunRow, run_id)
+            if run is None:
+                raise KeyError(f"unknown run: {run_id}")
+            self._require_execution_contract(run)
+            rows = session.scalars(
+                select(TaskRow)
+                .where(
+                    TaskRow.run_id == run_id,
+                    TaskRow.state.in_(
+                        (TaskState.LEASED.value, TaskState.RUNNING.value)
+                    ),
+                    TaskRow.lease_expires_at <= now,
+                )
+                .order_by(TaskRow.lease_expires_at, TaskRow.task_id)
+                .limit(limit)
+            ).all()
+            recoveries: list[LeaseRecovery] = []
+            new_events: list[NewEvent] = []
+            for row in rows:
+                action: Literal["requeued", "exhausted"]
+                expired_attempt = row.attempt
+                new_events.append(
+                    NewEvent(
+                        event_type="TaskLeaseExpired",
+                        payload={
+                            "task_id": row.task_id,
+                            "lease_token": row.lease_token,
+                            "attempt": expired_attempt,
+                            "expired_at": now.isoformat(),
+                        },
+                    )
+                )
+                if row.attempt >= row.max_attempts:
+                    current_state = TaskState(row.state)
+                    if current_state is TaskState.LEASED:
+                        current_state = validate_task_transition(
+                            current_state, TaskState.RUNNING
+                        )
+                    row.state = validate_task_transition(
+                        current_state, TaskState.FAILED
+                    ).value
+                    action = "exhausted"
+                    new_events.append(
+                        NewEvent(
+                            event_type="TaskLeaseExhausted",
+                            payload={
+                                "task_id": row.task_id,
+                                "attempt": expired_attempt,
+                                "max_attempts": row.max_attempts,
+                            },
+                        )
+                    )
+                else:
+                    row.state = validate_task_transition(
+                        TaskState(row.state), TaskState.PENDING
+                    ).value
+                    action = "requeued"
+                    new_events.append(
+                        NewEvent(
+                            event_type="TaskRequeued",
+                            payload={
+                                "task_id": row.task_id,
+                                "expired_attempt": expired_attempt,
+                            },
+                        )
+                    )
+                row.lease_owner = None
+                row.lease_token = None
+                row.heartbeat_at = None
+                row.lease_expires_at = None
+                recoveries.append(
+                    LeaseRecovery(
+                        task_id=row.task_id,
+                        expired_attempt=expired_attempt,
+                        action=action,
+                    )
+                )
+            if new_events:
+                current_sequence = self._current_sequence(session, run_id)
+                events = self._insert_events(
+                    session, run_id, current_sequence, new_events
+                )
+                self._set_run_sequence(
+                    session, run_id, events[-1].sequence, required=True
+                )
+            session.flush()
+            return tuple(recoveries)
 
     def transition_task(self, task_id: str, target_state: TaskState | str) -> None:
         target = TaskState(target_state)

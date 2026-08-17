@@ -258,6 +258,31 @@ def test_upgrade_existing_0001_database_supports_legacy_runtime_recovery(tmp_pat
     assert result.model_dump(mode="json")["payload"] == payload
     assert provider.call_count == 0
 
+
+# Mutation caught: ORM create_schema drifts from migration head after lease tables are added.
+def test_runtime_schema_still_matches_alembic_head_after_worker_migration(
+    tmp_path, monkeypatch
+) -> None:
+    monkeypatch.delenv("CO_SCIENTIST_DATABASE_URL", raising=False)
+    project_root = Path(__file__).parents[3]
+    database_url = f"sqlite:///{tmp_path / 'worker-head.db'}"
+    config = Config(str(project_root / "alembic.ini"))
+    config.set_main_option("script_location", str(project_root / "alembic"))
+    config.set_main_option("sqlalchemy.url", database_url)
+    command.upgrade(config, "head")
+
+    engine = create_engine(database_url)
+    with engine.connect() as connection:
+        differences = compare_metadata(
+            MigrationContext.configure(
+                connection,
+                opts={"compare_server_default": True},
+            ),
+            Base.metadata,
+        )
+    engine.dispose()
+    assert differences == []
+
     command.downgrade(config, "0001_core_tables")
     engine = create_engine(database_url)
     downgraded_columns = {
