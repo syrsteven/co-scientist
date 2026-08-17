@@ -426,6 +426,16 @@ class _CrashAfterRawUnitOfWork(SqliteUnitOfWork):
         super().record_validated_and_submitted(*args, **kwargs)
 
 
+class _CrashBeforeRawStateUnitOfWork(SqliteUnitOfWork):
+    crash_once = True
+
+    def record_raw_and_transition(self, *args, **kwargs) -> None:
+        if self.crash_once:
+            self.crash_once = False
+            raise _SimulatedCrash("crash after durable manifest before raw state")
+        super().record_raw_and_transition(*args, **kwargs)
+
+
 class _CrashBeforeDomainSupervisor(Supervisor):
     def handle_result(self, *args, **kwargs):
         raise _SimulatedCrash("crash after durable submission")
@@ -496,6 +506,12 @@ def _restart_worker(
     ("boundary", "first_uow", "first_supervisor", "restart_at"),
     [
         (
+            "manifest",
+            _CrashBeforeRawStateUnitOfWork,
+            Supervisor,
+            NOW + timedelta(seconds=10),
+        ),
+        (
             "raw",
             _CrashAfterRawUnitOfWork,
             Supervisor,
@@ -554,7 +570,7 @@ async def test_recreated_worker_resumes_publicly_without_provider_or_cost_duplic
         expected_sequence=started.last_sequence,
     )
 
-    if boundary == "raw":
+    if boundary in {"manifest", "raw"}:
         with pytest.raises(BaseExceptionGroup) as crash:
             await first.run_once("run-restart")
         assert any(isinstance(error, _SimulatedCrash) for error in crash.value.exceptions)
@@ -567,7 +583,7 @@ async def test_recreated_worker_resumes_publicly_without_provider_or_cost_duplic
         artifact_root=artifact_root,
         provider=provider,
         supervisor_type=Supervisor,
-        worker_id="worker-restarted",
+        worker_id=("worker-first" if boundary == "submitted" else "worker-restarted"),
         token="token-restarted",
         now=restart_at,
     )
@@ -581,6 +597,7 @@ async def test_recreated_worker_resumes_publicly_without_provider_or_cost_duplic
             select(ExternalCallRow).where(ExternalCallRow.run_id == "run-restart")
         ).all()
         assert len(calls) == 1
+        assert calls[0].attempt == 1
         assert calls[0].state == "domain_result_applied"
         assert session.scalar(select(func.count()).select_from(CostEntryRow)) == 1
     assert sum(event.event_type == "MetaReviewCompleted" for event in uow.load("run-restart")) == 1

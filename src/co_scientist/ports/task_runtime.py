@@ -14,6 +14,8 @@ from co_scientist.domain.task import (
 
 
 class TaskRuntimePort(Protocol):
+    def task_state(self, task_id: str) -> str: ...
+
     def adopt_recoverable_task(
         self,
         *,

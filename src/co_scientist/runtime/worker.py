@@ -18,6 +18,7 @@ from co_scientist.domain.task import (
     TaskLeaseFence,
     lease_fence_fingerprint,
 )
+from co_scientist.ports.task_runtime import TaskRuntimePort
 from co_scientist.runtime.external_calls import ExternalCallRunner
 from co_scientist.runtime.registry import ProviderRegistry, SkillRegistry
 from co_scientist.runtime.task_payload import WorkerTaskPayload
@@ -61,7 +62,7 @@ class Worker:
         self,
         *,
         runtime: Any,
-        task_runtime: Any,
+        task_runtime: TaskRuntimePort,
         supervisor: Supervisor,
         skills: SkillRegistry,
         providers: ProviderRegistry,

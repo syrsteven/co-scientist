@@ -1,7 +1,9 @@
 import hashlib
+import inspect
 import json
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
+from typing import get_type_hints
 
 import anyio
 import pytest
@@ -11,6 +13,7 @@ from co_scientist.adapters.persistence.sqlite import SqliteUnitOfWork, TaskRow
 from co_scientist.domain.review import ReviewPolicy
 from co_scientist.domain.task import NewTask
 from co_scientist.ports.external_provider import RawExternalResponse
+from co_scientist.ports.task_runtime import TaskRuntimePort
 from co_scientist.runtime.external_calls import prompt_hash, request_fingerprint
 from co_scientist.runtime.registry import ProviderRegistry, SkillRegistry
 from co_scientist.runtime.worker import Worker, WorkerTaskPayload
@@ -18,6 +21,19 @@ from co_scientist.supervisor.orchestrator import Supervisor
 
 NOW = datetime(2026, 8, 17, 10, 0, tzinfo=UTC)
 GENERATION_DIRECTORY = Path("skills/generation")
+
+
+class _ProtocolTaskRuntimeFake(TaskRuntimePort):
+    def task_state(self, task_id: str) -> str:
+        return "leased"
+
+
+def test_worker_task_runtime_dependency_declares_state_read() -> None:
+    fake: TaskRuntimePort = _ProtocolTaskRuntimeFake()
+
+    assert fake.task_state("task-1") == "leased"
+    assert get_type_hints(Worker.__init__)["task_runtime"] is TaskRuntimePort
+    assert inspect.signature(TaskRuntimePort.task_state).return_annotation is str
 
 
 def _generation_body() -> bytes:

@@ -287,6 +287,93 @@ def test_same_owner_adopts_durable_call_with_fresh_token_and_invalidates_old_fen
     )
 
 
+def test_unrelated_worker_cannot_adopt_live_recoverable_lease(tmp_path) -> None:
+    uow, _, first = _setup(tmp_path)
+    context = _context(first, first.reservation_id)
+    uow.plan_external_call(
+        "call-live",
+        request_fingerprint({"prompt": "live"}),
+        run_id="r-1",
+        task_id="task-1",
+        execution_context=context.model_dump(mode="json"),
+        reservation_id=first.reservation_id,
+        fence=first,
+    )
+    uow.transition_call(
+        "call-live",
+        ExternalCallState.STARTED,
+        reservation_id=first.reservation_id,
+        fence=first,
+    )
+    uow.record_raw_and_transition(
+        "call-live",
+        ArtifactRef(
+            path="raw/live.json",
+            sha256="sha256:" + "4" * 64,
+            byte_length=2,
+            mime_type="application/json",
+        ),
+        ExternalCallState.RAW_RESPONSE_PERSISTED,
+        reservation_id=first.reservation_id,
+        fence=first,
+    )
+
+    outcome = uow.adopt_recoverable_task(
+        run_id="r-1",
+        worker_id="worker-unrelated",
+        lease_token="unrelated-secret",
+        now=NOW + timedelta(seconds=1),
+        lease_duration=timedelta(minutes=5),
+    )
+
+    assert outcome.status == "no_task"
+    uow.heartbeat_task(
+        fence=first,
+        now=NOW + timedelta(seconds=2),
+        lease_duration=timedelta(seconds=10),
+    )
+
+
+def test_unrelated_worker_adopts_expired_durable_lease_without_new_attempt(tmp_path) -> None:
+    uow, _, first = _setup(tmp_path)
+    context = _context(first, first.reservation_id)
+    uow.plan_external_call(
+        "call-expired",
+        request_fingerprint({"prompt": "expired"}),
+        run_id="r-1",
+        task_id="task-1",
+        execution_context=context.model_dump(mode="json"),
+        reservation_id=first.reservation_id,
+        fence=first,
+    )
+    uow.transition_call(
+        "call-expired",
+        ExternalCallState.STARTED,
+        reservation_id=first.reservation_id,
+        fence=first,
+    )
+
+    outcome = uow.adopt_recoverable_task(
+        run_id="r-1",
+        worker_id="worker-unrelated",
+        lease_token="expired-secret",
+        now=NOW + timedelta(seconds=10),
+        lease_duration=timedelta(minutes=5),
+    )
+
+    assert outcome.status == "claimed"
+    assert outcome.task is not None
+    assert outcome.task.attempt == first.attempt
+    assert outcome.task.reservation_id == first.reservation_id
+    assert uow.get_external_call("call-expired").attempt == first.attempt
+    with pytest.raises(ValueError, match="stale task lease fence"):
+        uow.heartbeat_task(
+            fence=first,
+            now=NOW + timedelta(seconds=11),
+            lease_duration=timedelta(minutes=5),
+        )
+
+
 def test_recoverable_call_adoption_respects_paused_run_fence(tmp_path) -> None:
     uow, supervisor, first = _setup(tmp_path)
     context = _context(first, first.reservation_id)

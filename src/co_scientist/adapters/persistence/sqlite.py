@@ -954,6 +954,7 @@ class SqliteUnitOfWork:
             raise ValueError("lease_duration must be positive")
         now = self._runtime_utc(now)
         durable_states = (
+            ExternalCallState.STARTED.value,
             ExternalCallState.RAW_RESPONSE_PERSISTED.value,
             ExternalCallState.VALIDATED.value,
             ExternalCallState.AGENT_RESULT_SUBMITTED.value,
@@ -1000,7 +1001,18 @@ class SqliteUnitOfWork:
                 )
                 .order_by(TaskRow.task_id)
             ).all()
-            task = rows[0] if rows else None
+            task = next(
+                (
+                    row
+                    for row in rows
+                    if row.lease_owner == worker_id
+                    or (
+                        row.lease_expires_at is not None
+                        and self._stored_utc(row.lease_expires_at) <= now
+                    )
+                ),
+                None,
+            )
             if task is None:
                 return ClaimOutcome(status="no_task")
             reservation = self._task_reservation(
