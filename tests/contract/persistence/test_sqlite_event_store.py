@@ -13,6 +13,7 @@ from alembic import command
 from co_scientist.adapters.artifacts.filesystem import FilesystemArtifactStore
 from co_scientist.adapters.persistence.sqlite import Base, SqliteUnitOfWork
 from co_scientist.agents.result import AgentExecutionContext
+from co_scientist.domain.task import TaskLeaseFence, lease_fence_fingerprint
 from co_scientist.events.models import NewEvent
 from co_scientist.ports.event_store import ConcurrencyConflict
 from co_scientist.runtime.external_calls import (
@@ -166,6 +167,10 @@ def test_upgrade_existing_0001_database_supports_legacy_runtime_recovery(tmp_pat
     assert "execution_context_json" not in columns_at_0001
     assert "agent_result_json" not in columns_at_0001
 
+    fence = TaskLeaseFence(
+        run_id="r-1", task_id="task-1", lease_token="legacy-lease", attempt=1
+    )
+    reservation_id = "reservation:legacy-call-1"
     context = AgentExecutionContext(
         run_id="r-1",
         task_id="task-1",
@@ -178,6 +183,9 @@ def test_upgrade_existing_0001_database_supports_legacy_runtime_recovery(tmp_pat
         provider="legacy",
         model_or_tool="legacy",
         input_snapshot_hash="sha256:input",
+        attempt=1,
+        reservation_id=reservation_id,
+        lease_fence_fingerprint=lease_fence_fingerprint(fence),
     )
     artifacts = FilesystemArtifactStore(tmp_path / "artifacts")
     fingerprint = request_fingerprint({"prompt": "generate"})
@@ -199,15 +207,31 @@ def test_upgrade_existing_0001_database_supports_legacy_runtime_recovery(tmp_pat
             text(
                 "INSERT INTO runs "
                 "(run_id, state, current_sequence, manifest_json) "
-                "VALUES ('r-1', 'running', 0, '{}')"
-            )
+                "VALUES ('r-1', 'running', 0, :manifest)"
+            ),
+            {"manifest": json.dumps({"execution_contract_version": 3, "budget": {}})},
         )
         connection.execute(
             text(
                 "INSERT INTO tasks "
                 "(task_id, run_id, idempotency_key, intent_type, state, payload_json, attempt) "
-                "VALUES ('task-1', 'r-1', 'generation:r-1:1', 'generate', 'running', '{}', 1)"
-            )
+                "VALUES ('task-1', 'r-1', 'generation:r-1:1', 'generate', 'running', "
+                ":payload, 1)"
+            ),
+            {
+                "payload": json.dumps(
+                    {
+                        "budget_estimate": {
+                            "model_calls": 1,
+                            "input_tokens": 0,
+                            "output_tokens": 0,
+                            "cost_usd": "0",
+                            "hypotheses": 0,
+                            "matches": 0,
+                        }
+                    }
+                )
+            },
         )
         connection.execute(
             text(
@@ -232,6 +256,36 @@ def test_upgrade_existing_0001_database_supports_legacy_runtime_recovery(tmp_pat
 
     command.upgrade(config, "head")
 
+    engine = create_engine(database_url)
+    with engine.begin() as connection:
+        connection.execute(
+            text(
+                "UPDATE tasks SET lease_owner = 'legacy-worker', "
+                "lease_token = :lease_token, heartbeat_at = :heartbeat_at, "
+                "lease_expires_at = :lease_expires_at WHERE task_id = 'task-1'"
+            ),
+            {
+                "lease_token": fence.lease_token,
+                "heartbeat_at": "2026-08-17 10:00:00",
+                "lease_expires_at": "2099-08-17 10:05:00",
+            },
+        )
+        connection.execute(
+            text(
+                "INSERT INTO budget_reservations "
+                "(reservation_id, run_id, task_id, external_call_id, idempotency_key, "
+                "state, estimated_model_calls, created_at, updated_at) VALUES "
+                "(:reservation_id, 'r-1', 'task-1', 'call-1', 'generation:r-1:1', "
+                "'reserved', 1, :created_at, :updated_at)"
+            ),
+            {
+                "reservation_id": reservation_id,
+                "created_at": "2026-08-17 10:00:00",
+                "updated_at": "2026-08-17 10:00:00",
+            },
+        )
+    engine.dispose()
+
     uow = SqliteUnitOfWork(database_url)
     persisted = uow.get_external_call("call-1")
     assert persisted.execution_context is None
@@ -244,6 +298,8 @@ def test_upgrade_existing_0001_database_supports_legacy_runtime_recovery(tmp_pat
                 provider=provider,
                 validator=lambda raw: json.loads(raw),
                 context=mismatched_context,
+                reservation_id=reservation_id,
+                fence=fence,
             )
         )
     result = asyncio.run(
@@ -252,6 +308,8 @@ def test_upgrade_existing_0001_database_supports_legacy_runtime_recovery(tmp_pat
             provider=provider,
             validator=lambda raw: json.loads(raw),
             context=context,
+            reservation_id=reservation_id,
+            fence=fence,
         )
     )
     assert result.result_id == "legacy-result-1"

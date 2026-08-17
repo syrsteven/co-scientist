@@ -8,13 +8,20 @@ from co_scientist.adapters.persistence.sqlite import SqliteUnitOfWork
 from co_scientist.agents.result import AgentResult
 from co_scientist.domain.admission import AdmissionPolicy
 from co_scientist.domain.review import ReviewPolicy, ReviewStage
-from co_scientist.domain.states import ExternalCallState, RunState, TaskState
+from co_scientist.domain.states import ExternalCallState, RunState
 from co_scientist.domain.task import NewTask
 from co_scientist.domain.tournament import TournamentEpoch
 from co_scientist.events.models import NewEvent
 from co_scientist.ports.artifact_store import ArtifactRef
 from co_scientist.ports.event_store import ConcurrencyConflict
 from co_scientist.supervisor.orchestrator import Supervisor
+from tests._fenced_runtime import (
+    acknowledge_result,
+    budgeted_task,
+    claim_running_task,
+    execution_manifest,
+    fenced_context,
+)
 
 
 def _generation_payload() -> dict[str, object]:
@@ -103,7 +110,7 @@ def _ranking_uow(tmp_path) -> SqliteUnitOfWork:
     uow.create_schema()
     uow.create_started_run(
         "run-1",
-        manifest={},
+        manifest=execution_manifest(),
         event=NewEvent(event_type="RunStarted", payload={}),
         idempotency_key="start:run-1:0",
     )
@@ -579,25 +586,23 @@ def test_handle_result_atomically_applies_policy_owned_work_and_ignores_agent_ac
     uow.create_schema()
     uow.create_started_run(
         "run-1",
-        manifest={},
+        manifest=execution_manifest(),
         event=NewEvent(event_type="RunStarted", payload={}),
         idempotency_key="start:run-1:0",
     )
     uow.enqueue_tasks(
         [
-            NewTask(
+            budgeted_task(NewTask(
                 task_id="generate-1",
                 run_id="run-1",
                 idempotency_key="generation:run-1:1",
                 intent_type="generate",
                 payload={},
-            )
+            ))
         ]
     )
-    uow.transition_task("generate-1", TaskState.LEASED)
-    uow.transition_task("generate-1", TaskState.RUNNING)
-    uow.transition_task("generate-1", TaskState.RESULT_RECEIVED)
-    context = {
+    claimed = claim_running_task(uow, run_id="run-1", task_id="generate-1")
+    context = fenced_context({
         "run_id": "run-1",
         "task_id": "generate-1",
         "idempotency_key": "generation:run-1:1",
@@ -609,15 +614,17 @@ def test_handle_result_atomically_applies_policy_owned_work_and_ignores_agent_ac
         "provider": "stub",
         "model_or_tool": "stub-model",
         "input_snapshot_hash": "sha256:input",
-    }
+    }, claimed).model_dump(mode="json")
     uow.plan_external_call(
         "call-1",
         "sha256:request",
         run_id="run-1",
         task_id="generate-1",
         execution_context=context,
+        reservation_id=claimed.reservation_id,
+        fence=claimed,
     )
-    uow.transition_call("call-1", ExternalCallState.STARTED)
+    uow.transition_call("call-1", ExternalCallState.STARTED, fence=claimed)
     raw_ref = ArtifactRef(
         path="raw/call-1/digest",
         sha256="sha256:digest",
@@ -634,6 +641,7 @@ def test_handle_result_atomically_applies_policy_owned_work_and_ignores_agent_ac
             "cost_usd": "0.0123",
             "pricing_version": "2026-07",
         },
+        fence=claimed,
     )
     payload = _generation_payload()
     result = AgentResult(
@@ -650,12 +658,16 @@ def test_handle_result_atomically_applies_policy_owned_work_and_ignores_agent_ac
         provider="stub",
         model_or_tool="stub-model",
         input_snapshot_hash="sha256:input",
+        attempt=claimed.attempt,
+        reservation_id=claimed.reservation_id,
+        lease_fence_fingerprint=context["lease_fence_fingerprint"],
         status="completed",
         payload=payload,
         recommended_actions=("run_deep_verification",),
         raw_artifact_ref=raw_ref,
     )
-    uow.record_validated_and_submitted("call-1", payload, result)
+    uow.record_validated_and_submitted("call-1", payload, result, fence=claimed)
+    acknowledge_result(uow, claimed)
 
     commit = Supervisor(
         uow=uow,
@@ -664,7 +676,9 @@ def test_handle_result_atomically_applies_policy_owned_work_and_ignores_agent_ac
         run_id="run-1",
         task_id="generate-1",
         result=result,
-        expected_sequence=1,
+        expected_sequence=uow.load("run-1")[-1].sequence,
+        reservation_id=claimed.reservation_id,
+        fence=claimed,
     )
 
     assert [event.event_type for event in commit.events] == [
@@ -676,7 +690,18 @@ def test_handle_result_atomically_applies_policy_owned_work_and_ignores_agent_ac
         "run_id": "run-1",
         "idempotency_key": "review:initial_review:h-1",
         "intent_type": "run_initial_review",
-        "payload": {"hypothesis_id": "h-1", "review_stage": "initial_review"},
+        "payload": {
+            "hypothesis_id": "h-1",
+            "review_stage": "initial_review",
+            "budget_estimate": {
+                "model_calls": 1,
+                "input_tokens": 0,
+                "output_tokens": 0,
+                "cost_usd": "0",
+                "hypotheses": 0,
+                "matches": 0,
+            },
+        },
         "created_by": "supervisor",
     }
     assert uow.task_state("generate-1") == "succeeded"
@@ -697,25 +722,23 @@ def _submitted_generation_result(tmp_path, status: str):
     uow.create_schema()
     uow.create_started_run(
         "run-1",
-        manifest={},
+        manifest=execution_manifest(),
         event=NewEvent(event_type="RunStarted", payload={}),
         idempotency_key="start:run-1:0",
     )
     uow.enqueue_tasks(
         [
-            NewTask(
+            budgeted_task(NewTask(
                 task_id="generate-1",
                 run_id="run-1",
                 idempotency_key="generation:run-1:1",
                 intent_type="generate",
                 payload={},
-            )
+            ))
         ]
     )
-    uow.transition_task("generate-1", TaskState.LEASED)
-    uow.transition_task("generate-1", TaskState.RUNNING)
-    uow.transition_task("generate-1", TaskState.RESULT_RECEIVED)
-    context = {
+    claimed = claim_running_task(uow, run_id="run-1", task_id="generate-1")
+    context = fenced_context({
         "run_id": "run-1",
         "task_id": "generate-1",
         "idempotency_key": "generation:run-1:1",
@@ -727,15 +750,17 @@ def _submitted_generation_result(tmp_path, status: str):
         "provider": "stub",
         "model_or_tool": "stub-model",
         "input_snapshot_hash": "sha256:input",
-    }
+    }, claimed).model_dump(mode="json")
     uow.plan_external_call(
         "call-1",
         "sha256:request",
         run_id="run-1",
         task_id="generate-1",
         execution_context=context,
+        reservation_id=claimed.reservation_id,
+        fence=claimed,
     )
-    uow.transition_call("call-1", ExternalCallState.STARTED)
+    uow.transition_call("call-1", ExternalCallState.STARTED, fence=claimed)
     raw_ref = ArtifactRef(
         path="raw/call-1/digest",
         sha256="sha256:digest",
@@ -747,6 +772,7 @@ def _submitted_generation_result(tmp_path, status: str):
         raw_ref,
         ExternalCallState.RAW_RESPONSE_PERSISTED,
         usage={"input_tokens": 3, "output_tokens": 2, "pricing_version": "test"},
+        fence=claimed,
     )
     payload = (
         _generation_payload()
@@ -767,14 +793,18 @@ def _submitted_generation_result(tmp_path, status: str):
         provider="stub",
         model_or_tool="stub-model",
         input_snapshot_hash="sha256:input",
+        attempt=claimed.attempt,
+        reservation_id=claimed.reservation_id,
+        lease_fence_fingerprint=context["lease_fence_fingerprint"],
         status=status,
         payload=payload,
         recommended_actions=("run_deep_verification",),
         raw_artifact_ref=raw_ref,
     )
-    uow.record_validated_and_submitted("call-1", payload, result)
+    uow.record_validated_and_submitted("call-1", payload, result, fence=claimed)
+    acknowledge_result(uow, claimed)
     supervisor = Supervisor(uow=uow, review_policy=ReviewPolicy(profile_id="minimal"))
-    return supervisor, result
+    return supervisor, result, claimed
 
 
 # Mutation caught: treating partial/rejected/failed as completed or leaving them unapplied.
@@ -794,13 +824,15 @@ def test_handle_result_applies_each_status_with_explicit_atomic_semantics(
     expected_task_state: str,
     followup_exists: bool,
 ) -> None:
-    supervisor, result = _submitted_generation_result(tmp_path, status)
+    supervisor, result, claimed = _submitted_generation_result(tmp_path, status)
 
     commit = supervisor.handle_result(
         run_id="run-1",
         task_id="generate-1",
         result=result,
-        expected_sequence=1,
+        expected_sequence=supervisor.uow.load("run-1")[-1].sequence,
+        reservation_id=claimed.reservation_id,
+        fence=claimed,
     )
 
     expected_events = [expected_event, "TaskEnqueued"] if followup_exists else [expected_event]

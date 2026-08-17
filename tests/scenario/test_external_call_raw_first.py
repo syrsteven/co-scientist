@@ -1,5 +1,6 @@
 import hashlib
 import json
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -11,7 +12,7 @@ from co_scientist.adapters.llm.fake import FakeLLMProvider
 from co_scientist.adapters.persistence.sqlite import SqliteUnitOfWork
 from co_scientist.agents.executor import SkillExecutor
 from co_scientist.agents.result import AgentExecutionContext, AgentResult
-from co_scientist.domain.task import NewTask
+from co_scientist.domain.task import NewTask, TaskLeaseFence, lease_fence_fingerprint
 from co_scientist.events.models import NewEvent
 from co_scientist.ports.artifact_store import ArtifactRef
 from co_scientist.ports.external_provider import RawExternalResponse
@@ -47,7 +48,7 @@ class FailingArtifactStore:
 
 
 class AtomicResultFailingUnitOfWork(SqliteUnitOfWork):
-    def record_validated_and_submitted(self, call_id, payload, result) -> None:
+    def record_validated_and_submitted(self, call_id, payload, result, **metadata) -> None:
         raise RuntimeError("database unavailable")
 
 
@@ -76,6 +77,7 @@ def _valid_generation_payload() -> dict[str, object]:
 def _context(
     *, run_id: str = "r-1", task_id: str = "task-1"
 ) -> AgentExecutionContext:
+    fence = _fence(run_id=run_id, task_id=task_id)
     return AgentExecutionContext(
         run_id=run_id,
         task_id=task_id,
@@ -88,7 +90,32 @@ def _context(
         provider="stub",
         model_or_tool="stub-v1",
         input_snapshot_hash="sha256:input",
+        attempt=fence.attempt,
+        reservation_id=_reservation_id(run_id, "generation:r-1:1"),
+        lease_fence_fingerprint=lease_fence_fingerprint(fence),
     )
+
+
+def _reservation_id(run_id: str, idempotency_key: str) -> str:
+    digest = hashlib.sha256(f"{run_id}\0{idempotency_key}".encode()).hexdigest()
+    return f"reservation-{digest}"
+
+
+def _fence(*, run_id: str = "r-1", task_id: str = "task-1") -> TaskLeaseFence:
+    return TaskLeaseFence(
+        run_id=run_id, task_id=task_id, lease_token="raw-first-lease", attempt=1
+    )
+
+
+def _lease_kwargs() -> dict[str, object]:
+    return {
+        "reservation_id": _reservation_id("r-1", "generation:r-1:1"),
+        "fence": _fence(),
+    }
+
+
+async def _execute(runner, **kwargs):
+    return await runner.execute(**kwargs, **_lease_kwargs())
 
 
 def _runtime(tmp_path, *, uow_type=SqliteUnitOfWork, artifacts=None):
@@ -96,7 +123,7 @@ def _runtime(tmp_path, *, uow_type=SqliteUnitOfWork, artifacts=None):
     uow.create_schema()
     uow.create_started_run(
         "r-1",
-        manifest={},
+        manifest={"execution_contract_version": 3, "budget": {}},
         event=NewEvent(event_type="RunStarted", payload={}),
         idempotency_key="start:r-1:0",
     )
@@ -107,10 +134,28 @@ def _runtime(tmp_path, *, uow_type=SqliteUnitOfWork, artifacts=None):
                 run_id="r-1",
                 idempotency_key="generation:r-1:1",
                 intent_type="generate",
-                payload={},
+                payload={
+                    "budget_estimate": {
+                        "model_calls": 1,
+                        "input_tokens": 0,
+                        "output_tokens": 0,
+                        "cost_usd": "0",
+                        "hypotheses": 0,
+                        "matches": 0,
+                    }
+                },
             )
         ]
     )
+    claimed = uow.claim_next_task(
+        run_id="r-1",
+        worker_id="raw-first-worker",
+        lease_token="raw-first-lease",
+        now=datetime(2026, 8, 17, 10, 0, tzinfo=UTC),
+        lease_duration=timedelta(minutes=5),
+    ).task
+    assert claimed is not None
+    uow.mark_task_running(fence=claimed)
     artifact_store = artifacts or FilesystemArtifactStore(tmp_path / "artifacts")
     return uow, artifact_store, SimpleNamespace(uow=uow, artifacts=artifact_store)
 
@@ -154,7 +199,7 @@ async def test_skill_executor_rejects_malformed_scientific_json_after_raw_persis
     uow.create_schema()
     uow.create_started_run(
         "run-1",
-        manifest={},
+        manifest={"execution_contract_version": 3, "budget": {}},
         event=NewEvent(event_type="RunStarted", payload={}),
         idempotency_key="start:run-1:0",
     )
@@ -166,10 +211,28 @@ async def test_skill_executor_rejects_malformed_scientific_json_after_raw_persis
                 run_id="run-1",
                 idempotency_key=f"{skill_id}:run-1:1",
                 intent_type=f"run_{skill_id}",
-                payload={},
+                payload={
+                    "budget_estimate": {
+                        "model_calls": 1,
+                        "input_tokens": 0,
+                        "output_tokens": 0,
+                        "cost_usd": "0",
+                        "hypotheses": 0,
+                        "matches": 0,
+                    }
+                },
             )
         ]
     )
+    fence = uow.claim_next_task(
+        run_id="run-1",
+        worker_id="typed-worker",
+        lease_token="typed-lease",
+        now=datetime(2026, 8, 17, 10, 0, tzinfo=UTC),
+        lease_duration=timedelta(minutes=5),
+    ).task
+    assert fence is not None
+    uow.mark_task_running(fence=fence)
     artifacts = FilesystemArtifactStore(tmp_path / f"{skill_id}-artifacts")
     raw_body = json.dumps(malformed_payload, separators=(",", ":")).encode("utf-8")
     provider = FakeLLMProvider([raw_body])
@@ -185,6 +248,9 @@ async def test_skill_executor_rejects_malformed_scientific_json_after_raw_persis
         provider="fake",
         model_or_tool="fake-v1",
         input_snapshot_hash="sha256:input",
+        attempt=fence.attempt,
+        reservation_id=fence.reservation_id,
+        lease_fence_fingerprint=lease_fence_fingerprint(fence),
     )
 
     with pytest.raises(ValidationError):
@@ -195,6 +261,8 @@ async def test_skill_executor_rejects_malformed_scientific_json_after_raw_persis
             skill_directory=Path("skills") / skill_id,
             inputs={},
             context=context,
+            reservation_id=fence.reservation_id,
+            fence=fence,
         )
 
     call = uow.get_external_call(f"{skill_id}-call")
@@ -204,8 +272,12 @@ async def test_skill_executor_rejects_malformed_scientific_json_after_raw_persis
     assert artifacts.read(call.raw_artifact_ref) == raw_body
     assert call.validated_payload is None
     assert call.agent_result is None
-    assert [event.event_type for event in uow.load("run-1")] == ["RunStarted"]
-    assert uow.task_state(task_id) == "pending"
+    assert [event.event_type for event in uow.load("run-1")] == [
+        "RunStarted",
+        "TaskLeaseClaimed",
+        "BudgetReserved",
+    ]
+    assert uow.task_state(task_id) == "running"
     assert call.usage == {}
 
 
@@ -219,7 +291,7 @@ async def test_validator_observes_persisted_raw_artifact(tmp_path) -> None:
         observed.append(uow.external_call_state("call-1"))
         return _valid_generation_payload()
 
-    result = await ExternalCallRunner(runtime).execute(
+    result = await _execute(ExternalCallRunner(runtime),
         call_id="call-1",
         request={"prompt": "generate"},
         provider=provider,
@@ -255,7 +327,7 @@ async def test_provider_failure_before_response_is_durable(tmp_path) -> None:
     provider = ProviderWithoutResponse()
 
     with pytest.raises(RuntimeError, match="provider unavailable"):
-        await ExternalCallRunner(runtime).execute(
+        await _execute(ExternalCallRunner(runtime),
             call_id="call-1",
             request={"prompt": "generate"},
             provider=provider,
@@ -274,7 +346,7 @@ async def test_actual_raw_persistence_failure_is_terminal_and_skips_validation(t
     observed = []
 
     with pytest.raises(OSError, match="artifact store unavailable"):
-        await ExternalCallRunner(runtime).execute(
+        await _execute(ExternalCallRunner(runtime),
             call_id="call-1",
             request={"prompt": "generate"},
             provider=StubProvider(),
@@ -294,7 +366,7 @@ async def test_validator_failure_is_terminal_with_raw_artifact_intact(tmp_path) 
         raise ValueError("invalid response")
 
     with pytest.raises(ValueError, match="invalid response"):
-        await ExternalCallRunner(runtime).execute(
+        await _execute(ExternalCallRunner(runtime),
             call_id="call-1",
             request={"prompt": "generate"},
             provider=StubProvider(),
@@ -315,7 +387,7 @@ async def test_infrastructure_failure_after_durable_raw_remains_recoverable(tmp_
     uow, artifacts, runtime = _runtime(tmp_path, uow_type=AtomicResultFailingUnitOfWork)
 
     with pytest.raises(RuntimeError, match="database unavailable"):
-        await ExternalCallRunner(runtime).execute(
+        await _execute(ExternalCallRunner(runtime),
             call_id="call-1",
             request={"prompt": "generate"},
             provider=StubProvider(),
@@ -344,8 +416,8 @@ async def test_execute_rejects_task_run_mismatch_before_provider_call(tmp_path) 
     )
     provider = StubProvider()
 
-    with pytest.raises(ValueError, match="does not belong to run r-2"):
-        await ExternalCallRunner(runtime).execute(
+    with pytest.raises(ValueError, match="task lease fence"):
+        await _execute(ExternalCallRunner(runtime),
             call_id="call-1",
             request={"prompt": "generate"},
             provider=provider,
@@ -366,7 +438,7 @@ async def test_execute_rejects_prompt_hash_mismatch_before_provider_call(tmp_pat
     )
 
     with pytest.raises(ValueError, match="prompt hash"):
-        await ExternalCallRunner(runtime).execute(
+        await _execute(ExternalCallRunner(runtime),
             call_id="call-1",
             request={"system_prompt": "actual prompt"},
             provider=provider,

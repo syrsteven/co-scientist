@@ -1,3 +1,5 @@
+import hashlib
+from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 
 import pytest
@@ -8,13 +10,19 @@ from co_scientist.agents.result import AgentResult
 from co_scientist.domain.budget import CostEntry
 from co_scientist.domain.review import ReviewPolicy
 from co_scientist.domain.states import ExternalCallState, RunState, TaskState
-from co_scientist.domain.task import NewTask, TaskMutation
+from co_scientist.domain.task import (
+    NewTask,
+    TaskLeaseFence,
+    TaskMutation,
+    lease_fence_fingerprint,
+)
 from co_scientist.events.models import NewEvent
 from co_scientist.ports.artifact_store import ArtifactRef
 from co_scientist.supervisor.orchestrator import Supervisor
 
 
 def _context(*, task_id: str = "generate-1", key: str = "generation:1") -> dict[str, object]:
+    fence = _fence(task_id=task_id)
     return {
         "run_id": "run-1",
         "task_id": task_id,
@@ -27,7 +35,21 @@ def _context(*, task_id: str = "generate-1", key: str = "generation:1") -> dict[
         "provider": "stub",
         "model_or_tool": "stub-model",
         "input_snapshot_hash": "sha256:input",
+        "attempt": 1,
+        "reservation_id": _reservation_id(key),
+        "lease_fence_fingerprint": lease_fence_fingerprint(fence),
     }
+
+
+def _reservation_id(key: str = "generation:1") -> str:
+    digest = hashlib.sha256(f"run-1\0{key}".encode()).hexdigest()
+    return f"reservation-{digest}"
+
+
+def _fence(*, task_id: str = "generate-1") -> TaskLeaseFence:
+    return TaskLeaseFence(
+        run_id="run-1", task_id=task_id, lease_token="fence-lease", attempt=1
+    )
 
 
 def _generation_payload() -> dict[str, object]:
@@ -60,7 +82,7 @@ def _submitted_generation(tmp_path) -> tuple[Supervisor, AgentResult]:
     uow.create_schema()
     uow.create_started_run(
         "run-1",
-        manifest={},
+        manifest={"execution_contract_version": 3, "budget": {}},
         event=NewEvent(event_type="RunStarted", payload={}),
         idempotency_key="start:run-1:0",
     )
@@ -69,20 +91,37 @@ def _submitted_generation(tmp_path) -> tuple[Supervisor, AgentResult]:
         run_id="run-1",
         idempotency_key="generation:1",
         intent_type="generate",
-        payload={},
+        payload={
+            "budget_estimate": {
+                "model_calls": 1,
+                "input_tokens": 3,
+                "output_tokens": 2,
+                "cost_usd": "0.01",
+                "hypotheses": 1,
+                "matches": 0,
+            }
+        },
     )
     uow.enqueue_tasks((task,))
-    uow.transition_task(task.task_id, TaskState.LEASED)
-    uow.transition_task(task.task_id, TaskState.RUNNING)
-    uow.transition_task(task.task_id, TaskState.RESULT_RECEIVED)
+    claimed = uow.claim_next_task(
+        run_id="run-1",
+        worker_id="fence-worker",
+        lease_token="fence-lease",
+        now=datetime(2026, 8, 17, 10, 0, tzinfo=UTC),
+        lease_duration=timedelta(minutes=5),
+    ).task
+    assert claimed is not None
+    uow.mark_task_running(fence=claimed)
     uow.plan_external_call(
         "call-1",
         "sha256:request",
         run_id="run-1",
         task_id=task.task_id,
         execution_context=_context(),
+        reservation_id=claimed.reservation_id,
+        fence=claimed,
     )
-    uow.transition_call("call-1", ExternalCallState.STARTED)
+    uow.transition_call("call-1", ExternalCallState.STARTED, fence=claimed)
     raw_ref = ArtifactRef(
         path="raw/call-1/digest",
         sha256="sha256:digest",
@@ -99,6 +138,7 @@ def _submitted_generation(tmp_path) -> tuple[Supervisor, AgentResult]:
             "cost_usd": "0.01",
             "pricing_version": "test",
         },
+        fence=claimed,
     )
     payload = _generation_payload()
     result = AgentResult(
@@ -115,11 +155,15 @@ def _submitted_generation(tmp_path) -> tuple[Supervisor, AgentResult]:
         provider="stub",
         model_or_tool="stub-model",
         input_snapshot_hash="sha256:input",
+        attempt=claimed.attempt,
+        reservation_id=claimed.reservation_id,
+        lease_fence_fingerprint=lease_fence_fingerprint(claimed),
         status="completed",
         payload=payload,
         raw_artifact_ref=raw_ref,
     )
-    uow.record_validated_and_submitted("call-1", payload, result)
+    uow.record_validated_and_submitted("call-1", payload, result, fence=claimed)
+    uow.acknowledge_task(fence=claimed, target_state=TaskState.RESULT_RECEIVED)
     return Supervisor(uow=uow, review_policy=ReviewPolicy(profile_id="minimal")), result
 
 
@@ -128,7 +172,7 @@ def _enter_state(supervisor: Supervisor, target: RunState) -> None:
     if target in {RunState.COMPLETED, RunState.COMPLETED_PARTIAL}:
         stopping = uow.commit_lifecycle_batch(
             run_id="run-1",
-            expected_sequence=1,
+            expected_sequence=uow.load("run-1")[-1].sequence,
             events=(NewEvent(event_type="RunStopping", payload={}),),
             target_run_state=RunState.STOPPING,
             idempotency_key="enter-stopping",
@@ -150,7 +194,7 @@ def _enter_state(supervisor: Supervisor, target: RunState) -> None:
     terminal_event = "RunFailed" if target is RunState.FAILED else "RunCancelled"
     uow.commit_lifecycle_batch(
         run_id="run-1",
-        expected_sequence=1,
+        expected_sequence=uow.load("run-1")[-1].sequence,
         events=(NewEvent(event_type=terminal_event, payload={}),),
         target_run_state=target,
         idempotency_key=f"enter-{target.value}",
@@ -209,6 +253,8 @@ def _attempt_terminal_mutation(
             run_id="run-1",
             task_id="generate-1",
             execution_context=_context(),
+            reservation_id=_reservation_id(),
+            fence=_fence(),
         )
     elif mutation == "scientific_event":
         uow.commit_domain_batch(
@@ -271,6 +317,8 @@ def _attempt_terminal_mutation(
             ),
             task_mutations=(TaskMutation.succeed("generate-1"),),
             external_call_id=result.external_call_id,
+            reservation_id=_reservation_id(),
+            fence=_fence(),
             idempotency_key=result.idempotency_key,
         )
     elif mutation == "cost":
@@ -338,7 +386,7 @@ def test_stopping_settles_submitted_result_without_exploration_followups(tmp_pat
     supervisor, result = _submitted_generation(tmp_path)
     stopping = supervisor.uow.commit_lifecycle_batch(
         run_id="run-1",
-        expected_sequence=1,
+        expected_sequence=supervisor.uow.load("run-1")[-1].sequence,
         events=(NewEvent(event_type="RunStopping", payload={}),),
         target_run_state=RunState.STOPPING,
         idempotency_key="enter-stopping",
@@ -349,6 +397,8 @@ def test_stopping_settles_submitted_result_without_exploration_followups(tmp_pat
         "generate-1",
         result,
         expected_sequence=stopping.last_sequence,
+        reservation_id=_reservation_id(),
+        fence=_fence(),
     )
 
     assert [event.event_type for event in committed.events] == [
@@ -371,7 +421,7 @@ def test_stopping_allows_only_finalize_run_task_creation(tmp_path) -> None:
     supervisor, _ = _submitted_generation(tmp_path)
     supervisor.uow.commit_lifecycle_batch(
         run_id="run-1",
-        expected_sequence=1,
+        expected_sequence=supervisor.uow.load("run-1")[-1].sequence,
         events=(NewEvent(event_type="RunStopping", payload={}),),
         target_run_state=RunState.STOPPING,
         idempotency_key="enter-stopping",
@@ -391,7 +441,7 @@ def test_paused_run_preserves_work_without_creating_new_tasks(tmp_path) -> None:
     supervisor, _ = _submitted_generation(tmp_path)
     pausing = supervisor.uow.commit_lifecycle_batch(
         run_id="run-1",
-        expected_sequence=1,
+        expected_sequence=supervisor.uow.load("run-1")[-1].sequence,
         events=(NewEvent(event_type="RunPausing", payload={}),),
         target_run_state=RunState.PAUSING,
         idempotency_key="enter-pausing",
@@ -441,7 +491,7 @@ def test_stop_transition_rejects_mixed_exploration_followup_without_side_effects
     with pytest.raises(ValueError, match="stopping.*exploration"):
         supervisor.uow.commit_lifecycle_batch(
             run_id="run-1",
-            expected_sequence=1,
+            expected_sequence=supervisor.uow.load("run-1")[-1].sequence,
             events=(
                 NewEvent(event_type="RunStopping", payload={}),
                 NewEvent(
@@ -462,7 +512,9 @@ def test_stop_transition_rejects_mixed_exploration_followup_without_side_effects
 def test_stop_transition_accepts_only_its_authorized_finalization_task(tmp_path) -> None:
     supervisor, _ = _submitted_generation(tmp_path)
 
-    committed = supervisor.request_normal_completion("run-1", expected_sequence=1)
+    committed = supervisor.request_normal_completion(
+        "run-1", expected_sequence=supervisor.uow.load("run-1")[-1].sequence
+    )
 
     assert [event.event_type for event in committed.events] == [
         "RunStopping",

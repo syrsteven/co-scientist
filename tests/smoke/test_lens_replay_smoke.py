@@ -17,6 +17,7 @@ from co_scientist.adapters.literature.pubmed import parse_pubmed_records
 from co_scientist.adapters.literature.replay import ReplayLiteratureProvider
 from co_scientist.adapters.llm.replay import ReplayLLMProvider
 from co_scientist.adapters.persistence.sqlite import (
+    BudgetReservationRow,
     ExternalCallRow,
     RunRow,
     SqliteUnitOfWork,
@@ -28,7 +29,7 @@ from co_scientist.domain.convergence import ConvergenceSnapshot
 from co_scientist.domain.hypothesis import HypothesisContent
 from co_scientist.domain.review import NoveltyAssessment, ReviewPolicy
 from co_scientist.domain.states import TaskState
-from co_scientist.domain.task import NewTask
+from co_scientist.domain.task import NewTask, TaskLeaseFence, lease_fence_fingerprint
 from co_scientist.domain.tournament import TournamentEpoch
 from co_scientist.events.models import NewEvent
 from co_scientist.export.run_export import SqliteRunReadModel, export_run
@@ -40,6 +41,13 @@ from co_scientist.runtime.external_calls import (
 )
 from co_scientist.skills.loader import load_skill
 from co_scientist.supervisor.orchestrator import Supervisor
+from tests._fenced_runtime import (
+    acknowledge_result,
+    budgeted_task,
+    claim_running_task,
+    execution_manifest,
+    fenced_context,
+)
 
 MECHANISM_CHAIN = [
     "surgical_configuration",
@@ -174,6 +182,7 @@ class LensReplayHarness:
         started = supervisor.create_and_start_run(
             run_id,
             manifest={
+                **execution_manifest(),
                 "profile_id": profile["profile_id"],
                 "profile": profile,
                 "goal": goal,
@@ -504,24 +513,27 @@ class LensReplayHarness:
         *,
         task_id: str,
         skill_id: str,
-    ) -> None:
+    ):
         assert self.run is not None
         try:
             self.run.uow.task_state(task_id)
         except KeyError:
             scheduled = supervisor.enqueue_task(
-                task=NewTask(
+                task=budgeted_task(NewTask(
                     task_id=task_id,
                     run_id=self.run.run_id,
                     idempotency_key=task_id,
                     intent_type=f"run_{skill_id}",
                     payload={"skill_id": skill_id},
-                ),
+                )),
                 expected_sequence=self._expected_sequence,
             )
             self._expected_sequence = scheduled.last_sequence
-        self.run.uow.transition_task(task_id, TaskState.LEASED)
-        self.run.uow.transition_task(task_id, TaskState.RUNNING)
+        claimed = claim_running_task(
+            self.run.uow, run_id=self.run.run_id, task_id=task_id
+        )
+        self._expected_sequence = self.run.uow.load(self.run.run_id)[-1].sequence
+        return claimed
 
     async def _run_skill(
         self,
@@ -534,10 +546,10 @@ class LensReplayHarness:
         payload: dict[str, Any],
     ) -> AgentResult:
         assert self.run is not None
-        self._ensure_task(supervisor, task_id=task_id, skill_id=skill_id)
+        claimed = self._ensure_task(supervisor, task_id=task_id, skill_id=skill_id)
         call_id = f"call-{task_id.replace(':', '-')}"
         request = _skill_request(skill_id, inputs)
-        context = AgentExecutionContext(
+        context = fenced_context(AgentExecutionContext(
             run_id=self.run.run_id,
             task_id=task_id,
             idempotency_key=task_id,
@@ -550,13 +562,15 @@ class LensReplayHarness:
             model_or_tool="core-preview-fixture-v1",
             input_snapshot_hash=_sha256_json(inputs),
             prompt_hash=prompt_hash(str(request["system_prompt"])),
-        )
+        ), claimed)
         self.run.uow.plan_external_call(
             call_id,
             request_fingerprint(request),
             run_id=self.run.run_id,
             task_id=task_id,
             execution_context=context.model_dump(mode="json"),
+            reservation_id=claimed.reservation_id,
+            fence=claimed,
             provider="replay",
             model_or_tool="core-preview-fixture-v1",
         )
@@ -569,13 +583,17 @@ class LensReplayHarness:
             skill_directory=Path("skills") / skill_id,
             inputs=inputs,
             context=context,
+            reservation_id=claimed.reservation_id,
+            fence=claimed,
         )
-        self.run.uow.transition_task(task_id, TaskState.RESULT_RECEIVED)
+        acknowledge_result(self.run.uow, claimed)
         committed = supervisor.handle_result(
             self.run.run_id,
             task_id,
             result,
             expected_sequence=self._expected_sequence,
+            reservation_id=claimed.reservation_id,
+            fence=claimed,
         )
         self._expected_sequence = committed.last_sequence
         return result
@@ -595,8 +613,8 @@ class LensReplayHarness:
         validator: Callable[[bytes], dict[str, Any]],
     ) -> AgentResult:
         assert self.run is not None
-        self._ensure_task(supervisor, task_id=task_id, skill_id=skill_id)
-        context = AgentExecutionContext(
+        claimed = self._ensure_task(supervisor, task_id=task_id, skill_id=skill_id)
+        context = fenced_context(AgentExecutionContext(
             run_id=self.run.run_id,
             task_id=task_id,
             idempotency_key=task_id,
@@ -608,13 +626,15 @@ class LensReplayHarness:
             provider=provider_name,
             model_or_tool=model_or_tool,
             input_snapshot_hash=_sha256_json(request),
-        )
+        ), claimed)
         self.run.uow.plan_external_call(
             call_id,
             request_fingerprint(request),
             run_id=self.run.run_id,
             task_id=task_id,
             execution_context=context.model_dump(mode="json"),
+            reservation_id=claimed.reservation_id,
+            fence=claimed,
             provider=provider_name,
             model_or_tool=model_or_tool,
         )
@@ -624,13 +644,17 @@ class LensReplayHarness:
             provider=provider,
             validator=validator,
             context=context,
+            reservation_id=claimed.reservation_id,
+            fence=claimed,
         )
-        self.run.uow.transition_task(task_id, TaskState.RESULT_RECEIVED)
+        acknowledge_result(self.run.uow, claimed)
         committed = supervisor.handle_result(
             self.run.run_id,
             task_id,
             result,
             expected_sequence=self._expected_sequence,
+            reservation_id=claimed.reservation_id,
+            fence=claimed,
         )
         self._expected_sequence = committed.last_sequence
         return result
@@ -670,8 +694,8 @@ def test_lens_replay_exports_a_traceable_ranked_result(
     assert projection["current_ratings_by_epoch"]["epoch-1"] == bundle.ratings["epoch-1"]["h-1"]
     assert len(projection["match_participation"]) == 6
     assert projection["cluster_ids"] == ["distinct_mechanisms"]
-    assert projection["created_sequence"] == 4
-    assert projection["updated_sequence"] == 46
+    assert projection["created_sequence"] == 6
+    assert projection["updated_sequence"] == 74
     assert {review["stage"] for review in bundle.reviews} == {
         "initial_review",
         "full_review",
@@ -786,8 +810,26 @@ def test_export_uses_one_explicit_sqlite_snapshot_during_concurrent_commit(
     assert core_cli.run is not None
     uow = core_cli.run.uow
     with uow.session_factory() as session:
-        task = session.scalar(select(TaskRow).where(TaskRow.run_id == run_id))
+        task = session.scalar(
+            select(TaskRow).where(
+                TaskRow.run_id == run_id,
+                TaskRow.lease_token.is_not(None),
+            )
+        )
+        reservation = session.scalar(
+            select(BudgetReservationRow).where(
+                BudgetReservationRow.run_id == run_id,
+                BudgetReservationRow.task_id == task.task_id,
+            )
+        ) if task is not None else None
     assert task is not None
+    assert task.lease_token is not None and reservation is not None
+    fence = TaskLeaseFence(
+        run_id=run_id,
+        task_id=task.task_id,
+        lease_token=task.lease_token,
+        attempt=task.attempt,
+    )
     observed_begin = False
     mutated = False
     writer_errors: list[BaseException] = []
@@ -819,7 +861,12 @@ def test_export_uses_one_explicit_sqlite_snapshot_during_concurrent_commit(
                             "provider": "concurrent-provider",
                             "model_or_tool": "concurrent-model",
                             "input_snapshot_hash": "sha256:concurrent-input",
+                            "attempt": fence.attempt,
+                            "reservation_id": reservation.reservation_id,
+                            "lease_fence_fingerprint": lease_fence_fingerprint(fence),
                         },
+                    reservation_id=reservation.reservation_id,
+                    fence=fence,
                     provider="concurrent-provider",
                     model_or_tool="concurrent-model",
                 )

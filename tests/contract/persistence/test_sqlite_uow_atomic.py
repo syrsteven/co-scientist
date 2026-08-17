@@ -15,6 +15,12 @@ from co_scientist.domain.transitions import InvalidTransition
 from co_scientist.events.models import NewEvent
 from co_scientist.ports.artifact_store import ArtifactRef
 from co_scientist.ports.event_store import ConcurrencyConflict
+from tests._fenced_runtime import (
+    acknowledge_result,
+    budgeted_task,
+    claim_running_task,
+    fenced_context,
+)
 
 
 def _store(tmp_path) -> SqliteUnitOfWork:
@@ -37,9 +43,13 @@ def _create_running(
 
 
 def _execution_context(
-    *, run_id: str = "r-1", task_id: str = "task-1", idempotency_key: str = "source"
+    *,
+    run_id: str = "r-1",
+    task_id: str = "task-1",
+    idempotency_key: str = "source",
+    claimed=None,
 ) -> dict[str, object]:
-    return {
+    context = {
         "run_id": run_id,
         "task_id": task_id,
         "idempotency_key": idempotency_key,
@@ -52,6 +62,9 @@ def _execution_context(
         "model_or_tool": "stub-model",
         "input_snapshot_hash": "sha256:input",
     }
+    if claimed is not None:
+        return fenced_context(context, claimed).model_dump(mode="json")
+    return context
 
 
 def _valid_generation_payload() -> dict[str, object]:
@@ -77,6 +90,23 @@ def _valid_generation_payload() -> dict[str, object]:
             }
         ],
     }
+
+
+def _enqueue_and_claim_default_task(store: SqliteUnitOfWork):
+    store.enqueue_tasks(
+        [
+            budgeted_task(
+                NewTask(
+                    task_id="task-1",
+                    run_id="r-1",
+                    idempotency_key="source",
+                    intent_type="reflect",
+                    payload={},
+                )
+            )
+        ]
+    )
+    return claim_running_task(store, run_id="r-1", task_id="task-1")
 
 
 def _advance_task_to_result_received(store: SqliteUnitOfWork, task_id: str) -> None:
@@ -496,16 +526,16 @@ def test_domain_batch_commits_events_task_followup_cost_call_and_run_sequence(tm
     _create_running(store, "r-1", manifest={"goal": "discover"})
     store.enqueue_tasks(
         [
-            NewTask(
+            budgeted_task(NewTask(
                 task_id="task-1",
                 run_id="r-1",
                 idempotency_key="source",
                 intent_type="reflect",
                 payload={"candidate": "h-1"},
-            )
+            ))
         ]
     )
-    _advance_task_to_result_received(store, "task-1")
+    claimed = claim_running_task(store, run_id="r-1", task_id="task-1")
     store.plan_external_call(
         "call-1",
         "sha256:request",
@@ -513,16 +543,23 @@ def test_domain_batch_commits_events_task_followup_cost_call_and_run_sequence(tm
         task_id="task-1",
         provider="stub",
         model_or_tool="stub-model",
-        execution_context=_execution_context(),
+        execution_context=_execution_context(claimed=claimed),
+        reservation_id=claimed.reservation_id,
+        fence=claimed,
     )
-    store.transition_call("call-1", ExternalCallState.STARTED)
-    store.transition_call("call-1", ExternalCallState.RAW_RESPONSE_PERSISTED)
-    store.transition_call("call-1", ExternalCallState.VALIDATED)
-    store.transition_call("call-1", ExternalCallState.AGENT_RESULT_SUBMITTED)
+    store.transition_call("call-1", ExternalCallState.STARTED, fence=claimed)
+    store.transition_call(
+        "call-1", ExternalCallState.RAW_RESPONSE_PERSISTED, fence=claimed
+    )
+    store.transition_call("call-1", ExternalCallState.VALIDATED, fence=claimed)
+    store.transition_call(
+        "call-1", ExternalCallState.AGENT_RESULT_SUBMITTED, fence=claimed
+    )
+    acknowledge_result(store, claimed)
 
     result = store.commit_domain_batch(
         run_id="r-1",
-        expected_sequence=1,
+        expected_sequence=3,
         events=[
             NewEvent(
                 event_type="ReviewCompleted",
@@ -532,16 +569,18 @@ def test_domain_batch_commits_events_task_followup_cost_call_and_run_sequence(tm
         ],
         task_mutations=[TaskMutation.succeed("task-1")],
         followup_tasks=[
-            NewTask(
+            budgeted_task(NewTask(
                 task_id="task-2",
                 run_id="r-1",
                 idempotency_key="followup",
                 intent_type="rank",
                 payload={"hypothesis_id": "h-1"},
-            )
+            ))
         ],
         idempotency_key="source",
         external_call_id="call-1",
+        reservation_id=claimed.reservation_id,
+        fence=claimed,
         cost_entries=[
             CostEntry(
                 cost_entry_id="cost-1",
@@ -555,7 +594,7 @@ def test_domain_batch_commits_events_task_followup_cost_call_and_run_sequence(tm
         ],
     )
 
-    assert result.last_sequence == 2
+    assert result.last_sequence == 4
     assert [event.event_type for event in result.events] == ["ReviewCompleted"]
     assert store.task_state("task-1") == "succeeded"
     assert store.task_state("task-2") == "pending"
@@ -576,15 +615,15 @@ def test_domain_batch_commits_events_task_followup_cost_call_and_run_sequence(tm
         call_sequence = connection.execute(
             text("SELECT applied_domain_sequence FROM external_calls WHERE external_call_id = 'call-1'")
         ).scalar_one()
-    assert run.current_sequence == 2
+    assert run.current_sequence == 4
     assert json.loads(run.manifest_json) == {
         "budget": {},
         "execution_contract_version": 3,
         "goal": "discover",
     }
     assert cost == (11, 7, "0.0123")
-    assert committed == 2
-    assert call_sequence == 2
+    assert committed == 4
+    assert call_sequence == 4
 
 
 # Mutation caught: dropping the durable Run transition from an otherwise successful batch.
@@ -789,36 +828,46 @@ def test_cross_run_batch_member_rolls_back_the_whole_batch(tmp_path, foreign_wri
     _create_running(store, "r-2")
     store.enqueue_tasks(
         [
-            NewTask(
+            budgeted_task(NewTask(
                 task_id="task-1",
                 run_id="r-1",
                 idempotency_key="source-1",
                 intent_type="reflect",
                 payload={},
-            ),
-            NewTask(
+            )),
+            budgeted_task(NewTask(
                 task_id="task-2",
                 run_id="r-2",
                 idempotency_key="source-2",
                 intent_type="reflect",
                 payload={},
-            ),
+            )),
         ]
     )
-    _advance_task_to_result_received(store, "task-2")
+    claimed = claim_running_task(store, run_id="r-2", task_id="task-2")
     store.plan_external_call(
         "call-2",
         "sha256:request",
         run_id="r-2",
         task_id="task-2",
         execution_context=_execution_context(
-            run_id="r-2", task_id="task-2", idempotency_key="source-2"
+            run_id="r-2",
+            task_id="task-2",
+            idempotency_key="source-2",
+            claimed=claimed,
         ),
+        reservation_id=claimed.reservation_id,
+        fence=claimed,
     )
-    store.transition_call("call-2", ExternalCallState.STARTED)
-    store.transition_call("call-2", ExternalCallState.RAW_RESPONSE_PERSISTED)
-    store.transition_call("call-2", ExternalCallState.VALIDATED)
-    store.transition_call("call-2", ExternalCallState.AGENT_RESULT_SUBMITTED)
+    store.transition_call("call-2", ExternalCallState.STARTED, fence=claimed)
+    store.transition_call(
+        "call-2", ExternalCallState.RAW_RESPONSE_PERSISTED, fence=claimed
+    )
+    store.transition_call("call-2", ExternalCallState.VALIDATED, fence=claimed)
+    store.transition_call(
+        "call-2", ExternalCallState.AGENT_RESULT_SUBMITTED, fence=claimed
+    )
+    acknowledge_result(store, claimed)
 
     task_mutations = (
         [TaskMutation.succeed("task-2")] if foreign_write == "task_mutation" else []
@@ -864,6 +913,10 @@ def test_cross_run_batch_member_rolls_back_the_whole_batch(tmp_path, foreign_wri
             followup_tasks=followup_tasks,
             idempotency_key=f"source:{foreign_write}",
             external_call_id=external_call_id,
+            reservation_id=(
+                claimed.reservation_id if external_call_id is not None else None
+            ),
+            fence=claimed if external_call_id is not None else None,
             cost_entries=cost_entries,
         )
 
@@ -892,15 +945,16 @@ def test_external_call_plan_requires_real_run_and_task_ownership(tmp_path) -> No
     _create_running(store, "r-2")
     store.enqueue_tasks(
         [
-            NewTask(
+            budgeted_task(NewTask(
                 task_id="task-1",
                 run_id="r-1",
                 idempotency_key="source",
                 intent_type="reflect",
                 payload={},
-            )
+            ))
         ]
     )
+    claimed = claim_running_task(store, run_id="r-1", task_id="task-1")
 
     with pytest.raises(ValueError, match="does not belong to run r-2"):
         store.plan_external_call(
@@ -908,7 +962,9 @@ def test_external_call_plan_requires_real_run_and_task_ownership(tmp_path) -> No
             "sha256:request",
             run_id="r-2",
             task_id="task-1",
-            execution_context=_execution_context(run_id="r-2"),
+            execution_context=_execution_context(run_id="r-2", claimed=claimed),
+            reservation_id=claimed.reservation_id,
+            fence=claimed,
         )
 
     with pytest.raises(KeyError, match="unknown task"):
@@ -917,7 +973,9 @@ def test_external_call_plan_requires_real_run_and_task_ownership(tmp_path) -> No
             "sha256:request",
             run_id="r-1",
             task_id="missing",
-            execution_context=_execution_context(task_id="missing"),
+            execution_context=_execution_context(task_id="missing", claimed=claimed),
+            reservation_id=claimed.reservation_id,
+            fence=claimed,
         )
 
 
@@ -926,15 +984,16 @@ def test_external_call_plan_rejects_execution_context_mismatch(tmp_path) -> None
     _create_running(store, "r-1")
     store.enqueue_tasks(
         [
-            NewTask(
+            budgeted_task(NewTask(
                 task_id="task-1",
                 run_id="r-1",
                 idempotency_key="source",
                 intent_type="reflect",
                 payload={},
-            )
+            ))
         ]
     )
+    claimed = claim_running_task(store, run_id="r-1", task_id="task-1")
 
     with pytest.raises(ValueError, match="execution context"):
         store.plan_external_call(
@@ -942,40 +1001,38 @@ def test_external_call_plan_rejects_execution_context_mismatch(tmp_path) -> None
             "sha256:request",
             run_id="r-1",
             task_id="task-1",
-            execution_context=_execution_context(run_id="different"),
+            execution_context=_execution_context(
+                run_id="different", claimed=claimed
+            ),
+            reservation_id=claimed.reservation_id,
+            fence=claimed,
         )
 
 
 def test_validated_payload_and_full_result_commit_atomically(tmp_path) -> None:
     store = _store(tmp_path)
     _create_running(store, "r-1")
-    store.enqueue_tasks(
-        [
-            NewTask(
-                task_id="task-1",
-                run_id="r-1",
-                idempotency_key="source",
-                intent_type="reflect",
-                payload={},
-            )
-        ]
-    )
-    context = _execution_context()
+    claimed = _enqueue_and_claim_default_task(store)
+    context = _execution_context(claimed=claimed)
     store.plan_external_call(
         "call-1",
         "sha256:request",
         run_id="r-1",
         task_id="task-1",
         execution_context=context,
+        reservation_id=claimed.reservation_id,
+        fence=claimed,
     )
-    store.transition_call("call-1", "started")
+    store.transition_call("call-1", "started", fence=claimed)
     ref = ArtifactRef(
         path="raw/call-1/digest",
         sha256="sha256:digest",
         mime_type="application/json",
         byte_length=2,
     )
-    store.record_raw_and_transition("call-1", ref, "raw_response_persisted")
+    store.record_raw_and_transition(
+        "call-1", ref, "raw_response_persisted", fence=claimed
+    )
     result = AgentResult(
         result_id="result-1",
         external_call_id="call-1",
@@ -985,7 +1042,9 @@ def test_validated_payload_and_full_result_commit_atomically(tmp_path) -> None:
         **context,
     )
 
-    store.record_validated_and_submitted("call-1", result.payload, result)
+    store.record_validated_and_submitted(
+        "call-1", result.payload, result, fence=claimed
+    )
 
     call = store.get_external_call("call-1")
     assert call.state == "agent_result_submitted"
@@ -1000,38 +1059,33 @@ def test_validated_payload_and_full_result_commit_atomically(tmp_path) -> None:
 def test_atomic_result_serialization_failure_leaves_raw_call_recoverable(tmp_path) -> None:
     store = _store(tmp_path)
     _create_running(store, "r-1")
-    store.enqueue_tasks(
-        [
-            NewTask(
-                task_id="task-1",
-                run_id="r-1",
-                idempotency_key="source",
-                intent_type="reflect",
-                payload={},
-            )
-        ]
-    )
+    claimed = _enqueue_and_claim_default_task(store)
     store.plan_external_call(
         "call-1",
         "sha256:request",
         run_id="r-1",
         task_id="task-1",
-        execution_context=_execution_context(),
+        execution_context=_execution_context(claimed=claimed),
+        reservation_id=claimed.reservation_id,
+        fence=claimed,
     )
-    store.transition_call("call-1", "started")
+    store.transition_call("call-1", "started", fence=claimed)
     ref = ArtifactRef(
         path="raw/call-1/digest",
         sha256="sha256:digest",
         mime_type="application/json",
         byte_length=2,
     )
-    store.record_raw_and_transition("call-1", ref, "raw_response_persisted")
+    store.record_raw_and_transition(
+        "call-1", ref, "raw_response_persisted", fence=claimed
+    )
 
     with pytest.raises(Exception, match="serialize|serializ"):
         store.record_validated_and_submitted(
             "call-1",
             {"hypotheses": []},
             UnserializableResult(result_id="result-1", value=object()),
+            fence=claimed,
         )
 
     call = store.get_external_call("call-1")
@@ -1043,33 +1097,27 @@ def test_atomic_result_serialization_failure_leaves_raw_call_recoverable(tmp_pat
 def test_atomic_result_rejects_traceability_mismatch_without_advancing(tmp_path) -> None:
     store = _store(tmp_path)
     _create_running(store, "r-1")
-    store.enqueue_tasks(
-        [
-            NewTask(
-                task_id="task-1",
-                run_id="r-1",
-                idempotency_key="source",
-                intent_type="reflect",
-                payload={},
-            )
-        ]
-    )
-    context = _execution_context()
+    claimed = _enqueue_and_claim_default_task(store)
+    context = _execution_context(claimed=claimed)
     store.plan_external_call(
         "call-1",
         "sha256:request",
         run_id="r-1",
         task_id="task-1",
         execution_context=context,
+        reservation_id=claimed.reservation_id,
+        fence=claimed,
     )
-    store.transition_call("call-1", "started")
+    store.transition_call("call-1", "started", fence=claimed)
     ref = ArtifactRef(
         path="raw/call-1/digest",
         sha256="sha256:digest",
         mime_type="application/json",
         byte_length=2,
     )
-    store.record_raw_and_transition("call-1", ref, "raw_response_persisted")
+    store.record_raw_and_transition(
+        "call-1", ref, "raw_response_persisted", fence=claimed
+    )
     mismatched = AgentResult(
         result_id="result-1",
         external_call_id="different-call",
@@ -1081,7 +1129,7 @@ def test_atomic_result_rejects_traceability_mismatch_without_advancing(tmp_path)
 
     with pytest.raises(ValueError, match="does not match external call"):
         store.record_validated_and_submitted(
-            "call-1", _valid_generation_payload(), mismatched
+            "call-1", _valid_generation_payload(), mismatched, fence=claimed
         )
 
     call = store.get_external_call("call-1")
@@ -1094,33 +1142,30 @@ def test_atomic_result_rejects_traceability_mismatch_without_advancing(tmp_path)
 def test_atomic_result_rejects_prompt_hash_mismatch_without_advancing(tmp_path) -> None:
     store = _store(tmp_path)
     _create_running(store, "r-1")
-    store.enqueue_tasks(
-        [
-            NewTask(
-                task_id="task-1",
-                run_id="r-1",
-                idempotency_key="source",
-                intent_type="reflect",
-                payload={},
-            )
-        ]
-    )
-    context = {**_execution_context(), "prompt_hash": "sha256:expected-prompt"}
+    claimed = _enqueue_and_claim_default_task(store)
+    context = {
+        **_execution_context(claimed=claimed),
+        "prompt_hash": "sha256:expected-prompt",
+    }
     store.plan_external_call(
         "call-1",
         "sha256:request",
         run_id="r-1",
         task_id="task-1",
         execution_context=context,
+        reservation_id=claimed.reservation_id,
+        fence=claimed,
     )
-    store.transition_call("call-1", "started")
+    store.transition_call("call-1", "started", fence=claimed)
     ref = ArtifactRef(
         path="raw/call-1/digest",
         sha256="sha256:digest",
         mime_type="application/json",
         byte_length=2,
     )
-    store.record_raw_and_transition("call-1", ref, "raw_response_persisted")
+    store.record_raw_and_transition(
+        "call-1", ref, "raw_response_persisted", fence=claimed
+    )
     mismatched = AgentResult(
         result_id="result-1",
         external_call_id="call-1",
@@ -1132,7 +1177,7 @@ def test_atomic_result_rejects_prompt_hash_mismatch_without_advancing(tmp_path) 
 
     with pytest.raises(ValueError, match="does not match external call"):
         store.record_validated_and_submitted(
-            "call-1", _valid_generation_payload(), mismatched
+            "call-1", _valid_generation_payload(), mismatched, fence=claimed
         )
 
     call = store.get_external_call("call-1")

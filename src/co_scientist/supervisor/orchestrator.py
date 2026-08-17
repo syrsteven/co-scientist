@@ -37,7 +37,7 @@ from co_scientist.domain.review import (
 )
 from co_scientist.domain.run_mutations import RunMutationKind, validate_run_mutation
 from co_scientist.domain.states import ExternalCallState, RunState, TaskState
-from co_scientist.domain.task import NewTask, TaskMutation
+from co_scientist.domain.task import NewTask, TaskLeaseFence, TaskMutation
 from co_scientist.domain.tournament import (
     EpochContractMismatch,
     MatchDecision,
@@ -444,6 +444,9 @@ class Supervisor:
                 payload={
                     "hypothesis_id": intent.target_id,
                     "review_stage": intent.intent_type.removeprefix("run_"),
+                    "budget_estimate": BudgetEstimate(model_calls=1).model_dump(
+                        mode="json"
+                    ),
                 },
             )
             for task_id, intent in approved.items()
@@ -671,9 +674,17 @@ class Supervisor:
         task_id: str,
         result: AgentResult,
         expected_sequence: int,
+        *,
+        reservation_id: str,
+        fence: TaskLeaseFence,
     ) -> CommitResult:
         """Validate and atomically apply a durably submitted worker result."""
 
+        self.uow.assert_domain_fence(
+            external_call_id=result.external_call_id,
+            reservation_id=reservation_id,
+            fence=fence,
+        )
         run_state = RunState(self.uow.run_state(run_id))
         validate_run_mutation(
             run_state,
@@ -720,6 +731,13 @@ class Supervisor:
         )
         if call.run_id != run_id or call.task_id != task_id:
             raise ValueError("external call does not match Supervisor command ownership")
+        if (
+            result.attempt != fence.attempt
+            or result.reservation_id != reservation_id
+            or call.attempt != fence.attempt
+            or call.reservation_id != reservation_id
+        ):
+            raise ValueError("AgentResult does not match reservation and task lease fence")
         result = durable_result
         if result.status == "completed":
             rating_events = self._rating_events_for_result(run_id, result)
@@ -755,6 +773,8 @@ class Supervisor:
             followup_tasks=followups,
             idempotency_key=result.idempotency_key,
             external_call_id=result.external_call_id,
+            reservation_id=reservation_id,
+            fence=fence,
             cost_entries=(
                 self._cost_entry(
                     run_id=run_id,

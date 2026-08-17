@@ -1,5 +1,6 @@
 import asyncio
 import json
+from datetime import UTC, datetime, timedelta
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -11,7 +12,7 @@ from co_scientist.adapters.persistence.sqlite import CostEntryRow, SqliteUnitOfW
 from co_scientist.agents.result import AgentExecutionContext
 from co_scientist.domain.review import ReviewPolicy
 from co_scientist.domain.states import TaskState
-from co_scientist.domain.task import NewTask
+from co_scientist.domain.task import NewTask, lease_fence_fingerprint
 from co_scientist.export.run_export import SqliteRunReadModel, export_run
 from co_scientist.ports.external_provider import RawExternalResponse
 from co_scientist.runtime.external_calls import ExternalCallRunner
@@ -114,7 +115,12 @@ class CrashHarness:
         supervisor = Supervisor(uow=uow, review_policy=ReviewPolicy(profile_id="crash"))
         started = supervisor.create_and_start_run(
             "run-crash",
-            manifest={"provider": "replay", "boundary": boundary},
+            manifest={
+                "execution_contract_version": 3,
+                "budget": {},
+                "provider": "replay",
+                "boundary": boundary,
+            },
             start_payload={"provider": "replay"},
         )
         task = NewTask(
@@ -122,11 +128,27 @@ class CrashHarness:
             run_id="run-crash",
             idempotency_key="task-crash",
             intent_type="run_generation",
-            payload={},
+            payload={
+                "budget_estimate": {
+                    "model_calls": 1,
+                    "input_tokens": 11,
+                    "output_tokens": 7,
+                    "cost_usd": "0.01",
+                    "hypotheses": 1,
+                    "matches": 0,
+                }
+            },
         )
-        scheduled = supervisor.enqueue_task(task=task, expected_sequence=started.last_sequence)
-        uow.transition_task(task.task_id, TaskState.LEASED)
-        uow.transition_task(task.task_id, TaskState.RUNNING)
+        supervisor.enqueue_task(task=task, expected_sequence=started.last_sequence)
+        fence = uow.claim_next_task(
+            run_id="run-crash",
+            worker_id="crash-worker",
+            lease_token="crash-lease",
+            now=datetime(2026, 8, 17, 10, 0, tzinfo=UTC),
+            lease_duration=timedelta(minutes=5),
+        ).task
+        assert fence is not None
+        uow.mark_task_running(fence=fence)
         real_artifacts = FilesystemArtifactStore(self.root / f"{boundary}-artifacts")
         artifacts = (
             _CrashBeforeRawStore(real_artifacts)
@@ -149,17 +171,30 @@ class CrashHarness:
             provider="stub",
             model_or_tool="stub-model",
             input_snapshot_hash="sha256:crash-input",
+            attempt=fence.attempt,
+            reservation_id=fence.reservation_id,
+            lease_fence_fingerprint=lease_fence_fingerprint(fence),
         )
         validator = (
             _CrashBeforeValidation()
             if boundary == "raw_persisted_before_validation"
             else lambda raw: json.loads(raw)
         )
-        expected_sequence = scheduled.last_sequence
+        expected_sequence = uow.load("run-crash")[-1].sequence
+
+        async def execute(current_runner, **kwargs):
+            return await current_runner.execute(
+                **kwargs, reservation_id=fence.reservation_id, fence=fence
+            )
+
+        async def resume(current_runner, call_id, **kwargs):
+            return await current_runner.resume(
+                call_id, **kwargs, reservation_id=fence.reservation_id, fence=fence
+            )
 
         if boundary == "provider_returned_before_raw_persist":
             with pytest.raises(_SimulatedCrash, match="before raw persistence"):
-                await runner.execute(
+                await execute(runner,
                     call_id="call-crash",
                     request=request,
                     provider=provider,
@@ -167,7 +202,7 @@ class CrashHarness:
                     context=context,
                 )
             calls_before_recovery = provider.call_count
-            result = await ExternalCallRunner(runtime).execute(
+            result = await execute(ExternalCallRunner(runtime),
                 call_id="call-crash",
                 request=request,
                 provider=provider,
@@ -176,7 +211,7 @@ class CrashHarness:
             )
         elif boundary == "raw_persisted_before_validation":
             with pytest.raises(_SimulatedCrash, match="before validation"):
-                await runner.execute(
+                await execute(runner,
                     call_id="call-crash",
                     request=request,
                     provider=provider,
@@ -184,14 +219,14 @@ class CrashHarness:
                     context=context,
                 )
             calls_before_recovery = provider.call_count
-            result = await ExternalCallRunner(runtime).resume(
+            result = await resume(ExternalCallRunner(runtime),
                 "call-crash",
                 provider=provider,
                 validator=validator,
                 context=context,
             )
         elif boundary == "agent_result_submitted_before_domain_apply":
-            result = await runner.execute(
+            result = await execute(runner,
                 call_id="call-crash",
                 request=request,
                 provider=provider,
@@ -199,29 +234,31 @@ class CrashHarness:
                 context=context,
             )
             calls_before_recovery = provider.call_count
-            result = await ExternalCallRunner(runtime).resume(
+            result = await resume(ExternalCallRunner(runtime),
                 "call-crash",
                 provider=provider,
                 validator=validator,
                 context=context,
             )
         elif boundary == "domain_applied_before_worker_ack":
-            result = await runner.execute(
+            result = await execute(runner,
                 call_id="call-crash",
                 request=request,
                 provider=provider,
                 validator=validator,
                 context=context,
             )
-            uow.transition_task(task.task_id, TaskState.RESULT_RECEIVED)
+            uow.acknowledge_task(fence=fence, target_state=TaskState.RESULT_RECEIVED)
             supervisor.handle_result(
                 "run-crash",
                 task.task_id,
                 result,
                 expected_sequence=expected_sequence,
+                reservation_id=fence.reservation_id,
+                fence=fence,
             )
             calls_before_recovery = provider.call_count
-            result = await ExternalCallRunner(runtime).resume(
+            result = await resume(ExternalCallRunner(runtime),
                 "call-crash",
                 provider=provider,
                 validator=validator,
@@ -232,17 +269,21 @@ class CrashHarness:
                 task.task_id,
                 result,
                 expected_sequence=expected_sequence,
+                reservation_id=fence.reservation_id,
+                fence=fence,
             )
         else:  # pragma: no cover - parametrization is the exhaustive contract
             raise AssertionError(boundary)
 
         if boundary != "domain_applied_before_worker_ack":
-            uow.transition_task(task.task_id, TaskState.RESULT_RECEIVED)
+            uow.acknowledge_task(fence=fence, target_state=TaskState.RESULT_RECEIVED)
             supervisor.handle_result(
                 "run-crash",
                 task.task_id,
                 result,
                 expected_sequence=expected_sequence,
+                reservation_id=fence.reservation_id,
+                fence=fence,
             )
 
         events = uow.load("run-crash")
@@ -280,6 +321,20 @@ class CrashHarness:
             logical_cost_count=logical_costs,
             provider_recall_count=provider.call_count - calls_before_recovery,
         )
+
+
+# Mutation caught: durable execution metadata stores the reusable lease capability itself.
+def test_exported_execution_context_never_contains_reusable_lease_token(tmp_path) -> None:
+    payload = {
+        "attempt": 3,
+        "reservation_id": "reservation-1",
+        "lease_fence_fingerprint": "sha256:one-way",
+    }
+
+    encoded = json.dumps(payload, sort_keys=True)
+
+    assert "lease_token" not in encoded
+    assert "reusable-secret" not in encoded
 
 
 @pytest.fixture

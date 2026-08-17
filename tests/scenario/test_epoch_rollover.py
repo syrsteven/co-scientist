@@ -5,12 +5,19 @@ from co_scientist.agents.result import AgentResult
 from co_scientist.domain.admission import AdmissionPolicy
 from co_scientist.domain.research_plan import ResearchPlan
 from co_scientist.domain.review import ReviewPolicy
-from co_scientist.domain.states import ExternalCallState, RunState, TaskState
+from co_scientist.domain.states import ExternalCallState, RunState
 from co_scientist.domain.task import NewTask
 from co_scientist.domain.tournament import TournamentEpoch
 from co_scientist.events.models import NewEvent
 from co_scientist.ports.artifact_store import ArtifactRef
 from co_scientist.supervisor.orchestrator import Supervisor, plan_revision_action
+from tests._fenced_runtime import (
+    acknowledge_result,
+    budgeted_task,
+    claim_running_task,
+    execution_manifest,
+    fenced_context,
+)
 
 
 def _plan(*, version: int, scope: str = "scope-a", rules: str = "rules-a") -> ResearchPlan:
@@ -53,7 +60,10 @@ def _supervisor(tmp_path) -> Supervisor:
         ).model_dump(mode="json")
         for version in (1, 2, 3)
     }
-    uow.create_run("run-1", manifest={"admission_policies": policies})
+    uow.create_run(
+        "run-1",
+        manifest=execution_manifest(admission_policies=policies),
+    )
     started = uow.commit_domain_batch(
         run_id="run-1",
         expected_sequence=0,
@@ -172,21 +182,20 @@ def _apply_scientific_result(
         uow.task_state(task_id)
     except KeyError:
         scheduled = supervisor.enqueue_task(
-            task=NewTask(
+            task=budgeted_task(NewTask(
                 task_id=task_id,
                 run_id="run-1",
                 idempotency_key=task_id,
                 intent_type=f"run_{skill_id}",
                 payload={},
-            ),
+            )),
             expected_sequence=expected_sequence,
         )
         expected_sequence = scheduled.last_sequence
-    uow.transition_task(task_id, TaskState.LEASED)
-    uow.transition_task(task_id, TaskState.RUNNING)
-    uow.transition_task(task_id, TaskState.RESULT_RECEIVED)
+    claimed = claim_running_task(uow, run_id="run-1", task_id=task_id)
+    expected_sequence = uow.load("run-1")[-1].sequence
     call_id = f"call:{task_id}:{plan_version}"
-    context = {
+    context = fenced_context({
         "run_id": "run-1",
         "task_id": task_id,
         "idempotency_key": task_id,
@@ -199,15 +208,17 @@ def _apply_scientific_result(
         "model_or_tool": "typed-fixture",
         "input_snapshot_hash": "sha256:input",
         "prompt_hash": "sha256:prompt",
-    }
+    }, claimed).model_dump(mode="json")
     uow.plan_external_call(
         call_id,
         "sha256:request",
         run_id="run-1",
         task_id=task_id,
         execution_context=context,
+        reservation_id=claimed.reservation_id,
+        fence=claimed,
     )
-    uow.transition_call(call_id, ExternalCallState.STARTED)
+    uow.transition_call(call_id, ExternalCallState.STARTED, fence=claimed)
     raw_ref = ArtifactRef(
         path=f"raw/{call_id}",
         sha256="sha256:" + "f" * 64,
@@ -219,6 +230,7 @@ def _apply_scientific_result(
         raw_ref,
         ExternalCallState.RAW_RESPONSE_PERSISTED,
         usage={"input_tokens": 1, "output_tokens": 1, "pricing_version": "scenario"},
+        fence=claimed,
     )
     result = AgentResult(
         result_id=f"result:{task_id}:{plan_version}",
@@ -228,12 +240,15 @@ def _apply_scientific_result(
         raw_artifact_ref=raw_ref,
         **context,
     )
-    uow.record_validated_and_submitted(call_id, payload, result)
+    uow.record_validated_and_submitted(call_id, payload, result, fence=claimed)
+    acknowledge_result(uow, claimed)
     committed = supervisor.handle_result(
         "run-1",
         task_id,
         result,
         expected_sequence,
+        reservation_id=claimed.reservation_id,
+        fence=claimed,
     )
     return committed.last_sequence
 

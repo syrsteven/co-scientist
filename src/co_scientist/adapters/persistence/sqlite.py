@@ -44,6 +44,7 @@ from co_scientist.domain.task import (
     NewTask,
     TaskLeaseFence,
     TaskMutation,
+    lease_fence_fingerprint,
 )
 from co_scientist.domain.transitions import transition_external_call
 from co_scientist.domain.transitions import transition_run as validate_run_transition
@@ -317,6 +318,8 @@ class PersistedExternalCall(BaseModel):
     run_id: str
     task_id: str
     task_idempotency_key: str
+    attempt: int
+    reservation_id: str
     request_fingerprint: str
     provider: str
     model_or_tool: str
@@ -947,7 +950,14 @@ class SqliteUnitOfWork:
                         payload={
                             "task_id": task.task_id,
                             "worker_id": worker_id,
-                            "lease_token": lease_token,
+                            "lease_fence_fingerprint": lease_fence_fingerprint(
+                                TaskLeaseFence(
+                                    run_id=run_id,
+                                    task_id=task.task_id,
+                                    lease_token=lease_token,
+                                    attempt=task.attempt,
+                                )
+                            ),
                             "attempt": task.attempt,
                             "heartbeat_at": now.isoformat(),
                             "lease_expires_at": (now + lease_duration).isoformat(),
@@ -972,14 +982,21 @@ class SqliteUnitOfWork:
             )
 
     @staticmethod
-    def _fenced_task(session: Session, fence: TaskLeaseFence) -> TaskRow:
+    def _fenced_task(
+        session: Session,
+        fence: TaskLeaseFence,
+        *,
+        allowed_states: AbstractSet[TaskState] = frozenset(
+            {TaskState.LEASED, TaskState.RUNNING}
+        ),
+    ) -> TaskRow:
         row = session.get(TaskRow, fence.task_id)
         if (
             row is None
             or row.run_id != fence.run_id
             or row.lease_token != fence.lease_token
             or row.attempt != fence.attempt
-            or TaskState(row.state) not in {TaskState.LEASED, TaskState.RUNNING}
+            or TaskState(row.state) not in allowed_states
         ):
             raise ValueError("stale task lease fence")
         return row
@@ -1091,7 +1108,14 @@ class SqliteUnitOfWork:
                         event_type="TaskLeaseExpired",
                         payload={
                             "task_id": row.task_id,
-                            "lease_token": row.lease_token,
+                            "lease_fence_fingerprint": lease_fence_fingerprint(
+                                TaskLeaseFence(
+                                    run_id=row.run_id,
+                                    task_id=row.task_id,
+                                    lease_token=cast(str, row.lease_token),
+                                    attempt=expired_attempt,
+                                )
+                            ),
                             "attempt": expired_attempt,
                             "expired_at": now.isoformat(),
                         },
@@ -1193,7 +1217,9 @@ class SqliteUnitOfWork:
         run_id: str,
         task_id: str,
         execution_context: Mapping[str, Any],
-        attempt: int = 1,
+        reservation_id: str,
+        fence: TaskLeaseFence,
+        attempt: int | None = None,
         provider: str | None = None,
         model_or_tool: str | None = None,
         parent_call_id: str | None = None,
@@ -1210,6 +1236,11 @@ class SqliteUnitOfWork:
                 actual_run_id=task.run_id,
                 expected_run_id=run_id,
             )
+            if fence.run_id != run_id or fence.task_id != task_id:
+                raise ValueError("stale task lease fence")
+            resolved_attempt = fence.attempt if attempt is None else attempt
+            if resolved_attempt != fence.attempt:
+                raise ValueError("external call attempt does not match task lease fence")
             validate_run_mutation(
                 self._run_state_in_transaction(session, run_id),
                 (
@@ -1219,6 +1250,7 @@ class SqliteUnitOfWork:
                 ),
                 task_intent=task.intent_type,
             )
+            task = self._fenced_task(session, fence)
             context = dict(execution_context)
             resolve_core_skill_contract(
                 skill_id=str(context.get("skill_id", "")),
@@ -1238,12 +1270,42 @@ class SqliteUnitOfWork:
                 or context_model_or_tool != resolved_model_or_tool
             ):
                 raise ValueError("execution context does not match external call provider")
+            if (
+                context.get("attempt") != fence.attempt
+                or context.get("reservation_id") != reservation_id
+                or context.get("lease_fence_fingerprint")
+                != lease_fence_fingerprint(fence)
+                or "lease_token" in context
+            ):
+                raise ValueError("execution context does not match task lease fence")
+            reservation = self._task_reservation(session, fence)
+            self._assert_exact_reservation(task, reservation)
+            if reservation.reservation_id != reservation_id:
+                raise ValueError("external call reservation does not match task lease")
+            duplicate_attempt = session.scalar(
+                select(ExternalCallRow).where(
+                    ExternalCallRow.run_id == run_id,
+                    ExternalCallRow.task_id == task_id,
+                    ExternalCallRow.attempt == resolved_attempt,
+                )
+            )
+            if duplicate_attempt is not None:
+                if duplicate_attempt.external_call_id == call_id:
+                    return
+                raise ValueError("task attempt already has an external call")
+            if reservation.external_call_id is not None:
+                prior = session.get(ExternalCallRow, reservation.external_call_id)
+                if prior is None or prior.attempt >= resolved_attempt:
+                    raise ValueError("reservation is already bound to an external call")
+            reservation.external_call_id = call_id
+            reservation.version += 1
+            reservation.updated_at = datetime.now(UTC)
             session.add(
                 ExternalCallRow(
                     external_call_id=call_id,
                     run_id=run_id,
                     task_id=task_id,
-                    attempt=attempt,
+                    attempt=resolved_attempt,
                     request_fingerprint=request_fingerprint,
                     provider=resolved_provider,
                     model_or_tool=resolved_model_or_tool,
@@ -1261,11 +1323,48 @@ class SqliteUnitOfWork:
             raise KeyError(f"unknown external call: {call_id}")
         return row
 
-    def transition_call(self, call_id: str, target_state: ExternalCallState | str) -> None:
+    @classmethod
+    def _fenced_external_call(
+        cls,
+        session: Session,
+        call_id: str,
+        fence: TaskLeaseFence,
+        *,
+        allowed_task_states: AbstractSet[TaskState] = frozenset({TaskState.RUNNING}),
+    ) -> ExternalCallRow:
+        task = cls._fenced_task(
+            session, fence, allowed_states=allowed_task_states
+        )
+        row = cls._external_call(session, call_id)
+        if (
+            row.run_id != fence.run_id
+            or row.task_id != fence.task_id
+            or row.attempt != fence.attempt
+            or task.run_id != row.run_id
+        ):
+            raise ValueError("stale task lease fence")
+        return row
+
+    def assert_task_fence(self, *, fence: TaskLeaseFence) -> None:
+        """Validate a lease immediately before a non-database side effect."""
+
+        with self.session_factory.begin() as session:
+            self._begin_immediate(session)
+            self._fenced_task(
+                session, fence, allowed_states=frozenset({TaskState.RUNNING})
+            )
+
+    def transition_call(
+        self,
+        call_id: str,
+        target_state: ExternalCallState | str,
+        *,
+        fence: TaskLeaseFence,
+    ) -> None:
         target = ExternalCallState(target_state)
         with self.session_factory.begin() as session:
             self._begin_immediate(session)
-            row = self._external_call(session, call_id)
+            row = self._fenced_external_call(session, call_id, fence)
             row.state = transition_external_call(ExternalCallState(row.state), target).value
 
     def external_call_state(self, call_id: str) -> str:
@@ -1285,20 +1384,27 @@ class SqliteUnitOfWork:
         *,
         provider_response_id: str | None = None,
         usage: Mapping[str, Any] | None = None,
+        fence: TaskLeaseFence,
     ) -> None:
         target = ExternalCallState(target_state)
         with self.session_factory.begin() as session:
             self._begin_immediate(session)
-            row = self._external_call(session, call_id)
+            row = self._fenced_external_call(session, call_id, fence)
             row.raw_artifact_ref_json = ref.model_dump_json()
             row.provider_response_id = provider_response_id
             row.usage_json = _json(thaw_json(usage or {}))
             row.state = transition_external_call(ExternalCallState(row.state), target).value
 
-    def record_validated(self, call_id: str, payload: Mapping[str, Any]) -> None:
+    def record_validated(
+        self,
+        call_id: str,
+        payload: Mapping[str, Any],
+        *,
+        fence: TaskLeaseFence,
+    ) -> None:
         with self.session_factory.begin() as session:
             self._begin_immediate(session)
-            row = self._external_call(session, call_id)
+            row = self._fenced_external_call(session, call_id, fence)
             row.validated_artifact_ref_json = _json(dict(payload))
             row.state = transition_external_call(
                 ExternalCallState(row.state), ExternalCallState.VALIDATED
@@ -1327,6 +1433,9 @@ class SqliteUnitOfWork:
             "model_or_tool",
             "input_snapshot_hash",
             "prompt_hash",
+            "attempt",
+            "reservation_id",
+            "lease_fence_fingerprint",
         )
         if result_data.get("external_call_id") != row.external_call_id or any(
             result_data.get(field) != context.get(field) for field in trace_fields
@@ -1342,12 +1451,18 @@ class SqliteUnitOfWork:
         if payload is not None and result_data.get("payload") != dict(payload):
             raise ValueError("submitted result does not match validated payload")
 
-    def record_submitted_result(self, call_id: str, result: BaseModel) -> None:
+    def record_submitted_result(
+        self,
+        call_id: str,
+        result: BaseModel,
+        *,
+        fence: TaskLeaseFence,
+    ) -> None:
         result_data = result.model_dump(mode="json")
         result_json = _json(result_data)
         with self.session_factory.begin() as session:
             self._begin_immediate(session)
-            row = self._external_call(session, call_id)
+            row = self._fenced_external_call(session, call_id, fence)
             self._assert_result_matches_call(row, result_data)
             result_id = getattr(result, "result_id", None)
             if not isinstance(result_id, str):
@@ -1363,6 +1478,8 @@ class SqliteUnitOfWork:
         call_id: str,
         payload: Mapping[str, Any],
         result: BaseModel,
+        *,
+        fence: TaskLeaseFence,
     ) -> None:
         payload_json = _json(dict(payload))
         result_data = result.model_dump(mode="json")
@@ -1372,7 +1489,7 @@ class SqliteUnitOfWork:
             raise TypeError("submitted result must have a string result_id")
         with self.session_factory.begin() as session:
             self._begin_immediate(session)
-            row = self._external_call(session, call_id)
+            row = self._fenced_external_call(session, call_id, fence)
             self._assert_result_matches_call(row, result_data, payload=payload)
             validated = transition_external_call(
                 ExternalCallState(row.state), ExternalCallState.VALIDATED
@@ -1397,6 +1514,14 @@ class SqliteUnitOfWork:
                 actual_run_id=task.run_id,
                 expected_run_id=row.run_id,
             )
+            reservation = session.scalar(
+                select(BudgetReservationRow).where(
+                    BudgetReservationRow.run_id == row.run_id,
+                    BudgetReservationRow.task_id == row.task_id,
+                )
+            )
+            if reservation is None:
+                raise ValueError("external call task has no budget reservation")
             raw_ref = (
                 ArtifactRef.model_validate_json(row.raw_artifact_ref_json)
                 if row.raw_artifact_ref_json is not None
@@ -1415,6 +1540,8 @@ class SqliteUnitOfWork:
                 run_id=row.run_id,
                 task_id=row.task_id,
                 task_idempotency_key=task.idempotency_key,
+                attempt=row.attempt,
+                reservation_id=reservation.reservation_id,
                 request_fingerprint=row.request_fingerprint,
                 provider=row.provider,
                 model_or_tool=row.model_or_tool,
@@ -1432,6 +1559,21 @@ class SqliteUnitOfWork:
                 usage=json.loads(row.usage_json),
                 applied_domain_sequence=row.applied_domain_sequence,
             )
+
+    def external_call_for_task_attempt(
+        self, *, run_id: str, task_id: str, attempt: int
+    ) -> PersistedExternalCall | None:
+        """Find the one durable call identity assigned to a task attempt."""
+
+        with self.session_factory() as session:
+            call_id = session.scalar(
+                select(ExternalCallRow.external_call_id).where(
+                    ExternalCallRow.run_id == run_id,
+                    ExternalCallRow.task_id == task_id,
+                    ExternalCallRow.attempt == attempt,
+                )
+            )
+        return None if call_id is None else self.get_external_call(call_id)
 
     @staticmethod
     def _assert_run_owner(
@@ -1562,6 +1704,7 @@ class SqliteUnitOfWork:
         task_mutations: Sequence[TaskMutation],
         followup_tasks: Sequence[NewTask],
         external_call_id: str | None,
+        reservation_id: str | None,
         cost_entries: Sequence[CostEntry],
     ) -> str:
         canonical = _json(
@@ -1571,6 +1714,7 @@ class SqliteUnitOfWork:
                 "task_mutations": [mutation.model_dump(mode="json") for mutation in task_mutations],
                 "followup_tasks": [task.model_dump(mode="json") for task in followup_tasks],
                 "external_call_id": external_call_id,
+                "reservation_id": reservation_id,
                 "cost_entries": [entry.model_dump(mode="json") for entry in cost_entries],
             }
         )
@@ -1594,6 +1738,55 @@ class SqliteUnitOfWork:
             ExternalCallState(row.state), ExternalCallState.DOMAIN_RESULT_APPLIED
         ).value
         row.applied_domain_sequence = sequence
+
+    @classmethod
+    def _validate_domain_fence(
+        cls,
+        session: Session,
+        *,
+        external_call_id: str,
+        reservation_id: str,
+        fence: TaskLeaseFence,
+    ) -> None:
+        cls._fenced_external_call(
+            session,
+            external_call_id,
+            fence,
+            allowed_task_states=frozenset(
+                {
+                    TaskState.RESULT_RECEIVED,
+                    TaskState.SUCCEEDED,
+                    TaskState.PENDING,
+                    TaskState.FAILED,
+                }
+            ),
+        )
+        reservation = session.get(BudgetReservationRow, reservation_id)
+        if (
+            reservation is None
+            or reservation.run_id != fence.run_id
+            or reservation.task_id != fence.task_id
+            or reservation.external_call_id != external_call_id
+        ):
+            raise ValueError("external call reservation does not match task lease")
+
+    def assert_domain_fence(
+        self,
+        *,
+        external_call_id: str,
+        reservation_id: str,
+        fence: TaskLeaseFence,
+    ) -> None:
+        """Fail stale Supervisor commands before reconstructing durable results."""
+
+        with self.session_factory.begin() as session:
+            self._begin_immediate(session)
+            self._validate_domain_fence(
+                session,
+                external_call_id=external_call_id,
+                reservation_id=reservation_id,
+                fence=fence,
+            )
 
     def _validate_domain_batch_mutations(
         self,
@@ -1729,6 +1922,8 @@ class SqliteUnitOfWork:
         followup_tasks: Sequence[NewTask] = (),
         idempotency_key: str,
         external_call_id: str | None = None,
+        reservation_id: str | None = None,
+        fence: TaskLeaseFence | None = None,
         cost_entries: Sequence[CostEntry] = (),
         _validate_sequence_before_replay: bool = False,
     ) -> CommitResult:
@@ -1741,11 +1936,23 @@ class SqliteUnitOfWork:
             task_mutations=task_mutations,
             followup_tasks=followup_tasks,
             external_call_id=external_call_id,
+            reservation_id=reservation_id,
             cost_entries=cost_entries,
         )
         with self.session_factory.begin() as session:
             self._begin_immediate(session)
             self._require_run(session, run_id)
+            if external_call_id is not None:
+                if reservation_id is None or fence is None:
+                    raise ValueError("domain application requires reservation and task lease fence")
+                self._validate_domain_fence(
+                    session,
+                    external_call_id=external_call_id,
+                    reservation_id=reservation_id,
+                    fence=fence,
+                )
+            elif reservation_id is not None or fence is not None:
+                raise ValueError("task lease fence requires an external call")
             if _validate_sequence_before_replay:
                 self._assert_sequence(session, run_id, expected_sequence)
             previous = self._load_idempotency_commit(

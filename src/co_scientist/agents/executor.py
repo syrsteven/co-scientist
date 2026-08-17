@@ -1,12 +1,13 @@
 """Execute typed runtime skills through the durable external-call lifecycle."""
 
 import json
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from pathlib import Path
 from typing import Any
 
 from co_scientist.agents.payloads import resolve_output_schema
 from co_scientist.agents.result import AgentExecutionContext, AgentResult
+from co_scientist.domain.task import TaskLeaseFence
 from co_scientist.ports.external_provider import ExternalProvider
 from co_scientist.runtime.external_calls import ExternalCallRunner, prompt_hash
 from co_scientist.skills.loader import load_skill, resolve_core_skill_contract
@@ -37,6 +38,9 @@ class SkillExecutor:
         skill_directory: Path,
         inputs: dict[str, Any],
         context: AgentExecutionContext,
+        reservation_id: str,
+        fence: TaskLeaseFence,
+        write_guard: Callable[[], None] | None = None,
     ) -> AgentResult:
         manifest = load_skill(skill_directory)
         resolve_core_skill_contract(
@@ -86,4 +90,7 @@ class SkillExecutor:
             provider=self.provider,
             validator=validate_payload,
             context=context,
+            reservation_id=reservation_id,
+            fence=fence,
+            write_guard=write_guard,
         )

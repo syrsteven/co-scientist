@@ -1,4 +1,6 @@
+import hashlib
 import json
+from datetime import UTC, datetime, timedelta
 from types import SimpleNamespace
 
 import pytest
@@ -8,7 +10,11 @@ import co_scientist.adapters.artifacts.filesystem as artifact_filesystem
 from co_scientist.adapters.artifacts.filesystem import FilesystemArtifactStore
 from co_scientist.adapters.persistence.sqlite import SqliteUnitOfWork
 from co_scientist.agents.result import AgentExecutionContext
-from co_scientist.domain.task import NewTask
+from co_scientist.domain.task import (
+    NewTask,
+    TaskLeaseFence,
+    lease_fence_fingerprint,
+)
 from co_scientist.events.models import NewEvent
 from co_scientist.ports.external_provider import RawExternalResponse
 from co_scientist.runtime.external_calls import ExternalCallRunner, request_fingerprint
@@ -81,11 +87,11 @@ class CrashOnceRawMetadataUnitOfWork(SqliteUnitOfWork):
 class CrashOnceAtomicResultUnitOfWork(SqliteUnitOfWork):
     crash_next_result = True
 
-    def record_validated_and_submitted(self, call_id, payload, result) -> None:
+    def record_validated_and_submitted(self, call_id, payload, result, **metadata) -> None:
         if self.crash_next_result:
             self.crash_next_result = False
             raise RuntimeError("crash before atomic result commit")
-        super().record_validated_and_submitted(call_id, payload, result)
+        super().record_validated_and_submitted(call_id, payload, result, **metadata)
 
 
 class ManifestThenRaiseArtifactStore(FilesystemArtifactStore):
@@ -135,7 +141,33 @@ def _context() -> AgentExecutionContext:
         provider="stub",
         model_or_tool="stub-model",
         input_snapshot_hash="sha256:input",
+        attempt=1,
+        reservation_id=_reservation_id(),
+        lease_fence_fingerprint=lease_fence_fingerprint(_fence()),
     )
+
+
+def _reservation_id() -> str:
+    digest = hashlib.sha256(b"r-1\0generation:r-1:1").hexdigest()
+    return f"reservation-{digest}"
+
+
+def _fence() -> TaskLeaseFence:
+    return TaskLeaseFence(
+        run_id="r-1", task_id="task-1", lease_token="test-lease", attempt=1
+    )
+
+
+def _lease_kwargs() -> dict[str, object]:
+    return {"reservation_id": _reservation_id(), "fence": _fence()}
+
+
+async def _execute(runner, **kwargs):
+    return await runner.execute(**kwargs, **_lease_kwargs())
+
+
+async def _resume(runner, call_id, **kwargs):
+    return await runner.resume(call_id, **kwargs, **_lease_kwargs())
 
 
 def _runtime(tmp_path, *, uow_type=SqliteUnitOfWork, artifacts=None):
@@ -143,7 +175,7 @@ def _runtime(tmp_path, *, uow_type=SqliteUnitOfWork, artifacts=None):
     uow.create_schema()
     uow.create_started_run(
         "r-1",
-        manifest={},
+        manifest={"execution_contract_version": 3, "budget": {}},
         event=NewEvent(event_type="RunStarted", payload={}),
         idempotency_key="start:r-1:0",
     )
@@ -154,10 +186,28 @@ def _runtime(tmp_path, *, uow_type=SqliteUnitOfWork, artifacts=None):
                 run_id="r-1",
                 idempotency_key="generation:r-1:1",
                 intent_type="generate",
-                payload={},
+                payload={
+                    "budget_estimate": {
+                        "model_calls": 1,
+                        "input_tokens": 0,
+                        "output_tokens": 0,
+                        "cost_usd": "0",
+                        "hypotheses": 0,
+                        "matches": 0,
+                    }
+                },
             )
         ]
     )
+    claimed = uow.claim_next_task(
+        run_id="r-1",
+        worker_id="test-worker",
+        lease_token="test-lease",
+        now=datetime(2026, 8, 17, 10, 0, tzinfo=UTC),
+        lease_duration=timedelta(minutes=5),
+    ).task
+    assert claimed is not None
+    uow.mark_task_running(fence=claimed)
     artifact_store = artifacts or FilesystemArtifactStore(tmp_path / "artifacts")
     return uow, artifact_store, SimpleNamespace(uow=uow, artifacts=artifact_store)
 
@@ -171,8 +221,9 @@ def _plan_started(uow, *, request=None) -> None:
         run_id=context.run_id,
         task_id=context.task_id,
         execution_context=context.model_dump(mode="json"),
+        **_lease_kwargs(),
     )
-    uow.transition_call("call-1", "started")
+    uow.transition_call("call-1", "started", fence=_fence())
 
 
 def _provenance(*, request=None, context=None) -> dict[str, str]:
@@ -209,6 +260,42 @@ def _forged_trace_context() -> AgentExecutionContext:
     )
 
 
+# Mutation caught: resume mutates a durable call after its owning task was reclaimed.
+@pytest.mark.asyncio
+async def test_resume_requires_the_current_task_lease_fence(tmp_path) -> None:
+    uow, artifacts, runtime = _runtime(tmp_path)
+    stale = _fence()
+    context = _context()
+    uow.plan_external_call(
+        "call-1",
+        request_fingerprint({"prompt": "generate"}),
+        run_id="r-1",
+        task_id="task-1",
+        execution_context=context.model_dump(mode="json"),
+        reservation_id=_reservation_id(),
+        fence=stale,
+    )
+    uow.transition_call("call-1", "started", fence=stale)
+    artifacts.persist_raw(
+        "call-1", _valid_generation_bytes(), "application/json", **_provenance(context=context)
+    )
+    uow.recover_expired_leases(
+        run_id="r-1", now=datetime(2026, 8, 17, 10, 5, tzinfo=UTC)
+    )
+
+    with pytest.raises(ValueError, match="stale task lease fence"):
+        await ExternalCallRunner(runtime).resume(
+            "call-1",
+            provider=FailingProvider(),
+            validator=lambda raw: json.loads(raw),
+            context=context,
+            reservation_id=_reservation_id(),
+            fence=stale,
+        )
+
+    assert uow.external_call_state("call-1") == "started"
+
+
 @pytest.mark.asyncio
 async def test_resume_validates_existing_raw_without_provider_recall(tmp_path) -> None:
     uow, artifacts, runtime = _runtime(tmp_path)
@@ -219,10 +306,12 @@ async def test_resume_validates_existing_raw_without_provider_recall(tmp_path) -
         "application/json",
         **_provenance(),
     )
-    uow.record_raw_and_transition("call-1", ref, "raw_response_persisted")
+    uow.record_raw_and_transition(
+        "call-1", ref, "raw_response_persisted", fence=_fence()
+    )
     provider = FailingProvider()
 
-    result = await ExternalCallRunner(runtime).resume(
+    result = await _resume(ExternalCallRunner(runtime),
         "call-1",
         provider=provider,
         validator=lambda raw: json.loads(raw),
@@ -248,7 +337,7 @@ async def test_started_call_recovers_durable_manifest_without_provider_recall(tm
     )
     provider = FailingProvider()
 
-    result = await ExternalCallRunner(runtime).resume(
+    result = await _resume(ExternalCallRunner(runtime),
         "call-1",
         provider=provider,
         validator=lambda raw: json.loads(raw),
@@ -272,7 +361,7 @@ async def test_execute_recovers_after_raw_metadata_crash_without_second_provider
     runner = ExternalCallRunner(runtime)
 
     with pytest.raises(RuntimeError, match="crash after raw manifest"):
-        await runner.execute(
+        await _execute(runner,
             call_id="call-1",
             request={"prompt": "generate"},
             provider=provider,
@@ -281,7 +370,7 @@ async def test_execute_recovers_after_raw_metadata_crash_without_second_provider
         )
 
     assert uow.external_call_state("call-1") == "started"
-    result = await runner.execute(
+    result = await _execute(runner,
         call_id="call-1",
         request={"prompt": "generate"},
         provider=provider,
@@ -299,7 +388,7 @@ async def test_atomic_result_crash_retries_from_raw_without_provider_recall(tmp_
     runner = ExternalCallRunner(runtime)
 
     with pytest.raises(RuntimeError, match="crash before atomic result commit"):
-        await runner.execute(
+        await _execute(runner,
             call_id="call-1",
             request={"prompt": "generate"},
             provider=provider,
@@ -308,7 +397,7 @@ async def test_atomic_result_crash_retries_from_raw_without_provider_recall(tmp_
         )
 
     assert uow.external_call_state("call-1") == "raw_response_persisted"
-    result = await runner.resume(
+    result = await _resume(runner,
         "call-1",
         provider=provider,
         validator=lambda raw: json.loads(raw),
@@ -330,14 +419,14 @@ async def test_duplicate_execute_returns_exact_submitted_result(tmp_path) -> Non
         return json.loads(raw)
 
     runner = ExternalCallRunner(runtime)
-    first = await runner.execute(
+    first = await _execute(runner,
         call_id="call-1",
         request={"prompt": "generate"},
         provider=provider,
         validator=validator,
         context=_context(),
     )
-    second = await runner.execute(
+    second = await _execute(runner,
         call_id="call-1",
         request={"prompt": "generate"},
         provider=provider,
@@ -356,7 +445,7 @@ async def test_duplicate_execute_rejects_mismatched_request_fingerprint(tmp_path
     _, _, runtime = _runtime(tmp_path)
     provider = CountingProvider()
     runner = ExternalCallRunner(runtime)
-    await runner.execute(
+    await _execute(runner,
         call_id="call-1",
         request={"prompt": "generate"},
         provider=provider,
@@ -365,7 +454,7 @@ async def test_duplicate_execute_rejects_mismatched_request_fingerprint(tmp_path
     )
 
     with pytest.raises(ValueError, match="request fingerprint"):
-        await runner.execute(
+        await _execute(runner,
             call_id="call-1",
             request={"prompt": "different"},
             provider=provider,
@@ -381,7 +470,7 @@ async def test_resume_rejects_execution_context_mismatch(tmp_path) -> None:
     _, _, runtime = _runtime(tmp_path)
     provider = CountingProvider()
     runner = ExternalCallRunner(runtime)
-    await runner.execute(
+    await _execute(runner,
         call_id="call-1",
         request={"prompt": "generate"},
         provider=provider,
@@ -391,7 +480,7 @@ async def test_resume_rejects_execution_context_mismatch(tmp_path) -> None:
     mismatched = _context().model_copy(update={"skill_version": "0.1.0"})
 
     with pytest.raises(ValueError, match="execution context"):
-        await runner.resume(
+        await _resume(runner,
             "call-1",
             provider=provider,
             validator=lambda raw: json.loads(raw),
@@ -406,7 +495,7 @@ async def test_duplicate_execute_rejects_execution_context_mismatch(tmp_path) ->
     _, _, runtime = _runtime(tmp_path)
     provider = CountingProvider()
     runner = ExternalCallRunner(runtime)
-    await runner.execute(
+    await _execute(runner,
         call_id="call-1",
         request={"prompt": "generate"},
         provider=provider,
@@ -416,7 +505,7 @@ async def test_duplicate_execute_rejects_execution_context_mismatch(tmp_path) ->
     mismatched = _context().model_copy(update={"input_snapshot_hash": "sha256:different"})
 
     with pytest.raises(ValueError, match="execution context"):
-        await runner.execute(
+        await _execute(runner,
             call_id="call-1",
             request={"prompt": "generate"},
             provider=provider,
@@ -437,8 +526,10 @@ async def test_legacy_validated_call_submits_without_provider_or_validator_recal
         "application/json",
         **_provenance(),
     )
-    uow.record_raw_and_transition("call-1", ref, "raw_response_persisted")
-    uow.record_validated("call-1", _valid_generation_payload())
+    uow.record_raw_and_transition(
+        "call-1", ref, "raw_response_persisted", fence=_fence()
+    )
+    uow.record_validated("call-1", _valid_generation_payload(), fence=_fence())
     provider = FailingProvider()
     validation_count = 0
 
@@ -447,7 +538,7 @@ async def test_legacy_validated_call_submits_without_provider_or_validator_recal
         validation_count += 1
         raise AssertionError("validator must not be called")
 
-    result = await ExternalCallRunner(runtime).resume(
+    result = await _resume(ExternalCallRunner(runtime),
         "call-1",
         provider=provider,
         validator=validator,
@@ -464,7 +555,7 @@ async def test_legacy_validated_call_submits_without_provider_or_validator_recal
 async def test_submitted_result_reconstructs_exactly_after_runtime_restart(tmp_path) -> None:
     _, _, runtime = _runtime(tmp_path)
     provider = CountingProvider()
-    first = await ExternalCallRunner(runtime).execute(
+    first = await _execute(ExternalCallRunner(runtime),
         call_id="call-1",
         request={"prompt": "generate"},
         provider=provider,
@@ -477,7 +568,7 @@ async def test_submitted_result_reconstructs_exactly_after_runtime_restart(tmp_p
         artifacts=FilesystemArtifactStore(tmp_path / "artifacts"),
     )
 
-    recovered = await ExternalCallRunner(restarted_runtime).resume(
+    recovered = await _resume(ExternalCallRunner(restarted_runtime),
         "call-1",
         provider=provider,
         validator=lambda raw: (_ for _ in ()).throw(AssertionError("must not validate")),
@@ -498,7 +589,7 @@ async def test_legacy_terminal_result_without_envelope_reconstructs_without_repl
 ) -> None:
     uow, _, runtime = _runtime(tmp_path)
     initial_provider = CountingProvider()
-    first = await ExternalCallRunner(runtime).execute(
+    first = await _execute(ExternalCallRunner(runtime),
         call_id="call-1",
         request={"prompt": "generate"},
         provider=initial_provider,
@@ -522,7 +613,7 @@ async def test_legacy_terminal_result_without_envelope_reconstructs_without_repl
         raise AssertionError("validator must not be called")
 
     recovery_provider = FailingProvider()
-    recovered = await ExternalCallRunner(runtime).resume(
+    recovered = await _resume(ExternalCallRunner(runtime),
         "call-1",
         provider=recovery_provider,
         validator=validator,
@@ -540,7 +631,7 @@ async def test_legacy_terminal_result_without_envelope_reconstructs_without_repl
 async def test_terminal_result_with_envelope_does_not_relax_missing_context(tmp_path) -> None:
     uow, _, runtime = _runtime(tmp_path)
     initial_provider = CountingProvider()
-    await ExternalCallRunner(runtime).execute(
+    await _execute(ExternalCallRunner(runtime),
         call_id="call-1",
         request={"prompt": "generate"},
         provider=initial_provider,
@@ -551,7 +642,7 @@ async def test_terminal_result_with_envelope_does_not_relax_missing_context(tmp_
     recovery_provider = FailingProvider()
 
     with pytest.raises(ValueError, match="execution context"):
-        await ExternalCallRunner(runtime).resume(
+        await _resume(ExternalCallRunner(runtime),
             "call-1",
             provider=recovery_provider,
             validator=lambda raw: json.loads(raw),
@@ -570,7 +661,7 @@ async def test_resume_started_without_durable_manifest_does_not_call_provider(tm
     provider = FailingProvider()
 
     with pytest.raises(ValueError, match="durable raw response"):
-        await ExternalCallRunner(runtime).resume(
+        await _resume(ExternalCallRunner(runtime),
             "call-1",
             provider=provider,
             validator=lambda raw: json.loads(raw),
@@ -590,11 +681,12 @@ async def test_resume_planned_call_does_not_advance_or_call_provider(tmp_path) -
         run_id=context.run_id,
         task_id=context.task_id,
         execution_context=context.model_dump(mode="json"),
+        **_lease_kwargs(),
     )
     provider = FailingProvider()
 
     with pytest.raises(ValueError, match="durable raw response"):
-        await ExternalCallRunner(runtime).resume(
+        await _resume(ExternalCallRunner(runtime),
             "call-1",
             provider=provider,
             validator=lambda raw: json.loads(raw),
@@ -637,7 +729,7 @@ async def test_started_recovery_rejects_forged_manifest_provenance(
         return json.loads(raw)
 
     with pytest.raises(ValueError, match="manifest provenance"):
-        await ExternalCallRunner(runtime).resume(
+        await _resume(ExternalCallRunner(runtime),
             "call-1",
             provider=provider,
             validator=validator,
@@ -653,30 +745,14 @@ async def test_started_recovery_rejects_forged_manifest_provenance(
 async def test_manifest_installed_before_persist_error_continues_without_terminal_failure(
     tmp_path,
 ) -> None:
-    uow = SqliteUnitOfWork(f"sqlite:///{tmp_path / 'core.db'}")
-    uow.create_schema()
-    uow.create_started_run(
-        "r-1",
-        manifest={},
-        event=NewEvent(event_type="RunStarted", payload={}),
-        idempotency_key="start:r-1:0",
-    )
-    uow.enqueue_tasks(
-        [
-            NewTask(
-                task_id="task-1",
-                run_id="r-1",
-                idempotency_key="generation:r-1:1",
-                intent_type="generate",
-                payload={},
-            )
-        ]
-    )
     artifacts = ManifestThenRaiseArtifactStore(tmp_path / "artifacts")
-    runtime = SimpleNamespace(uow=uow, artifacts=artifacts)
+    uow, _, runtime = _runtime(
+        tmp_path,
+        artifacts=artifacts,
+    )
     provider = CountingProvider()
 
-    result = await ExternalCallRunner(runtime).execute(
+    result = await _execute(ExternalCallRunner(runtime),
         call_id="call-1",
         request={"prompt": "generate"},
         provider=provider,
@@ -712,7 +788,7 @@ async def test_started_legacy_call_without_context_rejects_forged_trace_before_m
         return json.loads(raw)
 
     with pytest.raises(ValueError, match="execution context"):
-        await ExternalCallRunner(runtime).resume(
+        await _resume(ExternalCallRunner(runtime),
             "call-1",
             provider=provider,
             validator=validator,
@@ -736,7 +812,9 @@ async def test_post_raw_legacy_call_without_context_rejects_forged_trace_before_
         "application/json",
         **_provenance(),
     )
-    uow.record_raw_and_transition("call-1", ref, "raw_response_persisted")
+    uow.record_raw_and_transition(
+        "call-1", ref, "raw_response_persisted", fence=_fence()
+    )
     _forget_execution_context(uow)
     provider = FailingProvider()
     validation_count = 0
@@ -747,7 +825,7 @@ async def test_post_raw_legacy_call_without_context_rejects_forged_trace_before_
         return json.loads(raw)
 
     with pytest.raises(ValueError, match="execution context"):
-        await ExternalCallRunner(runtime).resume(
+        await _resume(ExternalCallRunner(runtime),
             "call-1",
             provider=provider,
             validator=validator,
@@ -779,7 +857,7 @@ async def test_persist_error_rejects_manifest_that_does_not_match_current_respon
         return json.loads(raw)
 
     with pytest.raises(OSError, match="post-manifest persist failure"):
-        await ExternalCallRunner(runtime).execute(
+        await _execute(ExternalCallRunner(runtime),
             call_id="call-1",
             request={"prompt": "generate"},
             provider=CountingProvider(),
@@ -809,7 +887,7 @@ async def test_post_rename_fsync_failure_is_recovered_by_explicit_confirmation(
 
     monkeypatch.setattr(artifact_filesystem.os, "fsync", fail_manifest_directory_fsync_once)
 
-    result = await ExternalCallRunner(runtime).execute(
+    result = await _execute(ExternalCallRunner(runtime),
         call_id="call-1",
         request={"prompt": "generate"},
         provider=provider,
@@ -839,7 +917,7 @@ async def test_persistent_durability_confirmation_failure_keeps_started_recovera
 
     runner = ExternalCallRunner(runtime)
     with pytest.raises(OSError, match="durability confirmation failed"):
-        await runner.execute(
+        await _execute(runner,
             call_id="call-1",
             request={"prompt": "generate"},
             provider=provider,
@@ -849,7 +927,7 @@ async def test_persistent_durability_confirmation_failure_keeps_started_recovera
 
     assert uow.external_call_state("call-1") == "started"
     with pytest.raises(OSError, match="durability confirmation failed"):
-        await runner.resume(
+        await _resume(runner,
             "call-1",
             provider=provider,
             validator=validator,

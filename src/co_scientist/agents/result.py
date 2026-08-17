@@ -35,6 +35,9 @@ class AgentExecutionContext(BaseModel):
     model_or_tool: str
     input_snapshot_hash: str
     prompt_hash: str | None = None
+    attempt: int = Field(default=1, ge=1)
+    reservation_id: str = "legacy-unbound"
+    lease_fence_fingerprint: str | None = None
 
     @model_validator(mode="after")
     def validate_skill_contract(self) -> "AgentExecutionContext":
@@ -65,6 +68,9 @@ class AgentResult(BaseModel):
     model_or_tool: str
     input_snapshot_hash: str
     prompt_hash: str | None = None
+    attempt: int = Field(default=1, ge=1)
+    reservation_id: str = "legacy-unbound"
+    lease_fence_fingerprint: str | None = None
     status: Literal["completed", "partial", "rejected", "failed"]
     payload: Mapping[str, Any]
     evidence_refs: tuple[str, ...] = ()

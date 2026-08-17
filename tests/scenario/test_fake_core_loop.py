@@ -31,6 +31,13 @@ from co_scientist.runtime.external_calls import (
     request_fingerprint,
 )
 from co_scientist.supervisor.orchestrator import Supervisor
+from tests._fenced_runtime import (
+    acknowledge_result,
+    budgeted_task,
+    claim_running_task,
+    execution_manifest,
+    fenced_context,
+)
 
 _OUTPUT_SCHEMAS = {
     "generation": "GenerationResultV1",
@@ -45,7 +52,7 @@ _OUTPUT_SCHEMAS = {
 def _create_running(uow: SqliteUnitOfWork, run_id: str = "run-1") -> None:
     uow.create_started_run(
         run_id,
-        manifest={},
+        manifest=execution_manifest(),
         event=NewEvent(event_type="RunStarted", payload={}),
         idempotency_key=f"start:{run_id}:0",
     )
@@ -57,18 +64,16 @@ def test_supervisor_revalidates_persisted_schema_invalid_agent_result_before_eff
     uow = SqliteUnitOfWork(f"sqlite:///{tmp_path / 'malformed-supervisor.db'}")
     uow.create_schema()
     _create_running(uow)
-    task = NewTask(
+    task = budgeted_task(NewTask(
         task_id="generation-task",
         run_id="run-1",
         idempotency_key="generation:run-1:1",
         intent_type="generate",
         payload={},
-    )
+    ))
     uow.enqueue_tasks([task])
-    uow.transition_task(task.task_id, TaskState.LEASED)
-    uow.transition_task(task.task_id, TaskState.RUNNING)
-    uow.transition_task(task.task_id, TaskState.RESULT_RECEIVED)
-    context = {
+    claimed = claim_running_task(uow, run_id="run-1", task_id=task.task_id)
+    context = fenced_context({
         "run_id": "run-1",
         "task_id": task.task_id,
         "idempotency_key": task.idempotency_key,
@@ -81,15 +86,17 @@ def test_supervisor_revalidates_persisted_schema_invalid_agent_result_before_eff
         "model_or_tool": "fake-v1",
         "input_snapshot_hash": "sha256:input",
         "prompt_hash": "sha256:prompt",
-    }
+    }, claimed).model_dump(mode="json")
     uow.plan_external_call(
         "call-1",
         "sha256:request",
         run_id="run-1",
         task_id=task.task_id,
         execution_context=context,
+        reservation_id=claimed.reservation_id,
+        fence=claimed,
     )
-    uow.transition_call("call-1", "started")
+    uow.transition_call("call-1", "started", fence=claimed)
     raw_ref = ArtifactRef(
         path="raw/call-1/digest",
         sha256="sha256:digest",
@@ -101,6 +108,7 @@ def test_supervisor_revalidates_persisted_schema_invalid_agent_result_before_eff
         raw_ref,
         "raw_response_persisted",
         usage={"input_tokens": 9, "output_tokens": 4, "cost_usd": "0.01"},
+        fence=claimed,
     )
     malformed_payload = {
         "schema_version": 1,
@@ -115,14 +123,24 @@ def test_supervisor_revalidates_persisted_schema_invalid_agent_result_before_eff
         raw_artifact_ref=raw_ref,
         **context,
     )
-    uow.record_validated_and_submitted("call-1", malformed_payload, forged)
+    uow.record_validated_and_submitted(
+        "call-1", malformed_payload, forged, fence=claimed
+    )
+    acknowledge_result(uow, claimed)
 
     with pytest.raises(ValidationError):
         Supervisor(uow=uow, review_policy=ReviewPolicy(profile_id="minimal")).handle_result(
-            "run-1", task.task_id, forged, expected_sequence=1
+            "run-1",
+            task.task_id,
+            forged,
+            expected_sequence=uow.load("run-1")[-1].sequence,
+            reservation_id=claimed.reservation_id,
+            fence=claimed,
         )
 
-    assert [event.event_type for event in uow.load("run-1")] == ["RunStarted"]
+    assert not any(
+        event.event_type == "HypothesisContentCreated" for event in uow.load("run-1")
+    )
     assert uow.task_state(task.task_id) == "result_received"
     assert uow.external_call_state("call-1") == "agent_result_submitted"
     with uow.engine.connect() as connection:
@@ -369,21 +387,20 @@ def test_supervisor_rejects_persisted_noncanonical_skill_schema_pair_before_effe
     uow = SqliteUnitOfWork(f"sqlite:///{tmp_path / 'schema-routing.db'}")
     uow.create_schema()
     _create_running(uow)
-    task = NewTask(
+    task = budgeted_task(NewTask(
         task_id="task-1",
         run_id="run-1",
         idempotency_key="task-1",
         intent_type="run_reflection",
         payload={},
-    )
+    ))
     uow.enqueue_tasks([task])
-    for state in (TaskState.LEASED, TaskState.RUNNING, TaskState.RESULT_RECEIVED):
-        uow.transition_task(task.task_id, state)
-    context = {
+    claimed = claim_running_task(uow, run_id="run-1", task_id=task.task_id)
+    valid_context = fenced_context({
         "run_id": "run-1",
         "task_id": "task-1",
         "idempotency_key": "task-1",
-        "skill_id": "reflection",
+        "skill_id": "generation",
         "skill_version": "0.2.0",
         "output_schema_id": "GenerationResultV1",
         "output_schema_version": 1,
@@ -392,14 +409,16 @@ def test_supervisor_rejects_persisted_noncanonical_skill_schema_pair_before_effe
         "model_or_tool": "fake-v1",
         "input_snapshot_hash": "sha256:input",
         "prompt_hash": "sha256:prompt",
-    }
-    valid_context = {**context, "skill_id": "generation"}
+    }, claimed).model_dump(mode="json")
+    context = {**valid_context, "skill_id": "reflection"}
     uow.plan_external_call(
         "call-1",
         "sha256:request",
         run_id="run-1",
         task_id="task-1",
         execution_context=valid_context,
+        reservation_id=claimed.reservation_id,
+        fence=claimed,
     )
     with uow.engine.begin() as connection:
         connection.execute(
@@ -409,14 +428,16 @@ def test_supervisor_rejects_persisted_noncanonical_skill_schema_pair_before_effe
             ),
             {"context": json.dumps(context, separators=(",", ":"), sort_keys=True)},
         )
-    uow.transition_call("call-1", "started")
+    uow.transition_call("call-1", "started", fence=claimed)
     raw_ref = ArtifactRef(
         path="raw/call-1/digest",
         sha256="sha256:digest",
         mime_type="application/json",
         byte_length=2,
     )
-    uow.record_raw_and_transition("call-1", raw_ref, "raw_response_persisted")
+    uow.record_raw_and_transition(
+        "call-1", raw_ref, "raw_response_persisted", fence=claimed
+    )
     forged = AgentResult.model_construct(
         result_id="result-1",
         external_call_id="call-1",
@@ -426,15 +447,23 @@ def test_supervisor_rejects_persisted_noncanonical_skill_schema_pair_before_effe
         **context,
     )
     uow.record_validated_and_submitted(
-        "call-1", _valid_generation_payload(), forged
+        "call-1", _valid_generation_payload(), forged, fence=claimed
     )
+    acknowledge_result(uow, claimed)
 
     with pytest.raises(ValueError, match="canonical skill contract"):
         Supervisor(uow=uow, review_policy=ReviewPolicy(profile_id="minimal")).handle_result(
-            "run-1", "task-1", forged, expected_sequence=1
+            "run-1",
+            "task-1",
+            forged,
+            expected_sequence=uow.load("run-1")[-1].sequence,
+            reservation_id=claimed.reservation_id,
+            fence=claimed,
         )
 
-    assert [event.event_type for event in uow.load("run-1")] == ["RunStarted"]
+    assert not any(
+        event.event_type == "HypothesisContentCreated" for event in uow.load("run-1")
+    )
     assert uow.task_state("task-1") == "result_received"
 
 
@@ -492,17 +521,17 @@ async def _execute_ranking_result(
         )
         expected_sequence = seeded.last_sequence
     supervisor = Supervisor(uow=uow, review_policy=ReviewPolicy(profile_id="minimal"))
-    task = NewTask(
+    task = budgeted_task(NewTask(
         task_id="ranking-task",
         run_id="run-1",
         idempotency_key="ranking-task",
         intent_type="run_ranking",
         payload={},
-    )
+    ))
     scheduled = supervisor.enqueue_task(task=task, expected_sequence=expected_sequence)
     expected_sequence = scheduled.last_sequence
-    uow.transition_task(task.task_id, TaskState.LEASED)
-    uow.transition_task(task.task_id, TaskState.RUNNING)
+    claimed = claim_running_task(uow, run_id="run-1", task_id=task.task_id)
+    expected_sequence = uow.load("run-1")[-1].sequence
     runner = ExternalCallRunner(
         SimpleNamespace(
             uow=uow,
@@ -519,7 +548,7 @@ async def _execute_ranking_result(
             call_id="ranking-call",
             skill_directory=Path("skills/ranking"),
             inputs={"comparison": "h-1 versus h-2"},
-            context=AgentExecutionContext(
+            context=fenced_context(AgentExecutionContext(
                 run_id="run-1",
                 task_id=task.task_id,
                 idempotency_key=task.idempotency_key,
@@ -531,11 +560,13 @@ async def _execute_ranking_result(
                 provider="fake",
                 model_or_tool="fake-v1",
                 input_snapshot_hash="sha256:input",
-            ),
+            ), claimed),
+            reservation_id=claimed.reservation_id,
+            fence=claimed,
         )
     except Exception as caught:  # noqa: BLE001 - fail-closed result is asserted below
         return uow, caught
-    uow.transition_task(task.task_id, TaskState.RESULT_RECEIVED)
+    acknowledge_result(uow, claimed)
     error: Exception | None = None
     try:
         supervisor.handle_result(
@@ -543,6 +574,8 @@ async def _execute_ranking_result(
             task.task_id,
             result,
             expected_sequence=expected_sequence,
+            reservation_id=claimed.reservation_id,
+            fence=claimed,
         )
     except Exception as caught:  # noqa: BLE001 - fail-closed result is asserted below
         error = caught
@@ -734,15 +767,16 @@ async def test_skill_executor_uses_raw_first_runner_and_returns_agent_result(tmp
     _create_running(uow)
     uow.enqueue_tasks(
         [
-            NewTask(
+            budgeted_task(NewTask(
                 task_id="task-1",
                 run_id="run-1",
                 idempotency_key="generation:run-1:1",
                 intent_type="generate",
                 payload={},
-            )
+            ))
         ]
     )
+    claimed = claim_running_task(uow, run_id="run-1", task_id="task-1")
     artifacts = FilesystemArtifactStore(tmp_path / "artifacts")
     runner = ExternalCallRunner(SimpleNamespace(uow=uow, artifacts=artifacts))
     expected_request = {
@@ -758,7 +792,7 @@ async def test_skill_executor_uses_raw_first_runner_and_returns_agent_result(tmp
     }
     raw_body = json.dumps(_valid_generation_payload(), separators=(",", ":")).encode()
     provider = ReplayLLMProvider({request_fingerprint(expected_request): raw_body})
-    context = AgentExecutionContext(
+    context = fenced_context(AgentExecutionContext(
         run_id="run-1",
         task_id="task-1",
         idempotency_key="generation:run-1:1",
@@ -770,13 +804,15 @@ async def test_skill_executor_uses_raw_first_runner_and_returns_agent_result(tmp
         provider="replay",
         model_or_tool="replay-v1",
         input_snapshot_hash="sha256:input",
-    )
+    ), claimed)
 
     result = await SkillExecutor(runner, provider).execute(
         call_id="call-1",
         skill_directory=Path("skills/generation"),
         inputs={"research_goal": "test regeneration"},
         context=context,
+        reservation_id=claimed.reservation_id,
+        fence=claimed,
     )
 
     assert result.payload["schema_version"] == 1
@@ -814,15 +850,16 @@ async def test_skill_executor_rejects_incompatible_context_before_provider_call(
     _create_running(uow)
     uow.enqueue_tasks(
         [
-            NewTask(
+            budgeted_task(NewTask(
                 task_id="task-1",
                 run_id="run-1",
                 idempotency_key="generation:run-1:1",
                 intent_type="generate",
                 payload={},
-            )
+            ))
         ]
     )
+    claimed = claim_running_task(uow, run_id="run-1", task_id="task-1")
     runner = ExternalCallRunner(
         SimpleNamespace(
             uow=uow,
@@ -850,7 +887,9 @@ async def test_skill_executor_rejects_incompatible_context_before_provider_call(
             call_id="call-1",
             skill_directory=Path("skills/generation"),
             inputs={},
-            context=AgentExecutionContext(**context_data),
+            context=fenced_context(AgentExecutionContext(**context_data), claimed),
+            reservation_id=claimed.reservation_id,
+            fence=claimed,
         )
 
     assert provider.call_count == 0
@@ -876,15 +915,16 @@ async def test_skill_executor_rejects_non_object_or_nonstandard_json_after_raw_p
     _create_running(uow)
     uow.enqueue_tasks(
         [
-            NewTask(
+            budgeted_task(NewTask(
                 task_id="task-1",
                 run_id="run-1",
                 idempotency_key="generation:run-1:1",
                 intent_type="generate",
                 payload={},
-            )
+            ))
         ]
     )
+    claimed = claim_running_task(uow, run_id="run-1", task_id="task-1")
     runner = ExternalCallRunner(
         SimpleNamespace(
             uow=uow,
@@ -897,7 +937,7 @@ async def test_skill_executor_rejects_non_object_or_nonstandard_json_after_raw_p
             call_id="call-1",
             skill_directory=Path("skills/generation"),
             inputs={},
-            context=AgentExecutionContext(
+            context=fenced_context(AgentExecutionContext(
                 run_id="run-1",
                 task_id="task-1",
                 idempotency_key="generation:run-1:1",
@@ -909,7 +949,9 @@ async def test_skill_executor_rejects_non_object_or_nonstandard_json_after_raw_p
                 provider="fake",
                 model_or_tool="fake-v1",
                 input_snapshot_hash="sha256:input",
-            ),
+            ), claimed),
+            reservation_id=claimed.reservation_id,
+            fence=claimed,
         )
 
     assert uow.external_call_state("call-1") == "validation_failed"
@@ -996,6 +1038,7 @@ class _CoreHarness:
         uow.create_run(
             "run-1",
             manifest={
+                **execution_manifest(),
                 "trace_version": 1,
                 "admission_policies": {
                     admission_policy.version: admission_policy.model_dump(mode="json")
@@ -1062,7 +1105,7 @@ class _CoreHarness:
                 uow.task_state(task_id)
             except KeyError:
                 scheduled = supervisor.enqueue_task(
-                    task=NewTask(
+                    task=budgeted_task(NewTask(
                         task_id=task_id,
                         run_id="run-1",
                         idempotency_key=task_id,
@@ -1070,12 +1113,12 @@ class _CoreHarness:
                         payload={
                             key: value for key, value in response.items() if key != "payload"
                         },
-                    ),
+                    )),
                     expected_sequence=expected_sequence,
                 )
                 expected_sequence = scheduled.last_sequence
-            uow.transition_task(task_id, TaskState.LEASED)
-            uow.transition_task(task_id, TaskState.RUNNING)
+            claimed = claim_running_task(uow, run_id="run-1", task_id=task_id)
+            expected_sequence = uow.load("run-1")[-1].sequence
             inputs = {
                 "trace_index": index,
                 **{key: value for key, value in response.items() if key != "payload"},
@@ -1085,7 +1128,7 @@ class _CoreHarness:
                 call_id=f"call-{index}",
                 skill_directory=Path("skills") / response["skill"],
                 inputs=inputs,
-                context=AgentExecutionContext(
+                context=fenced_context(AgentExecutionContext(
                     run_id="run-1",
                     task_id=task_id,
                     idempotency_key=task_id,
@@ -1097,14 +1140,18 @@ class _CoreHarness:
                     provider="fake",
                     model_or_tool="fake-v1",
                     input_snapshot_hash=input_hash,
-                ),
+                ), claimed),
+                reservation_id=claimed.reservation_id,
+                fence=claimed,
             )
-            uow.transition_task(task_id, TaskState.RESULT_RECEIVED)
+            acknowledge_result(uow, claimed)
             committed = supervisor.handle_result(
                 run_id="run-1",
                 task_id=task_id,
                 result=result,
                 expected_sequence=expected_sequence,
+                reservation_id=claimed.reservation_id,
+                fence=claimed,
             )
             expected_sequence = committed.last_sequence
 

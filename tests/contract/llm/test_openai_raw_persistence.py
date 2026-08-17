@@ -11,6 +11,12 @@ from co_scientist.agents.result import AgentExecutionContext
 from co_scientist.domain.task import NewTask
 from co_scientist.events.models import NewEvent
 from co_scientist.runtime.external_calls import ExternalCallRunner, prompt_hash
+from tests._fenced_runtime import (
+    budgeted_task,
+    claim_running_task,
+    execution_manifest,
+    fenced_context,
+)
 
 
 class OutputValidationError(ValueError):
@@ -42,23 +48,24 @@ def _runtime(tmp_path):
     uow.create_schema()
     uow.create_started_run(
         "r-1",
-        manifest={},
+        manifest=execution_manifest(),
         event=NewEvent(event_type="RunStarted", payload={}),
         idempotency_key="start:r-1:0",
     )
     uow.enqueue_tasks(
         [
-            NewTask(
+            budgeted_task(NewTask(
                 task_id="task-1",
                 run_id="r-1",
                 idempotency_key="generation:r-1:1",
                 intent_type="generate",
                 payload={},
-            )
+            ))
         ]
     )
     artifacts = FilesystemArtifactStore(tmp_path / "artifacts")
-    return uow, artifacts, SimpleNamespace(uow=uow, artifacts=artifacts)
+    claimed = claim_running_task(uow, run_id="r-1", task_id="task-1")
+    return uow, artifacts, SimpleNamespace(uow=uow, artifacts=artifacts), claimed
 
 
 def _context() -> AgentExecutionContext:
@@ -88,7 +95,7 @@ def _validate_response_output(raw: bytes) -> dict[str, str]:
 
 @pytest.mark.asyncio
 async def test_malformed_structured_output_is_still_durably_saved(tmp_path) -> None:
-    uow, artifacts, runtime = _runtime(tmp_path)
+    uow, artifacts, runtime, claimed = _runtime(tmp_path)
 
     with pytest.raises(OutputValidationError, match="structured output is not JSON"):
         await ExternalCallRunner(runtime).execute(
@@ -101,7 +108,9 @@ async def test_malformed_structured_output_is_still_durably_saved(tmp_path) -> N
             },
             provider=OpenAIResponsesProvider(FakeClient()),
             validator=_validate_response_output,
-            context=_context(),
+            context=fenced_context(_context(), claimed),
+            reservation_id=claimed.reservation_id,
+            fence=claimed,
         )
 
     call = uow.get_external_call("call-1")
