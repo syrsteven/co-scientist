@@ -44,7 +44,13 @@ def validate_run_mutation(
 
     allowed = False
     if state is RunState.RUNNING:
-        allowed = kind is not RunMutationKind.PLAN_FINALIZATION_CALL
+        allowed = kind in {
+            RunMutationKind.ENQUEUE_EXPLORATION_TASK,
+            RunMutationKind.PLAN_EXPLORATION_CALL,
+            RunMutationKind.APPLY_SCIENTIFIC_RESULT,
+            RunMutationKind.APPEND_SCIENTIFIC_EVENT,
+            RunMutationKind.RECORD_COST,
+        }
     elif state is RunState.STOPPING:
         allowed = kind in {
             RunMutationKind.ENQUEUE_FINALIZATION_TASK,

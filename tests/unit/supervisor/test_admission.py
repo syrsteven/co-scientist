@@ -489,7 +489,7 @@ def test_admission_same_key_replays_original_outcome_after_stream_and_state_adva
         idempotency_key="admit-replay-h-1",
     )
     assert first.commit is not None
-    uow.commit_domain_batch(
+    advanced = uow.commit_domain_batch(
         run_id="run-1",
         expected_sequence=first.commit.last_sequence,
         events=(
@@ -505,8 +505,14 @@ def test_admission_same_key_replays_original_outcome_after_stream_and_state_adva
                 },
             ),
         ),
-        target_run_state=RunState.STOPPING,
         idempotency_key="advance-after-admission",
+    )
+    uow.commit_lifecycle_batch(
+        run_id="run-1",
+        expected_sequence=advanced.last_sequence,
+        events=(NewEvent(event_type="RunStopping", payload={}),),
+        target_run_state=RunState.STOPPING,
+        idempotency_key="stop-after-admission",
     )
 
     replayed = supervisor.admit_hypothesis(

@@ -17,6 +17,10 @@ EVENT_SCHEMA_VERSIONS: Mapping[str, frozenset[int]] = MappingProxyType(
         "InitialRatingAssigned": frozenset({1}),
         "MatchEvaluated": frozenset({2}),
         "RatingUpdated": frozenset({1}),
+        "ResearchPlanAccepted": frozenset({1}),
+        "TournamentEpochOpened": frozenset({1}),
+        "TournamentEpochClosed": frozenset({1}),
+        "RunForkRequired": frozenset({1}),
     }
 )
 

@@ -11,6 +11,7 @@ from co_scientist.export.run_export import SqliteRunReadModel
 CONTENT_V1 = "sha256:" + "a" * 64
 CONTENT_V2 = "sha256:" + "b" * 64
 OTHER_CONTENT = "sha256:" + "c" * 64
+CONTENT_V3 = "sha256:" + "d" * 64
 
 
 def _event(
@@ -74,6 +75,16 @@ def _review(
 
 def _complete_events() -> list[DomainEvent]:
     return [
+        _event(
+            0,
+            "TournamentEpochOpened",
+            {
+                "epoch_id": "epoch-1",
+                "research_plan_version": 2,
+                "rating_policy_version": "elo-32-v1",
+            },
+            schema_version=1,
+        ),
         _event(
             1,
             "HypothesisContentCreated",
@@ -225,6 +236,43 @@ def _complete_events() -> list[DomainEvent]:
         ),
         _event(
             13,
+            "HypothesisTournamentReady",
+            {
+                "run_id": "run-1",
+                "hypothesis_id": "h-2",
+                "content_id": "content-other",
+                "content_hash": OTHER_CONTENT,
+                "research_plan_version": 2,
+                "epoch_id": "epoch-1",
+                "rating_policy_version": "elo-32-v1",
+            },
+            schema_version=2,
+        ),
+        _event(
+            14,
+            "TournamentEntryCreated",
+            {
+                "epoch_id": "epoch-1",
+                "hypothesis_id": "h-2",
+                "content_hash": OTHER_CONTENT,
+                "rating": 1200.0,
+                "matches_played": 0,
+            },
+            schema_version=1,
+        ),
+        _event(
+            15,
+            "InitialRatingAssigned",
+            {
+                "epoch_id": "epoch-1",
+                "hypothesis_id": "h-2",
+                "rating": 1200.0,
+                "rating_policy_version": "elo-32-v1",
+            },
+            schema_version=1,
+        ),
+        _event(
+            16,
             "MatchEvaluated",
             {
                 "match_id": "match-inconclusive",
@@ -240,7 +288,7 @@ def _complete_events() -> list[DomainEvent]:
             schema_version=2,
         ),
         _event(
-            14,
+            17,
             "MatchEvaluated",
             {
                 "match_id": "match-decisive",
@@ -256,7 +304,7 @@ def _complete_events() -> list[DomainEvent]:
             schema_version=2,
         ),
         _event(
-            15,
+            18,
             "RatingUpdated",
             {
                 "match_id": "match-decisive",
@@ -269,7 +317,7 @@ def _complete_events() -> list[DomainEvent]:
             schema_version=1,
         ),
         _event(
-            16,
+            19,
             "RatingUpdated",
             {
                 "match_id": "match-decisive",
@@ -282,7 +330,7 @@ def _complete_events() -> list[DomainEvent]:
             schema_version=1,
         ),
         _event(
-            17,
+            20,
             "MetaReviewCompleted",
             {
                 "research_plan_version": 2,
@@ -332,6 +380,10 @@ def test_complete_projection_preserves_history_and_applies_only_current_revision
     assert projection.cluster_ids == ("cluster-causal",)
     assert projection.access_issues == ("paywalled supplement",)
     assert projection.tournament_entries_by_epoch["epoch-1"].content_hash == CONTENT_V2
+    assert projection.tournament_entries_by_epoch["epoch-1"].matches_played == 2
+    assert projection.tournament_readiness_history[0].epoch_id == "epoch-1"
+    assert projection.tournament_readiness_history[0].rating_policy_version == "elo-32-v1"
+    assert len(projection.tournament_entry_history) == 1
     assert [rating.rating for rating in projection.rating_history] == [1200.0, 1216.0]
     assert projection.current_ratings_by_epoch == {"epoch-1": 1216.0}
     assert [match.decision for match in projection.match_participation] == [
@@ -339,7 +391,7 @@ def test_complete_projection_preserves_history_and_applies_only_current_revision
         "decisive",
     ]
     assert projection.created_sequence == 1
-    assert projection.updated_sequence == 17
+    assert projection.updated_sequence == 20
     with pytest.raises(ValidationError):
         projection.current_content_hash = CONTENT_V1  # type: ignore[misc]
 
@@ -347,7 +399,12 @@ def test_complete_projection_preserves_history_and_applies_only_current_revision
 # Mutation caught: silently skipping a known scientific event from an unknown schema.
 def test_projection_rejects_unsupported_relevant_event_version() -> None:
     events = _complete_events()
-    events[6] = events[6].model_copy(update={"schema_version": 1})
+    review_index = next(
+        index
+        for index, event in enumerate(events)
+        if event.payload.get("review_id") == "current-full"
+    )
+    events[review_index] = events[review_index].model_copy(update={"schema_version": 1})
 
     with pytest.raises(ValueError, match="unsupported scientific event version"):
         replay_hypothesis("h-1", events)
@@ -356,11 +413,121 @@ def test_projection_rejects_unsupported_relevant_event_version() -> None:
 # Mutation caught: recording match participation against an epoch the hypothesis never entered.
 def test_projection_rejects_match_outside_hypothesis_entry_epoch() -> None:
     events = _complete_events()
-    events[12] = events[12].model_copy(
-        update={"payload": {**events[12].payload, "epoch_id": "epoch-other"}}
+    match_index = next(
+        index
+        for index, event in enumerate(events)
+        if event.payload.get("match_id") == "match-inconclusive"
+    )
+    events[match_index] = events[match_index].model_copy(
+        update={"payload": {**events[match_index].payload, "epoch_id": "epoch-other"}}
     )
 
     with pytest.raises(ValueError, match="match requires a tournament entry"):
+        replay_hypothesis("h-1", events)
+
+
+# Mutation caught: carrying epoch-local entry/rating current views across a new
+# content and plan revision.
+def test_new_content_revision_retires_current_entries_and_ratings_but_keeps_history() -> None:
+    events = [
+        *_complete_events(),
+        _event(
+            21,
+            "HypothesisContentCreated",
+            _content(
+                content_id="content-v3",
+                content_hash=CONTENT_V3,
+                plan_version=3,
+                supersedes="content-v2",
+            ),
+            schema_version=2,
+        ),
+    ]
+
+    projection = replay_hypothesis("h-1", events)
+
+    assert projection.current_content_hash == CONTENT_V3
+    assert projection.lifecycle_state == "created"
+    assert projection.tournament_entries_by_epoch == {}
+    assert projection.current_ratings_by_epoch == {}
+    assert len(projection.tournament_entry_history) == 1
+    assert projection.tournament_entry_history[0].content_hash == CONTENT_V2
+    assert not projection.tournament_entry_history[0].applies_to_current_revision
+    assert [rating.applies_to_current_revision for rating in projection.rating_history] == [
+        False,
+        False,
+    ]
+
+
+# Mutation caught: admitting an entry without readiness for the same opened epoch.
+def test_entry_requires_matching_readiness_and_open_epoch() -> None:
+    events = _complete_events()
+    entry_index = next(
+        index
+        for index, event in enumerate(events)
+        if event.event_type == "TournamentEntryCreated"
+        and event.payload.get("hypothesis_id") == "h-1"
+    )
+    events[entry_index] = events[entry_index].model_copy(
+        update={"payload": {**events[entry_index].payload, "epoch_id": "epoch-other"}}
+    )
+
+    with pytest.raises(ValueError, match="readiness.*opened epoch"):
+        replay_hypothesis("h-1", events[: entry_index + 1])
+
+
+# Mutation caught: validating only the projected participant of a match.
+def test_match_requires_both_content_bound_epoch_entries() -> None:
+    events = [
+        event
+        for event in _complete_events()
+        if not (
+            event.event_type in {"TournamentEntryCreated", "InitialRatingAssigned"}
+            and event.payload.get("hypothesis_id") == "h-2"
+        )
+    ]
+
+    with pytest.raises(ValueError, match="both participants"):
+        replay_hypothesis("h-1", events)
+
+
+# Mutation caught: allowing one MatchEvaluated identity to be replayed twice.
+def test_projection_rejects_duplicate_match_identity() -> None:
+    events = _complete_events()
+    decisive = next(
+        event
+        for event in events
+        if event.payload.get("match_id") == "match-decisive"
+        and event.event_type == "MatchEvaluated"
+    )
+    rating_index = next(
+        index for index, event in enumerate(events) if event.event_type == "RatingUpdated"
+    )
+    events.insert(rating_index, decisive.model_copy(update={"sequence": 18}))
+
+    with pytest.raises(ValueError, match="duplicate match_id"):
+        replay_hypothesis("h-1", events)
+
+
+# Mutation caught: accepting a rating policy unrelated to the entry's opened epoch.
+def test_projection_rejects_rating_policy_mismatch() -> None:
+    events = _complete_events()
+    rating_index = next(
+        index
+        for index, event in enumerate(events)
+        if event.event_type == "RatingUpdated"
+        and event.payload.get("hypothesis_id") == "h-1"
+    )
+    events[rating_index] = events[rating_index].model_copy(
+        update={
+            "payload": {
+                **events[rating_index].payload,
+                "rating_policy_version": "foreign-policy",
+            }
+        }
+    )
+
+    with pytest.raises(ValueError, match="rating policy"):
         replay_hypothesis("h-1", events)
 
 

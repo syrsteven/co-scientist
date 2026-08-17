@@ -982,7 +982,12 @@ def test_export_separates_immutable_content_revisions_from_current_projection(
 def test_export_rejects_epoch_anchor_without_frozen_members(tmp_path: Path) -> None:
     uow = SqliteUnitOfWork(f"sqlite:///{tmp_path / 'anchors.db'}")
     uow.create_schema()
-    uow.create_run("anchor-run", manifest={})
+    uow.create_started_run(
+        "anchor-run",
+        manifest={},
+        event=NewEvent(event_type="RunStarted", payload={}),
+        idempotency_key="start:anchor-run:0",
+    )
     epoch = TournamentEpoch(
         epoch_id="epoch-1",
         research_plan_version=1,
@@ -995,7 +1000,7 @@ def test_export_rejects_epoch_anchor_without_frozen_members(tmp_path: Path) -> N
     )
     uow.commit_domain_batch(
         run_id="anchor-run",
-        expected_sequence=0,
+        expected_sequence=1,
         events=(NewEvent(event_type="TournamentEpochOpened", payload=epoch.model_dump()),),
         idempotency_key="open-epoch",
     )
@@ -1033,7 +1038,12 @@ def test_export_rejects_duplicate_or_noncanonical_frozen_anchor_members(
     }
     uow = SqliteUnitOfWork(f"sqlite:///{tmp_path / 'invalid-anchors.db'}")
     uow.create_schema()
-    uow.create_run("anchor-run", manifest=manifest)
+    uow.create_started_run(
+        "anchor-run",
+        manifest=manifest,
+        event=NewEvent(event_type="RunStarted", payload={}),
+        idempotency_key="start:anchor-run:0",
+    )
     epoch = TournamentEpoch(
         epoch_id="epoch-1",
         research_plan_version=1,
@@ -1046,7 +1056,7 @@ def test_export_rejects_duplicate_or_noncanonical_frozen_anchor_members(
     )
     uow.commit_domain_batch(
         run_id="anchor-run",
-        expected_sequence=0,
+        expected_sequence=1,
         events=(NewEvent(event_type="TournamentEpochOpened", payload=epoch.model_dump()),),
         idempotency_key="open-epoch",
     )

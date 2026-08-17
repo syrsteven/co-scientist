@@ -165,7 +165,11 @@ def _snapshot(uow: SqliteUnitOfWork) -> tuple[object, ...]:
                 "(SELECT COUNT(*) FROM events WHERE run_id = 'run-1'), "
                 "(SELECT COUNT(*) FROM tasks WHERE run_id = 'run-1'), "
                 "(SELECT COUNT(*) FROM external_calls WHERE run_id = 'run-1'), "
-                "(SELECT COUNT(*) FROM cost_entries WHERE run_id = 'run-1') "
+                "(SELECT COUNT(*) FROM cost_entries WHERE run_id = 'run-1'), "
+                "(SELECT state FROM tasks WHERE task_id = 'generate-1'), "
+                "(SELECT state FROM external_calls WHERE external_call_id = 'call-1'), "
+                "(SELECT applied_domain_sequence FROM external_calls "
+                " WHERE external_call_id = 'call-1') "
                 "FROM runs WHERE run_id = 'run-1'"
             )
         ).one()
@@ -231,6 +235,29 @@ def _attempt_terminal_mutation(
                 ),
             ),
         )
+    elif mutation == "run_science_batch":
+        uow.commit_domain_batch(
+            run_id="run-1",
+            expected_sequence=sequence,
+            events=(
+                NewEvent(
+                    event_type="ResearchPlanAccepted",
+                    payload={"version": 2, "action": "new_epoch"},
+                ),
+            ),
+            idempotency_key="late-plan-science",
+        )
+    elif mutation == "run_science_direct":
+        uow.append(
+            "run-1",
+            expected_sequence=sequence,
+            events=(
+                NewEvent(
+                    event_type="TournamentEpochClosed",
+                    payload={"epoch_id": "epoch-1", "plan_version": 1},
+                ),
+            ),
+        )
     elif mutation == "result_application":
         uow.commit_domain_batch(
             run_id="run-1",
@@ -284,6 +311,8 @@ def _attempt_terminal_mutation(
         "call_plan",
         "scientific_event",
         "direct_append",
+        "run_science_batch",
+        "run_science_direct",
         "result_application",
         "cost",
     ],
@@ -382,3 +411,63 @@ def test_paused_run_preserves_work_without_creating_new_tasks(tmp_path) -> None:
         )
 
     assert _snapshot(supervisor.uow) == before
+
+
+@pytest.mark.parametrize("surface", ["supervisor", "uow"])
+# Mutation caught: allowing a finalization task to be created while still running.
+def test_running_rejects_direct_finalization_task_creation(tmp_path, surface: str) -> None:
+    supervisor, _ = _submitted_generation(tmp_path)
+    before = _snapshot(supervisor.uow)
+    task = _late_task(f"finalize:{surface}", intent_type="finalize_run")
+
+    with pytest.raises(ValueError, match="running.*enqueue_finalization_task"):
+        if surface == "supervisor":
+            supervisor.enqueue_task(task=task, expected_sequence=1)
+        else:
+            supervisor.uow.enqueue_tasks((task,))
+
+    assert _snapshot(supervisor.uow) == before
+
+
+# Mutation caught: authorizing exploration against the pre-transition running state
+# even though the same transaction enters stopping.
+def test_stop_transition_rejects_mixed_exploration_followup_without_side_effects(
+    tmp_path,
+) -> None:
+    supervisor, _ = _submitted_generation(tmp_path)
+    before = _snapshot(supervisor.uow)
+    exploration = _late_task("late-stop-exploration")
+
+    with pytest.raises(ValueError, match="stopping.*exploration"):
+        supervisor.uow.commit_lifecycle_batch(
+            run_id="run-1",
+            expected_sequence=1,
+            events=(
+                NewEvent(event_type="RunStopping", payload={}),
+                NewEvent(
+                    event_type="TaskEnqueued",
+                    payload=exploration.model_dump(mode="json"),
+                ),
+            ),
+            target_run_state=RunState.STOPPING,
+            followup_tasks=(exploration,),
+            idempotency_key="mixed-stop",
+        )
+
+    assert _snapshot(supervisor.uow) == before
+
+
+# Mutation caught: evaluating the authorized stop/finalization batch as running
+# instead of against its effective stopping state.
+def test_stop_transition_accepts_only_its_authorized_finalization_task(tmp_path) -> None:
+    supervisor, _ = _submitted_generation(tmp_path)
+
+    committed = supervisor.request_normal_completion("run-1", expected_sequence=1)
+
+    assert [event.event_type for event in committed.events] == [
+        "RunStopping",
+        "FinalizationRequested",
+        "TaskEnqueued",
+    ]
+    assert supervisor.uow.run_state("run-1") == "stopping"
+    assert supervisor.uow.task_state("finalize:run-1") == "pending"

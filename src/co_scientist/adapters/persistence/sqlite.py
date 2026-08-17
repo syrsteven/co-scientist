@@ -42,6 +42,38 @@ from co_scientist.ports.event_store import ConcurrencyConflict
 from co_scientist.ports.external_provider import thaw_json
 from co_scientist.skills.loader import resolve_core_skill_contract
 
+_LIFECYCLE_EVENT_TARGETS = {
+    "RunStarted": RunState.RUNNING,
+    "RunResumed": RunState.RUNNING,
+    "RunPausing": RunState.PAUSING,
+    "RunPaused": RunState.PAUSED,
+    "RunNeedsAttention": RunState.NEEDS_ATTENTION,
+    "RunStopping": RunState.STOPPING,
+    "RunCompleted": RunState.COMPLETED,
+    "RunCompletedPartial": RunState.COMPLETED_PARTIAL,
+    "RunFailed": RunState.FAILED,
+    "RunCancelled": RunState.CANCELLED,
+}
+
+_LIFECYCLE_TRANSITION_EVENTS = {
+    (RunState.CREATED, RunState.RUNNING): "RunStarted",
+    (RunState.PAUSED, RunState.RUNNING): "RunResumed",
+    (RunState.NEEDS_ATTENTION, RunState.RUNNING): "RunResumed",
+    (RunState.RUNNING, RunState.PAUSING): "RunPausing",
+    (RunState.PAUSING, RunState.PAUSED): "RunPaused",
+    (RunState.RUNNING, RunState.NEEDS_ATTENTION): "RunNeedsAttention",
+    (RunState.RUNNING, RunState.STOPPING): "RunStopping",
+    (RunState.PAUSED, RunState.STOPPING): "RunStopping",
+    (RunState.STOPPING, RunState.COMPLETED): "RunCompleted",
+    (RunState.STOPPING, RunState.COMPLETED_PARTIAL): "RunCompletedPartial",
+    (RunState.RUNNING, RunState.FAILED): "RunFailed",
+    (RunState.CREATED, RunState.CANCELLED): "RunCancelled",
+    (RunState.RUNNING, RunState.CANCELLED): "RunCancelled",
+    (RunState.PAUSING, RunState.CANCELLED): "RunCancelled",
+    (RunState.PAUSED, RunState.CANCELLED): "RunCancelled",
+    (RunState.NEEDS_ATTENTION, RunState.CANCELLED): "RunCancelled",
+}
+
 
 class Base(DeclarativeBase):
     """Declarative metadata shared with Alembic."""
@@ -300,6 +332,13 @@ class SqliteUnitOfWork:
             self._assert_sequence(session, run_id, expected_sequence)
             for event in events:
                 self._assert_supported_new_event_version(event)
+            if session.get(RunRow, run_id) is not None:
+                self._validate_lifecycle_batch(
+                    session,
+                    run_id=run_id,
+                    events=events,
+                    target_run_state=None,
+                )
             if any(event.event_type in EVENT_SCHEMA_VERSIONS for event in events):
                 state = self._run_state_in_transaction(session, run_id)
                 for event in events:
@@ -425,10 +464,10 @@ class SqliteUnitOfWork:
                     previous = None
                 if (
                     previous is not None
-                    and existing_run.state == RunState.RUNNING.value
-                    and existing_run.current_sequence == previous.last_sequence == 1
+                    and previous.last_sequence == 1
                     and existing_run.manifest_json == _json(manifest)
                     and len(previous.events) == 1
+                    and previous.events[0].sequence == 1
                     and previous.events[0].event_type == event.event_type
                     and previous.events[0].schema_version == event.schema_version
                     and _json(previous.events[0].payload)
@@ -939,8 +978,10 @@ class SqliteUnitOfWork:
         followup_tasks: Sequence[NewTask],
         external_call_id: str | None,
         cost_entries: Sequence[CostEntry],
+        target_run_state: RunState | None,
     ) -> None:
         state = self._run_state_in_transaction(session, run_id)
+        effective_state = target_run_state or state
         source_task_intent: str | None = None
         if external_call_id is not None:
             call = self._external_call(session, external_call_id)
@@ -957,7 +998,7 @@ class SqliteUnitOfWork:
                 raise KeyError(f"unknown task: {call.task_id}")
             source_task_intent = task.intent_type
             validate_run_mutation(
-                state,
+                effective_state,
                 RunMutationKind.APPLY_SCIENTIFIC_RESULT,
                 task_intent=source_task_intent,
             )
@@ -966,7 +1007,7 @@ class SqliteUnitOfWork:
             self._assert_supported_new_event_version(event)
             if event.event_type in EVENT_SCHEMA_VERSIONS:
                 validate_run_mutation(
-                    state,
+                    effective_state,
                     RunMutationKind.APPEND_SCIENTIFIC_EVENT,
                     task_intent=source_task_intent,
                 )
@@ -979,7 +1020,7 @@ class SqliteUnitOfWork:
                 expected_run_id=run_id,
             )
             validate_run_mutation(
-                state,
+                effective_state,
                 (
                     RunMutationKind.ENQUEUE_FINALIZATION_TASK
                     if followup_task.intent_type == "finalize_run"
@@ -1004,9 +1045,50 @@ class SqliteUnitOfWork:
 
         if cost_entries:
             validate_run_mutation(
-                state,
+                effective_state,
                 RunMutationKind.RECORD_COST,
                 task_intent=source_task_intent,
+            )
+
+    def _validate_lifecycle_batch(
+        self,
+        session: Session,
+        *,
+        run_id: str,
+        events: Sequence[NewEvent],
+        target_run_state: RunState | None,
+    ) -> None:
+        lifecycle_events = [
+            event.event_type
+            for event in events
+            if event.event_type in _LIFECYCLE_EVENT_TARGETS
+        ]
+        if target_run_state is None:
+            if lifecycle_events:
+                event_type = lifecycle_events[0]
+                required = _LIFECYCLE_EVENT_TARGETS[event_type]
+                raise ValueError(
+                    f"lifecycle event {event_type} requires target {required.value}"
+                )
+            return
+
+        state = self._run_state_in_transaction(session, run_id)
+        validate_run_transition(state, target_run_state)
+        for event_type in lifecycle_events:
+            required = _LIFECYCLE_EVENT_TARGETS[event_type]
+            if required is not target_run_state:
+                raise ValueError(
+                    f"lifecycle event {event_type} requires target {required.value}"
+                )
+        expected_event = _LIFECYCLE_TRANSITION_EVENTS.get((state, target_run_state))
+        if expected_event is None:
+            raise ValueError(
+                f"run transition {state.value} -> {target_run_state.value} "
+                "has no lifecycle event contract"
+            )
+        if lifecycle_events != [expected_event]:
+            raise ValueError(
+                f"run transition to {target_run_state.value} requires {expected_event}"
             )
 
     def commit_domain_batch(
@@ -1046,6 +1128,12 @@ class SqliteUnitOfWork:
                 return previous
             if not _validate_sequence_before_replay:
                 self._assert_sequence(session, run_id, expected_sequence)
+            self._validate_lifecycle_batch(
+                session,
+                run_id=run_id,
+                events=events,
+                target_run_state=run_target,
+            )
             self._validate_domain_batch_mutations(
                 session,
                 run_id=run_id,
@@ -1054,6 +1142,7 @@ class SqliteUnitOfWork:
                 followup_tasks=followup_tasks,
                 external_call_id=external_call_id,
                 cost_entries=cost_entries,
+                target_run_state=run_target,
             )
             self._apply_run_transition(session, run_id, run_target)
             persisted = self._insert_events(session, run_id, expected_sequence, events)

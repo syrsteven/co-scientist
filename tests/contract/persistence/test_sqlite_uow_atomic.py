@@ -203,6 +203,46 @@ def test_started_run_initialization_exact_retry_returns_original_commit(tmp_path
     assert len(store.load("r-started")) == 1
 
 
+# Mutation caught: coupling initialization replay to the Run's current tip/state
+# instead of the durable sequence-1 initialization anchors.
+def test_started_run_initialization_exact_retry_survives_legitimate_advancement(
+    tmp_path,
+) -> None:
+    store = _store(tmp_path)
+    event = NewEvent(event_type="RunStarted", payload={"provider": "replay"})
+    committed = store.create_started_run(
+        "r-started",
+        manifest={"provider": "replay"},
+        event=event,
+        idempotency_key="start:r-started:0",
+    )
+    store.commit_domain_batch(
+        run_id="r-started",
+        expected_sequence=1,
+        events=(
+            NewEvent(
+                event_type="TournamentEpochOpened",
+                payload={"epoch_id": "epoch-1", "research_plan_version": 1},
+            ),
+        ),
+        idempotency_key="open:epoch-1",
+    )
+
+    replayed = store.create_started_run(
+        "r-started",
+        manifest={"provider": "replay"},
+        event=event,
+        idempotency_key="start:r-started:0",
+    )
+
+    assert replayed == committed
+    assert store.run_state("r-started") == "running"
+    assert [item.event_type for item in store.load("r-started")] == [
+        "RunStarted",
+        "TournamentEpochOpened",
+    ]
+
+
 @pytest.mark.parametrize(
     ("manifest", "event"),
     [
@@ -305,6 +345,107 @@ def test_lifecycle_batch_checks_sequence_before_idempotent_replay(tmp_path) -> N
             target_run_state=RunState.PAUSING,
             idempotency_key="pause-request:r-1:1",
         )
+
+
+@pytest.mark.parametrize(
+    "event_type",
+    [
+        "ResearchPlanAccepted",
+        "TournamentEpochOpened",
+        "TournamentEpochClosed",
+        "RunForkRequired",
+    ],
+)
+# Mutation caught: omitting run-level scientific control events from the closed
+# version contract.
+def test_run_scientific_control_events_reject_unsupported_versions(
+    tmp_path, event_type: str
+) -> None:
+    store = _store(tmp_path)
+    _create_running(store, "r-1")
+
+    with pytest.raises(ValueError, match=f"{event_type} v2"):
+        store.commit_domain_batch(
+            run_id="r-1",
+            expected_sequence=1,
+            events=(NewEvent(event_type=event_type, schema_version=2, payload={}),),
+            idempotency_key=f"unsupported:{event_type}",
+        )
+
+    assert [event.event_type for event in store.load("r-1")] == ["RunStarted"]
+
+
+# Mutation caught: changing the Run row state without the matching durable
+# lifecycle event in the same transaction.
+def test_run_transition_requires_its_matching_lifecycle_event(tmp_path) -> None:
+    store = _store(tmp_path)
+    _create_running(store, "r-1")
+
+    with pytest.raises(ValueError, match="stopping.*RunStopping"):
+        store.commit_lifecycle_batch(
+            run_id="r-1",
+            expected_sequence=1,
+            events=(NewEvent(event_type="AgentRecommendedActions", payload={}),),
+            target_run_state=RunState.STOPPING,
+            idempotency_key="invalid-stop",
+        )
+
+    assert store.run_state("r-1") == "running"
+    assert [event.event_type for event in store.load("r-1")] == ["RunStarted"]
+
+
+# Mutation caught: appending a lifecycle event without applying its matching Run
+# row transition.
+def test_lifecycle_event_requires_its_matching_transition(tmp_path) -> None:
+    store = _store(tmp_path)
+    _create_running(store, "r-1")
+
+    with pytest.raises(ValueError, match="RunStopping.*stopping"):
+        store.commit_domain_batch(
+            run_id="r-1",
+            expected_sequence=1,
+            events=(NewEvent(event_type="RunStopping", payload={}),),
+            idempotency_key="event-only-stop",
+        )
+
+    assert store.run_state("r-1") == "running"
+    assert [event.event_type for event in store.load("r-1")] == ["RunStarted"]
+
+
+# Mutation caught: bypassing lifecycle coupling through the lower-level event-store
+# append surface for an existing durable Run.
+def test_direct_append_rejects_lifecycle_event_without_transition(tmp_path) -> None:
+    store = _store(tmp_path)
+    _create_running(store, "r-1")
+
+    with pytest.raises(ValueError, match="RunStopping.*stopping"):
+        store.append(
+            "r-1",
+            expected_sequence=1,
+            events=(NewEvent(event_type="RunStopping", payload={}),),
+        )
+
+    assert store.run_state("r-1") == "running"
+    assert [event.event_type for event in store.load("r-1")] == ["RunStarted"]
+
+
+# Mutation caught: accepting a different lifecycle event merely because a valid
+# target transition was also present.
+def test_run_transition_rejects_mismatched_lifecycle_event(tmp_path) -> None:
+    store = _store(tmp_path)
+    _create_running(store, "r-1")
+
+    with pytest.raises(ValueError, match="RunPaused.*paused"):
+        store.commit_lifecycle_batch(
+            run_id="r-1",
+            expected_sequence=1,
+            events=(NewEvent(event_type="RunPaused", payload={}),),
+            target_run_state=RunState.STOPPING,
+            idempotency_key="mismatched-stop",
+        )
+
+    assert store.run_state("r-1") == "running"
+    assert [event.event_type for event in store.load("r-1")] == ["RunStarted"]
 
 
 def test_exact_idempotency_replay_returns_prior_commit_for_stale_sequence(tmp_path) -> None:
@@ -466,7 +607,7 @@ def test_invalid_task_mutation_rolls_back_the_domain_batch(tmp_path) -> None:
                 task_id="task-1",
                 run_id="r-1",
                 idempotency_key="task-1",
-                intent_type="finalize_run",
+                intent_type="reflect",
                 payload={},
             )
         ]

@@ -1,8 +1,17 @@
 import hashlib
 import json
+from collections.abc import Mapping
+from types import MappingProxyType
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field, computed_field
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    computed_field,
+    field_serializer,
+    field_validator,
+)
 
 from co_scientist.agents.payloads import HypothesisDraftV1
 
@@ -146,21 +155,38 @@ class TournamentEntryProjection(BaseModel):
 
     epoch_id: str
     content_hash: str
+    research_plan_version: int
+    rating_policy_version: str
     initial_rating: float
     matches_played: int = 0
     created_sequence: int
+    applies_to_current_revision: bool
+
+
+class TournamentReadinessProjection(BaseModel):
+    model_config = ConfigDict(frozen=True)
+
+    epoch_id: str
+    content_hash: str
+    research_plan_version: int
+    rating_policy_version: str
+    sequence: int
+    applies_to_current_revision: bool
 
 
 class RatingProjection(BaseModel):
     model_config = ConfigDict(frozen=True)
 
     epoch_id: str
+    content_hash: str
+    research_plan_version: int
     rating: float
     rating_policy_version: str
     source: Literal["initial", "match"]
     sequence: int
     match_id: str | None = None
     before_rating: float | None = None
+    applies_to_current_revision: bool
 
 
 class MatchParticipationProjection(BaseModel):
@@ -200,7 +226,7 @@ class HypothesisProjection(BaseModel):
     current_safety_status: str = "pending"
     safety_evidence: tuple[SafetyEvidenceProjection, ...] = ()
     review_history: tuple[ReviewProjection, ...] = ()
-    review_coverage_by_content: dict[str, dict[str, tuple[str, ...]]] = Field(
+    review_coverage_by_content: Mapping[str, Mapping[str, tuple[str, ...]]] = Field(
         default_factory=dict
     )
     novelty_history: tuple[NoveltyProjection, ...] = ()
@@ -208,11 +234,55 @@ class HypothesisProjection(BaseModel):
     proximity_history: tuple[ProximityProjection, ...] = ()
     cluster_ids: tuple[str, ...] = ()
     access_issues: tuple[str, ...] = ()
-    tournament_entries_by_epoch: dict[str, TournamentEntryProjection] = Field(
+    tournament_readiness_history: tuple[TournamentReadinessProjection, ...] = ()
+    current_tournament_readiness_by_epoch: Mapping[
+        str, TournamentReadinessProjection
+    ] = Field(default_factory=dict)
+    tournament_entry_history: tuple[TournamentEntryProjection, ...] = ()
+    tournament_entries_by_epoch: Mapping[str, TournamentEntryProjection] = Field(
         default_factory=dict
     )
     rating_history: tuple[RatingProjection, ...] = ()
-    current_ratings_by_epoch: dict[str, float] = Field(default_factory=dict)
+    current_ratings_by_epoch: Mapping[str, float] = Field(default_factory=dict)
     match_participation: tuple[MatchParticipationProjection, ...] = ()
     created_sequence: int
     updated_sequence: int
+
+    @field_validator("review_coverage_by_content", mode="after")
+    @classmethod
+    def freeze_review_coverage(
+        cls, value: Mapping[str, Mapping[str, tuple[str, ...]]]
+    ) -> Mapping[str, Mapping[str, tuple[str, ...]]]:
+        return MappingProxyType(
+            {
+                content_hash: MappingProxyType(dict(stages))
+                for content_hash, stages in value.items()
+            }
+        )
+
+    @field_validator(
+        "current_tournament_readiness_by_epoch",
+        "tournament_entries_by_epoch",
+        "current_ratings_by_epoch",
+        mode="after",
+    )
+    @classmethod
+    def freeze_keyed_projection(cls, value: Mapping[str, object]) -> Mapping[str, object]:
+        return MappingProxyType(dict(value))
+
+    @field_serializer("review_coverage_by_content", when_used="json")
+    def serialize_review_coverage(
+        self, value: Mapping[str, Mapping[str, tuple[str, ...]]]
+    ) -> dict[str, dict[str, tuple[str, ...]]]:
+        return {
+            content_hash: dict(stages) for content_hash, stages in value.items()
+        }
+
+    @field_serializer(
+        "current_tournament_readiness_by_epoch",
+        "tournament_entries_by_epoch",
+        "current_ratings_by_epoch",
+        when_used="json",
+    )
+    def serialize_keyed_projection(self, value: Mapping[str, object]) -> dict[str, object]:
+        return dict(value)

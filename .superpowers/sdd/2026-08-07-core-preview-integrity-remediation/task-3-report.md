@@ -186,3 +186,154 @@ $ git diff --check
   but bare commands on this host remain blocked until that environment is repaired.
 - Lower-level lease/claim fencing and reservation primitives are deliberately left
   to Task 4, as required by scope.
+
+---
+
+## Remediation Round 1/5 — Integrity Review Closure
+
+### Status and Base
+
+- Status: DONE_WITH_CONCERNS
+- Remediation base: `e4d82d1c0f3290db23fe119f9c291e35208a40f6`
+- Fix commit: separate child commit with message
+  `fix: close Task 3 integrity review gaps`; the exact hash is supplied in the
+  final handoff because a commit cannot contain its own hash.
+- Scope remained Task 3 only. No Task 4 lease, migration, budget-reservation,
+  Worker, or CLI primitive was added.
+
+### Strict TDD Evidence
+
+All remediation tests were added before production edits across the four required
+covering files. The exact Task 3 command used for consolidated RED was:
+
+```bash
+PYTHONPATH=/private/tmp/cs-task2-shims \
+PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 python3.11 -m pytest \
+  -p pytest_asyncio.plugin -p respx.plugin \
+  tests/contract/persistence/test_run_state_fences.py \
+  tests/contract/persistence/test_sqlite_uow_atomic.py \
+  tests/unit/events/test_complete_hypothesis_projection.py \
+  tests/unit/events/test_hypothesis_replay.py \
+  tests/scenario/test_finalization_path.py -q --tb=short
+```
+
+Valid behavioral RED:
+
+```text
+27 failed, 91 passed in 5.70s
+```
+
+The failures were the reviewed behaviors: eight terminal run-science bypasses,
+two running-finalization surfaces, mixed stop-transition exploration, advanced
+start replay, four unsupported run-science versions, three lifecycle divergence
+paths, stale/mutable tournament views, absent readiness/open-epoch and second-
+participant validation, duplicate match acceptance, rating-policy drift, and
+unchanged match counts.
+
+A lower-level lifecycle append test was added after auditing the phrase "append
+RunStopping" and was independently observed RED before its production change:
+
+```text
+1 failed in 0.72s
+```
+
+After applying the direct-append lifecycle fence, its compatibility selection
+passed:
+
+```text
+7 passed in 1.14s
+```
+
+### Finding-to-Spec Mapping
+
+1. **Critical 1 — exhaustive science classification.**
+   `EVENT_SCHEMA_VERSIONS` now includes `ResearchPlanAccepted`,
+   `TournamentEpochOpened`, `TournamentEpochClosed`, and `RunForkRequired` v1 in
+   addition to all hypothesis-science events. Registry membership remains the
+   single mutation classifier, so direct append and domain batches fence every
+   classified event and reject unsupported versions.
+2. **Critical 2 — complete-batch/effective-state authorization.**
+   Running now authorizes only exploration creation/planning plus result/science/
+   cost settlement. Direct finalization creation is rejected. Domain batches
+   validate mutations against their effective target state, so a stop-transition
+   transaction permits only its authorized `finalize_run` task and rejects mixed
+   exploration without side effects.
+3. **Critical 3 — lifecycle event/state coupling.**
+   Exact current-state/target/event contracts are validated inside the same
+   transaction before mutation. A target without its event, a lifecycle event
+   without its target, a mismatched lifecycle event, and direct lifecycle append
+   against an existing Run all fail closed.
+4. **Important 1 — initialization replay after advancement.**
+   Exact replay now relies on the fingerprint, immutable manifest, sequence-1
+   `RunStarted` anchor, type/version/payload, and original commit range—not the
+   Run's mutable current state/tip. Legitimate advancement returns the original
+   `CommitResult`; changed or orphan/corrupt initialization still fails closed.
+5. **Important 2 — deep projection immutability.**
+   Review coverage, current readiness, current entries, and current ratings use
+   nested `MappingProxyType` structures with explicit JSON serializers. In-place
+   mutation of outer maps, nested review maps, entry maps, and rating maps raises
+   `TypeError`, while canonical JSON export remains unchanged in shape.
+6. **Important 3 — revision-bound current tournament views.**
+   Readiness, entry, and rating records now retain content hash, plan version,
+   policy, sequence, and applicability as immutable history. A new content
+   revision preserves history but removes stale entries/ratings/readiness from
+   current views.
+7. **Important 4 — epoch/participant/match invariants.**
+   Replay prevalidates opened/closed epochs, readiness, entry and initial-rating
+   order, both participant entries and content hashes, plan/policy binding,
+   match-ID uniqueness, rating-update uniqueness, and decisive participant
+   provenance. Every valid match increments each participant's derived
+   `matches_played` count.
+8. **Important 5 — complete no-mutation evidence.**
+   Run-fence snapshots now include task state, external-call state, and applied
+   domain sequence in addition to row counts and Run state/sequence. Focused
+   tests cover direct running finalization and mixed stop-transition work.
+
+### Final GREEN and Regression Output
+
+Exact Task 3 selection:
+
+```text
+119 passed in 4.88s
+```
+
+Required affected regression selection:
+
+```text
+222 passed in 17.58s
+```
+
+Expanded offline discovery (`tests/unit tests/contract tests/scenario tests/smoke`
+with `-m 'not online'`):
+
+```text
+419 passed, 3 deselected in 28.48s
+```
+
+Final static gates:
+
+```text
+$ python3.11 -m ruff check src tests
+All checks passed!
+
+$ PYTHONPATH=/private/tmp/cs-task2-shims python3.11 -m mypy src/co_scientist
+Success: no issues found in 56 source files
+
+$ git diff --check
+(no output; exit 0)
+```
+
+### Self-Review and Residual Risks
+
+- Canonical replay now validates global epoch/match relationships before reducing
+  one hypothesis; this intentionally makes future scientific event schemas fail
+  closed until the central registry and reducer contract are extended together.
+- The release-invariant corruption test now injects an impossible lifecycle row
+  below the public UoW boundary so diagnostic coverage remains without reopening
+  a production bypass.
+- Existing Task 2 same-key admission replay and loaded-tip concurrency tests remain
+  green after fixture advancement was separated from the lifecycle transition.
+- The host's malformed global `click`/`orjson` packages remain unchanged. All test
+  and mypy evidence uses only the documented `/private/tmp/cs-task2-shims` import
+  shim; no compatibility code was added to the repository.
+- Lease/claim and reservation fencing remain explicitly deferred to Task 4.

@@ -1,9 +1,10 @@
+from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
 from sqlalchemy import select
 
-from co_scientist.adapters.persistence.sqlite import ExternalCallRow, TaskRow
+from co_scientist.adapters.persistence.sqlite import EventRow, ExternalCallRow, RunRow, TaskRow
 from co_scientist.domain.task import NewTask
 from co_scientist.events.models import NewEvent
 from co_scientist.export.run_export import (
@@ -167,12 +168,25 @@ def test_release_report_detects_completion_without_finalization(tmp_path: Path) 
     assert harness.lens.run is not None
     uow = harness.lens.run.uow
     uow.create_run("unfinalized-run", manifest={})
-    uow.commit_domain_batch(
-        run_id="unfinalized-run",
-        expected_sequence=0,
-        events=(NewEvent(event_type="RunCompleted", payload={}),),
-        idempotency_key="inject-unfinalized-completion",
-    )
+    # Simulate corruption below the public transaction boundary. Public UoW APIs
+    # reject this lifecycle divergence; the release verifier must still diagnose
+    # a pre-existing/corrupt database.
+    with uow.session_factory.begin() as session:
+        run = session.get(RunRow, "unfinalized-run")
+        assert run is not None
+        session.add(
+            EventRow(
+                run_id="unfinalized-run",
+                sequence=1,
+                event_type="RunCompleted",
+                schema_version=1,
+                payload_json="{}",
+                occurred_at=datetime.now(UTC),
+                causation_id=None,
+                correlation_id=None,
+            )
+        )
+        run.current_sequence = 1
 
     report = verify_core_release_invariants(
         "unfinalized-run",
