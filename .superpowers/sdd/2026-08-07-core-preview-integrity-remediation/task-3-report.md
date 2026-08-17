@@ -337,3 +337,89 @@ $ git diff --check
   and mypy evidence uses only the documented `/private/tmp/cs-task2-shims` import
   shim; no compatibility code was added to the repository.
 - Lease/claim and reservation fencing remain explicitly deferred to Task 4.
+
+---
+
+## Remediation Round 2/5 — Event-Derived Match Count
+
+### Status and Base
+
+- Status: DONE_WITH_CONCERNS
+- Base: `356e11b39fa3145d1b3fe59fbf546cabb141bd13`
+- Fix commit: separate child commit with message
+  `fix: derive tournament match counts from events`; its exact hash is supplied
+  in the final handoff because a commit cannot contain its own hash.
+
+### Strict TDD RED
+
+Added `test_projection_rejects_nonzero_entry_matches_played_seed` before the
+production change, then ran:
+
+```bash
+PYTHONPATH=/private/tmp/cs-task2-shims \
+PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 python3.11 -m pytest \
+  -p pytest_asyncio.plugin -p respx.plugin \
+  tests/unit/events/test_complete_hypothesis_projection.py::test_projection_rejects_nonzero_entry_matches_played_seed -q
+```
+
+Valid RED:
+
+```text
+1 failed in 0.65s
+Failed: DID NOT RAISE ValueError
+```
+
+The failure proved a caller could seed `TournamentEntryCreated.matches_played`
+with `37` and influence the derived projection.
+
+### Minimal Fix and Mapping
+
+- Replay now requires `TournamentEntryCreated.matches_played == 0` and fails
+  closed with `tournament entry matches_played must start at zero` otherwise.
+- `TournamentEntryProjection` is initialized with literal zero rather than the
+  caller payload.
+- Only already-validated, globally unique `MatchEvaluated` events increment the
+  retained entry history/current view, preserving all round-1 epoch, readiness,
+  participant, content, policy, and uniqueness checks.
+
+### GREEN and Regression Output
+
+Focused projection/replay covering tests:
+
+```text
+19 passed in 0.61s
+```
+
+Exact Task 3 selection:
+
+```text
+120 passed in 4.77s
+```
+
+Required affected regression selection:
+
+```text
+223 passed in 17.49s
+```
+
+Static gates:
+
+```text
+$ python3.11 -m ruff check src tests
+All checks passed!
+
+$ PYTHONPATH=/private/tmp/cs-task2-shims python3.11 -m mypy src/co_scientist
+Success: no issues found in 56 source files
+
+$ git diff --check
+(no output; exit 0)
+```
+
+### Residual Risks
+
+- The scientific event contract intentionally rejects nonzero historical entry
+  seeds; any future import/migration of legacy aggregate counts must reconstruct
+  match events rather than bypass this reducer invariant.
+- The host `click`/`orjson` environment remains malformed, so the documented
+  `/private/tmp/cs-task2-shims` import shim remains necessary for tests/mypy.
+- Task 4 lease, migration, and reservation work remains out of scope.

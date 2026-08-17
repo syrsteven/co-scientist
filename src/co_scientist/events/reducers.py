@@ -111,6 +111,8 @@ def _validate_hypothesis_replay_contracts(events: list[DomainEvent]) -> None:
             key = (hypothesis_id, epoch_id)
             ready = readiness.get(key)
             content_hash = _required_str(payload, "content_hash")
+            if _required_int(payload, "matches_played") != 0:
+                raise ValueError("tournament entry matches_played must start at zero")
             if (
                 ready is None
                 or epoch_id not in active_epochs
@@ -571,7 +573,7 @@ def reduce_hypothesis(
             research_plan_version=matching_readiness.research_plan_version,
             rating_policy_version=matching_readiness.rating_policy_version,
             initial_rating=_required_float(payload, "rating"),
-            matches_played=_required_int(payload, "matches_played"),
+            matches_played=0,
             created_sequence=event.sequence,
             applies_to_current_revision=False,
         )

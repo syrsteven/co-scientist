@@ -531,6 +531,28 @@ def test_projection_rejects_rating_policy_mismatch() -> None:
         replay_hypothesis("h-1", events)
 
 
+# Mutation caught: seeding a derived match count from caller-provided entry data.
+def test_projection_rejects_nonzero_entry_matches_played_seed() -> None:
+    events = _complete_events()
+    entry_index = next(
+        index
+        for index, event in enumerate(events)
+        if event.event_type == "TournamentEntryCreated"
+        and event.payload.get("hypothesis_id") == "h-1"
+    )
+    events[entry_index] = events[entry_index].model_copy(
+        update={
+            "payload": {
+                **events[entry_index].payload,
+                "matches_played": 37,
+            }
+        }
+    )
+
+    with pytest.raises(ValueError, match="matches_played must start at zero"):
+        replay_hypothesis("h-1", events)
+
+
 # Mutation caught: maintaining a second SQL-side hypothesis projection algorithm.
 def test_sqlite_export_projection_is_canonical_replay_byte_for_byte(tmp_path) -> None:
     uow = SqliteUnitOfWork(f"sqlite:///{tmp_path / 'projection.db'}")
