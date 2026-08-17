@@ -310,11 +310,8 @@ def reduce_admission_evidence(
             novelty_sequence = novelty.sequence
         else:
             _append_unique(conflicting, f"invalid_novelty:{novelty.sequence}")
-        novelty_facts = {
-            (event.payload.get("assessment_id"), event.payload.get("verdict"))
-            for event in current_novelty
-        }
-        if len(novelty_facts) > 1:
+        novelty_verdicts = {event.payload.get("verdict") for event in current_novelty}
+        if len(novelty_verdicts) > 1:
             _append_unique(conflicting, "conflicting_novelty")
             novelty_id = None
             novelty_sequence = None

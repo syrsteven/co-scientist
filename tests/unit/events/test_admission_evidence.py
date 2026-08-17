@@ -177,6 +177,33 @@ def test_complete_evidence_returns_exact_immutable_traceable_snapshot() -> None:
         snapshot.content_hash = OTHER_CONTENT_HASH  # type: ignore[misc]
 
 
+# Mutation caught: treating independent agreeing assessment IDs as verdict conflict.
+def test_multiple_agreeing_novelty_assessments_use_latest_provenance() -> None:
+    events = _complete_events()
+    events.append(
+        _event(
+            7,
+            "NoveltyAssessmentRecorded",
+            {
+                "assessment_id": "novelty-2",
+                "hypothesis_id": "h-1",
+                "content_hash": CONTENT_HASH,
+                "research_plan_version": 2,
+                "verdict": "partially_novel",
+                "closest_prior_work_ids": ["paper-2"],
+            },
+        )
+    )
+
+    snapshot = _reduce(events)
+
+    assert snapshot.novelty_assessment_id == "novelty-2"
+    assert snapshot.novelty_event_sequence == 7
+    assert snapshot.missing_requirements == ()
+    assert snapshot.conflicting_evidence == ()
+    assert snapshot.source_event_sequences == (1, 2, 3, 4, 5, 6, 7)
+
+
 def _remove(event_type: str, *, stage: str | None = None) -> Callable[[list[DomainEvent]], None]:
     def mutate(events: list[DomainEvent]) -> None:
         events[:] = [

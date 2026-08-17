@@ -424,6 +424,117 @@ def test_admission_sequence_race_fails_with_normal_concurrency_error(
     )
 
 
+# Mutation caught: accepting an ahead token after a concurrent revision fills that sequence.
+def test_admission_rejects_expected_sequence_ahead_of_loaded_evidence_tip(
+    tmp_path, monkeypatch
+) -> None:
+    database_url = f"sqlite:///{tmp_path / 'admission-ahead-race.db'}"
+    uow = _admission_uow(tmp_path, filename="admission-ahead-race.db")
+    competing = SqliteUnitOfWork(database_url)
+    original_load = uow.load
+
+    def load_then_advance(run_id: str, after_sequence: int = 0):
+        events = original_load(run_id, after_sequence)
+        competing.commit_domain_batch(
+            run_id=run_id,
+            expected_sequence=6,
+            events=(
+                NewEvent(
+                    event_type="HypothesisContentCreated",
+                    schema_version=2,
+                    payload={
+                        "hypothesis_id": "h-1",
+                        "content_id": "content-2",
+                        "content_hash": "sha256:" + "c" * 64,
+                        "research_plan_version": 1,
+                        "generation_strategy": "revision",
+                    },
+                ),
+            ),
+            idempotency_key="competing-ahead-revision",
+        )
+        return events
+
+    monkeypatch.setattr(uow, "load", load_then_advance)
+    supervisor = Supervisor(uow=uow, review_policy=ReviewPolicy(profile_id="minimal"))
+
+    with pytest.raises(ConcurrencyConflict, match="expected 7, got 6"):
+        supervisor.admit_hypothesis(
+            run_id="run-1",
+            hypothesis_id="h-1",
+            expected_sequence=7,
+            idempotency_key="admit-ahead-racing-h-1",
+        )
+
+    assert not any(
+        event.event_type == "HypothesisTournamentReady" for event in original_load("run-1")
+    )
+
+
+# Mutation caught: evaluating mutable Run state before replaying a successful admission key.
+def test_admission_same_key_replays_original_outcome_after_stream_and_state_advance(
+    tmp_path,
+) -> None:
+    uow = _admission_uow(tmp_path, filename="admission-replay.db")
+    supervisor = Supervisor(uow=uow, review_policy=ReviewPolicy(profile_id="minimal"))
+    first = supervisor.admit_hypothesis(
+        run_id="run-1",
+        hypothesis_id="h-1",
+        expected_sequence=6,
+        idempotency_key="admit-replay-h-1",
+    )
+    assert first.commit is not None
+    uow.commit_domain_batch(
+        run_id="run-1",
+        expected_sequence=first.commit.last_sequence,
+        events=(
+            NewEvent(
+                event_type="HypothesisContentCreated",
+                schema_version=2,
+                payload={
+                    "hypothesis_id": "h-1",
+                    "content_id": "content-2",
+                    "content_hash": "sha256:" + "c" * 64,
+                    "research_plan_version": 1,
+                    "generation_strategy": "permitted task-2 revision",
+                },
+            ),
+        ),
+        target_run_state=RunState.STOPPING,
+        idempotency_key="advance-after-admission",
+    )
+
+    replayed = supervisor.admit_hypothesis(
+        run_id="run-1",
+        hypothesis_id="h-1",
+        expected_sequence=6,
+        idempotency_key="admit-replay-h-1",
+    )
+
+    assert replayed == first
+
+
+# Mutation caught: replaying an admission key for a different hypothesis.
+def test_admission_replay_validates_original_hypothesis_ownership(tmp_path) -> None:
+    uow = _admission_uow(tmp_path, filename="admission-replay-owner.db")
+    supervisor = Supervisor(uow=uow, review_policy=ReviewPolicy(profile_id="minimal"))
+    first = supervisor.admit_hypothesis(
+        run_id="run-1",
+        hypothesis_id="h-1",
+        expected_sequence=6,
+        idempotency_key="admit-owned-by-h-1",
+    )
+    assert first.commit is not None
+
+    with pytest.raises(ValueError, match="different admission"):
+        supervisor.admit_hypothesis(
+            run_id="run-1",
+            hypothesis_id="h-2",
+            expected_sequence=first.commit.last_sequence,
+            idempotency_key="admit-owned-by-h-1",
+        )
+
+
 # Mutation caught: inserting a task without atomic, full Supervisor creator provenance.
 def test_supervisor_enqueue_task_atomically_persists_full_provenance(tmp_path) -> None:
     uow = SqliteUnitOfWork(f"sqlite:///{tmp_path / 'enqueue.db'}")

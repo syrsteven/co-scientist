@@ -20,6 +20,7 @@ from co_scientist.agents.payloads import (
 )
 from co_scientist.agents.result import AgentExecutionContext, AgentResult
 from co_scientist.domain.admission import (
+    AdmissionEvidenceSnapshot,
     admission_policy_from_manifest,
     reduce_admission_evidence,
 )
@@ -49,6 +50,7 @@ from co_scientist.domain.tournament import (
 )
 from co_scientist.events.models import DomainEvent, NewEvent
 from co_scientist.events.reducers import replay_tournament
+from co_scientist.ports.event_store import ConcurrencyConflict
 from co_scientist.skills.loader import resolve_core_skill_contract
 from co_scientist.supervisor.followups import FollowupIntent, derive_followup_intents
 
@@ -178,6 +180,49 @@ class Supervisor:
         if active is None:
             raise ValueError(f"run {run_id} has no active TournamentEpoch")
         return active
+
+    @staticmethod
+    def _replay_admission(
+        commit: CommitResult,
+        *,
+        run_id: str,
+        hypothesis_id: str,
+    ) -> AdmissionOutcome:
+        events = commit.events
+        expected_contract = (
+            ("HypothesisTournamentReady", 2),
+            ("TournamentEntryCreated", 1),
+            ("InitialRatingAssigned", 1),
+        )
+        if (
+            len(events) != len(expected_contract)
+            or tuple((event.event_type, event.schema_version) for event in events)
+            != expected_contract
+            or any(event.run_id != run_id for event in events)
+        ):
+            raise ValueError("idempotency key belongs to a different admission")
+        snapshot = AdmissionEvidenceSnapshot.model_validate(events[0].payload)
+        entry = TournamentEntry.model_validate(events[1].payload)
+        rating = events[2].payload
+        if (
+            snapshot.run_id != run_id
+            or snapshot.hypothesis_id != hypothesis_id
+            or snapshot.missing_requirements
+            or snapshot.conflicting_evidence
+            or entry.hypothesis_id != hypothesis_id
+            or entry.epoch_id != snapshot.epoch_id
+            or entry.content_hash != snapshot.content_hash
+            or rating.get("hypothesis_id") != hypothesis_id
+            or rating.get("epoch_id") != snapshot.epoch_id
+            or rating.get("rating") != entry.rating
+            or rating.get("rating_policy_version") != snapshot.rating_policy_version
+        ):
+            raise ValueError("idempotency key belongs to a different admission")
+        return AdmissionOutcome(
+            decision=AdmissionDecision(admitted=True),
+            entry=entry,
+            commit=commit,
+        )
 
     @staticmethod
     def _validate_submitted_result(
@@ -804,9 +849,19 @@ class Supervisor:
     ) -> AdmissionOutcome:
         """Reduce durable evidence and atomically assign an epoch-local entry."""
 
+        prior = self.uow.load_command_commit(run_id, idempotency_key)
+        if prior is not None:
+            return self._replay_admission(
+                prior,
+                run_id=run_id,
+                hypothesis_id=hypothesis_id,
+            )
         if RunState(self.uow.run_state(run_id)) is not RunState.RUNNING:
             raise ValueError("admission requires a running Run")
         events = self.uow.load(run_id)
+        loaded_sequence = events[-1].sequence if events else 0
+        if loaded_sequence != expected_sequence:
+            raise ConcurrencyConflict(f"expected {expected_sequence}, got {loaded_sequence}")
         epoch, _ = self._epoch_state_from_events(events)
         if epoch is None:
             return AdmissionOutcome(

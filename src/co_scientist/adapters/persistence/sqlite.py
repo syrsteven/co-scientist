@@ -319,6 +319,31 @@ class SqliteUnitOfWork:
             raise TypeError(f"Run manifest is not an object: {run_id}")
         return cast(dict[str, Any], manifest)
 
+    def load_command_commit(
+        self,
+        run_id: str,
+        idempotency_key: str,
+    ) -> CommitResult | None:
+        """Load a prior command result by its Run-scoped idempotency key."""
+
+        with self.session_factory() as session:
+            commit = session.get(IdempotencyCommitRow, (run_id, idempotency_key))
+            if commit is None:
+                return None
+            rows = session.scalars(
+                select(EventRow)
+                .where(
+                    EventRow.run_id == run_id,
+                    EventRow.sequence >= commit.first_sequence,
+                    EventRow.sequence <= commit.last_sequence,
+                )
+                .order_by(EventRow.sequence)
+            ).all()
+            return CommitResult(
+                events=tuple(row.to_domain() for row in rows),
+                last_sequence=commit.last_sequence,
+            )
+
     def create_run(self, run_id: str, manifest: dict[str, Any]) -> None:
         with self.session_factory.begin() as session:
             self._begin_immediate(session)
