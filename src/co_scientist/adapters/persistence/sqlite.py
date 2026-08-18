@@ -34,7 +34,14 @@ from sqlalchemy.engine.cursor import CursorResult
 from sqlalchemy.orm import DeclarativeBase, Mapped, Session, mapped_column, sessionmaker
 
 from co_scientist.adapters.persistence.migrations import execution_contract_diagnostic
-from co_scientist.domain.budget import BudgetEstimate, BudgetPolicy, BudgetUsage, CostEntry
+from co_scientist.domain.budget import (
+    BudgetEstimate,
+    BudgetPolicy,
+    BudgetUsage,
+    CostEntry,
+    DurableBudgetSnapshot,
+    add_budget_usage,
+)
 from co_scientist.domain.run_mutations import RunMutationKind, validate_run_mutation
 from co_scientist.domain.states import ExternalCallState, RunState, TaskState
 from co_scientist.domain.task import (
@@ -701,6 +708,100 @@ class SqliteUnitOfWork:
         return usage
 
     @staticmethod
+    def _budget_policy_version(policy: BudgetPolicy) -> str:
+        canonical = _json(policy.model_dump(mode="json"))
+        return "sha256:" + hashlib.sha256(canonical.encode("utf-8")).hexdigest()
+
+    @staticmethod
+    def _reservation_actual(row: BudgetReservationRow) -> BudgetUsage:
+        return BudgetUsage(
+            model_calls=row.actual_model_calls,
+            input_tokens=row.actual_input_tokens,
+            output_tokens=row.actual_output_tokens,
+            cost_usd=Decimal(row.actual_cost_usd),
+            hypotheses=row.actual_hypotheses,
+            matches=row.actual_matches,
+        )
+
+    @classmethod
+    def _load_budget_snapshot(
+        cls,
+        session: Session,
+        run_id: str,
+        *,
+        exclude_task_intent: str | None = None,
+    ) -> DurableBudgetSnapshot:
+        run = session.get(RunRow, run_id)
+        if run is None:
+            raise KeyError(f"unknown run: {run_id}")
+        manifest = json.loads(run.manifest_json)
+        if not isinstance(manifest, dict):
+            raise TypeError(f"Run manifest is not an object: {run_id}")
+        policy = BudgetPolicy.model_validate(manifest.get("budget", {}))
+        settled = BudgetUsage()
+        reserved = BudgetEstimate()
+        reservation_ids: list[str] = []
+        cost_ids: list[str] = []
+        rows = session.scalars(
+            select(BudgetReservationRow)
+            .where(BudgetReservationRow.run_id == run_id)
+            .order_by(BudgetReservationRow.reservation_id)
+        ).all()
+        for row in rows:
+            if exclude_task_intent is not None:
+                task = session.get(TaskRow, row.task_id)
+                if task is None:
+                    raise ValueError(
+                        f"budget reservation {row.reservation_id} has no persisted task"
+                    )
+                if task.intent_type == exclude_task_intent:
+                    continue
+            if row.state == "settled":
+                settled = add_budget_usage(settled, cls._reservation_actual(row))
+                reservation_ids.append(row.reservation_id)
+                if row.external_call_id is not None:
+                    cost_ids.extend(
+                        str(value)
+                        for value in session.scalars(
+                            select(CostEntryRow.cost_entry_id).where(
+                                CostEntryRow.run_id == run_id,
+                                CostEntryRow.external_call_id == row.external_call_id,
+                            )
+                        ).all()
+                    )
+            elif row.state == "reserved":
+                reserved = add_budget_usage(reserved, cls._reservation_estimate(row))
+                reservation_ids.append(row.reservation_id)
+        total = add_budget_usage(settled, reserved)
+        return DurableBudgetSnapshot(
+            run_id=run_id,
+            policy_version=str(
+                manifest.get("budget_policy_version") or cls._budget_policy_version(policy)
+            ),
+            settled=settled,
+            actively_reserved=BudgetEstimate.model_validate(reserved.model_dump()),
+            hard_limit_reached=policy.reached(total),
+            source_reservation_ids=tuple(reservation_ids),
+            source_cost_entry_ids=tuple(sorted(set(cost_ids))),
+        )
+
+    def load_budget_snapshot(self, run_id: str) -> DurableBudgetSnapshot:
+        """Reconstruct settled and active usage from one database snapshot."""
+
+        with self.session_factory() as session:
+            return self._load_budget_snapshot(session, run_id)
+
+    def load_checkpoint_budget_snapshot(self, run_id: str) -> DurableBudgetSnapshot:
+        """Load scientific usage while excluding orchestration-only finalization work."""
+
+        with self.session_factory() as session:
+            return self._load_budget_snapshot(
+                session,
+                run_id,
+                exclude_task_intent="finalize_run",
+            )
+
+    @staticmethod
     def _fits_budget(policy: BudgetPolicy, usage: BudgetUsage, estimate: BudgetEstimate) -> bool:
         checks = (
             (policy.max_model_calls, usage.model_calls + estimate.model_calls),
@@ -986,7 +1087,7 @@ class SqliteUnitOfWork:
                 is not None
             ):
                 raise ValueError("lease token already in use")
-            rows = session.scalars(
+            call_rows = session.scalars(
                 select(TaskRow)
                 .join(
                     ExternalCallRow,
@@ -1001,6 +1102,29 @@ class SqliteUnitOfWork:
                 )
                 .order_by(TaskRow.task_id)
             ).all()
+            finalization_rows = (
+                session.scalars(
+                    select(TaskRow)
+                    .where(
+                        TaskRow.run_id == run_id,
+                        TaskRow.intent_type == "finalize_run",
+                        TaskRow.state.in_(
+                            (
+                                TaskState.LEASED.value,
+                                TaskState.RUNNING.value,
+                                TaskState.RESULT_RECEIVED.value,
+                            )
+                        ),
+                    )
+                    .order_by(TaskRow.task_id)
+                ).all()
+                if state is RunState.STOPPING
+                else []
+            )
+            rows = sorted(
+                {row.task_id: row for row in (*call_rows, *finalization_rows)}.values(),
+                key=lambda row: row.task_id,
+            )
             task = next(
                 (
                     row
@@ -1032,7 +1156,12 @@ class SqliteUnitOfWork:
                     ExternalCallRow.attempt == task.attempt,
                 )
             )
-            if (
+            if task.intent_type == "finalize_run":
+                if call is not None or reservation.external_call_id is not None:
+                    raise ValueError("local finalization cannot bind an external call")
+                if reservation.state != "reserved":
+                    raise ValueError("finalization reservation binding is not current")
+            elif (
                 call is None
                 or reservation.external_call_id != call.external_call_id
                 or reservation.state != "reserved"
@@ -1077,6 +1206,17 @@ class SqliteUnitOfWork:
         *,
         allowed_states: AbstractSet[TaskState] = frozenset({TaskState.LEASED, TaskState.RUNNING}),
     ) -> TaskRow:
+        run = session.get(RunRow, fence.run_id)
+        if run is None:
+            raise KeyError(f"unknown run: {fence.run_id}")
+        state = RunState(run.state)
+        if state in {
+            RunState.COMPLETED,
+            RunState.COMPLETED_PARTIAL,
+            RunState.FAILED,
+            RunState.CANCELLED,
+        }:
+            raise ValueError(f"run state {state.value} does not allow lease mutation")
         row = session.get(TaskRow, fence.task_id)
         if (
             row is None
@@ -1256,6 +1396,14 @@ class SqliteUnitOfWork:
             row = session.get(TaskRow, task_id)
             if row is None:
                 raise KeyError(f"unknown task: {task_id}")
+            state = self._run_state_in_transaction(session, row.run_id)
+            if state in {
+                RunState.COMPLETED,
+                RunState.COMPLETED_PARTIAL,
+                RunState.FAILED,
+                RunState.CANCELLED,
+            }:
+                raise ValueError(f"run state {state.value} does not allow task mutation")
             row.state = validate_task_transition(TaskState(row.state), target).value
 
     def task_state(self, task_id: str) -> str:
@@ -1271,6 +1419,35 @@ class SqliteUnitOfWork:
         if intent is None:
             raise KeyError(f"unknown task: {task_id}")
         return intent
+
+    def reservation_id_for_task(self, task_id: str) -> str:
+        with self.session_factory() as session:
+            reservation_id = session.scalar(
+                select(BudgetReservationRow.reservation_id).where(
+                    BudgetReservationRow.task_id == task_id
+                )
+            )
+        if reservation_id is None:
+            raise KeyError(f"task has no budget reservation: {task_id}")
+        return str(reservation_id)
+
+    def unresolved_task_ids(
+        self, run_id: str, *, exclude_intent: str | None = None
+    ) -> tuple[str, ...]:
+        """Return durable work that did not reach a resolved task state."""
+
+        resolved = (
+            TaskState.SUCCEEDED.value,
+            TaskState.CANCELLED.value,
+        )
+        with self.session_factory() as session:
+            query = select(TaskRow.task_id).where(
+                TaskRow.run_id == run_id,
+                TaskRow.state.not_in(resolved),
+            )
+            if exclude_intent is not None:
+                query = query.where(TaskRow.intent_type != exclude_intent)
+            return tuple(str(value) for value in session.scalars(query.order_by(TaskRow.task_id)))
 
     def run_state(self, run_id: str) -> str:
         with self.session_factory() as session:
@@ -1431,6 +1608,17 @@ class SqliteUnitOfWork:
         with self.session_factory.begin() as session:
             self._begin_immediate(session)
             self._fenced_task(session, fence, allowed_states=frozenset({TaskState.RUNNING}))
+
+    def assert_finalization_fence(self, *, fence: TaskLeaseFence) -> None:
+        with self.session_factory.begin() as session:
+            self._begin_immediate(session)
+            task = self._fenced_task(
+                session,
+                fence,
+                allowed_states=frozenset({TaskState.RESULT_RECEIVED}),
+            )
+            if task.intent_type != "finalize_run":
+                raise ValueError("lease fence does not belong to finalization task")
 
     def assert_external_call_fence(
         self,
@@ -1753,6 +1941,156 @@ class SqliteUnitOfWork:
         )
 
     @staticmethod
+    def _call_cost_entry(row: ExternalCallRow) -> CostEntry:
+        usage = json.loads(row.usage_json)
+        if not isinstance(usage, dict):
+            raise TypeError("persisted external call usage is not an object")
+        nested = usage.get("tokens")
+        tokens = nested if isinstance(nested, dict) else {}
+
+        def integer(value: Any) -> int:
+            return value if isinstance(value, int) and not isinstance(value, bool) else 0
+
+        return CostEntry(
+            cost_entry_id=f"cost:{row.external_call_id}",
+            run_id=row.run_id,
+            external_call_id=row.external_call_id,
+            input_tokens=integer(usage.get("input_tokens", tokens.get("input"))),
+            output_tokens=integer(usage.get("output_tokens", tokens.get("output"))),
+            cost_usd=Decimal(str(usage.get("cost_usd", "0"))),
+            pricing_version=str(usage.get("pricing_version", "unpriced")),
+        )
+
+    @classmethod
+    def _validate_cost_entries_from_calls(
+        cls,
+        session: Session,
+        run_id: str,
+        entries: Sequence[CostEntry],
+    ) -> None:
+        for entry in entries:
+            call = cls._external_call(session, entry.external_call_id)
+            cls._assert_run_owner(
+                kind="external call",
+                identifier=entry.external_call_id,
+                actual_run_id=call.run_id,
+                expected_run_id=run_id,
+            )
+            if entry != cls._call_cost_entry(call):
+                raise ValueError("cost entry does not match persisted call usage")
+
+    @classmethod
+    def _settle_budget_reservation(
+        cls,
+        session: Session,
+        *,
+        run_id: str,
+        reservation_id: str,
+        external_call_id: str,
+        events: Sequence[NewEvent],
+    ) -> NewEvent:
+        reservation = session.get(BudgetReservationRow, reservation_id)
+        if (
+            reservation is None
+            or reservation.run_id != run_id
+            or reservation.external_call_id != external_call_id
+        ):
+            raise ValueError("budget settlement reservation is not bound to external call")
+        if reservation.state != "reserved":
+            raise ValueError("budget settlement requires an active reservation")
+        cost_rows = session.scalars(
+            select(CostEntryRow).where(
+                CostEntryRow.run_id == run_id,
+                CostEntryRow.external_call_id == external_call_id,
+            )
+        ).all()
+        if len(cost_rows) != 1:
+            raise ValueError("budget settlement requires exactly one persisted cost entry")
+        cost = cost_rows[0]
+        actual = BudgetUsage(
+            model_calls=1,
+            input_tokens=cost.input_tokens,
+            output_tokens=cost.output_tokens,
+            cost_usd=Decimal(cost.cost_usd),
+            hypotheses=sum(event.event_type == "HypothesisContentCreated" for event in events),
+            matches=sum(event.event_type == "MatchEvaluated" for event in events),
+        )
+        reservation.state = "settled"
+        reservation.actual_model_calls = actual.model_calls
+        reservation.actual_input_tokens = actual.input_tokens
+        reservation.actual_output_tokens = actual.output_tokens
+        reservation.actual_cost_usd = str(actual.cost_usd)
+        reservation.actual_hypotheses = actual.hypotheses
+        reservation.actual_matches = actual.matches
+        reservation.version += 1
+        reservation.updated_at = datetime.now(UTC)
+        return NewEvent(
+            event_type="BudgetSettled",
+            payload={
+                "reservation_id": reservation_id,
+                "external_call_id": external_call_id,
+                "actual": actual.model_dump(mode="json"),
+                "source_cost_entry_ids": (cost.cost_entry_id,),
+            },
+        )
+
+    @classmethod
+    def _release_budget_reservation(
+        cls,
+        session: Session,
+        *,
+        run_id: str,
+        reservation_id: str,
+        lease_fence: TaskLeaseFence,
+    ) -> NewEvent:
+        task = cls._fenced_task(
+            session,
+            lease_fence,
+            allowed_states=frozenset(
+                {
+                    TaskState.RUNNING,
+                    TaskState.RESULT_RECEIVED,
+                    TaskState.FAILED,
+                    TaskState.NEEDS_ATTENTION,
+                    TaskState.CANCELLED,
+                }
+            ),
+        )
+        reservation = cls._task_reservation(session, lease_fence)
+        if reservation.reservation_id != reservation_id or reservation.run_id != run_id:
+            raise ValueError("budget release does not match task lease")
+        if reservation.state != "reserved":
+            raise ValueError("budget release requires an active reservation")
+        if reservation.external_call_id is not None:
+            call = cls._external_call(session, reservation.external_call_id)
+            safe_states = {
+                ExternalCallState.PLANNED,
+                ExternalCallState.FAILED_BEFORE_RESPONSE,
+            }
+            if (
+                ExternalCallState(call.state) not in safe_states
+                or call.raw_artifact_ref_json is not None
+                or call.provider_response_id is not None
+                or session.scalar(
+                    select(func.count())
+                    .select_from(CostEntryRow)
+                    .where(CostEntryRow.external_call_id == call.external_call_id)
+                )
+            ):
+                raise ValueError("reservation cannot release after provider or scientific effect")
+        reservation.state = "released"
+        reservation.version += 1
+        reservation.updated_at = datetime.now(UTC)
+        return NewEvent(
+            event_type="BudgetReleased",
+            payload={
+                "reservation_id": reservation_id,
+                "task_id": task.task_id,
+                "reason": "no_provider_or_scientific_effect",
+            },
+        )
+
+    @staticmethod
     def _insert_idempotency_commit(
         session: Session,
         run_id: str,
@@ -1806,6 +2144,9 @@ class SqliteUnitOfWork:
         followup_tasks: Sequence[NewTask],
         external_call_id: str | None,
         reservation_id: str | None,
+        lease_fence: TaskLeaseFence | None,
+        settle_reservation_id: str | None,
+        release_reservation_id: str | None,
         cost_entries: Sequence[CostEntry],
     ) -> str:
         canonical = _json(
@@ -1816,6 +2157,11 @@ class SqliteUnitOfWork:
                 "followup_tasks": [task.model_dump(mode="json") for task in followup_tasks],
                 "external_call_id": external_call_id,
                 "reservation_id": reservation_id,
+                "lease_fence_fingerprint": (
+                    lease_fence_fingerprint(lease_fence) if lease_fence is not None else None
+                ),
+                "settle_reservation_id": settle_reservation_id,
+                "release_reservation_id": release_reservation_id,
                 "cost_entries": [entry.model_dump(mode="json") for entry in cost_entries],
             }
         )
@@ -1849,6 +2195,29 @@ class SqliteUnitOfWork:
         reservation_id: str,
         fence: TaskLeaseFence,
     ) -> None:
+        call = cls._external_call(session, external_call_id)
+        if ExternalCallState(call.state) is ExternalCallState.DOMAIN_RESULT_APPLIED:
+            task = cls._fenced_task(
+                session,
+                fence,
+                allowed_states=frozenset(
+                    {TaskState.SUCCEEDED, TaskState.PENDING, TaskState.FAILED}
+                ),
+            )
+            reservation = session.get(BudgetReservationRow, reservation_id)
+            if (
+                call.run_id != fence.run_id
+                or call.task_id != fence.task_id
+                or call.attempt != fence.attempt
+                or task.run_id != call.run_id
+                or reservation is None
+                or reservation.run_id != fence.run_id
+                or reservation.task_id != fence.task_id
+                or reservation.external_call_id != external_call_id
+                or reservation.state != "settled"
+            ):
+                raise ValueError("settled external call does not match task lease")
+            return
         cls._fenced_external_call(
             session,
             external_call_id,
@@ -2020,12 +2389,20 @@ class SqliteUnitOfWork:
         idempotency_key: str,
         external_call_id: str | None = None,
         reservation_id: str | None = None,
+        lease_fence: TaskLeaseFence | None = None,
         fence: TaskLeaseFence | None = None,
+        settle_reservation_id: str | None = None,
+        release_reservation_id: str | None = None,
         cost_entries: Sequence[CostEntry] = (),
         _validate_sequence_before_replay: bool = False,
     ) -> CommitResult:
-        if not events:
+        if not events and release_reservation_id is None:
             raise ValueError("a domain batch must contain at least one event")
+        if lease_fence is not None and fence is not None:
+            raise ValueError("provide lease_fence or fence, not both")
+        resolved_fence = lease_fence or fence
+        if settle_reservation_id is not None and release_reservation_id is not None:
+            raise ValueError("a reservation cannot settle and release in one batch")
         run_target = RunState(target_run_state) if target_run_state is not None else None
         batch_fingerprint = self._batch_fingerprint(
             events=events,
@@ -2034,22 +2411,14 @@ class SqliteUnitOfWork:
             followup_tasks=followup_tasks,
             external_call_id=external_call_id,
             reservation_id=reservation_id,
+            lease_fence=resolved_fence,
+            settle_reservation_id=settle_reservation_id,
+            release_reservation_id=release_reservation_id,
             cost_entries=cost_entries,
         )
         with self.session_factory.begin() as session:
             self._begin_immediate(session)
             self._require_run(session, run_id)
-            if external_call_id is not None:
-                if reservation_id is None or fence is None:
-                    raise ValueError("domain application requires reservation and task lease fence")
-                self._validate_domain_fence(
-                    session,
-                    external_call_id=external_call_id,
-                    reservation_id=reservation_id,
-                    fence=fence,
-                )
-            elif reservation_id is not None or fence is not None:
-                raise ValueError("task lease fence requires an external call")
             if _validate_sequence_before_replay:
                 self._assert_sequence(session, run_id, expected_sequence)
             previous = self._load_idempotency_commit(
@@ -2057,6 +2426,19 @@ class SqliteUnitOfWork:
             )
             if previous is not None:
                 return previous
+            if external_call_id is not None:
+                if reservation_id is None or resolved_fence is None:
+                    raise ValueError("domain application requires reservation and task lease fence")
+                self._validate_domain_fence(
+                    session,
+                    external_call_id=external_call_id,
+                    reservation_id=reservation_id,
+                    fence=resolved_fence,
+                )
+            elif reservation_id is not None:
+                raise ValueError("external-call reservation requires an external call")
+            elif resolved_fence is not None and release_reservation_id is None:
+                raise ValueError("task lease fence requires an external call or release")
             if not _validate_sequence_before_replay:
                 self._assert_sequence(session, run_id, expected_sequence)
             self._validate_lifecycle_batch(
@@ -2075,8 +2457,36 @@ class SqliteUnitOfWork:
                 cost_entries=cost_entries,
                 target_run_state=run_target,
             )
+            if settle_reservation_id is not None:
+                if external_call_id is None or settle_reservation_id != reservation_id:
+                    raise ValueError("budget settlement requires its fenced external call")
+                self._validate_cost_entries_from_calls(session, run_id, cost_entries)
+            self._insert_cost_entries(session, run_id, cost_entries)
+            session.flush()
+            persisted_events = list(events)
+            if settle_reservation_id is not None:
+                persisted_events.append(
+                    self._settle_budget_reservation(
+                        session,
+                        run_id=run_id,
+                        reservation_id=settle_reservation_id,
+                        external_call_id=cast(str, external_call_id),
+                        events=events,
+                    )
+                )
+            elif release_reservation_id is not None:
+                if resolved_fence is None:
+                    raise ValueError("budget release requires a task lease fence")
+                persisted_events.insert(
+                    0,
+                    self._release_budget_reservation(
+                        session,
+                        run_id=run_id,
+                        reservation_id=release_reservation_id,
+                        lease_fence=resolved_fence,
+                    )
+                )
             self._apply_run_transition(session, run_id, run_target)
-            persisted = self._insert_events(session, run_id, expected_sequence, events)
             self._apply_task_mutations(
                 session,
                 run_id,
@@ -2084,7 +2494,9 @@ class SqliteUnitOfWork:
                 source_external_call_id=external_call_id,
             )
             self._insert_followup_tasks(session, run_id, followup_tasks)
-            self._insert_cost_entries(session, run_id, cost_entries)
+            persisted = self._insert_events(
+                session, run_id, expected_sequence, persisted_events
+            )
             last_sequence = persisted[-1].sequence
             self._insert_idempotency_commit(
                 session,
@@ -2112,6 +2524,8 @@ class SqliteUnitOfWork:
         task_mutations: Sequence[TaskMutation] = (),
         followup_tasks: Sequence[NewTask] = (),
         idempotency_key: str,
+        lease_fence: TaskLeaseFence | None = None,
+        release_reservation_id: str | None = None,
     ) -> CommitResult:
         """Commit lifecycle state only after validating the caller's current sequence."""
 
@@ -2123,5 +2537,7 @@ class SqliteUnitOfWork:
             task_mutations=task_mutations,
             followup_tasks=followup_tasks,
             idempotency_key=idempotency_key,
+            lease_fence=lease_fence,
+            release_reservation_id=release_reservation_id,
             _validate_sequence_before_replay=True,
         )

@@ -25,8 +25,8 @@ from co_scientist.domain.admission import (
     admission_policy_from_manifest,
     reduce_admission_evidence,
 )
-from co_scientist.domain.budget import BudgetEstimate, BudgetLedger, CostEntry
-from co_scientist.domain.convergence import ConvergenceSnapshot, StopDecision, evaluate_stop
+from co_scientist.domain.budget import BudgetEstimate, CostEntry
+from co_scientist.domain.convergence import ConvergenceCheckpoint, StopDecision, evaluate_stop
 from co_scientist.domain.hypothesis import (
     compute_hypothesis_content_hash,
     hypothesis_content_from_draft,
@@ -40,7 +40,6 @@ from co_scientist.domain.run_mutations import RunMutationKind, validate_run_muta
 from co_scientist.domain.states import ExternalCallState, RunState, TaskState
 from co_scientist.domain.task import NewTask, TaskLeaseFence, TaskMutation
 from co_scientist.domain.tournament import (
-    EpochContractMismatch,
     MatchDecision,
     MatchResult,
     TournamentEntry,
@@ -53,6 +52,7 @@ from co_scientist.domain.tournament import (
 from co_scientist.events.models import DomainEvent, NewEvent
 from co_scientist.events.reducers import replay_tournament
 from co_scientist.ports.event_store import ConcurrencyConflict
+from co_scientist.runtime.checkpoints import ConvergenceCheckpointBuilder
 from co_scientist.runtime.external_calls import prompt_hash, request_fingerprint
 from co_scientist.runtime.task_payload import WorkerTaskPayload
 from co_scientist.skills.loader import load_skill, resolve_core_skill_contract
@@ -807,7 +807,8 @@ class Supervisor:
             idempotency_key=result.idempotency_key,
             external_call_id=result.external_call_id,
             reservation_id=reservation_id,
-            fence=fence,
+            lease_fence=fence,
+            settle_reservation_id=reservation_id,
             cost_entries=(
                 self._cost_entry(
                     run_id=run_id,
@@ -995,66 +996,179 @@ class Supervisor:
         )
         return AdmissionOutcome(decision=decision, entry=entry, commit=commit)
 
-    def request_normal_completion(
-        self,
-        run_id: str,
-        *,
-        expected_sequence: int,
-        reason: str = "work_complete",
-    ) -> CommitResult:
-        """Enter stopping and durably enqueue the required finalization task."""
-
-        finalization_task = NewTask(
+    @staticmethod
+    def _finalization_task(
+        run_id: str, *, checkpoint_id: str, reason: str
+    ) -> NewTask:
+        return NewTask(
             task_id=f"finalize:{run_id}",
             run_id=run_id,
             idempotency_key=f"finalize:{run_id}",
             intent_type="finalize_run",
             payload={
                 "reason": reason,
+                "checkpoint_id": checkpoint_id,
                 "budget_estimate": BudgetEstimate().model_dump(mode="json"),
             },
         )
-        return self.uow.commit_lifecycle_batch(
-            run_id=run_id,
-            expected_sequence=expected_sequence,
-            events=(
-                NewEvent(event_type="RunStopping", payload={"reason": reason}),
+
+    def _ensure_finalization(
+        self,
+        *,
+        checkpoint: ConvergenceCheckpoint,
+        expected_sequence: int,
+        decision: StopDecision,
+        signal_event: NewEvent | None = None,
+    ) -> CommitResult:
+        run_id = checkpoint.run_id
+        if decision.action != "stop":
+            raise ValueError("finalization requires a durable stop decision")
+        prior = self.uow.load_command_commit(
+            run_id, f"ensure-finalization:{checkpoint.checkpoint_id}"
+        )
+        events = self.uow.load(run_id)
+        present = {event.event_type for event in events}
+        state = RunState(self.uow.run_state(run_id))
+        if state in {RunState.COMPLETED, RunState.COMPLETED_PARTIAL}:
+            if prior is not None:
+                return prior
+            return CommitResult(events=(), last_sequence=expected_sequence)
+        if state not in {RunState.RUNNING, RunState.STOPPING}:
+            raise ValueError(f"run state {state.value} does not allow finalization")
+
+        reason = decision.reason or "work_complete"
+        finalization_task = self._finalization_task(
+            run_id, checkpoint_id=checkpoint.checkpoint_id, reason=reason
+        )
+        new_events: list[NewEvent] = []
+        if signal_event is not None and "StopSignalObserved" not in present:
+            new_events.append(signal_event)
+        if "StopPolicyTriggered" not in present:
+            new_events.append(
+                NewEvent(
+                    event_type="StopPolicyTriggered",
+                    payload={
+                        "checkpoint_id": checkpoint.checkpoint_id,
+                        "checkpoint_source_sequence": checkpoint.source_sequence,
+                        "reason": reason,
+                    },
+                )
+            )
+        target_state: RunState | None = None
+        if state is RunState.RUNNING:
+            new_events.append(
+                NewEvent(
+                    event_type="RunStopping",
+                    payload={"reason": reason, "checkpoint_id": checkpoint.checkpoint_id},
+                )
+            )
+            target_state = RunState.STOPPING
+        followup_tasks: tuple[NewTask, ...] = ()
+        try:
+            self.uow.task_state(finalization_task.task_id)
+            task_exists = True
+        except KeyError:
+            task_exists = False
+        if "FinalizationRequested" not in present:
+            new_events.append(
                 NewEvent(
                     event_type="FinalizationRequested",
-                    payload={"task_id": finalization_task.task_id},
-                ),
-                self._task_enqueued_event(finalization_task, correlation_id=run_id),
-            ),
-            target_run_state=RunState.STOPPING,
-            followup_tasks=(finalization_task,),
-            idempotency_key=f"stop:{run_id}:{expected_sequence}",
+                    payload={
+                        "task_id": finalization_task.task_id,
+                        "checkpoint_id": checkpoint.checkpoint_id,
+                    },
+                )
+            )
+        if not task_exists:
+            new_events.append(self._task_enqueued_event(finalization_task, correlation_id=run_id))
+            followup_tasks = (finalization_task,)
+        if not new_events:
+            if prior is not None:
+                return prior
+            return CommitResult(events=(), last_sequence=expected_sequence)
+        return self.uow.commit_domain_batch(
+            run_id=run_id,
+            expected_sequence=expected_sequence,
+            events=tuple(new_events),
+            target_run_state=target_state,
+            followup_tasks=followup_tasks,
+            idempotency_key=f"ensure-finalization:{checkpoint.checkpoint_id}",
         )
 
-    def apply_finalization(
-        self,
-        run_id: str,
-        *,
-        expected_sequence: int,
-        completeness: Literal["complete", "partial"],
+    def ensure_finalization(
+        self, *, run_id: str, expected_sequence: int, checkpoint_id: str
     ) -> CommitResult:
-        """Record finalization before the corresponding normal terminal event."""
+        """Resume any durable prefix of a stop request without duplicating work."""
 
+        checkpoint = ConvergenceCheckpointBuilder(self.uow).load_recorded(
+            run_id=run_id,
+            checkpoint_id=checkpoint_id,
+            expected_sequence=expected_sequence,
+        )
+        signal = next(
+            (
+                event
+                for event in reversed(self.uow.load(run_id))
+                if event.event_type == "StopSignalObserved"
+            ),
+            None,
+        )
+        action = signal.payload.get("action") if signal is not None else None
+        scientist_action = action if action in {"soft_stop", "hard_cancel"} else None
+        decision = evaluate_stop(checkpoint, scientist_action=scientist_action)
+        return self._ensure_finalization(
+            checkpoint=checkpoint,
+            expected_sequence=expected_sequence,
+            decision=decision,
+        )
+
+    def complete_finalization(
+        self,
+        *,
+        run_id: str,
+        expected_sequence: int,
+        lease_fence: TaskLeaseFence,
+    ) -> CommitResult:
+        """Complete through the finalization task lease using durable unresolved work."""
+
+        key = f"finalization:{run_id}:{lease_fence.attempt}"
+        prior = self.uow.load_command_commit(run_id, key)
+        state = RunState(self.uow.run_state(run_id))
+        if state in {RunState.COMPLETED, RunState.COMPLETED_PARTIAL}:
+            if prior is None:
+                raise ValueError("terminal Run has no matching finalization commit")
+            return prior
+        if lease_fence.run_id != run_id or lease_fence.task_id != f"finalize:{run_id}":
+            raise ValueError("finalization lease fence does not match Run")
+        self.uow.assert_finalization_fence(fence=lease_fence)
+        unresolved = self.uow.unresolved_task_ids(run_id, exclude_intent="finalize_run")
+        completeness: Literal["complete", "partial"] = "partial" if unresolved else "complete"
         terminal = "RunCompleted" if completeness == "complete" else "RunCompletedPartial"
+        target = RunState.COMPLETED if completeness == "complete" else RunState.COMPLETED_PARTIAL
         return self.uow.commit_lifecycle_batch(
             run_id=run_id,
             expected_sequence=expected_sequence,
             events=(
                 NewEvent(
                     event_type="FinalizationCompleted",
-                    payload={"completeness": completeness},
+                    payload={
+                        "completeness": completeness,
+                        "unresolved_task_ids": unresolved,
+                    },
                 ),
-                NewEvent(event_type=terminal, payload={"completeness": completeness}),
+                NewEvent(
+                    event_type=terminal,
+                    payload={
+                        "completeness": completeness,
+                        "unresolved_task_ids": unresolved,
+                    },
+                ),
             ),
-            target_run_state=(
-                RunState.COMPLETED if completeness == "complete" else RunState.COMPLETED_PARTIAL
-            ),
-            task_mutations=(TaskMutation.succeed(f"finalize:{run_id}"),),
-            idempotency_key=f"finalization:{run_id}:{expected_sequence}",
+            target_run_state=target,
+            task_mutations=(TaskMutation.succeed(lease_fence.task_id),),
+            idempotency_key=key,
+            lease_fence=lease_fence,
+            release_reservation_id=self.uow.reservation_id_for_task(lease_fence.task_id),
         )
 
     def create_and_start_run(
@@ -1137,21 +1251,11 @@ class Supervisor:
         expected_sequence: int,
         reason: str = "scientist_stop",
     ) -> CommitResult:
-        """Synchronously finish the Core Preview's durable partial-finalization path."""
+        """Reject the removed unfenced synchronous finalization entry point."""
 
-        stopping = self.request_normal_completion(
-            run_id,
-            expected_sequence=expected_sequence,
-            reason=reason,
-        )
-        finalization_task_id = f"finalize:{run_id}"
-        self.uow.transition_task(finalization_task_id, TaskState.LEASED)
-        self.uow.transition_task(finalization_task_id, TaskState.RUNNING)
-        self.uow.transition_task(finalization_task_id, TaskState.RESULT_RECEIVED)
-        return self.apply_finalization(
-            run_id,
-            expected_sequence=stopping.last_sequence,
-            completeness="partial",
+        del run_id, expected_sequence, reason
+        raise ValueError(
+            "synchronous finalization was removed; use checkpoint-bound tick and a worker lease"
         )
 
     def tick(
@@ -1159,58 +1263,55 @@ class Supervisor:
         *,
         run_id: str,
         expected_sequence: int,
-        convergence: ConvergenceSnapshot,
-        hard_budget_reached: bool | None = None,
-        budget: BudgetLedger | None = None,
+        checkpoint_id: str,
         scientist_action: Literal["soft_stop", "hard_cancel"] | None = None,
     ) -> TickOutcome:
-        """Evaluate stopping policy, enforcing the epoch's frozen anchor contract."""
+        """Evaluate only a recomputed, durable convergence checkpoint."""
 
-        if budget is not None and hard_budget_reached is not None:
-            raise ValueError("provide budget or hard_budget_reached, not both")
-        budget_reached = (
-            budget.hard_limit_reached if budget is not None else bool(hard_budget_reached)
+        checkpoint = ConvergenceCheckpointBuilder(self.uow).load_recorded(
+            run_id=run_id,
+            checkpoint_id=checkpoint_id,
+            expected_sequence=expected_sequence,
         )
         run_state = RunState(self.uow.run_state(run_id))
-        decision = evaluate_stop(
-            convergence,
-            hard_budget_reached=budget_reached,
-            scientist_action=scientist_action,
-        )
+        decision = evaluate_stop(checkpoint, scientist_action=scientist_action)
         if decision.action == "cancel":
-            commit = self.cancel_run(
-                run_id,
+            commit = self.uow.commit_lifecycle_batch(
+                run_id=run_id,
                 expected_sequence=expected_sequence,
-                reason=decision.reason or "scientist_cancel",
-            )
-            return TickOutcome(decision=decision, commit=commit)
-        if decision.action == "stop" and decision.reason != "quality_converged":
-            commit = self.request_normal_completion(
-                run_id,
-                expected_sequence=expected_sequence,
-                reason=decision.reason or "work_complete",
+                events=(
+                    NewEvent(
+                        event_type="StopSignalObserved",
+                        payload={
+                            "action": "hard_cancel",
+                            "checkpoint_id": checkpoint_id,
+                        },
+                    ),
+                    NewEvent(
+                        event_type="RunCancelled",
+                        payload={"reason": decision.reason or "scientist_cancel"},
+                    ),
+                ),
+                target_run_state=RunState.CANCELLED,
+                idempotency_key=f"cancel:{run_id}:{checkpoint_id}",
             )
             return TickOutcome(decision=decision, commit=commit)
         if decision.action == "continue" and run_state is not RunState.RUNNING:
             raise ValueError("non-terminal tick requires a running Run")
-
-        epoch = self._active_epoch(run_id)
-        if convergence.epoch_id != epoch.epoch_id:
-            raise EpochContractMismatch(
-                "convergence snapshot does not match the active TournamentEpoch"
-            )
-        if (
-            decision.reason == "quality_converged"
-            and convergence.anchor_set_id != epoch.anchor_set_id
-        ):
-            raise EpochContractMismatch(
-                "convergence snapshot anchor set must match the active TournamentEpoch"
-            )
         if decision.action == "continue":
             return TickOutcome(decision=decision)
-        commit = self.request_normal_completion(
-            run_id,
+        signal_event = (
+            NewEvent(
+                event_type="StopSignalObserved",
+                payload={"action": scientist_action, "checkpoint_id": checkpoint_id},
+            )
+            if scientist_action is not None
+            else None
+        )
+        commit = self._ensure_finalization(
+            checkpoint=checkpoint,
             expected_sequence=expected_sequence,
-            reason=decision.reason or "work_complete",
+            decision=decision,
+            signal_event=signal_event,
         )
         return TickOutcome(decision=decision, commit=commit)

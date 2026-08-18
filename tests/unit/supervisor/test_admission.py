@@ -694,6 +694,7 @@ def test_handle_result_atomically_applies_policy_owned_work_and_ignores_agent_ac
     assert [event.event_type for event in commit.events] == [
         "HypothesisContentCreated",
         "TaskEnqueued",
+        "BudgetSettled",
     ]
     followup_event = commit.events[1].payload
     assert {
@@ -858,7 +859,11 @@ def test_handle_result_applies_each_status_with_explicit_atomic_semantics(
         fence=claimed,
     )
 
-    expected_events = [expected_event, "TaskEnqueued"] if followup_exists else [expected_event]
+    expected_events = (
+        [expected_event, "TaskEnqueued", "BudgetSettled"]
+        if followup_exists
+        else [expected_event, "BudgetSettled"]
+    )
     assert [event.event_type for event in commit.events] == expected_events
     assert supervisor.uow.task_state("generate-1") == expected_task_state
     assert supervisor.uow.external_call_state("call-1") == "domain_result_applied"

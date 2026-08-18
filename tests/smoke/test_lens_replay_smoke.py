@@ -25,10 +25,8 @@ from co_scientist.adapters.persistence.sqlite import (
 )
 from co_scientist.agents.executor import SkillExecutor
 from co_scientist.agents.result import AgentExecutionContext, AgentResult
-from co_scientist.domain.convergence import ConvergenceSnapshot
 from co_scientist.domain.hypothesis import HypothesisContent
 from co_scientist.domain.review import NoveltyAssessment, ReviewPolicy
-from co_scientist.domain.states import TaskState
 from co_scientist.domain.task import NewTask, TaskLeaseFence, lease_fence_fingerprint
 from co_scientist.domain.tournament import TournamentEpoch
 from co_scientist.events.models import NewEvent
@@ -452,27 +450,44 @@ class LensReplayHarness:
                 },
             )
 
-        stopped = supervisor.tick(
+        finalization = NewTask(
+            task_id=f"finalize:{run_id}",
+            run_id=run_id,
+            idempotency_key=f"finalize:{run_id}",
+            intent_type="finalize_run",
+            payload={"budget_estimate": {}},
+        )
+        uow.commit_lifecycle_batch(
             run_id=run_id,
             expected_sequence=self._expected_sequence,
-            convergence=ConvergenceSnapshot(
-                epoch_id=epoch.epoch_id,
-                anchor_set_id=epoch.anchor_set_id,
-                elo_plateau=True,
-                anchor_plateau=True,
-                top_k_stable=True,
-                cluster_diversity_plateau=True,
-                minimum_budget_satisfied=True,
+            events=(
+                NewEvent(
+                    event_type="StopPolicyTriggered",
+                    payload={"checkpoint_id": "fixture", "reason": "quality_converged"},
+                ),
+                NewEvent(
+                    event_type="RunStopping",
+                    payload={"checkpoint_id": "fixture", "reason": "quality_converged"},
+                ),
+                NewEvent(
+                    event_type="FinalizationRequested",
+                    payload={"checkpoint_id": "fixture", "task_id": finalization.task_id},
+                ),
+                NewEvent(
+                    event_type="TaskEnqueued",
+                    payload=finalization.model_dump(mode="json"),
+                ),
             ),
-            hard_budget_reached=False,
+            target_run_state="stopping",
+            followup_tasks=(finalization,),
+            idempotency_key="fixture-finalization",
         )
-        assert stopped.commit is not None
-        for state in (TaskState.LEASED, TaskState.RUNNING, TaskState.RESULT_RECEIVED):
-            uow.transition_task(f"finalize:{run_id}", state)
-        supervisor.apply_finalization(
-            run_id,
-            expected_sequence=stopped.commit.last_sequence,
-            completeness="complete",
+        fence = claim_running_task(uow, run_id=run_id, task_id=finalization.task_id)
+        acknowledge_result(uow, fence)
+        supervisor.complete_finalization(
+            run_id=run_id,
+            expected_sequence=uow.load(run_id)[-1].sequence,
+            lease_fence=fence,
         )
         return run_id
 
@@ -695,7 +710,7 @@ def test_lens_replay_exports_a_traceable_ranked_result(
     assert len(projection["match_participation"]) == 6
     assert projection["cluster_ids"] == ["distinct_mechanisms"]
     assert projection["created_sequence"] == 6
-    assert projection["updated_sequence"] == 74
+    assert projection["updated_sequence"] == 87
     assert {review["stage"] for review in bundle.reviews} == {
         "initial_review",
         "full_review",
@@ -737,7 +752,7 @@ def test_lens_replay_exports_a_traceable_ranked_result(
         for line in (bundle.root / "events.jsonl").read_text(encoding="utf-8").splitlines()
     ]
     assert event_types[-3:] == [
-        "TaskEnqueued",
+        "BudgetReleased",
         "FinalizationCompleted",
         "RunCompleted",
     ]

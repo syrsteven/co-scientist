@@ -12,6 +12,7 @@ from pydantic import BaseModel, ConfigDict
 
 from co_scientist.agents.executor import SkillExecutor
 from co_scientist.agents.result import AgentExecutionContext, AgentResult
+from co_scientist.domain.states import TaskState
 from co_scientist.domain.task import (
     ClaimedTask,
     LeaseRecovery,
@@ -197,6 +198,25 @@ class Worker:
             raise RuntimeError("claimed outcome has no task")
         if self.task_runtime.task_state(task.task_id) == "leased":
             task = self.task_runtime.mark_task_running(fence=task)
+        if task.intent_type == "finalize_run":
+            if self.task_runtime.task_state(task.task_id) == "running":
+                self.task_runtime.acknowledge_task(
+                    fence=task,
+                    target_state=TaskState.RESULT_RECEIVED,
+                )
+            events = self.runtime.uow.load(run_id)
+            expected_sequence = events[-1].sequence if events else 0
+            self.supervisor.complete_finalization(
+                run_id=run_id,
+                expected_sequence=expected_sequence,
+                lease_fence=task,
+            )
+            return WorkerStep(
+                status="completed",
+                run_id=run_id,
+                task_id=task.task_id,
+                attempt=task.attempt,
+            )
         payload = WorkerTaskPayload.model_validate(dict(task.payload))
         skill_directory = self.skills.resolve(payload.skill_id, payload.skill_version)
         provider = self.providers.resolve(payload.provider_id)

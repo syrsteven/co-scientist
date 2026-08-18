@@ -30,6 +30,12 @@ tournament:
   anchor_count: 2
 stop:
   minimum_matches: 6
+  minimum_hypotheses: 2
+  minimum_model_calls: 2
+  top_k: 2
+  top_k_stability_window: 3
+  cluster_diversity_window: 2
+  elo_plateau_window: 4
   require_anchor_plateau: true
   require_top_k_stability: true
   require_cluster_diversity_plateau: true

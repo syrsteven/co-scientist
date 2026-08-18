@@ -20,7 +20,7 @@ from co_scientist.domain.review import (
     ReviewPolicy,
     ReviewStage,
 )
-from co_scientist.domain.states import RunState, TaskState
+from co_scientist.domain.states import RunState
 from co_scientist.domain.task import NewTask
 from co_scientist.domain.tournament import TournamentEpoch
 from co_scientist.events.models import NewEvent
@@ -1216,18 +1216,45 @@ class _CoreHarness:
             raise AssertionError(f"child admission failed: {admission.decision}")
         expected_sequence = admission.commit.last_sequence
 
-        stopping = supervisor.request_normal_completion(
-            "run-1",
+        finalization = NewTask(
+            task_id="finalize:run-1",
+            run_id="run-1",
+            idempotency_key="finalize:run-1",
+            intent_type="finalize_run",
+            payload={"reason": "trace_exhausted", "budget_estimate": {}},
+        )
+        uow.commit_lifecycle_batch(
+            run_id="run-1",
             expected_sequence=expected_sequence,
-            reason="trace_exhausted",
+            events=(
+                NewEvent(
+                    event_type="StopPolicyTriggered",
+                    payload={"checkpoint_id": "fixture", "reason": "trace_exhausted"},
+                ),
+                NewEvent(
+                    event_type="RunStopping",
+                    payload={"checkpoint_id": "fixture", "reason": "trace_exhausted"},
+                ),
+                NewEvent(
+                    event_type="FinalizationRequested",
+                    payload={"checkpoint_id": "fixture", "task_id": finalization.task_id},
+                ),
+                NewEvent(
+                    event_type="TaskEnqueued",
+                    payload=finalization.model_dump(mode="json"),
+                ),
+            ),
+            target_run_state=RunState.STOPPING,
+            followup_tasks=(finalization,),
+            idempotency_key="fixture-finalization",
         )
         state_history.append(uow.run_state("run-1"))
-        for state in (TaskState.LEASED, TaskState.RUNNING, TaskState.RESULT_RECEIVED):
-            uow.transition_task("finalize:run-1", state)
-        supervisor.apply_finalization(
-            "run-1",
-            expected_sequence=stopping.last_sequence,
-            completeness="complete",
+        fence = claim_running_task(uow, run_id="run-1", task_id=finalization.task_id)
+        acknowledge_result(uow, fence)
+        supervisor.complete_finalization(
+            run_id="run-1",
+            expected_sequence=uow.load("run-1")[-1].sequence,
+            lease_fence=fence,
         )
         state_history.append(uow.run_state("run-1"))
         committed_events = uow.load("run-1")

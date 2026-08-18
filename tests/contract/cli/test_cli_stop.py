@@ -22,8 +22,9 @@ def _start(runner: CliRunner, data_option: list[str]) -> str:
     return result.stdout.split()[0].split("=", 1)[1]
 
 
-# Mutation caught: mapping normal stop directly to a terminal state or to hard cancellation.
-def test_cli_soft_stop_finishes_through_stopping(tmp_path) -> None:
+# Task 6 deliberately removes the synchronous stop path before Task 7 wires the CLI to
+# durable checkpoint/finalization orchestration. The command must fail without mutation.
+def test_cli_soft_stop_rejects_removed_synchronous_path(tmp_path) -> None:
     runner = CliRunner()
     data_option = ["--data-dir", str(tmp_path)]
     run_id = _start(runner, data_option)
@@ -37,9 +38,9 @@ def test_cli_soft_stop_finishes_through_stopping(tmp_path) -> None:
     )
     replayed = runner.invoke(app, ["replay", run_id, *data_option])
 
-    assert stale.exit_code == 4
-    assert result.exit_code == 0, result.output
-    assert '"state_history": ["created", "running", "stopping", "completed_partial"]' in replayed.stdout
+    assert result.exit_code == 5
+    assert stale.exit_code == 5
+    assert '"state_history": ["created", "running"]' in replayed.stdout
 
 
 # Mutation caught: implementing cancel as the same finalized soft-stop path.

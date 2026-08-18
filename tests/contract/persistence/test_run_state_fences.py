@@ -409,7 +409,10 @@ def test_stopping_settles_submitted_result_without_exploration_followups(tmp_pat
         fence=_fence(),
     )
 
-    assert [event.event_type for event in committed.events] == ["HypothesisContentCreated"]
+    assert [event.event_type for event in committed.events] == [
+        "HypothesisContentCreated",
+        "BudgetSettled",
+    ]
     assert supervisor.uow.run_state("run-1") == "stopping"
     assert supervisor.uow.task_state("generate-1") == "succeeded"
     assert supervisor.uow.external_call_state("call-1") == "domain_result_applied"
@@ -521,12 +524,30 @@ def test_stop_transition_rejects_mixed_exploration_followup_without_side_effects
 # instead of against its effective stopping state.
 def test_stop_transition_accepts_only_its_authorized_finalization_task(tmp_path) -> None:
     supervisor, _ = _submitted_generation(tmp_path)
+    finalization = _late_task("finalize:run-1", intent_type="finalize_run")
 
-    committed = supervisor.request_normal_completion(
-        "run-1", expected_sequence=supervisor.uow.load("run-1")[-1].sequence
+    committed = supervisor.uow.commit_lifecycle_batch(
+        run_id="run-1",
+        expected_sequence=supervisor.uow.load("run-1")[-1].sequence,
+        events=(
+            NewEvent(event_type="StopPolicyTriggered", payload={"checkpoint_id": "cp-1"}),
+            NewEvent(event_type="RunStopping", payload={"checkpoint_id": "cp-1"}),
+            NewEvent(
+                event_type="FinalizationRequested",
+                payload={"checkpoint_id": "cp-1", "task_id": finalization.task_id},
+            ),
+            NewEvent(
+                event_type="TaskEnqueued",
+                payload=finalization.model_dump(mode="json"),
+            ),
+        ),
+        target_run_state=RunState.STOPPING,
+        followup_tasks=(finalization,),
+        idempotency_key="stop:cp-1",
     )
 
     assert [event.event_type for event in committed.events] == [
+        "StopPolicyTriggered",
         "RunStopping",
         "FinalizationRequested",
         "TaskEnqueued",
