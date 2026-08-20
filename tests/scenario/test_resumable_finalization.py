@@ -6,6 +6,7 @@ from sqlalchemy import func, select
 
 from co_scientist.adapters.persistence.sqlite import TaskRow
 from co_scientist.domain.review import ReviewPolicy
+from co_scientist.domain.task import NewTask, TaskLeaseFence
 from co_scientist.events.models import NewEvent
 from co_scientist.runtime.checkpoints import ConvergenceCheckpointBuilder
 from co_scientist.runtime.registry import ProviderRegistry, SkillRegistry
@@ -48,12 +49,18 @@ def test_ensure_finalization_repairs_every_durable_stop_prefix_once(tmp_path, pr
     sequence = recorded.commit.last_sequence
     if prefix:
         events = []
+        reason = "scientist_stop" if "StopSignalObserved" in prefix else "quality_converged"
         for event_type in prefix:
             payload = {"checkpoint_id": recorded.checkpoint_id}
             if event_type == "StopSignalObserved":
                 payload["action"] = "soft_stop"
+            elif event_type == "StopPolicyTriggered":
+                payload.update(
+                    checkpoint_source_sequence=recorded.source_sequence,
+                    reason=reason,
+                )
             elif event_type == "RunStopping":
-                payload["reason"] = "quality_converged"
+                payload["reason"] = reason
             elif event_type == "FinalizationRequested":
                 payload["task_id"] = "finalize:run-1"
             events.append(NewEvent(event_type=event_type, payload=payload))
@@ -128,6 +135,84 @@ def test_ensure_finalization_validates_checkpoint_after_finalization_task_progre
     assert count == 1
 
 
+def test_ensure_finalization_rejects_foreign_or_out_of_order_stop_prefix(tmp_path) -> None:
+    supervisor, recorded = _checkpointed(tmp_path)
+    committed = supervisor.uow.commit_domain_batch(
+        run_id="run-1",
+        expected_sequence=recorded.commit.last_sequence,
+        events=(
+            NewEvent(
+                event_type="FinalizationRequested",
+                payload={"checkpoint_id": "foreign-checkpoint", "task_id": "finalize:run-1"},
+            ),
+        ),
+        idempotency_key="forged-stop-prefix",
+    )
+    before = tuple(supervisor.uow.load("run-1"))
+
+    with pytest.raises(ValueError, match="prefix|checkpoint|order"):
+        supervisor.ensure_finalization(
+            run_id="run-1",
+            expected_sequence=committed.last_sequence,
+            checkpoint_id=recorded.checkpoint_id,
+        )
+
+    assert tuple(supervisor.uow.load("run-1")) == before
+
+
+def test_ensure_finalization_rejects_existing_task_with_wrong_payload(tmp_path) -> None:
+    supervisor, recorded = _checkpointed(tmp_path)
+    reason = "quality_converged"
+    committed = supervisor.uow.commit_domain_batch(
+        run_id="run-1",
+        expected_sequence=recorded.commit.last_sequence,
+        events=(
+            NewEvent(
+                event_type="StopPolicyTriggered",
+                payload={
+                    "checkpoint_id": recorded.checkpoint_id,
+                    "checkpoint_source_sequence": recorded.source_sequence,
+                    "reason": reason,
+                },
+            ),
+            NewEvent(
+                event_type="RunStopping",
+                payload={"reason": reason, "checkpoint_id": recorded.checkpoint_id},
+            ),
+            NewEvent(
+                event_type="FinalizationRequested",
+                payload={
+                    "task_id": "finalize:run-1",
+                    "checkpoint_id": recorded.checkpoint_id,
+                },
+            ),
+        ),
+        target_run_state="stopping",
+        idempotency_key="wrong-task-prefix",
+    )
+    supervisor.uow.enqueue_tasks(
+        (
+            NewTask(
+                task_id="finalize:run-1",
+                run_id="run-1",
+                idempotency_key="finalize:run-1",
+                intent_type="finalize_run",
+                payload={"checkpoint_id": "forged", "budget_estimate": {}},
+            ),
+        )
+    )
+    before = tuple(supervisor.uow.load("run-1"))
+
+    with pytest.raises(ValueError, match="finalization task|payload|checkpoint"):
+        supervisor.ensure_finalization(
+            run_id="run-1",
+            expected_sequence=committed.last_sequence,
+            checkpoint_id=recorded.checkpoint_id,
+        )
+
+    assert tuple(supervisor.uow.load("run-1")) == before
+
+
 def test_complete_finalization_uses_lease_fence_and_derives_partial_from_unresolved_work(
     tmp_path,
 ) -> None:
@@ -157,6 +242,42 @@ def test_complete_finalization_uses_lease_fence_and_derives_partial_from_unresol
     assert completed.events[-1].event_type == "RunCompleted"
     assert supervisor.uow.run_state("run-1") == "completed"
     assert supervisor.uow.task_state("finalize:run-1") == "succeeded"
+
+    forged = TaskLeaseFence(
+        run_id="run-1",
+        task_id="finalize:run-1",
+        lease_token="forged-terminal-replay",
+        attempt=fence.attempt,
+    )
+    with pytest.raises(ValueError, match="fence|lease"):
+        supervisor.complete_finalization(
+            run_id="run-1",
+            expected_sequence=completed.last_sequence,
+            lease_fence=forged,
+        )
+
+
+def test_hard_cancel_exact_replay_is_checkpoint_bound_and_idempotent(tmp_path) -> None:
+    supervisor, recorded = _checkpointed(tmp_path)
+    first = supervisor.tick(
+        run_id="run-1",
+        expected_sequence=recorded.commit.last_sequence,
+        checkpoint_id=recorded.checkpoint_id,
+        scientist_action="hard_cancel",
+    )
+    assert first.commit is not None
+
+    replay = supervisor.tick(
+        run_id="run-1",
+        expected_sequence=first.commit.last_sequence,
+        checkpoint_id=recorded.checkpoint_id,
+        scientist_action="hard_cancel",
+    )
+
+    assert replay.commit == first.commit
+    assert [event.event_type for event in supervisor.uow.load("run-1")].count(
+        "RunCancelled"
+    ) == 1
 
 
 def test_terminal_run_rejects_fenced_lease_and_reservation_mutations(tmp_path) -> None:

@@ -22,17 +22,22 @@ def _checkpoint(**updates) -> ConvergenceCheckpoint:
         "anchor_member_ids": ("anchor-a", "anchor-b"),
         "anchor_member_content_hashes": ("sha256:anchor-a", "sha256:anchor-b"),
         "anchor_comparison_ids": ("match-a", "match-b"),
+        "anchor_comparison_candidate_ids": ("h-1", "h-2"),
         "top_k": 2,
         "top_k_stability_window": 2,
         "top_k_ids": ("h-1", "h-2"),
+        "top_k_window_match_ids": ("match-a", "match-b"),
         "top_k_window_sequences": (20, 24),
         "top_k_stable": True,
         "cluster_ids": ("cluster-a", "cluster-b"),
         "cluster_membership_ids": ("edge-a", "edge-b"),
+        "cluster_cohort_ids": ("h-1", "h-2"),
         "cluster_diversity_window": 2,
         "cluster_window_sequences": (12, 13),
         "cluster_diversity_satisfied": True,
         "novelty_window_sequences": (14, 15),
+        "novelty_assessment_ids": ("novelty-h-1", "novelty-h-2"),
+        "novelty_cohort_ids": ("h-1", "h-2"),
         "novelty_plateau": True,
         "minimum_hypotheses": 2,
         "hypothesis_count": 2,
@@ -67,6 +72,7 @@ def test_checkpoint_quality_convergence_requires_every_primary_durable_gate() ->
     assert not _checkpoint(top_k_stable=False, elo_plateau=True).quality_converged
     assert not _checkpoint(novelty_plateau=False, elo_plateau=True).quality_converged
     assert not _checkpoint(coverage_count=1, elo_plateau=True).quality_converged
+    assert not _checkpoint(unresolved_task_ids=("pending-task",)).quality_converged
 
 
 def test_elo_plateau_is_only_auxiliary_to_durable_quality_gates() -> None:

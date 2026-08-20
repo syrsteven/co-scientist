@@ -1308,6 +1308,16 @@ class SqliteUnitOfWork:
             if run is None:
                 raise KeyError(f"unknown run: {run_id}")
             self._require_execution_contract(run)
+            run_state = RunState(run.state)
+            if run_state in {
+                RunState.COMPLETED,
+                RunState.COMPLETED_PARTIAL,
+                RunState.FAILED,
+                RunState.CANCELLED,
+            }:
+                raise ValueError(
+                    f"run state {run_state.value} does not allow lease recovery"
+                )
             rows = session.scalars(
                 select(TaskRow)
                 .where(
@@ -1342,6 +1352,12 @@ class SqliteUnitOfWork:
                     )
                 )
                 if row.attempt >= row.max_attempts:
+                    expired_fence = TaskLeaseFence(
+                        run_id=row.run_id,
+                        task_id=row.task_id,
+                        lease_token=cast(str, row.lease_token),
+                        attempt=expired_attempt,
+                    )
                     current_state = TaskState(row.state)
                     if current_state is TaskState.LEASED:
                         current_state = validate_task_transition(current_state, TaskState.RUNNING)
@@ -1357,6 +1373,21 @@ class SqliteUnitOfWork:
                             },
                         )
                     )
+                    reservation = self._task_reservation(session, expired_fence)
+                    if (
+                        reservation.state == "reserved"
+                        and self._reservation_has_no_provider_or_scientific_effect(
+                            session, reservation
+                        )
+                    ):
+                        new_events.append(
+                            self._release_budget_reservation(
+                                session,
+                                run_id=run_id,
+                                reservation_id=reservation.reservation_id,
+                                lease_fence=expired_fence,
+                            )
+                        )
                 else:
                     row.state = validate_task_transition(
                         TaskState(row.state), TaskState.PENDING
@@ -1419,6 +1450,24 @@ class SqliteUnitOfWork:
         if intent is None:
             raise KeyError(f"unknown task: {task_id}")
         return intent
+
+    def task_definition(self, task_id: str) -> NewTask:
+        """Load the immutable Supervisor-owned task identity and payload."""
+
+        with self.session_factory() as session:
+            row = session.get(TaskRow, task_id)
+            if row is None:
+                raise KeyError(f"unknown task: {task_id}")
+            payload = json.loads(row.payload_json)
+            if not isinstance(payload, dict):
+                raise TypeError(f"task payload is not an object: {task_id}")
+            return NewTask(
+                task_id=row.task_id,
+                run_id=row.run_id,
+                idempotency_key=row.idempotency_key,
+                intent_type=row.intent_type,
+                payload=payload,
+            )
 
     def reservation_id_for_task(self, task_id: str) -> str:
         with self.session_factory() as session:
@@ -1619,6 +1668,24 @@ class SqliteUnitOfWork:
             )
             if task.intent_type != "finalize_run":
                 raise ValueError("lease fence does not belong to finalization task")
+
+    def assert_finalization_replay_fence(self, *, fence: TaskLeaseFence) -> None:
+        """Validate the exact completed finalization lease without permitting mutation."""
+
+        with self.session_factory() as session:
+            task = session.get(TaskRow, fence.task_id)
+            if (
+                task is None
+                or task.run_id != fence.run_id
+                or task.intent_type != "finalize_run"
+                or task.lease_token != fence.lease_token
+                or task.attempt != fence.attempt
+                or TaskState(task.state) is not TaskState.SUCCEEDED
+            ):
+                raise ValueError("stale finalization lease fence")
+            reservation = self._task_reservation(session, fence)
+            if reservation.state != "released":
+                raise ValueError("finalization replay reservation is not released")
 
     def assert_external_call_fence(
         self,
@@ -2035,6 +2102,30 @@ class SqliteUnitOfWork:
         )
 
     @classmethod
+    def _reservation_has_no_provider_or_scientific_effect(
+        cls,
+        session: Session,
+        reservation: BudgetReservationRow,
+    ) -> bool:
+        if reservation.external_call_id is None:
+            return True
+        call = cls._external_call(session, reservation.external_call_id)
+        safe_states = {
+            ExternalCallState.PLANNED,
+            ExternalCallState.FAILED_BEFORE_RESPONSE,
+        }
+        return bool(
+            ExternalCallState(call.state) in safe_states
+            and call.raw_artifact_ref_json is None
+            and call.provider_response_id is None
+            and not session.scalar(
+                select(func.count())
+                .select_from(CostEntryRow)
+                .where(CostEntryRow.external_call_id == call.external_call_id)
+            )
+        )
+
+    @classmethod
     def _release_budget_reservation(
         cls,
         session: Session,
@@ -2061,23 +2152,8 @@ class SqliteUnitOfWork:
             raise ValueError("budget release does not match task lease")
         if reservation.state != "reserved":
             raise ValueError("budget release requires an active reservation")
-        if reservation.external_call_id is not None:
-            call = cls._external_call(session, reservation.external_call_id)
-            safe_states = {
-                ExternalCallState.PLANNED,
-                ExternalCallState.FAILED_BEFORE_RESPONSE,
-            }
-            if (
-                ExternalCallState(call.state) not in safe_states
-                or call.raw_artifact_ref_json is not None
-                or call.provider_response_id is not None
-                or session.scalar(
-                    select(func.count())
-                    .select_from(CostEntryRow)
-                    .where(CostEntryRow.external_call_id == call.external_call_id)
-                )
-            ):
-                raise ValueError("reservation cannot release after provider or scientific effect")
+        if not cls._reservation_has_no_provider_or_scientific_effect(session, reservation):
+            raise ValueError("reservation cannot release after provider or scientific effect")
         reservation.state = "released"
         reservation.version += 1
         reservation.updated_at = datetime.now(UTC)
@@ -2403,6 +2479,14 @@ class SqliteUnitOfWork:
         resolved_fence = lease_fence or fence
         if settle_reservation_id is not None and release_reservation_id is not None:
             raise ValueError("a reservation cannot settle and release in one batch")
+        if release_reservation_id is not None and (
+            external_call_id is not None
+            or cost_entries
+            or any(event.event_type in EVENT_SCHEMA_VERSIONS for event in events)
+        ):
+            raise ValueError(
+                "budget release batch cannot contain provider, cost, or scientific effects"
+            )
         run_target = RunState(target_run_state) if target_run_state is not None else None
         batch_fingerprint = self._batch_fingerprint(
             events=events,

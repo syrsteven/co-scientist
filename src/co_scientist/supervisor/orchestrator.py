@@ -1023,28 +1023,56 @@ class Supervisor:
         run_id = checkpoint.run_id
         if decision.action != "stop":
             raise ValueError("finalization requires a durable stop decision")
-        prior = self.uow.load_command_commit(
-            run_id, f"ensure-finalization:{checkpoint.checkpoint_id}"
-        )
         events = self.uow.load(run_id)
-        present = {event.event_type for event in events}
-        state = RunState(self.uow.run_state(run_id))
-        if state in {RunState.COMPLETED, RunState.COMPLETED_PARTIAL}:
-            if prior is not None:
-                return prior
-            return CommitResult(events=(), last_sequence=expected_sequence)
-        if state not in {RunState.RUNNING, RunState.STOPPING}:
-            raise ValueError(f"run state {state.value} does not allow finalization")
-
         reason = decision.reason or "work_complete"
         finalization_task = self._finalization_task(
             run_id, checkpoint_id=checkpoint.checkpoint_id, reason=reason
         )
-        new_events: list[NewEvent] = []
-        if signal_event is not None and "StopSignalObserved" not in present:
-            new_events.append(signal_event)
-        if "StopPolicyTriggered" not in present:
-            new_events.append(
+        suffix = tuple(
+            event
+            for event in events
+            if event.sequence > checkpoint.source_sequence + 1
+        )
+        control_types = {
+            "StopSignalObserved",
+            "StopPolicyTriggered",
+            "RunStopping",
+            "FinalizationRequested",
+            "TaskEnqueued",
+        }
+        first_progress = next(
+            (index for index, event in enumerate(suffix) if event.event_type not in control_types),
+            len(suffix),
+        )
+        if any(event.event_type in control_types for event in suffix[first_progress:]):
+            raise ValueError("finalization stop prefix order is invalid")
+        persisted_control = suffix[:first_progress]
+        if suffix[first_progress:] and len(persisted_control) < 4:
+            raise ValueError("finalization progress precedes a complete stop prefix")
+
+        persisted_signal = (
+            persisted_control[0]
+            if persisted_control
+            and persisted_control[0].event_type == "StopSignalObserved"
+            else None
+        )
+        expected_signal: NewEvent | None
+        if persisted_signal is not None:
+            action = persisted_signal.payload.get("action")
+            if action != "soft_stop":
+                raise ValueError("finalization stop signal is not a checkpoint-bound soft stop")
+            expected_signal = NewEvent(
+                event_type="StopSignalObserved",
+                payload={"action": "soft_stop", "checkpoint_id": checkpoint.checkpoint_id},
+            )
+        else:
+            expected_signal = signal_event
+
+        expected_control: list[NewEvent] = []
+        if expected_signal is not None:
+            expected_control.append(expected_signal)
+        expected_control.extend(
+            (
                 NewEvent(
                     event_type="StopPolicyTriggered",
                     payload={
@@ -1052,40 +1080,71 @@ class Supervisor:
                         "checkpoint_source_sequence": checkpoint.source_sequence,
                         "reason": reason,
                     },
-                )
-            )
-        target_state: RunState | None = None
-        if state is RunState.RUNNING:
-            new_events.append(
+                ),
                 NewEvent(
                     event_type="RunStopping",
                     payload={"reason": reason, "checkpoint_id": checkpoint.checkpoint_id},
-                )
-            )
-            target_state = RunState.STOPPING
-        followup_tasks: tuple[NewTask, ...] = ()
-        try:
-            self.uow.task_state(finalization_task.task_id)
-            task_exists = True
-        except KeyError:
-            task_exists = False
-        if "FinalizationRequested" not in present:
-            new_events.append(
+                ),
                 NewEvent(
                     event_type="FinalizationRequested",
                     payload={
                         "task_id": finalization_task.task_id,
                         "checkpoint_id": checkpoint.checkpoint_id,
                     },
-                )
+                ),
+                self._task_enqueued_event(finalization_task, correlation_id=run_id),
             )
-        if not task_exists:
-            new_events.append(self._task_enqueued_event(finalization_task, correlation_id=run_id))
+        )
+        if len(persisted_control) > len(expected_control):
+            raise ValueError("finalization stop prefix has extra control events")
+        for actual, expected in zip(persisted_control, expected_control, strict=False):
+            if (
+                actual.event_type != expected.event_type
+                or actual.schema_version != expected.schema_version
+                or dict(actual.payload) != dict(expected.payload)
+            ):
+                raise ValueError("finalization stop prefix checkpoint, payload, or order mismatch")
+        if suffix[first_progress:] and len(persisted_control) != len(expected_control):
+            raise ValueError("finalization progress follows an incomplete stop prefix")
+
+        task_event_present = any(
+            event.event_type == "TaskEnqueued" for event in persisted_control
+        )
+        try:
+            persisted_task = self.uow.task_definition(finalization_task.task_id)
+            task_exists = True
+        except KeyError:
+            persisted_task = None
+            task_exists = False
+        if task_exists != task_event_present:
+            raise ValueError("finalization task row and ordered enqueue event disagree")
+        if persisted_task is not None and persisted_task != finalization_task:
+            raise ValueError("finalization task payload is not checkpoint-bound")
+
+        prior = self.uow.load_command_commit(
+            run_id, f"ensure-finalization:{checkpoint.checkpoint_id}"
+        )
+        state = RunState(self.uow.run_state(run_id))
+        if state in {RunState.COMPLETED, RunState.COMPLETED_PARTIAL}:
+            if prior is None:
+                raise ValueError("terminal Run has no checkpoint-bound finalization request")
+            return prior
+        if state not in {RunState.RUNNING, RunState.STOPPING}:
+            raise ValueError(f"run state {state.value} does not allow finalization")
+
+        new_events = expected_control[len(persisted_control) :]
+        followup_tasks: tuple[NewTask, ...] = ()
+        if any(event.event_type == "TaskEnqueued" for event in new_events):
             followup_tasks = (finalization_task,)
         if not new_events:
             if prior is not None:
                 return prior
             return CommitResult(events=(), last_sequence=expected_sequence)
+        target_state = (
+            RunState.STOPPING
+            if any(event.event_type == "RunStopping" for event in new_events)
+            else None
+        )
         return self.uow.commit_domain_batch(
             run_id=run_id,
             expected_sequence=expected_sequence,
@@ -1108,8 +1167,9 @@ class Supervisor:
         signal = next(
             (
                 event
-                for event in reversed(self.uow.load(run_id))
-                if event.event_type == "StopSignalObserved"
+                for event in self.uow.load(run_id)
+                if event.sequence > checkpoint.source_sequence + 1
+                and event.event_type == "StopSignalObserved"
             ),
             None,
         )
@@ -1131,15 +1191,16 @@ class Supervisor:
     ) -> CommitResult:
         """Complete through the finalization task lease using durable unresolved work."""
 
+        if lease_fence.run_id != run_id or lease_fence.task_id != f"finalize:{run_id}":
+            raise ValueError("finalization lease fence does not match Run")
         key = f"finalization:{run_id}:{lease_fence.attempt}"
         prior = self.uow.load_command_commit(run_id, key)
         state = RunState(self.uow.run_state(run_id))
         if state in {RunState.COMPLETED, RunState.COMPLETED_PARTIAL}:
+            self.uow.assert_finalization_replay_fence(fence=lease_fence)
             if prior is None:
                 raise ValueError("terminal Run has no matching finalization commit")
             return prior
-        if lease_fence.run_id != run_id or lease_fence.task_id != f"finalize:{run_id}":
-            raise ValueError("finalization lease fence does not match Run")
         self.uow.assert_finalization_fence(fence=lease_fence)
         unresolved = self.uow.unresolved_task_ids(run_id, exclude_intent="finalize_run")
         completeness: Literal["complete", "partial"] = "partial" if unresolved else "complete"

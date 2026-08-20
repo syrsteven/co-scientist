@@ -223,6 +223,55 @@ def test_release_is_fenced_idempotent_and_excluded_after_restart(tmp_path) -> No
     ).actively_reserved.model_calls == 0
 
 
+# Mutation caught: validating only effects that predate a release batch lets the same
+# transaction persist new science while marking its reservation unused.
+def test_release_rejects_new_scientific_effect_without_partial_mutation(tmp_path) -> None:
+    database_url = f"sqlite:///{tmp_path / 'release-science.db'}"
+    uow = SqliteUnitOfWork(database_url)
+    uow.create_schema()
+    uow.create_started_run(
+        "run-1",
+        manifest=execution_manifest(),
+        event=NewEvent(event_type="RunStarted", payload={}),
+        idempotency_key="start:run-1:0",
+    )
+    uow.enqueue_tasks(
+        (
+            NewTask(
+                task_id="task-1",
+                run_id="run-1",
+                idempotency_key="task-1",
+                intent_type="generate",
+                payload={"budget_estimate": {"model_calls": 1, "hypotheses": 1}},
+            ),
+        )
+    )
+    fence = claim_running_task(uow, run_id="run-1", task_id="task-1")
+    uow.acknowledge_task(fence=fence, target_state=TaskState.FAILED)
+    before_events = tuple(uow.load("run-1"))
+
+    with pytest.raises(ValueError, match="release.*scientific"):
+        uow.commit_domain_batch(
+            run_id="run-1",
+            expected_sequence=before_events[-1].sequence,
+            events=(
+                NewEvent(
+                    event_type="HypothesisContentCreated",
+                    schema_version=2,
+                    payload={"hypothesis_id": "forged", "research_plan_version": 1},
+                ),
+            ),
+            idempotency_key="release-with-science",
+            lease_fence=fence,
+            release_reservation_id=fence.reservation_id,
+        )
+
+    reopened = SqliteUnitOfWork(database_url)
+    assert tuple(reopened.load("run-1")) == before_events
+    assert reopened.load_budget_snapshot("run-1").actively_reserved.model_calls == 1
+    assert reopened.task_state("task-1") == "failed"
+
+
 def test_provider_call_without_matching_reservation_is_rejected(tmp_path) -> None:
     uow = SqliteUnitOfWork(f"sqlite:///{tmp_path / 'missing-reservation.db'}")
     uow.create_schema()

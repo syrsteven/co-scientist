@@ -11,7 +11,13 @@ from pydantic import BaseModel, ConfigDict
 
 from co_scientist.adapters.persistence.sqlite import CommitResult, SqliteUnitOfWork
 from co_scientist.domain.convergence import ConvergenceCheckpoint
-from co_scientist.domain.tournament import TournamentEpoch
+from co_scientist.domain.tournament import (
+    MatchDecision,
+    MatchResult,
+    TournamentEpoch,
+    apply_match,
+    get_rating_policy,
+)
 from co_scientist.events.models import DomainEvent, NewEvent
 
 
@@ -111,24 +117,142 @@ class ConvergenceCheckpointBuilder:
 
     @staticmethod
     def _rankings(
-        events: Sequence[DomainEvent], *, epoch_id: str, top_k: int
-    ) -> tuple[tuple[int, tuple[str, ...]], ...]:
-        ratings: dict[str, float] = {}
-        snapshots: list[tuple[int, tuple[str, ...]]] = []
+        events: Sequence[DomainEvent],
+        *,
+        run_id: str,
+        epoch: TournamentEpoch,
+        top_k: int,
+        candidate_ids: frozenset[str],
+    ) -> tuple[tuple[int, str, tuple[str, ...]], ...]:
+        matches = tuple(
+            event
+            for event in events
+            if event.event_type == "MatchEvaluated"
+            and event.payload.get("epoch_id") == epoch.epoch_id
+        )
+        match_by_id = {str(event.payload["match_id"]): event for event in matches}
+        ratings_by_match: dict[str, list[DomainEvent]] = {}
         for event in events:
-            if event.payload.get("epoch_id") != epoch_id:
+            if event.event_type != "RatingUpdated":
                 continue
-            if event.event_type in {"TournamentEntryCreated", "RatingUpdated"}:
+            if event.payload.get("epoch_id") != epoch.epoch_id:
+                raise ValueError("rating update is stale for the active epoch contract")
+            match_id = event.payload.get("match_id")
+            if not isinstance(match_id, str) or not match_id or match_id not in match_by_id:
+                raise ValueError("rating update has no decisive match provenance")
+            ratings_by_match.setdefault(match_id, []).append(event)
+
+        policy = get_rating_policy(epoch.rating_policy_version)
+        completion_by_sequence: dict[int, str] = {}
+        validated_rating_sequences: dict[int, str] = {}
+        ratings: dict[str, float] = {}
+        snapshots: list[tuple[int, str, tuple[str, ...]]] = []
+        for event in events:
+            if (
+                event.event_type == "TournamentEntryCreated"
+                and event.payload.get("epoch_id") == epoch.epoch_id
+            ):
                 hypothesis_id = event.payload.get("hypothesis_id")
                 rating = event.payload.get("rating")
                 if not isinstance(hypothesis_id, str) or not isinstance(rating, int | float):
                     raise ValueError("ranking evidence is malformed")
                 ratings[hypothesis_id] = float(rating)
-            elif event.event_type == "MatchEvaluated":
-                ranked = tuple(
-                    sorted(ratings, key=lambda item: (-ratings[item], item))[:top_k]
+            elif (
+                event.event_type == "MatchEvaluated"
+                and event.payload.get("epoch_id") == epoch.epoch_id
+            ):
+                source_result_id = event.payload.get("source_result_id")
+                if (
+                    not isinstance(source_result_id, str)
+                    or not source_result_id
+                    or event.causation_id != source_result_id
+                ):
+                    raise ValueError(
+                        "match causation provenance does not match its durable source result"
+                    )
+                if event.correlation_id != run_id:
+                    raise ValueError("match correlation provenance does not match its Run")
+                match_id = str(event.payload["match_id"])
+                try:
+                    match = MatchResult(
+                        match_id=match_id,
+                        epoch_id=epoch.epoch_id,
+                        left_id=str(event.payload["left_id"]),
+                        right_id=str(event.payload["right_id"]),
+                        decision=MatchDecision(str(event.payload["decision"])),
+                        winner_id=(
+                            str(event.payload["winner_id"])
+                            if event.payload.get("winner_id") is not None
+                            else None
+                        ),
+                    )
+                except (KeyError, ValueError) as error:
+                    raise ValueError("match rating provenance is malformed") from error
+                match_ratings = tuple(ratings_by_match.get(match_id, ()))
+                if match.decision is not MatchDecision.DECISIVE:
+                    if match_ratings:
+                        raise ValueError("only a decisive match may have rating updates")
+                    continue
+                if len(match_ratings) != 2:
+                    raise ValueError("decisive match has incomplete rating updates")
+                if tuple(item.sequence for item in match_ratings) != (
+                    event.sequence + 1,
+                    event.sequence + 2,
+                ):
+                    raise ValueError("decisive match rating provenance is not contiguous")
+                if {
+                    item.payload.get("hypothesis_id") for item in match_ratings
+                } != {match.left_id, match.right_id}:
+                    raise ValueError("decisive match rating participants are incomplete")
+                try:
+                    before_left = ratings[match.left_id]
+                    before_right = ratings[match.right_id]
+                except KeyError as error:
+                    raise ValueError("decisive match rating participant is not admitted") from error
+                after_left, after_right = apply_match(
+                    before_left,
+                    before_right,
+                    match,
+                    k_factor=policy.k_factor,
                 )
-                snapshots.append((event.sequence, ranked))
+                expected_ratings = {
+                    match.left_id: (before_left, after_left),
+                    match.right_id: (before_right, after_right),
+                }
+                for rating_event in match_ratings:
+                    participant_id = str(rating_event.payload.get("hypothesis_id"))
+                    before, after = expected_ratings[participant_id]
+                    if (
+                        rating_event.payload.get("epoch_id") != epoch.epoch_id
+                        or rating_event.payload.get("rating_policy_version") != policy.version
+                        or rating_event.payload.get("before_rating") != before
+                        or rating_event.payload.get("rating") != after
+                        or rating_event.causation_id != event.causation_id
+                        or rating_event.correlation_id != event.correlation_id
+                    ):
+                        raise ValueError("decisive match rating provenance or contract is forged")
+                    validated_rating_sequences[rating_event.sequence] = match_id
+                completion_sequence = match_ratings[-1].sequence
+                if completion_sequence in completion_by_sequence:
+                    raise ValueError("match applications have ambiguous completion sequence")
+                completion_by_sequence[completion_sequence] = match_id
+            elif event.event_type == "RatingUpdated":
+                if event.sequence not in validated_rating_sequences:
+                    raise ValueError("rating update has no validated decisive match provenance")
+                hypothesis_id = event.payload.get("hypothesis_id")
+                rating = event.payload.get("rating")
+                if not isinstance(hypothesis_id, str) or not isinstance(rating, int | float):
+                    raise ValueError("ranking evidence is malformed")
+                ratings[hypothesis_id] = float(rating)
+            completed_match_id = completion_by_sequence.get(event.sequence)
+            if completed_match_id is not None:
+                ranked = tuple(
+                    sorted(
+                        candidate_ids.intersection(ratings),
+                        key=lambda item: (-ratings[item], item),
+                    )[:top_k]
+                )
+                snapshots.append((event.sequence, completed_match_id, ranked))
         return tuple(snapshots)
 
     def _build(self, *, run_id: str, source_sequence: int) -> ConvergenceCheckpoint:
@@ -153,8 +277,16 @@ class ConvergenceCheckpointBuilder:
             raise ValueError("active epoch has no frozen anchor set")
         frozen_anchor_members = self._anchor_members(manifest, epoch.anchor_set_id)
         anchor_members = tuple(anchor_id for anchor_id, _ in frozen_anchor_members)
+        anchor_hash_by_id = dict(frozen_anchor_members)
 
         epoch_events = tuple(event for event in events if event.sequence >= epoch_sequence)
+        hypothesis_ids = {
+            str(event.payload["hypothesis_id"])
+            for event in epoch_events
+            if event.event_type == "HypothesisContentCreated"
+            and event.payload.get("research_plan_version") == epoch.research_plan_version
+            and isinstance(event.payload.get("hypothesis_id"), str)
+        }
         matches = tuple(
             event
             for event in epoch_events
@@ -169,7 +301,7 @@ class ConvergenceCheckpointBuilder:
             epoch.rating_policy_version,
             epoch.admission_policy_version,
         )
-        comparison_by_anchor: dict[str, str] = {}
+        match_ids: set[str] = set()
         for match in matches:
             actual = (
                 match.payload.get("research_plan_version"),
@@ -184,30 +316,74 @@ class ConvergenceCheckpointBuilder:
             match_id = match.payload.get("match_id")
             if not isinstance(match_id, str) or not match_id:
                 raise ValueError("anchor comparison has no durable comparison ID")
-            participants = {match.payload.get("left_id"), match.payload.get("right_id")}
-            for anchor_id in anchor_members:
-                if anchor_id in participants:
-                    comparison_by_anchor[anchor_id] = match_id
-        if set(comparison_by_anchor) != set(anchor_members):
-            raise ValueError("checkpoint is missing fixed anchor comparison IDs")
+            if match_id in match_ids:
+                raise ValueError("comparison identity is not unique")
+            match_ids.add(match_id)
         if len(matches) < minimum_matches:
             raise ValueError("checkpoint has insufficient minimum coverage")
 
-        rankings = self._rankings(epoch_events, epoch_id=epoch.epoch_id, top_k=top_k)
+        rankings = self._rankings(
+            epoch_events,
+            run_id=run_id,
+            epoch=epoch,
+            top_k=top_k,
+            candidate_ids=frozenset(hypothesis_ids),
+        )
         if len(rankings) < top_k_window:
             raise ValueError("checkpoint has insufficient top-k stability window")
         recent_rankings = rankings[-top_k_window:]
-        top_k_ids = recent_rankings[-1][1]
+        top_k_ids = recent_rankings[-1][2]
         if len(top_k_ids) != top_k:
             raise ValueError("checkpoint top-k membership is incomplete")
-        top_k_stable = all(snapshot == top_k_ids for _, snapshot in recent_rankings)
+        top_k_stable = all(snapshot == top_k_ids for _, _, snapshot in recent_rankings)
+
+        comparison_by_anchor: dict[str, tuple[str, str]] = {}
+        for match in matches:
+            left_id = match.payload.get("left_id")
+            right_id = match.payload.get("right_id")
+            participants = (left_id, right_id)
+            matched_anchors = tuple(
+                anchor_id for anchor_id in anchor_members if anchor_id in participants
+            )
+            if not matched_anchors:
+                continue
+            if len(matched_anchors) != 1:
+                raise ValueError("fixed anchor comparison has ambiguous anchor membership")
+            anchor_id = matched_anchors[0]
+            candidate_id = right_id if left_id == anchor_id else left_id
+            anchor_hash = (
+                match.payload.get("left_content_hash")
+                if left_id == anchor_id
+                else match.payload.get("right_content_hash")
+            )
+            if (
+                match.payload.get("comparison_kind") != "fixed_anchor"
+                or match.payload.get("anchor_set_id") != epoch.anchor_set_id
+                or anchor_hash != anchor_hash_by_id[anchor_id]
+            ):
+                raise ValueError("fixed anchor comparison provenance is invalid")
+            if not isinstance(candidate_id, str) or candidate_id not in top_k_ids:
+                raise ValueError("anchor comparison candidate is not in the stable top-k cohort")
+            if anchor_id in comparison_by_anchor:
+                raise ValueError("anchor has ambiguous fixed comparison identity")
+            comparison_by_anchor[anchor_id] = (str(match.payload["match_id"]), candidate_id)
+        if set(comparison_by_anchor) != set(anchor_members):
+            raise ValueError("checkpoint is missing fixed anchor comparison IDs")
 
         cluster_events = tuple(
             event
             for event in epoch_events
             if event.event_type == "ProximityAssessed"
+            and event.payload.get("epoch_id") == epoch.epoch_id
+            and event.payload.get("research_plan_version") == epoch.research_plan_version
             and isinstance(event.payload.get("cluster_suggestion"), str)
             and event.payload.get("cluster_suggestion")
+            and isinstance(event.payload.get("left_id"), str)
+            and isinstance(event.payload.get("right_id"), str)
+            and {
+                str(event.payload["left_id"]),
+                str(event.payload["right_id"]),
+            }.issubset(set(top_k_ids))
         )
         if len(cluster_events) < cluster_window:
             raise ValueError("checkpoint has no complete cluster diversity snapshot")
@@ -223,25 +399,46 @@ class ConvergenceCheckpointBuilder:
         cluster_ids = tuple(
             sorted({str(event.payload["cluster_suggestion"]) for event in recent_clusters})
         )
+        cluster_cohort_ids = tuple(
+            sorted(
+                {
+                    str(event.payload[side])
+                    for event in recent_clusters
+                    for side in ("left_id", "right_id")
+                }
+            )
+        )
+        if set(cluster_cohort_ids) != set(top_k_ids):
+            raise ValueError("cluster window is not bound to the stable top-k cohort")
         cluster_diversity = len(cluster_ids) >= min(2, top_k)
 
         novelty_events = tuple(
             event
             for event in epoch_events
             if event.event_type == "NoveltyAssessmentRecorded"
+            and event.payload.get("epoch_id") == epoch.epoch_id
+            and event.payload.get("research_plan_version") == epoch.research_plan_version
+            and event.payload.get("hypothesis_id") in top_k_ids
         )
         if len(novelty_events) < cluster_window:
             raise ValueError("checkpoint has no complete novelty plateau window")
         recent_novelty = novelty_events[-cluster_window:]
+        novelty_assessment_ids = tuple(
+            str(event.payload.get("assessment_id"))
+            for event in recent_novelty
+            if isinstance(event.payload.get("assessment_id"), str)
+            and event.payload.get("assessment_id")
+        )
+        novelty_cohort_ids = tuple(
+            sorted({str(event.payload["hypothesis_id"]) for event in recent_novelty})
+        )
+        if (
+            len(novelty_assessment_ids) != cluster_window
+            or len(set(novelty_assessment_ids)) != cluster_window
+            or set(novelty_cohort_ids) != set(top_k_ids)
+        ):
+            raise ValueError("novelty window is not bound to the stable top-k cohort")
         novelty_plateau = all(event.payload.get("verdict") != "novel" for event in recent_novelty)
-
-        hypothesis_ids = {
-            str(event.payload["hypothesis_id"])
-            for event in epoch_events
-            if event.event_type == "HypothesisContentCreated"
-            and event.payload.get("research_plan_version") == epoch.research_plan_version
-            and isinstance(event.payload.get("hypothesis_id"), str)
-        }
         budget = self.uow.load_checkpoint_budget_snapshot(run_id)
         if budget.settled.model_calls < minimum_model_calls:
             raise ValueError("checkpoint has insufficient minimum model calls")
@@ -275,19 +472,30 @@ class ConvergenceCheckpointBuilder:
                 content_hash for _, content_hash in frozen_anchor_members
             ),
             "anchor_comparison_ids": tuple(
-                comparison_by_anchor[anchor_id] for anchor_id in anchor_members
+                comparison_by_anchor[anchor_id][0] for anchor_id in anchor_members
+            ),
+            "anchor_comparison_candidate_ids": tuple(
+                comparison_by_anchor[anchor_id][1] for anchor_id in anchor_members
             ),
             "top_k": top_k,
             "top_k_stability_window": top_k_window,
             "top_k_ids": top_k_ids,
-            "top_k_window_sequences": tuple(sequence for sequence, _ in recent_rankings),
+            "top_k_window_match_ids": tuple(
+                match_id for _, match_id, _ in recent_rankings
+            ),
+            "top_k_window_sequences": tuple(
+                sequence for sequence, _, _ in recent_rankings
+            ),
             "top_k_stable": top_k_stable,
             "cluster_ids": cluster_ids,
             "cluster_membership_ids": cluster_membership_ids,
+            "cluster_cohort_ids": cluster_cohort_ids,
             "cluster_diversity_window": cluster_window,
             "cluster_window_sequences": tuple(event.sequence for event in recent_clusters),
             "cluster_diversity_satisfied": cluster_diversity,
             "novelty_window_sequences": tuple(event.sequence for event in recent_novelty),
+            "novelty_assessment_ids": novelty_assessment_ids,
+            "novelty_cohort_ids": novelty_cohort_ids,
             "novelty_plateau": novelty_plateau,
             "minimum_hypotheses": minimum_hypotheses,
             "hypothesis_count": len(hypothesis_ids),
@@ -359,6 +567,7 @@ class ConvergenceCheckpointBuilder:
             "FinalizationCompleted",
             "RunCompleted",
             "RunCompletedPartial",
+            "RunCancelled",
         }
         if any(item.event_type not in resumable_types for item in suffix):
             raise ValueError("stale checkpoint: newer persisted evidence exists")

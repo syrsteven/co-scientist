@@ -5,7 +5,7 @@ import pytest
 from sqlalchemy import text
 
 from co_scientist.adapters.persistence.sqlite import SqliteUnitOfWork
-from co_scientist.domain.states import TaskState
+from co_scientist.domain.states import RunState, TaskState
 from co_scientist.domain.task import NewTask, TaskLeaseFence
 from co_scientist.events.models import NewEvent
 
@@ -318,7 +318,100 @@ def test_expiry_requeues_below_max_and_exhausts_at_max_attempts(tmp_path) -> Non
     ]
     assert store.task_state("task-1") == "failed"
     event_types = [event.event_type for event in store.load("r-1")]
-    assert event_types[-2:] == ["TaskLeaseExpired", "TaskLeaseExhausted"]
+    assert event_types[-3:] == [
+        "TaskLeaseExpired",
+        "TaskLeaseExhausted",
+        "BudgetReleased",
+    ]
+
+
+@pytest.mark.parametrize(
+    "terminal_state",
+    [RunState.COMPLETED, RunState.COMPLETED_PARTIAL, RunState.FAILED, RunState.CANCELLED],
+)
+# Mutation caught: terminal recovery rewrites task state and appends lease events.
+def test_terminal_run_rejects_expired_lease_recovery_without_mutation(
+    tmp_path, terminal_state: RunState
+) -> None:
+    database_url, store = _create_running_store(tmp_path)
+    store.enqueue_tasks([_task("task-1")])
+    store.claim_next_task(
+        run_id="r-1",
+        worker_id="worker-1",
+        lease_token="token-1",
+        now=NOW,
+        lease_duration=timedelta(seconds=10),
+    )
+    if terminal_state in {RunState.COMPLETED, RunState.COMPLETED_PARTIAL}:
+        stopping = store.commit_lifecycle_batch(
+            run_id="r-1",
+            expected_sequence=store.load("r-1")[-1].sequence,
+            events=(NewEvent(event_type="RunStopping", payload={}),),
+            target_run_state=RunState.STOPPING,
+            idempotency_key="stop:r-1",
+        )
+        terminal_event = (
+            "RunCompleted" if terminal_state is RunState.COMPLETED else "RunCompletedPartial"
+        )
+        store.commit_lifecycle_batch(
+            run_id="r-1",
+            expected_sequence=stopping.last_sequence,
+            events=(
+                NewEvent(event_type="FinalizationCompleted", payload={}),
+                NewEvent(event_type=terminal_event, payload={}),
+            ),
+            target_run_state=terminal_state,
+            idempotency_key=f"terminal:{terminal_state.value}",
+        )
+    else:
+        terminal_event = "RunFailed" if terminal_state is RunState.FAILED else "RunCancelled"
+        store.commit_lifecycle_batch(
+            run_id="r-1",
+            expected_sequence=store.load("r-1")[-1].sequence,
+            events=(NewEvent(event_type=terminal_event, payload={}),),
+            target_run_state=terminal_state,
+            idempotency_key=f"terminal:{terminal_state.value}",
+        )
+    before_events = tuple(store.load("r-1"))
+
+    with pytest.raises(ValueError, match=terminal_state.value):
+        store.recover_expired_leases(
+            run_id="r-1", now=NOW + timedelta(seconds=11)
+        )
+
+    reopened = _store(database_url)
+    assert tuple(reopened.load("r-1")) == before_events
+    assert reopened.task_state("task-1") == "leased"
+
+
+# Mutation caught: exhausting a pre-response task leaves its reservation active forever.
+def test_max_attempt_exhaustion_atomically_releases_unused_reservation(tmp_path) -> None:
+    database_url, store = _create_running_store(tmp_path, max_model_calls=1)
+    store.enqueue_tasks([_task("task-1")])
+    with store.engine.begin() as connection:
+        connection.execute(text("UPDATE tasks SET max_attempts = 1 WHERE task_id = 'task-1'"))
+    claimed = store.claim_next_task(
+        run_id="r-1",
+        worker_id="worker-1",
+        lease_token="token-1",
+        now=NOW,
+        lease_duration=timedelta(seconds=10),
+    ).task
+    assert claimed is not None
+
+    recovered = store.recover_expired_leases(
+        run_id="r-1", now=NOW + timedelta(seconds=11)
+    )
+
+    reopened = _store(database_url)
+    assert recovered[0].action == "exhausted"
+    assert reopened.task_state("task-1") == "failed"
+    assert reopened.load_budget_snapshot("r-1").actively_reserved.model_calls == 0
+    assert [event.event_type for event in reopened.load("r-1")][-3:] == [
+        "TaskLeaseExpired",
+        "TaskLeaseExhausted",
+        "BudgetReleased",
+    ]
 
 
 # Mutation caught: finalization bypasses reservations by relying on an implicit estimate.

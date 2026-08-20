@@ -25,17 +25,22 @@ class ConvergenceCheckpoint(BaseModel):
     anchor_member_ids: tuple[str, ...]
     anchor_member_content_hashes: tuple[str, ...]
     anchor_comparison_ids: tuple[str, ...]
+    anchor_comparison_candidate_ids: tuple[str, ...]
     top_k: int
     top_k_stability_window: int
     top_k_ids: tuple[str, ...]
+    top_k_window_match_ids: tuple[str, ...]
     top_k_window_sequences: tuple[int, ...]
     top_k_stable: bool
     cluster_ids: tuple[str, ...]
     cluster_membership_ids: tuple[str, ...]
+    cluster_cohort_ids: tuple[str, ...]
     cluster_diversity_window: int
     cluster_window_sequences: tuple[int, ...]
     cluster_diversity_satisfied: bool
     novelty_window_sequences: tuple[int, ...]
+    novelty_assessment_ids: tuple[str, ...]
+    novelty_cohort_ids: tuple[str, ...]
     novelty_plateau: bool
     minimum_hypotheses: int
     hypothesis_count: int
@@ -57,19 +62,26 @@ class ConvergenceCheckpoint(BaseModel):
         return (
             bool(self.anchor_member_ids)
             and len(self.anchor_member_ids) == len(self.anchor_member_content_hashes)
-            and len(self.anchor_comparison_ids) >= self.minimum_coverage
+            and len(set(self.anchor_comparison_ids)) == len(self.anchor_comparison_ids)
+            and len(self.anchor_comparison_ids) == self.minimum_coverage
+            and set(self.anchor_comparison_candidate_ids) == set(self.top_k_ids)
             and self.match_count >= self.minimum_matches
             and len(self.top_k_ids) == self.top_k
+            and len(self.top_k_window_match_ids) == self.top_k_stability_window
             and len(self.top_k_window_sequences) == self.top_k_stability_window
             and self.top_k_stable
             and len(self.cluster_membership_ids) == self.cluster_diversity_window
+            and set(self.cluster_cohort_ids) == set(self.top_k_ids)
             and len(self.cluster_window_sequences) == self.cluster_diversity_window
             and self.cluster_diversity_satisfied
             and len(self.novelty_window_sequences) == self.cluster_diversity_window
+            and len(set(self.novelty_assessment_ids)) == len(self.novelty_assessment_ids)
+            and set(self.novelty_cohort_ids) == set(self.top_k_ids)
             and self.novelty_plateau
             and self.hypothesis_count >= self.minimum_hypotheses
             and self.model_call_count >= self.minimum_model_calls
             and self.coverage_count >= self.minimum_coverage
+            and not self.unresolved_task_ids
         )
 
 
