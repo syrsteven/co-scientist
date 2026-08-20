@@ -1,12 +1,18 @@
 import json
 from pathlib import Path
 
+import pytest
 from alembic.config import Config
 from sqlalchemy import create_engine, text
 from typer.testing import CliRunner
 
 from alembic import command
+from co_scientist.application.commands import RunCommand
 from co_scientist.application.config import resolve_run_config
+from co_scientist.application.service import (
+    ApplicationConcurrencyError,
+    build_application_service,
+)
 from co_scientist.cli.app import app
 from co_scientist.runtime.core_runner import CoreRunner
 from tests.core_preview_support import write_core_preview_inputs
@@ -139,6 +145,54 @@ def test_cli_soft_stop_immediately_after_bootstrap_is_durable_and_idempotent(
     )
     assert finalized.exit_code == 0, finalized.output
     assert json.loads(finalized.stdout)["state"] == "completed_partial"
+    terminal_sequence = json.loads(finalized.stdout)["last_sequence"]
+
+    application = build_application_service(data_dir, environment={})
+    replayed = application.execute(
+        RunCommand(
+            run_id="run-immediate-stop",
+            expected_run_sequence=bootstrapped.last_sequence,
+            command="stop",
+        )
+    )
+    assert replayed.state.value == "completed_partial"
+    with pytest.raises(ApplicationConcurrencyError):
+        application.execute(
+            RunCommand(
+                run_id="run-immediate-stop",
+                expected_run_sequence=terminal_sequence,
+                command="stop",
+            )
+        )
+
+    terminal_replay = CliRunner().invoke(
+        app,
+        [
+            "run",
+            "stop",
+            "run-immediate-stop",
+            "--expected-sequence",
+            str(bootstrapped.last_sequence),
+            *data,
+        ],
+        env={},
+    )
+    terminal_conflict = CliRunner().invoke(
+        app,
+        [
+            "run",
+            "stop",
+            "run-immediate-stop",
+            "--expected-sequence",
+            str(terminal_sequence),
+            *data,
+        ],
+        env={},
+    )
+    assert terminal_replay.exit_code == 0, terminal_replay.output
+    assert "state=completed_partial" in terminal_replay.stdout
+    assert terminal_conflict.exit_code == 4
+    assert "concurrency conflict" in terminal_conflict.stderr
 
     events = CoreRunner(data_dir=data_dir, environment={}).uow.load(
         "run-immediate-stop"

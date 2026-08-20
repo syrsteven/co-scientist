@@ -627,10 +627,11 @@ class Supervisor:
         content_events = [
             event for event in events if event.event_type == "HypothesisContentCreated"
         ]
-        if source_result.skill_id == "generation" and literature_required:
+        if source_result.skill_id == "generation":
             count = len(content_events)
             if self._core_workflow_failure_reason(manifest_document, count) is not None:
                 return ()
+        if source_result.skill_id == "generation" and literature_required:
             initial = tuple(
                 reflection_task(
                     hypothesis_id=str(event.payload["hypothesis_id"]),
@@ -1698,6 +1699,8 @@ class Supervisor:
         manifest: Mapping[str, Any], hypothesis_count: int
     ) -> str | None:
         profile = manifest.get("profile")
+        if not isinstance(profile, Mapping):
+            return None
         stop = profile.get("stop") if isinstance(profile, Mapping) else None
         budget = profile.get("budget") if isinstance(profile, Mapping) else None
         minimum_hypotheses = (
@@ -1740,13 +1743,36 @@ class Supervisor:
             or top_k_window < 1
         ):
             return None
+        review_policy = (
+            profile.get("review_policy") if isinstance(profile, Mapping) else None
+        )
+        required_reviews = (
+            review_policy.get("required_before_admission")
+            if isinstance(review_policy, Mapping)
+            else None
+        )
+        if not isinstance(required_reviews, list | tuple):
+            return None
+        review_stage_count = len({ReviewStage.INITIAL.value, *required_reviews})
+        literature_calls = (
+            2
+            if isinstance(profile, Mapping)
+            and profile.get("literature_novelty_required") is True
+            else 0
+        )
         anchor_count = len(members)
         ranking_calls = anchor_count + max(
             minimum_matches - anchor_count,
             top_k_window - anchor_count,
             0,
         )
-        required_model_calls = 1 + (3 * hypothesis_count) + 2 + ranking_calls
+        required_model_calls = (
+            1
+            + (review_stage_count * hypothesis_count)
+            + hypothesis_count
+            + literature_calls
+            + ranking_calls
+        )
         maximum_model_calls = (
             budget.get("max_model_calls") if isinstance(budget, Mapping) else None
         )

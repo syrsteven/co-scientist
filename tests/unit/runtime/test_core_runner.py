@@ -430,6 +430,92 @@ async def test_generation_fails_before_followups_when_downstream_budget_cannot_f
 
 
 @pytest.mark.asyncio
+@pytest.mark.parametrize(
+    ("hypothesis_count", "max_model_calls", "max_matches", "expected_reason"),
+    [
+        (1, 40, 4, "insufficient_hypotheses_for_core_workflow"),
+        (6, 40, 4, "hypothesis_count_reaches_profile_budget"),
+        (7, 40, 4, "hypothesis_count_exceeds_profile_budget"),
+        (3, 11, 4, "insufficient_model_call_budget_for_core_workflow"),
+        (3, 40, 1, "insufficient_match_budget_for_core_workflow"),
+    ],
+)
+async def test_no_literature_profile_rejects_before_any_downstream_task(
+    tmp_path: Path,
+    hypothesis_count: int,
+    max_model_calls: int,
+    max_matches: int,
+    expected_reason: str,
+) -> None:
+    goal_file, profile_file, environment = write_core_preview_inputs(
+        tmp_path,
+        hypothesis_count=hypothesis_count,
+        max_hypotheses=6,
+        max_model_calls=max_model_calls,
+        max_matches=max_matches,
+        literature_novelty_required=False,
+    )
+    config = resolve_run_config(
+        goal_file=goal_file,
+        profile_file=profile_file,
+        provider="replay",
+        environment=environment,
+    )
+    runner = CoreRunner(data_dir=tmp_path / "data", environment=environment)
+
+    result = await runner.execute(config=config)
+    events = runner.uow.load(result.run_id)
+
+    assert result.state is RunState.FAILED
+    assert result.stop_reason == expected_reason
+    assert not runner.uow.unresolved_task_ids(result.run_id)
+    assert [
+        event.payload["task_id"]
+        for event in events
+        if event.event_type == "TaskEnqueued"
+    ] == [f"generation:{result.run_id}:1"]
+    assert not any(event.event_type == "TournamentEntryCreated" for event in events)
+
+
+@pytest.mark.asyncio
+async def test_supported_no_literature_profile_uses_review_path_without_tool_calls(
+    tmp_path: Path,
+) -> None:
+    goal_file, profile_file, environment = write_core_preview_inputs(
+        tmp_path,
+        hypothesis_count=2,
+        max_hypotheses=6,
+        max_model_calls=9,
+        max_matches=2,
+        literature_novelty_required=False,
+    )
+    config = resolve_run_config(
+        goal_file=goal_file,
+        profile_file=profile_file,
+        provider="replay",
+        environment=environment,
+    )
+    runner = CoreRunner(data_dir=tmp_path / "data", environment=environment)
+
+    result = await runner.execute(config=config)
+    events = runner.uow.load(result.run_id)
+
+    assert result.state is RunState.COMPLETED
+    assert not runner.uow.unresolved_task_ids(result.run_id)
+    assert sum(event.event_type == "ReviewCompleted" for event in events) == 4
+    assert not any(
+        event.event_type == "MetaReviewCompleted"
+        and event.payload.get("literature_operation") in {"search", "summary"}
+        for event in events
+    )
+    assert not any(
+        event.event_type == "TaskEnqueued"
+        and str(event.payload["task_id"]).startswith(f"{result.run_id}:literature:")
+        for event in events
+    )
+
+
+@pytest.mark.asyncio
 async def test_partial_science_soft_stop_records_incomplete_durable_evidence(
     tmp_path: Path,
 ) -> None:

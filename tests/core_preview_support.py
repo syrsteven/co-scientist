@@ -32,6 +32,7 @@ def write_core_preview_inputs(
     max_hypotheses: int = 4,
     max_model_calls: int = 20,
     max_matches: int | None = None,
+    literature_novelty_required: bool = True,
 ) -> tuple[Path, Path, dict[str, str]]:
     goal = {
         "title": "Lens regeneration mechanisms",
@@ -47,7 +48,7 @@ def write_core_preview_inputs(
             "required_before_admission": ["full_review"],
             "trigger_rules": {},
         },
-        "literature_novelty_required": True,
+        "literature_novelty_required": literature_novelty_required,
         "duplicate_likelihood_threshold": 0.5,
         "tournament": {
             "rating_policy_version": "elo-32-v1",
@@ -199,6 +200,7 @@ def write_core_preview_inputs(
                         **(
                             {"literature_evidence": literature_evidence}
                             if stage == "full_review"
+                            and literature_novelty_required
                             else {}
                         ),
                     },
