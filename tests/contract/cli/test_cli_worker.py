@@ -67,3 +67,74 @@ def test_worker_rejects_pre_contract_run_with_sanitized_diagnostic(tmp_path: Pat
         "execution_contract_version 3 is required\n"
     )
     assert "Traceback" not in result.stderr
+
+
+def test_cli_soft_stop_is_checkpoint_bound_durable_and_idempotent(tmp_path: Path) -> None:
+    goal, profile, environment = write_core_preview_inputs(
+        tmp_path,
+        novelty_verdict="novel",
+    )
+    data_dir = tmp_path / "data"
+    executed = CliRunner().invoke(
+        app,
+        [
+            "run",
+            "execute",
+            "--goal",
+            str(goal),
+            "--profile",
+            str(profile),
+            "--provider",
+            "replay",
+            "--data-dir",
+            str(data_dir),
+        ],
+        env=environment,
+    )
+    assert executed.exit_code == 0, executed.output
+    run = json.loads(executed.stdout)
+    assert run["state"] == "running"
+    data = ["--data-dir", str(data_dir)]
+
+    first = CliRunner().invoke(
+        app,
+        [
+            "run",
+            "stop",
+            run["run_id"],
+            "--expected-sequence",
+            str(run["last_sequence"]),
+            *data,
+        ],
+        env={},
+    )
+    assert first.exit_code == 0, first.output
+    assert "state=stopping" in first.stdout
+    stopping_sequence = int(first.stdout.rsplit("sequence=", 1)[1])
+    second = CliRunner().invoke(
+        app,
+        [
+            "run",
+            "stop",
+            run["run_id"],
+            "--expected-sequence",
+            str(stopping_sequence),
+            *data,
+        ],
+        env={},
+    )
+    assert second.exit_code == 0, second.output
+    assert second.stdout == first.stdout
+
+    finalized = CliRunner().invoke(
+        app,
+        ["worker", "run", run["run_id"], *data],
+        env={},
+    )
+    assert finalized.exit_code == 0, finalized.output
+    assert json.loads(finalized.stdout)["state"] == "completed"
+
+    events = CoreRunner(data_dir=data_dir, environment={}).uow.load(run["run_id"])
+    assert sum(event.event_type == "StopSignalObserved" for event in events) == 1
+    assert events[-2].event_type == "FinalizationCompleted"
+    assert events[-1].event_type == "RunCompleted"

@@ -1012,7 +1012,7 @@ class _CoreHarness:
     @staticmethod
     def _task_id(index: int, response: dict) -> str:
         if response["skill"] == "reflection":
-            return f"review:{response['stage']}:{response['hypothesis_id']}"
+            return f"run-1:review:{response['stage']}:{response['hypothesis_id']}"
         return f"scenario:{response['skill']}:{index}"
 
     @staticmethod

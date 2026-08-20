@@ -100,6 +100,9 @@ def test_unsupported_provider_and_missing_provider_resources_fail_before_executi
             environment={},
         )
 
+    profile = yaml.safe_load(profile_file.read_text(encoding="utf-8"))
+    profile["providers"]["llm"] = "openai"
+    profile_file.write_text(yaml.safe_dump(profile), encoding="utf-8")
     with pytest.raises(ValueError, match="OPENAI_API_KEY|CO_SCIENTIST_OPENAI_MODEL"):
         resolve_run_config(
             goal_file=goal_file,
@@ -121,5 +124,47 @@ def test_malformed_replay_records_fail_during_resolution(tmp_path: Path) -> None
             goal_file=goal_file,
             profile_file=profile_file,
             provider="replay",
+            environment=environment,
+        )
+
+
+@pytest.mark.parametrize(
+    ("resource_key", "body"),
+    [
+        ("CO_SCIENTIST_REPLAY_PUBMED_SEARCH", {"esearchresult": {"idlist": "1001"}}),
+        ("CO_SCIENTIST_REPLAY_PUBMED_SUMMARY", {"result": {"uids": ["missing"]}}),
+    ],
+)
+def test_malformed_pubmed_replay_envelopes_fail_during_resolution(
+    tmp_path: Path,
+    resource_key: str,
+    body: dict[str, Any],
+) -> None:
+    goal_file, profile_file, environment = write_core_preview_inputs(tmp_path)
+    Path(environment[resource_key]).write_text(json.dumps(body), encoding="utf-8")
+
+    with pytest.raises(ValueError, match="PUBMED.*malformed"):
+        resolve_run_config(
+            goal_file=goal_file,
+            profile_file=profile_file,
+            provider="replay",
+            environment=environment,
+        )
+
+
+def test_cli_provider_must_match_the_frozen_profile_provider(tmp_path: Path) -> None:
+    goal_file, profile_file, environment = write_core_preview_inputs(tmp_path)
+    environment.update(
+        {
+            "OPENAI_API_KEY": "configuration-only-secret",
+            "CO_SCIENTIST_OPENAI_MODEL": "gpt-offline-shape",
+        }
+    )
+
+    with pytest.raises(ValueError, match="does not match profile"):
+        resolve_run_config(
+            goal_file=goal_file,
+            profile_file=profile_file,
+            provider="openai",
             environment=environment,
         )

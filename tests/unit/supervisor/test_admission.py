@@ -701,9 +701,9 @@ def test_handle_result_atomically_applies_policy_owned_work_and_ignores_agent_ac
         key: followup_event[key]
         for key in ("task_id", "run_id", "idempotency_key", "intent_type", "created_by")
     } == {
-        "task_id": "review:initial_review:h-1",
+        "task_id": "run-1:review:initial_review:h-1",
         "run_id": "run-1",
-        "idempotency_key": "review:initial_review:h-1",
+        "idempotency_key": "run-1:review:initial_review:h-1",
         "intent_type": "run_initial_review",
         "created_by": "supervisor",
     }
@@ -716,7 +716,7 @@ def test_handle_result_atomically_applies_policy_owned_work_and_ignores_agent_ac
         "review_stage": "initial_review",
     }
     assert uow.task_state("generate-1") == "succeeded"
-    assert uow.task_state("review:initial_review:h-1") == "pending"
+    assert uow.task_state("run-1:review:initial_review:h-1") == "pending"
     assert uow.external_call_state("call-1") == "domain_result_applied"
     with uow.engine.connect() as connection:
         tasks = connection.execute(text("SELECT intent_type FROM tasks ORDER BY rowid"))

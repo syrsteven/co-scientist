@@ -27,6 +27,9 @@ def write_core_preview_inputs(
     *,
     minimum_matches: int = 2,
     top_k_stability_window: int = 2,
+    hypothesis_count: int = 2,
+    novelty_verdict: str = "partially_novel",
+    max_hypotheses: int = 4,
 ) -> tuple[Path, Path, dict[str, str]]:
     goal = {
         "title": "Lens regeneration mechanisms",
@@ -68,7 +71,7 @@ def write_core_preview_inputs(
             "max_model_calls": 20,
             "max_input_tokens": None,
             "max_output_tokens": None,
-            "max_hypotheses": 4,
+            "max_hypotheses": max_hypotheses,
             "max_matches": max(4, minimum_matches),
         },
         "providers": {"llm": "replay", "literature": "replay_pubmed"},
@@ -78,36 +81,60 @@ def write_core_preview_inputs(
     goal_file.write_text(yaml.safe_dump(goal, sort_keys=True), encoding="utf-8")
     profile_file.write_text(yaml.safe_dump(profile, sort_keys=True), encoding="utf-8")
 
+    hypothesis_templates = [
+        {
+            "title": "Mechanical gate",
+            "claim": "Capsule strain precedes fibrotic commitment.",
+            "mechanism": "strain",
+            "assumption": "strain is sensed early",
+            "prediction": "normalizing strain reduces fibrosis",
+            "falsifier": "commitment precedes strain sensing",
+        },
+        {
+            "title": "Inflammatory gate",
+            "claim": "Cytokine duration precedes fibrotic commitment.",
+            "mechanism": "cytokines",
+            "assumption": "cytokine duration is measurable",
+            "prediction": "short exposure reduces fibrosis",
+            "falsifier": "duration has no effect",
+        },
+    ]
+    hypothesis_templates.extend(
+        {
+            "title": f"Alternative gate {index}",
+            "claim": f"Alternative signal {index} precedes fibrotic commitment.",
+            "mechanism": f"alternative-signal-{index}",
+            "assumption": f"alternative signal {index} is measurable",
+            "prediction": f"blocking alternative signal {index} reduces fibrosis",
+            "falsifier": f"alternative signal {index} follows commitment",
+        }
+        for index in range(3, hypothesis_count + 1)
+    )
     generation = {
         "schema_version": 1,
         "research_plan_version": 1,
         "hypotheses": [
             {
                 "schema_version": 1,
-                "hypothesis_id": "h-1",
-                "content_id": "c-1",
+                "hypothesis_id": f"h-{index}",
+                "content_id": f"c-{index}",
                 "research_plan_version": 1,
-                "title": "Mechanical gate",
-                "claim": "Capsule strain precedes fibrotic commitment.",
-                "mechanism_chain": ["surgery", "strain", "cell_state", "morphogenesis"],
-                "assumptions": ["strain is sensed early"],
-                "predictions": ["normalizing strain reduces fibrosis"],
-                "falsifiers": ["commitment precedes strain sensing"],
+                "title": template["title"],
+                "claim": template["claim"],
+                "mechanism_chain": [
+                    "surgery",
+                    template["mechanism"],
+                    "cell_state",
+                    "morphogenesis",
+                ],
+                "assumptions": [template["assumption"]],
+                "predictions": [template["prediction"]],
+                "falsifiers": [template["falsifier"]],
                 "generation_strategy": "causal contrast",
-            },
-            {
-                "schema_version": 1,
-                "hypothesis_id": "h-2",
-                "content_id": "c-2",
-                "research_plan_version": 1,
-                "title": "Inflammatory gate",
-                "claim": "Cytokine duration precedes fibrotic commitment.",
-                "mechanism_chain": ["surgery", "cytokines", "cell_state", "morphogenesis"],
-                "assumptions": ["cytokine duration is measurable"],
-                "predictions": ["short exposure reduces fibrosis"],
-                "falsifiers": ["duration has no effect"],
-                "generation_strategy": "causal contrast",
-            },
+            }
+            for index, template in enumerate(
+                hypothesis_templates[:hypothesis_count], start=1
+            )
         ],
     }
     hashes = {
@@ -125,46 +152,66 @@ def write_core_preview_inputs(
     records: list[dict[str, Any]] = [
         {"skill_id": "generation", "inputs": generation_inputs, "response": generation}
     ]
-    for hypothesis_id in ("h-1", "h-2"):
+    query = "Lens regeneration mechanisms lens epithelial regeneration fibrosis"
+    source_ids = ["pubmed:1001", "pubmed:1002"]
+    summary_body = Path("tests/scenario/fixtures/pubmed_summary_lens.json").read_bytes()
+    literature_evidence = {
+        "query": query,
+        "source_ids": source_ids,
+        "raw_sha256": "sha256:" + hashlib.sha256(summary_body).hexdigest(),
+    }
+    for hypothesis_id, content_hash in hashes.items():
         for stage in ("full_review", "initial_review"):
             response: dict[str, Any] = {
                 "schema_version": 1,
                 "research_plan_version": 1,
                 "review_id": f"review-{stage}-{hypothesis_id}",
                 "hypothesis_id": hypothesis_id,
-                "content_hash": hashes[hypothesis_id],
+                "content_hash": content_hash,
                 "stage": stage,
                 "recommendation": "pass",
                 "safety_status": "passed" if stage == "initial_review" else "not_assessed",
                 "dimension_scores": {},
                 "critical_flaws": [],
-                "evidence_ids": [],
+                "evidence_ids": source_ids if stage == "full_review" else [],
             }
             if stage == "full_review":
                 response["novelty_assessment"] = {
                     "assessment_id": f"novelty-{hypothesis_id}",
                     "hypothesis_id": hypothesis_id,
-                    "content_hash": hashes[hypothesis_id],
+                    "content_hash": content_hash,
                     "research_plan_version": 1,
-                    "verdict": "partially_novel",
-                    "closest_prior_work_ids": [],
-                    "evidence_ids": [],
+                    "verdict": novelty_verdict,
+                    "closest_prior_work_ids": source_ids,
+                    "evidence_ids": source_ids,
                 }
             records.append(
                 {
                     "skill_id": "reflection",
                     "inputs": {
                         "hypothesis_id": hypothesis_id,
-                        "content_hash": hashes[hypothesis_id],
+                        "content_hash": content_hash,
                         "review_stage": stage,
+                        **(
+                            {"literature_evidence": literature_evidence}
+                            if stage == "full_review"
+                            else {}
+                        ),
                     },
                     "response": response,
                 }
             )
 
-    for index, (left, right, cluster) in enumerate(
-        (("h-1", "h-2", "mechanical"), ("h-2", "h-1", "inflammatory")), start=1
-    ):
+    hypothesis_ids = sorted(hashes)
+    proximity_pairs = [
+        (hypothesis_id, "h-1", f"alternative-{hypothesis_id}")
+        for hypothesis_id in hypothesis_ids[2:]
+    ]
+    if len(hypothesis_ids) >= 2:
+        proximity_pairs.extend(
+            (("h-1", "h-2", "mechanical"), ("h-2", "h-1", "inflammatory"))
+        )
+    for index, (left, right, cluster) in enumerate(proximity_pairs, start=1):
         records.append(
             {
                 "skill_id": "proximity",
@@ -213,10 +260,14 @@ def write_core_preview_inputs(
             _sha256("disorganized fibrotic lens regeneration baseline"),
         ),
     )
-    opportunistic_matches = max(
-        minimum_matches - len(anchors),
-        top_k_stability_window - len(anchors),
-        0,
+    opportunistic_matches = (
+        max(
+            minimum_matches - len(anchors),
+            top_k_stability_window - len(anchors),
+            0,
+        )
+        if len(hypothesis_ids) >= 2
+        else 0
     )
     for index in range(1, opportunistic_matches + 1):
         contract = {
@@ -252,7 +303,9 @@ def write_core_preview_inputs(
                 },
             }
         )
-    for index, (hypothesis_id, anchor) in enumerate(zip(("h-1", "h-2"), anchors), 1):
+    for index, (hypothesis_id, anchor) in enumerate(
+        zip(hypothesis_ids[:2], anchors, strict=False), 1
+    ):
         anchor_id, anchor_hash = anchor
         contract = {
             "match_id": f"anchor-match-{index}",
@@ -304,8 +357,8 @@ def write_core_preview_inputs(
     )
     search_file = root / "pubmed-search.json"
     summary_file = root / "pubmed-summary.json"
-    search_file.write_text('{"esearchresult":{"idlist":[]}}\n', encoding="utf-8")
-    summary_file.write_text('{"result":{"uids":[]}}\n', encoding="utf-8")
+    search_file.write_bytes(Path("tests/scenario/fixtures/pubmed_search_lens.json").read_bytes())
+    summary_file.write_bytes(summary_body)
     environment = {
         "CO_SCIENTIST_REPLAY_RESPONSES": str(replay_file),
         "CO_SCIENTIST_REPLAY_PUBMED_SEARCH": str(search_file),

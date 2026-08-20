@@ -3,8 +3,9 @@
 import json
 from collections.abc import Callable, Mapping
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
+from co_scientist.adapters.literature.pubmed import parse_pubmed_records
 from co_scientist.agents.payloads import resolve_output_schema
 from co_scientist.agents.result import AgentExecutionContext, AgentResult
 from co_scientist.domain.task import TaskLeaseFence
@@ -147,6 +148,91 @@ class SkillExecutor:
                     "payload research plan version does not match execution context"
                 )
             return validated.model_dump(mode="json")
+
+        return await self.runner.execute(
+            call_id=call_id,
+            request=request,
+            provider=self.provider,
+            validator=validate_payload,
+            context=context,
+            reservation_id=reservation_id,
+            fence=fence,
+            write_guard=write_guard,
+        )
+
+
+class LiteratureToolExecutor:
+    """Execute one configured PubMed operation through the raw-first call fence."""
+
+    def __init__(self, runner: ExternalCallRunner, provider: ExternalProvider) -> None:
+        self.runner = runner
+        self.provider = provider
+
+    async def execute(
+        self,
+        *,
+        call_id: str,
+        operation: Literal["search", "summary"],
+        inputs: dict[str, Any],
+        context: AgentExecutionContext,
+        reservation_id: str,
+        fence: TaskLeaseFence,
+        write_guard: Callable[[], None] | None = None,
+    ) -> AgentResult:
+        query = inputs.get("query")
+        if not isinstance(query, str) or not query:
+            raise ValueError("literature task requires a retrieval query")
+        request: dict[str, Any] = {"query": query}
+        if operation == "search":
+            request["limit"] = int(inputs.get("limit", 10))
+        else:
+            pmids = inputs.get("pmids")
+            if not isinstance(pmids, list) or not pmids:
+                raise ValueError("literature summary task requires PMIDs")
+            request["pmids"] = [str(pmid) for pmid in pmids]
+
+        def validate_payload(raw: bytes) -> Mapping[str, Any]:
+            if operation == "search":
+                document = _decode_payload(raw)
+                result = document.get("esearchresult")
+                if not isinstance(result, Mapping):
+                    raise ValueError("PubMed search response is malformed")
+                pmids = result.get("idlist")
+                if (
+                    not isinstance(pmids, list)
+                    or any(not isinstance(pmid, str) or not pmid for pmid in pmids)
+                ):
+                    raise ValueError("PubMed search response is malformed")
+                overview = {"operation": "search", "query": query, "pmids": pmids}
+                feedback = "PubMed search raw response persisted before PMID parsing."
+            else:
+                documents = parse_pubmed_records(
+                    raw,
+                    query=query,
+                    raw_artifact_ref=f"external-call:{call_id}",
+                )
+                overview = {
+                    "operation": "summary",
+                    "query": query,
+                    "source_documents": [
+                        document.model_dump(mode="json") for document in documents
+                    ],
+                }
+                feedback = "PubMed summary raw response persisted before source parsing."
+            return {
+                "schema_version": 1,
+                "research_plan_version": context.research_plan_version,
+                "source_content_hashes": {},
+                "system_feedback": [feedback],
+                "overview": json.dumps(
+                    overview,
+                    ensure_ascii=False,
+                    separators=(",", ":"),
+                    sort_keys=True,
+                ),
+                "coverage_gaps": [],
+                "safety_direction_check": "insufficient_evidence",
+            }
 
         return await self.runner.execute(
             call_id=call_id,

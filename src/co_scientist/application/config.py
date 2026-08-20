@@ -124,6 +124,44 @@ def _resource(path_value: str | None, *, environment_key: str, kind: str) -> dic
     }
 
 
+def _validate_pubmed_replay(path: Path, *, operation: Literal["search", "summary"]) -> None:
+    try:
+        document = json.loads(path.read_text(encoding="utf-8"))
+        if not isinstance(document, Mapping):
+            raise TypeError("envelope is not an object")
+        result = document["esearchresult" if operation == "search" else "result"]
+        if not isinstance(result, Mapping):
+            raise TypeError("result is not an object")
+        ids = result["idlist" if operation == "search" else "uids"]
+        if (
+            not isinstance(ids, list)
+            or any(not isinstance(item, str) or not item for item in ids)
+        ):
+            raise TypeError("identifiers are malformed")
+        if operation == "summary":
+            for pmid in ids:
+                record = result.get(pmid)
+                if not isinstance(record, Mapping):
+                    raise TypeError("summary record is missing")
+                title = record.get("title")
+                authors = record.get("authors", [])
+                if (
+                    not isinstance(title, str)
+                    or not title
+                    or not isinstance(authors, list)
+                    or any(
+                        not isinstance(author, Mapping)
+                        or not isinstance(author.get("name"), str)
+                        or not author["name"]
+                        for author in authors
+                    )
+                ):
+                    raise TypeError("summary record is malformed")
+    except (json.JSONDecodeError, KeyError, TypeError) as error:
+        label = "SEARCH" if operation == "search" else "SUMMARY"
+        raise ValueError(f"CO_SCIENTIST_REPLAY_PUBMED_{label} is malformed") from error
+
+
 def _anchor_sets(anchor_count: int) -> list[dict[str, Any]]:
     members = [
         {
@@ -155,6 +193,11 @@ def resolve_run_config(
         raise ValueError(f"unsupported provider: {provider}")
     goal = ResearchGoal.model_validate(_load_yaml(goal_file, label="goal"))
     profile = CoreProfile.model_validate(_load_yaml(profile_file, label="profile"))
+    if provider != profile.providers.llm:
+        raise ValueError(
+            f"selected provider {provider!r} does not match profile provider "
+            f"{profile.providers.llm!r}"
+        )
     provider_configuration: dict[str, Any]
     replay_resources: list[dict[str, str]] = []
     if provider == "replay":
@@ -197,20 +240,19 @@ def resolve_run_config(
             raise ValueError(f"{', '.join(missing)} is required")
         provider_configuration = {"provider": "openai", "model": model}
     if profile.providers.literature == "replay_pubmed":
-        replay_resources.extend(
-            (
-                _resource(
-                    environment.get("CO_SCIENTIST_REPLAY_PUBMED_SEARCH"),
-                    environment_key="CO_SCIENTIST_REPLAY_PUBMED_SEARCH",
-                    kind="pubmed_search",
-                ),
-                _resource(
-                    environment.get("CO_SCIENTIST_REPLAY_PUBMED_SUMMARY"),
-                    environment_key="CO_SCIENTIST_REPLAY_PUBMED_SUMMARY",
-                    kind="pubmed_summary",
-                ),
-            )
+        search_resource = _resource(
+            environment.get("CO_SCIENTIST_REPLAY_PUBMED_SEARCH"),
+            environment_key="CO_SCIENTIST_REPLAY_PUBMED_SEARCH",
+            kind="pubmed_search",
         )
+        summary_resource = _resource(
+            environment.get("CO_SCIENTIST_REPLAY_PUBMED_SUMMARY"),
+            environment_key="CO_SCIENTIST_REPLAY_PUBMED_SUMMARY",
+            kind="pubmed_summary",
+        )
+        _validate_pubmed_replay(Path(search_resource["path"]), operation="search")
+        _validate_pubmed_replay(Path(summary_resource["path"]), operation="summary")
+        replay_resources.extend((search_resource, summary_resource))
     else:
         provider_configuration["pubmed"] = {
             "tool": "co-scientist-core",

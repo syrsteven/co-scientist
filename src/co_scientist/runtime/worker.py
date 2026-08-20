@@ -10,7 +10,7 @@ from uuid import uuid4
 import anyio
 from pydantic import BaseModel, ConfigDict
 
-from co_scientist.agents.executor import SkillExecutor
+from co_scientist.agents.executor import LiteratureToolExecutor, SkillExecutor
 from co_scientist.agents.result import AgentExecutionContext, AgentResult
 from co_scientist.domain.states import TaskState
 from co_scientist.domain.task import (
@@ -218,7 +218,6 @@ class Worker:
                 attempt=task.attempt,
             )
         payload = WorkerTaskPayload.model_validate(dict(task.payload))
-        skill_directory = self.skills.resolve(payload.skill_id, payload.skill_version)
         provider = self.providers.resolve(payload.provider_id)
         existing_call = self.runtime.uow.external_call_for_task_attempt(
             run_id=task.run_id,
@@ -235,18 +234,37 @@ class Worker:
             if existing_call is not None
             else self.call_id_factory(task)
         )
-        executor = SkillExecutor(ExternalCallRunner(self.runtime), provider)
-
-        async def execute(guard: _HeartbeatGuard) -> AgentResult:
-            return await executor.execute(
-                call_id=call_id,
-                skill_directory=skill_directory,
-                inputs=dict(payload.inputs),
-                context=context,
-                reservation_id=task.reservation_id,
-                fence=task,
-                write_guard=guard.assert_active,
+        if task.intent_type in {"run_literature_search", "run_literature_summary"}:
+            literature = LiteratureToolExecutor(ExternalCallRunner(self.runtime), provider)
+            operation: Literal["search", "summary"] = (
+                "search" if task.intent_type == "run_literature_search" else "summary"
             )
+
+            async def execute(guard: _HeartbeatGuard) -> AgentResult:
+                return await literature.execute(
+                    call_id=call_id,
+                    operation=operation,
+                    inputs=dict(payload.inputs),
+                    context=context,
+                    reservation_id=task.reservation_id,
+                    fence=task,
+                    write_guard=guard.assert_active,
+                )
+
+        else:
+            skill_directory = self.skills.resolve(payload.skill_id, payload.skill_version)
+            executor = SkillExecutor(ExternalCallRunner(self.runtime), provider)
+
+            async def execute(guard: _HeartbeatGuard) -> AgentResult:
+                return await executor.execute(
+                    call_id=call_id,
+                    skill_directory=skill_directory,
+                    inputs=dict(payload.inputs),
+                    context=context,
+                    reservation_id=task.reservation_id,
+                    fence=task,
+                    write_guard=guard.assert_active,
+                )
 
         result = await self._execute_with_heartbeat(task=task, execute=execute)
         events = self.runtime.uow.load(run_id)

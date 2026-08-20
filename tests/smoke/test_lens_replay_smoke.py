@@ -326,7 +326,7 @@ class LensReplayHarness:
             await self._run_skill(
                 supervisor,
                 runner,
-                task_id=f"review:initial_review:{hypothesis_id}",
+                task_id=f"{self.run.run_id}:review:initial_review:{hypothesis_id}",
                 skill_id="reflection",
                 inputs={"hypothesis_id": hypothesis_id, "review_stage": "initial_review"},
                 payload={
@@ -355,7 +355,7 @@ class LensReplayHarness:
             await self._run_skill(
                 supervisor,
                 runner,
-                task_id=f"review:full_review:{hypothesis_id}",
+                task_id=f"{self.run.run_id}:review:full_review:{hypothesis_id}",
                 skill_id="reflection",
                 inputs={
                     "hypothesis_id": hypothesis_id,

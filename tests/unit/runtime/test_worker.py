@@ -397,7 +397,7 @@ async def test_supervisor_followup_is_a_complete_executable_worker_task(tmp_path
         )
 
     await new_worker("worker-generation", "token-generation").run_once("r-worker")
-    followup_id = "review:initial_review:h-worker"
+    followup_id = "r-worker:review:initial_review:h-worker"
     with uow.session_factory() as session:
         row = session.get(TaskRow, followup_id)
         assert row is not None

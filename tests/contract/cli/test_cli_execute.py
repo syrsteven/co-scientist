@@ -97,3 +97,60 @@ def test_non_object_profile_is_a_sanitized_configuration_error(tmp_path: Path) -
     assert result.exit_code == 2
     assert result.stderr.startswith("configuration error:")
     assert "Traceback" not in result.stderr
+
+
+def test_pubmed_and_provider_config_fail_before_any_run_row(tmp_path: Path) -> None:
+    goal, profile, environment = write_core_preview_inputs(tmp_path)
+    Path(environment["CO_SCIENTIST_REPLAY_PUBMED_SEARCH"]).write_text(
+        '{"esearchresult":{"idlist":"forged"}}', encoding="utf-8"
+    )
+    data_dir = tmp_path / "data"
+
+    malformed = CliRunner().invoke(
+        app,
+        [
+            "run",
+            "execute",
+            "--goal",
+            str(goal),
+            "--profile",
+            str(profile),
+            "--provider",
+            "replay",
+            "--data-dir",
+            str(data_dir),
+        ],
+        env=environment,
+    )
+
+    assert malformed.exit_code == 2
+    engine = create_engine(f"sqlite:///{data_dir / 'co-scientist.db'}")
+    with engine.connect() as connection:
+        assert connection.execute(text("SELECT COUNT(*) FROM runs")).scalar_one() == 0
+    engine.dispose()
+
+
+def test_two_cli_executions_share_one_data_directory(tmp_path: Path) -> None:
+    goal, profile, environment = write_core_preview_inputs(tmp_path)
+    data = ["--data-dir", str(tmp_path / "data")]
+    command = [
+        "run",
+        "execute",
+        "--goal",
+        str(goal),
+        "--profile",
+        str(profile),
+        "--provider",
+        "replay",
+        *data,
+    ]
+    runner = CliRunner()
+
+    first = runner.invoke(app, command, env=environment)
+    second = runner.invoke(app, command, env=environment)
+
+    assert first.exit_code == second.exit_code == 0
+    first_result = json.loads(first.stdout)
+    second_result = json.loads(second.stdout)
+    assert first_result["state"] == second_result["state"] == "completed"
+    assert first_result["run_id"] != second_result["run_id"]

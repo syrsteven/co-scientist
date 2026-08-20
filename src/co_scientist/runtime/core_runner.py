@@ -116,8 +116,8 @@ class CoreRunner:
                 self._resource(manifest, "pubmed_summary"),
             )
             self.literature_bridges = {
-                "pubmed_search": ReplayPubMedBridge(replay_literature, "search"),
-                "pubmed_summary": ReplayPubMedBridge(replay_literature, "summary"),
+                "replay_pubmed:search": ReplayPubMedBridge(replay_literature, "search"),
+                "replay_pubmed:summary": ReplayPubMedBridge(replay_literature, "summary"),
             }
         elif literature_id == "pubmed":
             self._pubmed_client = httpx.AsyncClient()
@@ -127,8 +127,8 @@ class CoreRunner:
                 email=self.environment.get("CO_SCIENTIST_PUBMED_EMAIL"),
             )
             self.literature_bridges = {
-                "pubmed_search": PubMedBridge(pubmed_literature, "search"),
-                "pubmed_summary": PubMedBridge(pubmed_literature, "summary"),
+                "pubmed:search": PubMedBridge(pubmed_literature, "search"),
+                "pubmed:summary": PubMedBridge(pubmed_literature, "summary"),
             }
         else:
             raise ValueError(f"unsupported persisted literature provider: {literature_id}")
@@ -144,6 +144,9 @@ class CoreRunner:
             provider = OpenAIResponsesProvider(AsyncOpenAI(api_key=api_key))
         else:
             raise ValueError(f"unsupported persisted provider: {provider_id}")
+        self._build_worker(ProviderRegistry({provider_id: provider, **self.literature_bridges}))
+
+    def _build_worker(self, providers: ProviderRegistry) -> None:
         skills = SkillRegistry(
             {
                 (contract.id, contract.version): Path("skills") / contract.id
@@ -156,7 +159,7 @@ class CoreRunner:
             task_runtime=self.uow,
             supervisor=self.supervisor,
             skills=skills,
-            providers=ProviderRegistry({provider_id: provider}),
+            providers=providers,
             worker_id="core-preview-worker",
         )
 
@@ -166,7 +169,7 @@ class CoreRunner:
             (
                 str(event.payload["reason"])
                 for event in reversed(events)
-                if event.event_type in {"RunStopping", "RunCancelled"}
+                if event.event_type in {"RunStopping", "RunCancelled", "RunFailed"}
                 and event.payload.get("reason") is not None
             ),
             None,
@@ -189,6 +192,20 @@ class CoreRunner:
         return await self.drive(run_id=run_id)
 
     async def resume(self, *, run_id: str) -> RunExecutionResult:
+        state = RunState(self.uow.run_state(run_id))
+        if state in {
+            RunState.COMPLETED,
+            RunState.COMPLETED_PARTIAL,
+            RunState.FAILED,
+            RunState.CANCELLED,
+            RunState.PAUSED,
+            RunState.PAUSING,
+            RunState.NEEDS_ATTENTION,
+        }:
+            return self._result(run_id)
+        if state is RunState.STOPPING:
+            self._build_worker(ProviderRegistry({}))
+            return await self.drive(run_id=run_id)
         manifest = self.uow.run_manifest(run_id)
         diagnostic = execution_contract_diagnostic(run_id, manifest)
         if diagnostic is not None:

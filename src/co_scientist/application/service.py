@@ -286,11 +286,17 @@ class _SupervisorCommandHandler:
                 expected_sequence=command.expected_run_sequence,
             )
         elif command.command == "stop":
-            self._supervisor.stop_and_finalize_partial(
-                command.run_id,
-                expected_sequence=command.expected_run_sequence,
-                reason="scientist_stop",
-            )
+            state = RunState(self._runner.uow.run_state(command.run_id))
+            if state not in {
+                RunState.COMPLETED,
+                RunState.COMPLETED_PARTIAL,
+                RunState.FAILED,
+                RunState.CANCELLED,
+            }:
+                self._supervisor.request_soft_stop(
+                    command.run_id,
+                    expected_sequence=command.expected_run_sequence,
+                )
         elif command.command == "cancel":
             self._supervisor.cancel_run(
                 command.run_id,

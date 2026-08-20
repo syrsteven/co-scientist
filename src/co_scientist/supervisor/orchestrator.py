@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import json
 from collections.abc import Mapping, Sequence
 from decimal import Decimal
 from pathlib import Path
@@ -31,6 +32,7 @@ from co_scientist.domain.hypothesis import (
     compute_hypothesis_content_hash,
     hypothesis_content_from_draft,
 )
+from co_scientist.domain.provenance import SourceDocument
 from co_scientist.domain.research_plan import ResearchPlan
 from co_scientist.domain.review import (
     ReviewPolicy,
@@ -110,7 +112,9 @@ class AdvanceOutcome(BaseModel):
 
     model_config = ConfigDict(frozen=True, arbitrary_types_allowed=True)
 
-    action: Literal["waiting", "scheduled", "admitted", "checkpointed", "terminal"]
+    action: Literal[
+        "waiting", "scheduled", "admitted", "checkpointed", "resumable", "terminal"
+    ]
     commit: CommitResult | None = None
 
 
@@ -293,6 +297,89 @@ class Supervisor:
             correlation_id=result.run_id,
         )
 
+    def _validate_literature_novelty(
+        self, *, run_id: str, task_id: str, result: AgentResult
+    ) -> None:
+        if result.skill_id != "reflection" or result.status != "completed":
+            return
+        reflection = ReflectionResultV1.model_validate(result.payload)
+        if reflection.stage is not ReviewStage.FULL:
+            return
+        manifest = self.uow.run_manifest(run_id)
+        profile = manifest.get("profile")
+        providers = manifest.get("providers")
+        if (
+            manifest.get("execution_contract_version") != 3
+            or not isinstance(providers, Mapping)
+            or providers.get("literature") not in {"replay_pubmed", "pubmed"}
+            or not isinstance(profile, Mapping)
+            or not profile.get("literature_novelty_required", False)
+        ):
+            return
+        task = self.uow.task_definition(task_id)
+        payload = WorkerTaskPayload.model_validate(dict(task.payload))
+        evidence = payload.inputs.get("literature_evidence")
+        if not isinstance(evidence, Mapping):
+            raise TypeError("full review has no grounded literature evidence snapshot")
+        query = evidence.get("query")
+        source_ids = evidence.get("source_ids")
+        raw_sha256 = evidence.get("raw_sha256")
+        if (
+            not isinstance(query, str)
+            or not isinstance(source_ids, list)
+            or not source_ids
+            or any(not isinstance(source_id, str) for source_id in source_ids)
+            or not isinstance(raw_sha256, str)
+        ):
+            raise ValueError("full review grounded literature evidence is malformed")
+        expected_sources = set(source_ids)
+        matching = []
+        for event in self.uow.load(run_id):
+            if (
+                event.event_type != "MetaReviewCompleted"
+                or event.payload.get("literature_operation") != "summary"
+                or event.payload.get("pubmed_query") != query
+            ):
+                continue
+            raw_ref = event.payload.get("raw_artifact_ref")
+            sources = event.payload.get("source_documents")
+            if not isinstance(raw_ref, Mapping) or not isinstance(sources, list | tuple):
+                continue
+            if raw_ref.get("sha256") != raw_sha256 or {
+                str(source.get("source_id"))
+                for source in sources
+                if isinstance(source, Mapping)
+            } != expected_sources:
+                continue
+            matching.append(event)
+        if len(matching) != 1:
+            raise ValueError("full review has no unique grounded literature evidence")
+        source_event = matching[0]
+        source_call_id = source_event.payload.get("source_call_id")
+        if not isinstance(source_call_id, str):
+            raise TypeError("grounded literature evidence has no source call")
+        call = self.uow.get_external_call(source_call_id)
+        if (
+            call.run_id != run_id
+            or call.state is not ExternalCallState.DOMAIN_RESULT_APPLIED
+            or call.raw_artifact_ref is None
+            or call.raw_artifact_ref.model_dump(mode="json")
+            != source_event.payload.get("raw_artifact_ref")
+        ):
+            raise ValueError("grounded literature evidence call provenance is invalid")
+        for source in source_event.payload["source_documents"]:
+            document = SourceDocument.model_validate(source)
+            if document.raw_artifact_ref != f"external-call:{source_call_id}":
+                raise ValueError("grounded literature source artifact provenance is invalid")
+        novelty = reflection.novelty_assessment
+        if novelty is None or not novelty.evidence_ids:
+            raise ValueError("full review requires grounded literature evidence")
+        claimed = set(novelty.evidence_ids) | set(novelty.closest_prior_work_ids)
+        if not claimed.issubset(expected_sources) or not set(
+            reflection.evidence_ids
+        ).issubset(expected_sources):
+            raise ValueError("full review contains ungrounded literature evidence")
+
     @staticmethod
     def _events_for_result(result: AgentResult) -> tuple[NewEvent, ...]:
         common = {
@@ -404,6 +491,7 @@ class Supervisor:
                 ),
             )
 
+        literature_overview: str | None = None
         if result.skill_id == "proximity":
             event_type = "ProximityAssessed"
             terminal_payload: ProximityResultV1 | MetaReviewResultV1 = (
@@ -412,16 +500,57 @@ class Supervisor:
         elif result.skill_id == "meta_review":
             event_type = "MetaReviewCompleted"
             terminal_payload = MetaReviewResultV1.model_validate(payload)
+            literature_overview = terminal_payload.overview
         else:
             raise ValueError(f"unsupported skill result: {result.skill_id}")
+        event_payload: dict[str, Any] = {
+            **terminal_payload.model_dump(mode="json", exclude={"schema_version"}),
+            **common,
+        }
+        if result.skill_id == "meta_review" and result.provider in {
+            "replay_pubmed:search",
+            "replay_pubmed:summary",
+            "pubmed:search",
+            "pubmed:summary",
+        }:
+            try:
+                literature = json.loads(literature_overview or "")
+            except json.JSONDecodeError as error:
+                raise ValueError("literature result overview is malformed") from error
+            if not isinstance(literature, Mapping):
+                raise TypeError("literature result overview is not an object")
+            operation = literature.get("operation")
+            query = literature.get("query")
+            if operation not in {"search", "summary"} or not isinstance(query, str):
+                raise ValueError("literature result operation is malformed")
+            event_payload.update(
+                {
+                    "literature_operation": operation,
+                    "pubmed_query": query,
+                    "source_call_id": result.external_call_id,
+                    "raw_artifact_ref": result.raw_artifact_ref.model_dump(mode="json"),
+                }
+            )
+            if operation == "search":
+                pmids = literature.get("pmids")
+                if not isinstance(pmids, list) or any(
+                    not isinstance(pmid, str) or not pmid for pmid in pmids
+                ):
+                    raise ValueError("literature search result is malformed")
+                event_payload["pmids"] = pmids
+            else:
+                raw_sources = literature.get("source_documents")
+                if not isinstance(raw_sources, list) or not raw_sources:
+                    raise ValueError("literature summary has no source documents")
+                event_payload["source_documents"] = [
+                    SourceDocument.model_validate(source).model_dump(mode="json")
+                    for source in raw_sources
+                ]
         return (
             NewEvent(
                 event_type=event_type,
                 schema_version=2,
-                payload={
-                    **terminal_payload.model_dump(mode="json", exclude={"schema_version"}),
-                    **common,
-                },
+                payload=event_payload,
                 causation_id=result.result_id,
                 correlation_id=result.run_id,
             ),
@@ -434,6 +563,172 @@ class Supervisor:
         events: Sequence[NewEvent],
         source_result: AgentResult,
     ) -> tuple[NewTask, ...]:
+        manifest_document = self.uow.run_manifest(run_id)
+        profile = manifest_document.get("profile")
+        providers = manifest_document.get("providers")
+        literature_required = bool(
+            manifest_document.get("execution_contract_version") == 3
+            and isinstance(providers, Mapping)
+            and providers.get("literature") in {"replay_pubmed", "pubmed"}
+            and isinstance(profile, Mapping)
+            and profile.get("literature_novelty_required") is True
+        )
+        configured_provider = manifest_document.get("provider_configuration")
+        if isinstance(configured_provider, Mapping) and isinstance(
+            configured_provider.get("provider"), str
+        ) and isinstance(configured_provider.get("model"), str):
+            reflection_provider = str(configured_provider["provider"])
+            reflection_model = str(configured_provider["model"])
+        else:
+            reflection_provider = source_result.provider
+            reflection_model = source_result.model_or_tool
+
+        def reflection_task(
+            *, hypothesis_id: str, content_hash: str, stage: str, inputs: dict[str, Any]
+        ) -> NewTask:
+            directory = Path("skills/reflection")
+            skill = load_skill(directory)
+            payload = WorkerTaskPayload(
+                skill_id=skill.id,
+                skill_version=skill.version,
+                output_schema_id=skill.output_schema,
+                output_schema_version=1,
+                research_plan_version=source_result.research_plan_version,
+                provider_id=reflection_provider,
+                model_or_tool=reflection_model,
+                inputs={
+                    "hypothesis_id": hypothesis_id,
+                    "content_hash": content_hash,
+                    "review_stage": stage,
+                    **inputs,
+                },
+                input_snapshot_hash=request_fingerprint(
+                    {
+                        "hypothesis_id": hypothesis_id,
+                        "content_hash": content_hash,
+                        "review_stage": stage,
+                        **inputs,
+                    }
+                ),
+                prompt_hash=prompt_hash(
+                    (directory / skill.prompt_path).read_text(encoding="utf-8")
+                ),
+                budget_estimate=BudgetEstimate(model_calls=1),
+            )
+            task_id = f"{run_id}:review:{stage}:{hypothesis_id}"
+            return NewTask(
+                task_id=task_id,
+                run_id=run_id,
+                idempotency_key=task_id,
+                intent_type=f"run_{stage}",
+                payload=payload.model_dump(mode="json"),
+            )
+
+        content_events = [
+            event for event in events if event.event_type == "HypothesisContentCreated"
+        ]
+        if source_result.skill_id == "generation" and literature_required:
+            stop = profile.get("stop") if isinstance(profile, Mapping) else None
+            budget = profile.get("budget") if isinstance(profile, Mapping) else None
+            minimum = stop.get("minimum_hypotheses") if isinstance(stop, Mapping) else None
+            maximum = budget.get("max_hypotheses") if isinstance(budget, Mapping) else None
+            count = len(content_events)
+            if count < 2 or (isinstance(minimum, int) and count < minimum) or (
+                isinstance(maximum, int) and count > maximum
+            ):
+                return ()
+            initial = tuple(
+                reflection_task(
+                    hypothesis_id=str(event.payload["hypothesis_id"]),
+                    content_hash=str(event.payload["content_hash"]),
+                    stage=ReviewStage.INITIAL.value,
+                    inputs={},
+                )
+                for event in content_events
+            )
+            goal = manifest_document.get("goal")
+            title = goal.get("title") if isinstance(goal, Mapping) else None
+            query = f"{title or 'Core Preview'} lens epithelial regeneration fibrosis"
+            literature_provider = (
+                providers.get("literature") if isinstance(providers, Mapping) else None
+            )
+            if literature_provider not in {"replay_pubmed", "pubmed"}:
+                raise ValueError("run manifest has no configured literature provider")
+            search = self._worker_task(
+                run_id=run_id,
+                task_id=f"{run_id}:literature:search",
+                intent_type="run_literature_search",
+                skill_id="meta_review",
+                inputs={"query": query, "limit": 10},
+                provider_id=f"{literature_provider}:search",
+                model_or_tool="esearch",
+                model_calls=0,
+            )
+            return (*initial, search)
+
+        if source_result.skill_id == "meta_review" and source_result.provider.endswith(
+            ":search"
+        ):
+            search_event = next(
+                event
+                for event in events
+                if event.event_type == "MetaReviewCompleted"
+                and event.payload.get("literature_operation") == "search"
+            )
+            pmids = search_event.payload.get("pmids")
+            if not isinstance(pmids, list | tuple) or not pmids:
+                raise ValueError("literature search produced no PMIDs")
+            return (
+                self._worker_task(
+                    run_id=run_id,
+                    task_id=f"{run_id}:literature:summary",
+                    intent_type="run_literature_summary",
+                    skill_id="meta_review",
+                    inputs={
+                        "query": search_event.payload["pubmed_query"],
+                        "pmids": list(pmids),
+                    },
+                    provider_id=source_result.provider.replace(":search", ":summary"),
+                    model_or_tool="esummary",
+                    model_calls=0,
+                ),
+            )
+
+        if source_result.skill_id == "meta_review" and source_result.provider.endswith(
+            ":summary"
+        ):
+            summary_event = next(
+                event
+                for event in events
+                if event.event_type == "MetaReviewCompleted"
+                and event.payload.get("literature_operation") == "summary"
+            )
+            sources = summary_event.payload.get("source_documents")
+            raw_ref = summary_event.payload.get("raw_artifact_ref")
+            if not isinstance(sources, list | tuple) or not isinstance(raw_ref, Mapping):
+                raise ValueError("literature summary evidence is malformed")
+            evidence = {
+                "query": summary_event.payload["pubmed_query"],
+                "source_ids": [str(source["source_id"]) for source in sources],
+                "raw_sha256": raw_ref["sha256"],
+            }
+            persisted_contents = {
+                str(event.payload["hypothesis_id"]): str(event.payload["content_hash"])
+                for event in self.uow.load(run_id)
+                if event.event_type == "HypothesisContentCreated"
+            }
+            ordered = sorted(persisted_contents)
+            review_order = [*ordered[2:], *ordered[:2]]
+            return tuple(
+                reflection_task(
+                    hypothesis_id=hypothesis_id,
+                    content_hash=persisted_contents[hypothesis_id],
+                    stage=ReviewStage.FULL.value,
+                    inputs={"literature_evidence": evidence},
+                )
+                for hypothesis_id in review_order
+            )
+
         approved: dict[str, FollowupIntent] = {}
         for event in events:
             intents = derive_followup_intents(
@@ -442,10 +737,13 @@ class Supervisor:
                 review_policy=self.review_policy,
             )
             for intent in intents:
-                key = f"review:{intent.intent_type.removeprefix('run_')}:{intent.target_id}"
+                key = (
+                    f"{run_id}:review:{intent.intent_type.removeprefix('run_')}:"
+                    f"{intent.target_id}"
+                )
                 approved[key] = intent
         tasks: list[NewTask] = []
-        for task_id, intent in approved.items():
+        for intent in approved.values():
             content_hash = next(
                 (
                     str(event.payload["content_hash"])
@@ -457,35 +755,12 @@ class Supervisor:
             )
             if content_hash is None:
                 raise ValueError("follow-up task requires immutable hypothesis content")
-            directory = Path("skills/reflection")
-            manifest = load_skill(directory)
-            inputs = {
-                "hypothesis_id": intent.target_id,
-                "content_hash": content_hash,
-                "review_stage": intent.intent_type.removeprefix("run_"),
-            }
-            payload = WorkerTaskPayload(
-                skill_id=manifest.id,
-                skill_version=manifest.version,
-                output_schema_id=manifest.output_schema,
-                output_schema_version=1,
-                research_plan_version=source_result.research_plan_version,
-                provider_id=source_result.provider,
-                model_or_tool=source_result.model_or_tool,
-                inputs=inputs,
-                input_snapshot_hash=request_fingerprint(inputs),
-                prompt_hash=prompt_hash(
-                    (directory / manifest.prompt_path).read_text(encoding="utf-8")
-                ),
-                budget_estimate=BudgetEstimate(model_calls=1),
-            )
             tasks.append(
-                NewTask(
-                    task_id=task_id,
-                    run_id=run_id,
-                    idempotency_key=task_id,
-                    intent_type=intent.intent_type,
-                    payload=payload.model_dump(mode="json"),
+                reflection_task(
+                    hypothesis_id=intent.target_id,
+                    content_hash=content_hash,
+                    stage=intent.intent_type.removeprefix("run_"),
+                    inputs={},
                 )
             )
         return tuple(tasks)
@@ -783,6 +1058,11 @@ class Supervisor:
         ):
             raise ValueError("AgentResult does not match reservation and task lease fence")
         result = durable_result
+        self._validate_literature_novelty(
+            run_id=run_id,
+            task_id=task_id,
+            result=result,
+        )
         if result.status == "completed":
             rating_events = self._rating_events_for_result(run_id, result)
             events = (*self._events_for_result(result), *rating_events)
@@ -1190,7 +1470,7 @@ class Supervisor:
             if prior is None:
                 raise ValueError("terminal Run has no checkpoint-bound finalization request")
             return prior
-        if state not in {RunState.RUNNING, RunState.STOPPING}:
+        if state not in {RunState.RUNNING, RunState.PAUSED, RunState.STOPPING}:
             raise ValueError(f"run state {state.value} does not allow finalization")
 
         new_events = expected_control[len(persisted_control) :]
@@ -1321,6 +1601,7 @@ class Supervisor:
         model_or_tool: str,
         matches: int = 0,
         hypotheses: int = 0,
+        model_calls: int = 1,
     ) -> NewTask:
         contract = resolve_core_skill_contract(
             skill_id=skill_id,
@@ -1342,7 +1623,7 @@ class Supervisor:
             input_snapshot_hash=request_fingerprint(inputs),
             prompt_hash=prompt_hash(system_prompt),
             budget_estimate=BudgetEstimate(
-                model_calls=1,
+                model_calls=model_calls,
                 hypotheses=hypotheses,
                 matches=matches,
             ),
@@ -1461,8 +1742,40 @@ class Supervisor:
             for event in events
             if event.event_type == "HypothesisContentCreated"
         }
-        if len(hypotheses) < 2:
-            return AdvanceOutcome(action="waiting")
+        profile = manifest.get("profile")
+        stop = profile.get("stop") if isinstance(profile, Mapping) else None
+        budget = profile.get("budget") if isinstance(profile, Mapping) else None
+        minimum_hypotheses = (
+            stop.get("minimum_hypotheses") if isinstance(stop, Mapping) else None
+        )
+        maximum_hypotheses = (
+            budget.get("max_hypotheses") if isinstance(budget, Mapping) else None
+        )
+        cardinality_reason: str | None = None
+        if len(hypotheses) < 2 or (
+            isinstance(minimum_hypotheses, int)
+            and len(hypotheses) < minimum_hypotheses
+        ):
+            cardinality_reason = "insufficient_hypotheses_for_core_workflow"
+        elif isinstance(maximum_hypotheses, int) and len(hypotheses) > maximum_hypotheses:
+            cardinality_reason = "hypothesis_count_exceeds_profile_budget"
+        if cardinality_reason is not None:
+            failed = self.uow.commit_lifecycle_batch(
+                run_id=run_id,
+                expected_sequence=expected_sequence,
+                events=(
+                    NewEvent(
+                        event_type="RunFailed",
+                        payload={
+                            "reason": cardinality_reason,
+                            "hypothesis_count": len(hypotheses),
+                        },
+                    ),
+                ),
+                target_run_state=RunState.FAILED,
+                idempotency_key=f"fail:{run_id}:{cardinality_reason}",
+            )
+            return AdvanceOutcome(action="terminal", commit=failed)
         required_stages = {
             stage.value for stage in {ReviewStage.INITIAL, *self.review_policy.required_before_admission}
         }
@@ -1475,13 +1788,21 @@ class Supervisor:
             return AdvanceOutcome(action="waiting")
 
         proximity_events = [event for event in events if event.event_type == "ProximityAssessed"]
-        if len(proximity_events) < 2:
-            ordered = sorted(hypotheses)
-            pairs = ((ordered[0], ordered[1]), (ordered[1], ordered[0]))
+        ordered = sorted(hypotheses)
+        pairs = [
+            (hypothesis_id, ordered[0])
+            for hypothesis_id in ordered[2:]
+        ]
+        pairs.extend(((ordered[0], ordered[1]), (ordered[1], ordered[0])))
+        expected_edges = {f"edge-{index}" for index in range(1, len(pairs) + 1)}
+        persisted_edges = {
+            str(event.payload.get("edge_id")) for event in proximity_events
+        }
+        if not expected_edges.issubset(persisted_edges):
             tasks = tuple(
                 self._worker_task(
                     run_id=run_id,
-                    task_id=f"proximity:{index}:{left}:{right}",
+                    task_id=f"{run_id}:proximity:{index}:{left}:{right}",
                     intent_type="run_proximity",
                     skill_id="proximity",
                     inputs={
@@ -1495,6 +1816,7 @@ class Supervisor:
                     model_or_tool=model,
                 )
                 for index, (left, right) in enumerate(pairs, start=1)
+                if f"edge-{index}" not in persisted_edges
             )
             commit = self._schedule_tasks(
                 run_id=run_id,
@@ -1602,8 +1924,6 @@ class Supervisor:
             for event in events
             if event.event_type == "MatchEvaluated"
         }
-        profile = manifest.get("profile")
-        stop = profile.get("stop") if isinstance(profile, Mapping) else None
         if not isinstance(stop, Mapping):
             raise TypeError("run manifest has no frozen stop policy")
         minimum_matches = stop.get("minimum_matches")
@@ -1638,7 +1958,7 @@ class Supervisor:
                 ranking_tasks.append(
                     self._worker_task(
                         run_id=run_id,
-                        task_id=f"ranking:01-opportunistic:{index}",
+                        task_id=f"{run_id}:ranking:01-opportunistic:{index}",
                         intent_type="run_ranking",
                         skill_id="ranking",
                         inputs={
@@ -1663,7 +1983,7 @@ class Supervisor:
                     )
                 )
             for index, (hypothesis_id, member) in enumerate(
-                zip(ordered_hypotheses, members, strict=True), start=1
+                zip(ordered_hypotheses[: len(members)], members, strict=True), start=1
             ):
                 match_id = f"anchor-match-{index}"
                 if match_id in matches:
@@ -1671,7 +1991,7 @@ class Supervisor:
                 ranking_tasks.append(
                     self._worker_task(
                         run_id=run_id,
-                        task_id=f"ranking:02-anchor:{index}",
+                        task_id=f"{run_id}:ranking:02-anchor:{index}",
                         intent_type="run_ranking",
                         skill_id="ranking",
                         inputs={
@@ -1703,6 +2023,16 @@ class Supervisor:
             )
             return AdvanceOutcome(action="scheduled", commit=commit)
 
+        prior_checkpoint = next(
+            (
+                event
+                for event in reversed(events)
+                if event.event_type == "ConvergenceCheckpointRecorded"
+            ),
+            None,
+        )
+        if prior_checkpoint is not None:
+            return AdvanceOutcome(action="resumable")
         recorded = ConvergenceCheckpointBuilder(self.uow).build_and_record(
             run_id=run_id,
             expected_sequence=expected_sequence,
@@ -1713,7 +2043,7 @@ class Supervisor:
             checkpoint_id=recorded.checkpoint_id,
         )
         if stopped.commit is None:
-            return AdvanceOutcome(action="checkpointed", commit=recorded.commit)
+            return AdvanceOutcome(action="resumable", commit=recorded.commit)
         return AdvanceOutcome(action="checkpointed", commit=stopped.commit)
 
     def start_run(self, run_id: str, *, expected_sequence: int) -> CommitResult:
@@ -1786,6 +2116,49 @@ class Supervisor:
         raise ValueError(
             "synchronous finalization was removed; use checkpoint-bound tick and a worker lease"
         )
+
+    def request_soft_stop(
+        self,
+        run_id: str,
+        *,
+        expected_sequence: int,
+    ) -> CommitResult:
+        """Bind a scientist soft stop to one durable convergence checkpoint."""
+
+        state = RunState(self.uow.run_state(run_id))
+        if state not in {RunState.RUNNING, RunState.PAUSED, RunState.STOPPING}:
+            raise ValueError(f"run state {state.value} does not allow a soft stop")
+        events = self.uow.load(run_id)
+        if not events or events[-1].sequence != expected_sequence:
+            actual = events[-1].sequence if events else 0
+            raise ConcurrencyConflict(f"expected {expected_sequence}, got {actual}")
+        checkpoint_event = next(
+            (
+                event
+                for event in reversed(events)
+                if event.event_type == "ConvergenceCheckpointRecorded"
+            ),
+            None,
+        )
+        if checkpoint_event is None:
+            recorded = ConvergenceCheckpointBuilder(self.uow).build_and_record(
+                run_id=run_id,
+                expected_sequence=expected_sequence,
+            )
+            checkpoint_id = recorded.checkpoint_id
+            tick_sequence = recorded.commit.last_sequence
+        else:
+            checkpoint_id = str(checkpoint_event.payload["checkpoint_id"])
+            tick_sequence = expected_sequence
+        outcome = self.tick(
+            run_id=run_id,
+            expected_sequence=tick_sequence,
+            checkpoint_id=checkpoint_id,
+            scientist_action="soft_stop",
+        )
+        if outcome.commit is None:
+            raise AssertionError("soft stop did not create or replay finalization")
+        return outcome.commit
 
     def tick(
         self,
