@@ -142,7 +142,11 @@ def test_cli_status_uses_typed_query() -> None:
     result = _invoke(service, ["run", "status", "r-1"])
 
     assert result.exit_code == 0, result.output
-    assert "state=running" in result.stdout
+    assert json.loads(result.stdout) == {
+        "current_sequence": 7,
+        "run_id": "r-1",
+        "state": "running",
+    }
     assert service.queries == [GetRunStatus(run_id="r-1")]
 
 
@@ -244,7 +248,7 @@ def test_separate_cli_invocations_share_custom_data_dir_and_repeat_lifecycle(
     second_resume = runner.invoke(
         app, ["run", "resume", run_id, "--expected-sequence", "6", *data_option]
     )
-    output = tmp_path / "exports" / "run.json"
+    output = tmp_path / "exports" / "run-bundle"
     exported = runner.invoke(
         app, ["run", "export", run_id, "--output", str(output), *data_option]
     )
@@ -254,7 +258,11 @@ def test_separate_cli_invocations_share_custom_data_dir_and_repeat_lifecycle(
     assert f"data_dir={tmp_path}" in checked.stdout
     assert "schema=ready" in checked.stdout
     assert status.exit_code == 0, status.output
-    assert f"run_id={run_id} state=running sequence=1" in status.stdout
+    assert json.loads(status.stdout) == {
+        "current_sequence": 1,
+        "run_id": run_id,
+        "state": "running",
+    }
     assert first_pause.exit_code == 0, first_pause.output
     assert "state=paused sequence=3" in first_pause.stdout
     assert stale_pause.exit_code == 4
@@ -266,8 +274,8 @@ def test_separate_cli_invocations_share_custom_data_dir_and_repeat_lifecycle(
     assert second_resume.exit_code == 0, second_resume.output
     assert "state=running sequence=7" in second_resume.stdout
     assert exported.exit_code == 0, exported.output
-    snapshot = json.loads(output.read_text(encoding="utf-8"))
-    assert snapshot["state_history"] == [
+    manifest = json.loads((output / "manifest.json").read_text(encoding="utf-8"))
+    assert manifest["state_history"] == [
         "created",
         "running",
         "pausing",
@@ -278,7 +286,7 @@ def test_separate_cli_invocations_share_custom_data_dir_and_repeat_lifecycle(
         "running",
     ]
     assert replayed.exit_code == 0, replayed.output
-    assert json.loads(replayed.stdout) == snapshot
+    assert json.loads(replayed.stdout)["state_history"] == manifest["state_history"]
 
 
 # Mutation caught: config check reporting success without validating selected storage/schema.

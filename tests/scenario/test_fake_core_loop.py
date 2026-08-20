@@ -13,7 +13,7 @@ from co_scientist.adapters.artifacts.filesystem import FilesystemArtifactStore
 from co_scientist.adapters.llm.fake import FakeLLMProvider
 from co_scientist.adapters.llm.replay import ReplayLLMProvider, ReplayMiss
 from co_scientist.adapters.persistence.sqlite import SqliteUnitOfWork
-from co_scientist.agents.executor import SkillExecutor
+from co_scientist.agents.executor import SkillExecutor, build_skill_request
 from co_scientist.agents.result import AgentExecutionContext, AgentResult
 from co_scientist.domain.admission import AdmissionPolicy
 from co_scientist.domain.review import (
@@ -805,15 +805,11 @@ async def test_skill_executor_uses_raw_first_runner_and_returns_agent_result(tmp
     claimed = claim_running_task(uow, run_id="run-1", task_id="task-1")
     artifacts = FilesystemArtifactStore(tmp_path / "artifacts")
     runner = ExternalCallRunner(SimpleNamespace(uow=uow, artifacts=artifacts))
-    expected_request = {
-        "skill_id": "generation",
-        "skill_version": "0.2.0",
-        "system_prompt": Path("skills/generation/prompts/system.md").read_text(encoding="utf-8"),
-        "input_schema": "GenerationInputV1",
-        "output_schema": "GenerationResultV1",
-        "allowed_tools": [],
-        "input": {"research_goal": "test regeneration"},
-    }
+    expected_request = build_skill_request(
+        skill_directory=Path("skills/generation"),
+        inputs={"research_goal": "test regeneration"},
+        model="replay-v1",
+    )
     raw_body = json.dumps(_valid_generation_payload(), separators=(",", ":")).encode()
     provider = ReplayLLMProvider({request_fingerprint(expected_request): raw_body})
     context = fenced_context(

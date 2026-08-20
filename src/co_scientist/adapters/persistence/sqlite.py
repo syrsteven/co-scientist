@@ -539,11 +539,29 @@ class SqliteUnitOfWork:
         manifest: dict[str, Any],
         event: NewEvent,
         idempotency_key: str,
+        additional_events: Sequence[NewEvent] = (),
+        initial_tasks: Sequence[NewTask] = (),
     ) -> CommitResult:
-        """Atomically create a Run and persist its validated start transition."""
+        """Atomically create/start a Run with its initial scientific work."""
 
         if event.event_type != "RunStarted":
             raise ValueError("started Run initialization requires RunStarted")
+        events = (event, *additional_events)
+        for task in initial_tasks:
+            if task.run_id != run_id:
+                raise ValueError("initial task does not belong to started Run")
+            validate_run_mutation(
+                RunState.RUNNING,
+                RunMutationKind.ENQUEUE_EXPLORATION_TASK,
+                task_intent=task.intent_type,
+            )
+        for additional in additional_events:
+            self._assert_supported_new_event_version(additional)
+        task_events = [item for item in additional_events if item.event_type == "TaskEnqueued"]
+        if [_json(item.payload) for item in task_events] != [
+            _json(task.model_dump(mode="json")) for task in initial_tasks
+        ]:
+            raise ValueError("initial task rows and ordered TaskEnqueued events disagree")
         initialization_fingerprint = (
             "sha256:"
             + hashlib.sha256(
@@ -551,11 +569,10 @@ class SqliteUnitOfWork:
                     {
                         "run_id": run_id,
                         "manifest": manifest,
-                        "event": {
-                            "event_type": event.event_type,
-                            "schema_version": event.schema_version,
-                            "payload": event.model_dump(mode="json")["payload"],
-                        },
+                        "events": [item.model_dump(mode="json") for item in events],
+                        "initial_tasks": [
+                            task.model_dump(mode="json") for task in initial_tasks
+                        ],
                         "idempotency_key": idempotency_key,
                     }
                 ).encode("utf-8")
@@ -576,14 +593,19 @@ class SqliteUnitOfWork:
                     previous = None
                 if (
                     previous is not None
-                    and previous.last_sequence == 1
+                    and previous.last_sequence == len(events)
                     and existing_run.manifest_json == _json(manifest)
-                    and len(previous.events) == 1
+                    and len(previous.events) == len(events)
                     and previous.events[0].sequence == 1
-                    and previous.events[0].event_type == event.event_type
-                    and previous.events[0].schema_version == event.schema_version
-                    and _json(previous.events[0].payload)
-                    == _json(event.model_dump(mode="json")["payload"])
+                    and all(
+                        persisted.event_type == requested.event_type
+                        and persisted.schema_version == requested.schema_version
+                        and _json(persisted.payload)
+                        == _json(requested.model_dump(mode="json")["payload"])
+                        for persisted, requested in zip(
+                            previous.events, events, strict=True
+                        )
+                    )
                 ):
                     return previous
                 raise ValueError("run initialization conflicts with existing state")
@@ -597,7 +619,8 @@ class SqliteUnitOfWork:
             )
             session.flush()
             self._apply_run_transition(session, run_id, RunState.RUNNING)
-            persisted = self._insert_events(session, run_id, 0, (event,))
+            self._insert_followup_tasks(session, run_id, initial_tasks)
+            persisted = self._insert_events(session, run_id, 0, events)
             self._insert_idempotency_commit(
                 session,
                 run_id,

@@ -2,14 +2,22 @@
 
 from __future__ import annotations
 
+import asyncio
 import json
 from collections.abc import Callable
 from pathlib import Path
 from typing import Annotated, Any, Literal, TypeVar, cast
 
 import typer
+from pydantic import BaseModel
 
-from co_scientist.application.commands import CreateRun, ExportRun, RunCommand
+from co_scientist.application.commands import (
+    CreateRun,
+    ExecuteRun,
+    ExportRun,
+    RunCommand,
+    RunWorker,
+)
 from co_scientist.application.queries import CheckConfig, GetRunStatus, ReplayRun
 from co_scientist.application.service import (
     ApplicationError,
@@ -20,8 +28,10 @@ from co_scientist.application.service import (
 app = typer.Typer(no_args_is_help=True)
 config_app = typer.Typer(no_args_is_help=True)
 run_app = typer.Typer(no_args_is_help=True)
+worker_app = typer.Typer(no_args_is_help=True)
 app.add_typer(config_app, name="config")
 app.add_typer(run_app, name="run")
+app.add_typer(worker_app, name="worker")
 
 _DEFAULT_DATA_DIR = Path(".co-scientist")
 _ResultT = TypeVar("_ResultT")
@@ -47,6 +57,22 @@ def _application_call(operation: Callable[[], _ResultT]) -> _ResultT:
     except ApplicationError as error:
         typer.echo(f"{error.category}: {error}", err=True)
         raise typer.Exit(code=error.exit_code) from None
+
+
+def _application_async_call(operation: Callable[[], Any]) -> object:
+    try:
+        return asyncio.run(operation())
+    except ApplicationError as error:
+        typer.echo(f"{error.category}: {error}", err=True)
+        raise typer.Exit(code=error.exit_code) from None
+
+
+def _json_document(result: object) -> dict[str, Any]:
+    if isinstance(result, BaseModel):
+        return result.model_dump(mode="json", exclude_none=True)
+    if isinstance(result, dict):
+        return result
+    raise TypeError(f"result is not JSON serializable: {type(result).__name__}")
 
 
 @config_app.command("check")
@@ -89,6 +115,28 @@ def run_start(
     )
 
 
+@run_app.command("execute")
+def run_execute(
+    context: typer.Context,
+    goal: Annotated[Path, typer.Option("--goal")],
+    profile: Annotated[Path, typer.Option("--profile")],
+    provider: Annotated[
+        Literal["replay", "openai"], typer.Option("--provider")
+    ] = "replay",
+    data_dir: Annotated[
+        Path, typer.Option("--data-dir", envvar="CO_SCIENTIST_DATA_DIR")
+    ] = _DEFAULT_DATA_DIR,
+) -> None:
+    """Resolve configuration and drive one Run to a durable boundary."""
+
+    result = _application_async_call(
+        lambda: _service(context, data_dir=data_dir).execute_async(
+            ExecuteRun(goal_file=goal, profile_file=profile, provider=provider)
+        )
+    )
+    typer.echo(json.dumps(_json_document(result), ensure_ascii=False, sort_keys=True))
+
+
 @run_app.command("status")
 def run_status(
     context: typer.Context,
@@ -102,10 +150,7 @@ def run_status(
     result = _application_call(
         lambda: _service(context, data_dir=data_dir).query(GetRunStatus(run_id=run_id))
     )
-    typer.echo(
-        f"run_id={_value(result, 'run_id')} state={_value(result, 'state')} "
-        f"sequence={_value(result, 'current_sequence')}"
-    )
+    typer.echo(json.dumps(_json_document(result), ensure_ascii=False, sort_keys=True))
 
 
 def _execute_run_command(
@@ -228,6 +273,24 @@ def run_export(
         )
     )
     typer.echo(f"output={_value(result, 'output')}")
+
+
+@worker_app.command("run")
+def worker_run(
+    context: typer.Context,
+    run_id: str,
+    data_dir: Annotated[
+        Path, typer.Option("--data-dir", envvar="CO_SCIENTIST_DATA_DIR")
+    ] = _DEFAULT_DATA_DIR,
+) -> None:
+    """Resume one durable Core Preview Run through the production Worker."""
+
+    result = _application_async_call(
+        lambda: _service(context, data_dir=data_dir).execute_async(
+            RunWorker(run_id=run_id)
+        )
+    )
+    typer.echo(json.dumps(_json_document(result), ensure_ascii=False, sort_keys=True))
 
 
 @app.command("replay")

@@ -105,6 +105,15 @@ class TickOutcome(BaseModel):
     commit: CommitResult | None = None
 
 
+class AdvanceOutcome(BaseModel):
+    """One Supervisor-owned scheduling or stopping decision."""
+
+    model_config = ConfigDict(frozen=True, arbitrary_types_allowed=True)
+
+    action: Literal["waiting", "scheduled", "admitted", "checkpointed", "terminal"]
+    commit: CommitResult | None = None
+
+
 def _as_int(value: Any) -> int:
     if isinstance(value, bool):
         return 0
@@ -777,6 +786,58 @@ class Supervisor:
         if result.status == "completed":
             rating_events = self._rating_events_for_result(run_id, result)
             events = (*self._events_for_result(result), *rating_events)
+            if any(
+                event.event_type in {"NoveltyAssessmentRecorded", "ProximityAssessed"}
+                for event in events
+            ):
+                epoch_id = self._active_epoch(run_id).epoch_id
+                events = tuple(
+                    event.model_copy(
+                        update={"payload": {**dict(event.payload), "epoch_id": epoch_id}}
+                    )
+                    if event.event_type
+                    in {"NoveltyAssessmentRecorded", "ProximityAssessed"}
+                    else event
+                    for event in events
+                )
+            if result.skill_id == "ranking":
+                epoch = self._active_epoch(run_id)
+                anchor_ids = {
+                    str(member.get("anchor_id"))
+                    for anchor_set in self.uow.run_manifest(run_id).get("anchor_sets", [])
+                    if anchor_set.get("anchor_set_id") == epoch.anchor_set_id
+                    for member in anchor_set.get("members", [])
+                }
+                events = tuple(
+                    event.model_copy(
+                        update={
+                            "payload": {
+                                **dict(event.payload),
+                                "anchor_set_id": (
+                                    epoch.anchor_set_id
+                                    if {
+                                        str(event.payload.get("left_id")),
+                                        str(event.payload.get("right_id")),
+                                    }
+                                    & anchor_ids
+                                    else None
+                                ),
+                                "comparison_kind": (
+                                    "fixed_anchor"
+                                    if {
+                                        str(event.payload.get("left_id")),
+                                        str(event.payload.get("right_id")),
+                                    }
+                                    & anchor_ids
+                                    else "opportunistic"
+                                ),
+                            }
+                        }
+                    )
+                    if event.event_type == "MatchEvaluated"
+                    else event
+                    for event in events
+                )
             followups = (
                 ()
                 if run_state is RunState.STOPPING
@@ -1247,6 +1308,413 @@ class Supervisor:
             event=NewEvent(event_type="RunStarted", payload=start_payload),
             idempotency_key=f"start:{run_id}:0",
         )
+
+    @staticmethod
+    def _worker_task(
+        *,
+        run_id: str,
+        task_id: str,
+        intent_type: str,
+        skill_id: str,
+        inputs: dict[str, Any],
+        provider_id: str,
+        model_or_tool: str,
+        matches: int = 0,
+        hypotheses: int = 0,
+    ) -> NewTask:
+        contract = resolve_core_skill_contract(
+            skill_id=skill_id,
+            skill_version="0.2.0",
+            output_schema_id=load_skill(Path("skills") / skill_id).output_schema,
+        )
+        system_prompt = (Path("skills") / skill_id / contract.prompt_path).read_text(
+            encoding="utf-8"
+        )
+        payload = WorkerTaskPayload(
+            skill_id=contract.id,
+            skill_version=contract.version,
+            output_schema_id=contract.output_schema,
+            output_schema_version=1,
+            research_plan_version=1,
+            provider_id=provider_id,
+            model_or_tool=model_or_tool,
+            inputs=inputs,
+            input_snapshot_hash=request_fingerprint(inputs),
+            prompt_hash=prompt_hash(system_prompt),
+            budget_estimate=BudgetEstimate(
+                model_calls=1,
+                hypotheses=hypotheses,
+                matches=matches,
+            ),
+        )
+        return NewTask(
+            task_id=task_id,
+            run_id=run_id,
+            idempotency_key=task_id,
+            intent_type=intent_type,
+            payload=payload.model_dump(mode="json"),
+        )
+
+    def bootstrap_run(self, *, run_id: str, manifest: dict[str, Any]) -> CommitResult:
+        """Atomically start a Run, freeze epoch 1, and enqueue Generation."""
+
+        goal = manifest.get("goal")
+        contract = manifest.get("tournament_contract")
+        provider = manifest.get("provider_configuration")
+        if not isinstance(goal, Mapping) or not isinstance(contract, Mapping):
+            raise TypeError("run manifest lacks goal or tournament contract")
+        if not isinstance(provider, Mapping):
+            raise TypeError("run manifest lacks provider configuration")
+        provider_id = str(provider.get("provider", ""))
+        model = str(provider.get("model", ""))
+        if not provider_id or not model:
+            raise ValueError("run manifest lacks provider identity")
+        epoch = TournamentEpoch.model_validate(contract)
+        initial = self._worker_task(
+            run_id=run_id,
+            task_id=f"generation:{run_id}:1",
+            intent_type="run_generation",
+            skill_id="generation",
+            inputs={
+                "goal_title": goal.get("title"),
+                "research_goal": goal.get("goal"),
+                "required_causal_chain": goal.get("required_causal_chain"),
+                "required_outputs": goal.get("required_outputs"),
+            },
+            provider_id=provider_id,
+            model_or_tool=model,
+            hypotheses=2,
+        )
+        return self.uow.create_started_run(
+            run_id,
+            manifest=manifest,
+            event=NewEvent(
+                event_type="RunStarted",
+                payload={
+                    "profile_id": manifest.get("profile_id"),
+                    "goal_title": goal.get("title"),
+                    "provider": provider_id,
+                },
+            ),
+            additional_events=(
+                NewEvent(
+                    event_type="TournamentEpochOpened",
+                    payload=epoch.model_dump(mode="json"),
+                ),
+                self._task_enqueued_event(initial, correlation_id=run_id),
+            ),
+            initial_tasks=(initial,),
+            idempotency_key=f"bootstrap:{run_id}:0",
+        )
+
+    @staticmethod
+    def _manifest_provider(manifest: Mapping[str, Any]) -> tuple[str, str]:
+        configured = manifest.get("provider_configuration")
+        if not isinstance(configured, Mapping):
+            raise TypeError("run manifest lacks provider configuration")
+        provider_id = configured.get("provider")
+        model = configured.get("model")
+        if not isinstance(provider_id, str) or not isinstance(model, str):
+            raise TypeError("run manifest provider configuration is malformed")
+        return provider_id, model
+
+    def _schedule_tasks(
+        self,
+        *,
+        run_id: str,
+        expected_sequence: int,
+        tasks: Sequence[NewTask],
+        phase: str,
+    ) -> CommitResult:
+        return self.uow.commit_domain_batch(
+            run_id=run_id,
+            expected_sequence=expected_sequence,
+            events=tuple(
+                self._task_enqueued_event(task, correlation_id=run_id) for task in tasks
+            ),
+            followup_tasks=tasks,
+            idempotency_key=f"schedule:{run_id}:{phase}",
+        )
+
+    def advance(self, *, run_id: str, expected_sequence: int) -> AdvanceOutcome:
+        """Advance the fixed Core Preview workflow from durable scientific evidence."""
+
+        state = RunState(self.uow.run_state(run_id))
+        if state in {
+            RunState.COMPLETED,
+            RunState.COMPLETED_PARTIAL,
+            RunState.FAILED,
+            RunState.CANCELLED,
+        }:
+            return AdvanceOutcome(action="terminal")
+        if state is not RunState.RUNNING:
+            return AdvanceOutcome(action="waiting")
+        if self.uow.unresolved_task_ids(run_id):
+            return AdvanceOutcome(action="waiting")
+        events = self.uow.load(run_id)
+        if not events or events[-1].sequence != expected_sequence:
+            raise ConcurrencyConflict(f"expected {expected_sequence}, got durable stream tip")
+        manifest = self.uow.run_manifest(run_id)
+        provider_id, model = self._manifest_provider(manifest)
+        hypotheses = {
+            str(event.payload["hypothesis_id"]): str(event.payload["content_hash"])
+            for event in events
+            if event.event_type == "HypothesisContentCreated"
+        }
+        if len(hypotheses) < 2:
+            return AdvanceOutcome(action="waiting")
+        required_stages = {
+            stage.value for stage in {ReviewStage.INITIAL, *self.review_policy.required_before_admission}
+        }
+        reviewed = {
+            (str(event.payload.get("hypothesis_id")), str(event.payload.get("stage")))
+            for event in events
+            if event.event_type == "ReviewCompleted"
+        }
+        if any((hypothesis_id, stage) not in reviewed for hypothesis_id in hypotheses for stage in required_stages):
+            return AdvanceOutcome(action="waiting")
+
+        proximity_events = [event for event in events if event.event_type == "ProximityAssessed"]
+        if len(proximity_events) < 2:
+            ordered = sorted(hypotheses)
+            pairs = ((ordered[0], ordered[1]), (ordered[1], ordered[0]))
+            tasks = tuple(
+                self._worker_task(
+                    run_id=run_id,
+                    task_id=f"proximity:{index}:{left}:{right}",
+                    intent_type="run_proximity",
+                    skill_id="proximity",
+                    inputs={
+                        "edge_id": f"edge-{index}",
+                        "left_id": left,
+                        "left_content_hash": hypotheses[left],
+                        "right_id": right,
+                        "right_content_hash": hypotheses[right],
+                    },
+                    provider_id=provider_id,
+                    model_or_tool=model,
+                )
+                for index, (left, right) in enumerate(pairs, start=1)
+            )
+            commit = self._schedule_tasks(
+                run_id=run_id,
+                expected_sequence=expected_sequence,
+                tasks=tasks,
+                phase="proximity",
+            )
+            return AdvanceOutcome(action="scheduled", commit=commit)
+
+        entry_ids = {
+            str(event.payload.get("hypothesis_id"))
+            for event in events
+            if event.event_type == "TournamentEntryCreated"
+        }
+        for hypothesis_id in sorted(hypotheses):
+            if hypothesis_id not in entry_ids:
+                admission = self.admit_hypothesis(
+                    run_id=run_id,
+                    hypothesis_id=hypothesis_id,
+                    expected_sequence=expected_sequence,
+                    idempotency_key=f"admit:epoch-1:{hypothesis_id}",
+                )
+                if admission.commit is None:
+                    raise ValueError(
+                        f"hypothesis {hypothesis_id} is not admissible: "
+                        f"{admission.decision.missing_requirements}"
+                    )
+                return AdvanceOutcome(action="admitted", commit=admission.commit)
+
+        anchor_sets = manifest.get("anchor_sets")
+        if not isinstance(anchor_sets, list) or len(anchor_sets) != 1:
+            raise ValueError("run manifest has no unique frozen anchor set")
+        members = anchor_sets[0].get("members")
+        if not isinstance(members, list) or not members:
+            raise ValueError("run manifest has no frozen anchor members")
+        missing_anchors = [
+            member for member in members if str(member.get("anchor_id")) not in entry_ids
+        ]
+        if missing_anchors:
+            epoch = self._active_epoch(run_id)
+            policy = get_rating_policy(epoch.rating_policy_version)
+            anchor_events: list[NewEvent] = []
+            for member in missing_anchors:
+                anchor_id = str(member["anchor_id"])
+                anchor_events.extend(
+                    (
+                        NewEvent(
+                            event_type="HypothesisTournamentReady",
+                            schema_version=2,
+                            payload={
+                                "run_id": run_id,
+                                "hypothesis_id": anchor_id,
+                                "content_id": anchor_id,
+                                "content_hash": member["content_hash"],
+                                "research_plan_version": epoch.research_plan_version,
+                                "admission_policy_version": epoch.admission_policy_version,
+                                "required_review_stages": [],
+                                "safety_status": "passed",
+                                "novelty_assessment_id": None,
+                                "duplicate_detected": False,
+                                "epoch_id": epoch.epoch_id,
+                                "rating_policy_version": policy.version,
+                                "missing_requirements": [],
+                                "conflicting_evidence": [],
+                                "source_event_sequences": [],
+                                "review_ids": [],
+                                "proximity_edge_ids": [],
+                                "content_event_sequence": None,
+                                "novelty_event_sequence": None,
+                                "proximity_event_sequences": [],
+                                "epoch_event_sequence": None,
+                            },
+                        ),
+                        NewEvent(
+                            event_type="TournamentEntryCreated",
+                            payload={
+                                "epoch_id": epoch.epoch_id,
+                                "hypothesis_id": anchor_id,
+                                "content_hash": member["content_hash"],
+                                "rating": policy.initial_rating,
+                                "matches_played": 0,
+                            },
+                        ),
+                        NewEvent(
+                            event_type="InitialRatingAssigned",
+                            payload={
+                                "epoch_id": epoch.epoch_id,
+                                "hypothesis_id": anchor_id,
+                                "rating": policy.initial_rating,
+                                "rating_policy_version": policy.version,
+                            },
+                        ),
+                    )
+                )
+            commit = self.uow.commit_domain_batch(
+                run_id=run_id,
+                expected_sequence=expected_sequence,
+                events=tuple(anchor_events),
+                idempotency_key=f"anchors:{run_id}:{epoch.epoch_id}",
+            )
+            return AdvanceOutcome(action="admitted", commit=commit)
+
+        matches = {
+            str(event.payload.get("match_id"))
+            for event in events
+            if event.event_type == "MatchEvaluated"
+        }
+        profile = manifest.get("profile")
+        stop = profile.get("stop") if isinstance(profile, Mapping) else None
+        if not isinstance(stop, Mapping):
+            raise TypeError("run manifest has no frozen stop policy")
+        minimum_matches = stop.get("minimum_matches")
+        top_k_window = stop.get("top_k_stability_window")
+        if (
+            not isinstance(minimum_matches, int)
+            or isinstance(minimum_matches, bool)
+            or minimum_matches < 0
+            or not isinstance(top_k_window, int)
+            or isinstance(top_k_window, bool)
+            or top_k_window < 1
+        ):
+            raise ValueError("run manifest stop policy is malformed")
+        opportunistic_matches = max(
+            minimum_matches - len(members),
+            top_k_window - len(members),
+            0,
+        )
+        expected_match_ids = {
+            *(f"opportunistic-match-{index}" for index in range(1, opportunistic_matches + 1)),
+            *(f"anchor-match-{index}" for index in range(1, len(members) + 1)),
+        }
+        if not expected_match_ids.issubset(matches):
+            epoch = self._active_epoch(run_id)
+            ranking_tasks: list[NewTask] = []
+            ordered_hypotheses = sorted(hypotheses)
+            for index in range(1, opportunistic_matches + 1):
+                match_id = f"opportunistic-match-{index}"
+                if match_id in matches:
+                    continue
+                left_id, right_id = ordered_hypotheses[:2]
+                ranking_tasks.append(
+                    self._worker_task(
+                        run_id=run_id,
+                        task_id=f"ranking:01-opportunistic:{index}",
+                        intent_type="run_ranking",
+                        skill_id="ranking",
+                        inputs={
+                            "match_id": match_id,
+                            "epoch_id": epoch.epoch_id,
+                            "left_id": left_id,
+                            "left_content_hash": hypotheses[left_id],
+                            "right_id": right_id,
+                            "right_content_hash": hypotheses[right_id],
+                            "research_plan_version": epoch.research_plan_version,
+                            "evaluation_rules_hash": epoch.evaluation_rules_hash,
+                            "ranking_prompt_hash": epoch.ranking_prompt_hash,
+                            "judge_profile_hash": epoch.judge_profile_hash,
+                            "rating_policy_version": epoch.rating_policy_version,
+                            "admission_policy_version": epoch.admission_policy_version,
+                            "anchor_set_id": epoch.anchor_set_id,
+                            "comparison_kind": "opportunistic",
+                        },
+                        provider_id=provider_id,
+                        model_or_tool=model,
+                        matches=1,
+                    )
+                )
+            for index, (hypothesis_id, member) in enumerate(
+                zip(ordered_hypotheses, members, strict=True), start=1
+            ):
+                match_id = f"anchor-match-{index}"
+                if match_id in matches:
+                    continue
+                ranking_tasks.append(
+                    self._worker_task(
+                        run_id=run_id,
+                        task_id=f"ranking:02-anchor:{index}",
+                        intent_type="run_ranking",
+                        skill_id="ranking",
+                        inputs={
+                            "match_id": match_id,
+                            "epoch_id": epoch.epoch_id,
+                            "left_id": hypothesis_id,
+                            "left_content_hash": hypotheses[hypothesis_id],
+                            "right_id": member["anchor_id"],
+                            "right_content_hash": member["content_hash"],
+                            "research_plan_version": epoch.research_plan_version,
+                            "evaluation_rules_hash": epoch.evaluation_rules_hash,
+                            "ranking_prompt_hash": epoch.ranking_prompt_hash,
+                            "judge_profile_hash": epoch.judge_profile_hash,
+                            "rating_policy_version": epoch.rating_policy_version,
+                            "admission_policy_version": epoch.admission_policy_version,
+                            "anchor_set_id": epoch.anchor_set_id,
+                            "comparison_kind": "fixed_anchor",
+                        },
+                        provider_id=provider_id,
+                        model_or_tool=model,
+                        matches=1,
+                    )
+                )
+            commit = self._schedule_tasks(
+                run_id=run_id,
+                expected_sequence=expected_sequence,
+                tasks=tuple(ranking_tasks),
+                phase="ranking",
+            )
+            return AdvanceOutcome(action="scheduled", commit=commit)
+
+        recorded = ConvergenceCheckpointBuilder(self.uow).build_and_record(
+            run_id=run_id,
+            expected_sequence=expected_sequence,
+        )
+        stopped = self.tick(
+            run_id=run_id,
+            expected_sequence=recorded.commit.last_sequence,
+            checkpoint_id=recorded.checkpoint_id,
+        )
+        if stopped.commit is None:
+            return AdvanceOutcome(action="checkpointed", commit=recorded.commit)
+        return AdvanceOutcome(action="checkpointed", commit=stopped.commit)
 
     def start_run(self, run_id: str, *, expected_sequence: int) -> CommitResult:
         """Start an existing created Run using strict lifecycle concurrency."""

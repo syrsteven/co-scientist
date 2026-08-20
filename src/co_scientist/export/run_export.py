@@ -236,7 +236,13 @@ class SqliteRunReadModel:
                     candidate = {
                         key: value
                         for key, value in candidate.items()
-                        if key not in {"source_result_id", "source_task_id", "status"}
+                        if key
+                        not in {
+                            "source_result_id",
+                            "source_task_id",
+                            "status",
+                            "epoch_id",
+                        }
                     }
                 assessment = NoveltyAssessment.model_validate(candidate)
                 exported.append(assessment.model_dump(mode="json"))

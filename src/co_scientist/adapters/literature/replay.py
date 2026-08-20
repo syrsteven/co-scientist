@@ -1,6 +1,7 @@
 """Deterministic PubMed response provider for offline scenarios."""
 
 from pathlib import Path
+from typing import Any, Literal
 
 from co_scientist.ports.external_provider import RawExternalResponse
 
@@ -25,3 +26,22 @@ class ReplayLiteratureProvider:
             mime_type="application/json",
             provider_response_id="replay-pubmed-summary-lens",
         )
+
+
+class ReplayPubMedBridge:
+    """Adapt one configured PubMed operation to the raw external-call port."""
+
+    def __init__(
+        self,
+        provider: ReplayLiteratureProvider,
+        operation: Literal["search", "summary"],
+    ) -> None:
+        self.provider = provider
+        self.operation = operation
+
+    async def invoke(self, request: dict[str, Any]) -> RawExternalResponse:
+        if self.operation == "search":
+            return await self.provider.search(
+                str(request["query"]), int(request.get("limit", 10))
+            )
+        return await self.provider.fetch_summaries(tuple(map(str, request["pmids"])))

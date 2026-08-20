@@ -23,7 +23,7 @@ from co_scientist.adapters.persistence.sqlite import (
     SqliteUnitOfWork,
     TaskRow,
 )
-from co_scientist.agents.executor import SkillExecutor
+from co_scientist.agents.executor import SkillExecutor, build_skill_request
 from co_scientist.agents.result import AgentExecutionContext, AgentResult
 from co_scientist.domain.hypothesis import HypothesisContent
 from co_scientist.domain.review import NoveltyAssessment, ReviewPolicy
@@ -37,7 +37,6 @@ from co_scientist.runtime.external_calls import (
     prompt_hash,
     request_fingerprint,
 )
-from co_scientist.skills.loader import load_skill
 from co_scientist.supervisor.orchestrator import Supervisor
 from tests._fenced_runtime import (
     acknowledge_result,
@@ -71,17 +70,11 @@ def _sha256_json(value: object) -> str:
 
 
 def _skill_request(skill_id: str, inputs: dict[str, Any]) -> dict[str, Any]:
-    skill_directory = Path("skills") / skill_id
-    manifest = load_skill(skill_directory)
-    return {
-        "skill_id": manifest.id,
-        "skill_version": manifest.version,
-        "system_prompt": (skill_directory / manifest.prompt_path).read_text(encoding="utf-8"),
-        "input_schema": manifest.input_schema,
-        "output_schema": manifest.output_schema,
-        "allowed_tools": list(manifest.allowed_tools),
-        "input": inputs,
-    }
+    return build_skill_request(
+        skill_directory=Path("skills") / skill_id,
+        inputs=inputs,
+        model="core-preview-fixture-v1",
+    )
 
 
 class _LiteratureOperation:
@@ -184,6 +177,18 @@ class LensReplayHarness:
                 "profile_id": profile["profile_id"],
                 "profile": profile,
                 "goal": goal,
+                "admission_policies": {
+                    profile["admission_policy_version"]: {
+                        "version": profile["admission_policy_version"],
+                        "review_policy": profile["review_policy"],
+                        "literature_novelty_required": profile[
+                            "literature_novelty_required"
+                        ],
+                        "duplicate_likelihood_threshold": profile[
+                            "duplicate_likelihood_threshold"
+                        ],
+                    }
+                },
                 "provider": provider_name(profile),
                 "literature_provider": profile["providers"]["literature"],
                 "reproduction_level": "deterministic_offline_replay",

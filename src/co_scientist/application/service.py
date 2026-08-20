@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
-import json
+import inspect as python_inspect
+import os
+from collections.abc import Mapping
 from pathlib import Path
 from typing import Any, Protocol
 from uuid import uuid4
@@ -12,13 +14,22 @@ from sqlalchemy import inspect
 from sqlalchemy.exc import SQLAlchemyError
 
 from co_scientist.adapters.persistence.sqlite import SqliteUnitOfWork
-from co_scientist.application.commands import CreateRun, ExportRun, RunCommand
+from co_scientist.application.commands import (
+    CreateRun,
+    ExecuteRun,
+    ExportRun,
+    RunCommand,
+    RunWorker,
+)
+from co_scientist.application.config import resolve_run_config
 from co_scientist.application.queries import CheckConfig, GetRunStatus, ReplayRun
 from co_scientist.domain.review import ReviewPolicy
 from co_scientist.domain.states import RunState
 from co_scientist.domain.transitions import InvalidTransition
 from co_scientist.events.models import DomainEvent
+from co_scientist.export.run_export import SqliteRunReadModel, export_run
 from co_scientist.ports.event_store import ConcurrencyConflict
+from co_scientist.runtime.core_runner import CoreRunner
 from co_scientist.supervisor.orchestrator import Supervisor
 
 
@@ -26,6 +37,8 @@ class CommandHandler(Protocol):
     """Supervisor-facing mutation port."""
 
     def handle_command(self, command: object) -> object: ...
+
+    async def handle_command_async(self, command: object) -> object: ...
 
 
 class ReadModel(Protocol):
@@ -126,6 +139,16 @@ class ApplicationService:
         except _EXPECTED_APPLICATION_ERRORS as error:
             raise _translate_expected_error(error) from None
 
+    async def execute_async(self, command: object) -> object:
+        try:
+            handler = getattr(self._supervisor, "handle_command_async", None)
+            if handler is None:
+                return self._supervisor.handle_command(command)
+            result = handler(command)
+            return await result if python_inspect.isawaitable(result) else result
+        except _EXPECTED_APPLICATION_ERRORS as error:
+            raise _translate_expected_error(error) from None
+
     def query(self, query: object) -> object:
         try:
             return self._read_model.execute(query)
@@ -219,9 +242,13 @@ class _SupervisorCommandHandler:
         *,
         supervisor: Supervisor,
         read_model: _SqliteReadModel,
+        runner: CoreRunner,
+        environment: Mapping[str, str],
     ) -> None:
         self._supervisor = supervisor
         self._read_model = read_model
+        self._runner = runner
+        self._environment = dict(environment)
 
     def _result(self, run_id: str) -> RunResult:
         return RunResult.model_validate(
@@ -272,13 +299,13 @@ class _SupervisorCommandHandler:
         return self._result(command.run_id)
 
     def _export_run(self, command: ExportRun) -> ExportResult:
-        snapshot = self._read_model.execute(ReplayRun(run_id=command.run_id))
-        command.output.parent.mkdir(parents=True, exist_ok=True)
-        command.output.write_text(
-            json.dumps(snapshot, ensure_ascii=False, indent=2, sort_keys=True) + "\n",
-            encoding="utf-8",
+        output = export_run(
+            command.run_id,
+            command.output,
+            SqliteRunReadModel(self._runner.uow),
+            self._runner.artifacts,
         )
-        return ExportResult(output=command.output)
+        return ExportResult(output=output)
 
     def handle_command(self, command: object) -> object:
         if isinstance(command, CreateRun):
@@ -289,8 +316,27 @@ class _SupervisorCommandHandler:
             return self._export_run(command)
         raise TypeError(f"unsupported application command: {type(command).__name__}")
 
+    async def handle_command_async(self, command: object) -> object:
+        if isinstance(command, ExecuteRun):
+            try:
+                config = resolve_run_config(
+                    goal_file=command.goal_file,
+                    profile_file=command.profile_file,
+                    provider=command.provider,
+                    environment=self._environment,
+                )
+            except (FileNotFoundError, TypeError, ValidationError, ValueError) as error:
+                raise ApplicationConfigurationError(str(error)) from None
+            return await self._runner.execute(config=config)
+        if isinstance(command, RunWorker):
+            return await self._runner.resume(run_id=command.run_id)
+        return self.handle_command(command)
 
-def build_application_service(data_dir: Path) -> ApplicationService:
+
+def build_application_service(
+    data_dir: Path,
+    environment: Mapping[str, str] | None = None,
+) -> ApplicationService:
     """Compose the guarded local preview; provider selection never performs a call."""
 
     resolved_data_dir = data_dir.expanduser()
@@ -298,8 +344,11 @@ def build_application_service(data_dir: Path) -> ApplicationService:
         resolved_data_dir.mkdir(parents=True, exist_ok=True)
         if not resolved_data_dir.is_dir():
             raise NotADirectoryError(f"data directory is not a directory: {resolved_data_dir}")
-        uow = SqliteUnitOfWork(f"sqlite:///{resolved_data_dir / 'co-scientist.db'}")
-        uow.create_schema()
+        runner = CoreRunner(
+            data_dir=resolved_data_dir,
+            environment=environment if environment is not None else os.environ,
+        )
+        uow = runner.uow
     except OSError as error:
         raise ApplicationFilesystemError(str(error)) from None
     except SQLAlchemyError:
@@ -312,5 +361,7 @@ def build_application_service(data_dir: Path) -> ApplicationService:
     command_handler = _SupervisorCommandHandler(
         supervisor=supervisor,
         read_model=read_model,
+        runner=runner,
+        environment=environment if environment is not None else os.environ,
     )
     return ApplicationService(supervisor=command_handler, read_model=read_model)

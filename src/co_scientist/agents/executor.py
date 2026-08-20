@@ -24,6 +24,70 @@ def _decode_payload(raw: bytes) -> Mapping[str, Any]:
     return dict(value)
 
 
+def _openai_output_text(envelope: Mapping[str, Any]) -> str:
+    direct = envelope.get("output_text")
+    if isinstance(direct, str):
+        return direct
+    output = envelope.get("output")
+    if not isinstance(output, list):
+        raise ValueError(  # noqa: TRY004 - malformed provider value, not caller type
+            "OpenAI response has no structured output_text"
+        )
+    fragments: list[str] = []
+    for item in output:
+        if not isinstance(item, Mapping):
+            continue
+        content = item.get("content")
+        if not isinstance(content, list):
+            continue
+        fragments.extend(
+            str(part["text"])
+            for part in content
+            if isinstance(part, Mapping)
+            and part.get("type") == "output_text"
+            and isinstance(part.get("text"), str)
+        )
+    if not fragments:
+        raise ValueError("OpenAI response has no structured output_text")
+    return "".join(fragments)
+
+
+def build_skill_request(
+    *,
+    skill_directory: Path,
+    inputs: dict[str, Any],
+    model: str,
+) -> dict[str, Any]:
+    """Build the one canonical request shared by Replay and OpenAI."""
+
+    manifest = load_skill(skill_directory)
+    output_schema = resolve_output_schema(manifest.output_schema, 1)
+    system_prompt = (skill_directory / manifest.prompt_path).read_text(encoding="utf-8")
+    user_document = {
+        "input_schema": manifest.input_schema,
+        "allowed_tools": list(manifest.allowed_tools),
+        "input": inputs,
+    }
+    return {
+        "model": model,
+        "system_prompt": system_prompt,
+        "user_prompt": json.dumps(
+            user_document,
+            ensure_ascii=False,
+            separators=(",", ":"),
+            sort_keys=True,
+        ),
+        "json_schema": output_schema.model_json_schema(),
+        "schema_name": manifest.output_schema,
+        "skill_id": manifest.id,
+        "skill_version": manifest.version,
+        "input_schema": manifest.input_schema,
+        "output_schema": manifest.output_schema,
+        "allowed_tools": list(manifest.allowed_tools),
+        "input": inputs,
+    }
+
+
 class SkillExecutor:
     """Bind a skill manifest to one raw-first external call."""
 
@@ -62,18 +126,18 @@ class SkillExecutor:
         if context.prompt_hash not in {None, bound_prompt_hash}:
             raise ValueError("execution context prompt hash does not match skill prompt")
         context = context.model_copy(update={"prompt_hash": bound_prompt_hash})
-        request: dict[str, Any] = {
-            "skill_id": manifest.id,
-            "skill_version": manifest.version,
-            "system_prompt": system_prompt,
-            "input_schema": manifest.input_schema,
-            "output_schema": manifest.output_schema,
-            "allowed_tools": list(manifest.allowed_tools),
-            "input": inputs,
-        }
+        request = build_skill_request(
+            skill_directory=skill_directory,
+            inputs=inputs,
+            model=context.model_or_tool,
+        )
 
         def validate_payload(raw: bytes) -> Mapping[str, Any]:
-            decoded = _decode_payload(raw)
+            validation_body = raw
+            if context.provider == "openai":
+                envelope = _decode_payload(raw)
+                validation_body = _openai_output_text(envelope).encode("utf-8")
+            decoded = _decode_payload(validation_body)
             validated = output_schema.model_validate(decoded)
             if (
                 getattr(validated, "research_plan_version", None)

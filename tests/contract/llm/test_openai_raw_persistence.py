@@ -1,4 +1,5 @@
 import json
+from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
@@ -7,9 +8,11 @@ from pydantic import BaseModel
 from co_scientist.adapters.artifacts.filesystem import FilesystemArtifactStore
 from co_scientist.adapters.llm.openai_responses import OpenAIResponsesProvider
 from co_scientist.adapters.persistence.sqlite import SqliteUnitOfWork
+from co_scientist.agents.executor import SkillExecutor
 from co_scientist.agents.result import AgentExecutionContext
 from co_scientist.domain.task import NewTask
 from co_scientist.events.models import NewEvent
+from co_scientist.ports.external_provider import RawExternalResponse
 from co_scientist.runtime.external_calls import ExternalCallRunner, prompt_hash
 from tests._fenced_runtime import (
     budgeted_task,
@@ -41,6 +44,49 @@ class FakeResponses:
 
 class FakeClient:
     responses = FakeResponses()
+
+
+class RealShapeOpenAIProvider:
+    async def invoke(self, _request: dict) -> RawExternalResponse:
+        payload = {
+            "schema_version": 1,
+            "research_plan_version": 1,
+            "hypotheses": [
+                {
+                    "schema_version": 1,
+                    "hypothesis_id": "h-1",
+                    "content_id": "c-1",
+                    "research_plan_version": 1,
+                    "title": "Mechanical gate",
+                    "claim": "Strain precedes fibrotic commitment.",
+                    "mechanism_chain": ["strain", "cell_state"],
+                    "assumptions": ["strain is measurable"],
+                    "predictions": ["normalization reduces fibrosis"],
+                    "falsifiers": ["commitment precedes strain"],
+                    "generation_strategy": "causal contrast",
+                }
+            ],
+        }
+        envelope = {
+            "id": "resp-real-shape",
+            "output": [
+                {
+                    "type": "message",
+                    "content": [
+                        {
+                            "type": "output_text",
+                            "text": json.dumps(payload, separators=(",", ":")),
+                        }
+                    ],
+                }
+            ],
+        }
+        return RawExternalResponse(
+            body=json.dumps(envelope, separators=(",", ":")).encode(),
+            mime_type="application/json",
+            provider_response_id="resp-real-shape",
+            usage={"input_tokens": 1, "output_tokens": 1},
+        )
 
 
 def _runtime(tmp_path):
@@ -117,3 +163,37 @@ async def test_malformed_structured_output_is_still_durably_saved(tmp_path) -> N
     assert call.state == "validation_failed"
     assert call.raw_artifact_ref is not None
     assert artifacts.read(call.raw_artifact_ref).startswith(b'{"id":"resp-1"')
+
+
+@pytest.mark.asyncio
+async def test_skill_executor_validates_real_responses_output_after_raw_persistence(
+    tmp_path,
+) -> None:
+    uow, artifacts, runtime, claimed = _runtime(tmp_path)
+    context = fenced_context(
+        _context().model_copy(
+            update={
+                "prompt_hash": None,
+                "input_snapshot_hash": "sha256:input",
+            }
+        ),
+        claimed,
+    )
+
+    result = await SkillExecutor(
+        ExternalCallRunner(runtime),
+        RealShapeOpenAIProvider(),
+    ).execute(
+        call_id="call-real-shape",
+        skill_directory=Path("skills/generation"),
+        inputs={"research_goal": "test"},
+        context=context,
+        reservation_id=claimed.reservation_id,
+        fence=claimed,
+    )
+
+    assert result.payload["hypotheses"][0]["hypothesis_id"] == "h-1"
+    call = uow.get_external_call("call-real-shape")
+    assert call.state == "agent_result_submitted"
+    assert call.raw_artifact_ref is not None
+    assert b'"output"' in artifacts.read(call.raw_artifact_ref)

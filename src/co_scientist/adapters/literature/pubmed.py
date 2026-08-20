@@ -1,6 +1,7 @@
 """Raw-response PubMed E-utilities adapter."""
 
 import json
+from typing import Any, Literal
 
 import httpx
 
@@ -71,6 +72,25 @@ class PubMedProvider:
             mime_type=response.headers.get("content-type", "application/json"),
             provider_response_id=response.headers.get("ncbi-phid"),
         )
+
+
+class PubMedBridge:
+    """Adapt one configured PubMed operation to the raw external-call port."""
+
+    def __init__(
+        self,
+        provider: PubMedProvider,
+        operation: Literal["search", "summary"],
+    ) -> None:
+        self.provider = provider
+        self.operation = operation
+
+    async def invoke(self, request: dict[str, Any]) -> RawExternalResponse:
+        if self.operation == "search":
+            return await self.provider.search(
+                str(request["query"]), int(request.get("limit", 10))
+            )
+        return await self.provider.fetch_summaries(tuple(map(str, request["pmids"])))
 
 
 def parse_pubmed_records(

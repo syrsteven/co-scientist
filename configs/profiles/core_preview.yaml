@@ -1,21 +1,7 @@
 profile_id: core_preview
-execution_contract_version: 3
-admission_policy_id: core-preview-admission
 admission_policy_version: admission-v1
-admission_policies:
-  admission-v1:
-    version: admission-v1
-    review_policy:
-      profile_id: core_preview
-      required_before_admission: [initial_review, full_review]
-      trigger_rules:
-        deep_verification: [critical_assumption_low_confidence]
-        observation_review: [scientist_request]
-        simulation_review: [high_rank_low_testability]
-        recurrent_review: [needs_tiebreaker]
-    literature_novelty_required: true
-    duplicate_likelihood_threshold: 0.5
 review_policy:
+  profile_id: core_preview
   required_before_admission: [initial_review, full_review]
   trigger_rules:
     deep_verification: [critical_assumption_low_confidence]
@@ -23,9 +9,11 @@ review_policy:
     simulation_review: [high_rank_low_testability]
     recurrent_review: [needs_tiebreaker]
 literature_novelty_required: true
+duplicate_likelihood_threshold: 0.5
 tournament:
-  initial_rating: 1200
-  k_factor: 32
+  rating_policy_version: elo-32-v1
+  evaluation_rules_id: core-preview-rules-v1
+  judge_profile_id: core-preview-judge-v1
   match_mode: research
   anchor_count: 2
 stop:

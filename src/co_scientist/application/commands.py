@@ -16,6 +16,24 @@ class CreateRun(BaseModel):
     provider: Literal["fake", "replay", "openai"] = "fake"
 
 
+class ExecuteRun(BaseModel):
+    """Resolve and execute one Core Preview Run to a durable boundary."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    goal_file: Path
+    profile_file: Path
+    provider: Literal["replay", "openai"]
+
+
+class RunWorker(BaseModel):
+    """Resume durable work for one existing execution-contract-v3 Run."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    run_id: str = Field(min_length=1)
+
+
 class RunCommand(BaseModel):
     """Optimistically concurrent lifecycle command for an existing run."""
 
@@ -27,7 +45,7 @@ class RunCommand(BaseModel):
 
 
 class ExportRun(BaseModel):
-    """Write a deterministic read snapshot to a user-selected path."""
+    """Write the deterministic rich bundle to a new directory."""
 
     model_config = ConfigDict(frozen=True)
 
