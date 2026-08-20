@@ -628,14 +628,8 @@ class Supervisor:
             event for event in events if event.event_type == "HypothesisContentCreated"
         ]
         if source_result.skill_id == "generation" and literature_required:
-            stop = profile.get("stop") if isinstance(profile, Mapping) else None
-            budget = profile.get("budget") if isinstance(profile, Mapping) else None
-            minimum = stop.get("minimum_hypotheses") if isinstance(stop, Mapping) else None
-            maximum = budget.get("max_hypotheses") if isinstance(budget, Mapping) else None
             count = len(content_events)
-            if count < 2 or (isinstance(minimum, int) and count < minimum) or (
-                isinstance(maximum, int) and count > maximum
-            ):
+            if self._core_workflow_failure_reason(manifest_document, count) is not None:
                 return ()
             initial = tuple(
                 reflection_task(
@@ -1699,6 +1693,73 @@ class Supervisor:
             raise TypeError("run manifest provider configuration is malformed")
         return provider_id, model
 
+    @staticmethod
+    def _core_workflow_failure_reason(
+        manifest: Mapping[str, Any], hypothesis_count: int
+    ) -> str | None:
+        profile = manifest.get("profile")
+        stop = profile.get("stop") if isinstance(profile, Mapping) else None
+        budget = profile.get("budget") if isinstance(profile, Mapping) else None
+        minimum_hypotheses = (
+            stop.get("minimum_hypotheses") if isinstance(stop, Mapping) else None
+        )
+        maximum_hypotheses = (
+            budget.get("max_hypotheses") if isinstance(budget, Mapping) else None
+        )
+        if hypothesis_count < 2 or (
+            isinstance(minimum_hypotheses, int)
+            and hypothesis_count < minimum_hypotheses
+        ):
+            return "insufficient_hypotheses_for_core_workflow"
+        if isinstance(maximum_hypotheses, int):
+            if hypothesis_count > maximum_hypotheses:
+                return "hypothesis_count_exceeds_profile_budget"
+            if hypothesis_count == maximum_hypotheses:
+                return "hypothesis_count_reaches_profile_budget"
+
+        anchor_sets = manifest.get("anchor_sets")
+        members = (
+            anchor_sets[0].get("members")
+            if isinstance(anchor_sets, list)
+            and len(anchor_sets) == 1
+            and isinstance(anchor_sets[0], Mapping)
+            else None
+        )
+        minimum_matches = stop.get("minimum_matches") if isinstance(stop, Mapping) else None
+        top_k_window = (
+            stop.get("top_k_stability_window") if isinstance(stop, Mapping) else None
+        )
+        if (
+            not isinstance(members, list)
+            or not members
+            or not isinstance(minimum_matches, int)
+            or isinstance(minimum_matches, bool)
+            or minimum_matches < 0
+            or not isinstance(top_k_window, int)
+            or isinstance(top_k_window, bool)
+            or top_k_window < 1
+        ):
+            return None
+        anchor_count = len(members)
+        ranking_calls = anchor_count + max(
+            minimum_matches - anchor_count,
+            top_k_window - anchor_count,
+            0,
+        )
+        required_model_calls = 1 + (3 * hypothesis_count) + 2 + ranking_calls
+        maximum_model_calls = (
+            budget.get("max_model_calls") if isinstance(budget, Mapping) else None
+        )
+        if (
+            isinstance(maximum_model_calls, int)
+            and required_model_calls > maximum_model_calls
+        ):
+            return "insufficient_model_call_budget_for_core_workflow"
+        maximum_matches = budget.get("max_matches") if isinstance(budget, Mapping) else None
+        if isinstance(maximum_matches, int) and ranking_calls > maximum_matches:
+            return "insufficient_match_budget_for_core_workflow"
+        return None
+
     def _schedule_tasks(
         self,
         *,
@@ -1744,21 +1805,9 @@ class Supervisor:
         }
         profile = manifest.get("profile")
         stop = profile.get("stop") if isinstance(profile, Mapping) else None
-        budget = profile.get("budget") if isinstance(profile, Mapping) else None
-        minimum_hypotheses = (
-            stop.get("minimum_hypotheses") if isinstance(stop, Mapping) else None
+        cardinality_reason = self._core_workflow_failure_reason(
+            manifest, len(hypotheses)
         )
-        maximum_hypotheses = (
-            budget.get("max_hypotheses") if isinstance(budget, Mapping) else None
-        )
-        cardinality_reason: str | None = None
-        if len(hypotheses) < 2 or (
-            isinstance(minimum_hypotheses, int)
-            and len(hypotheses) < minimum_hypotheses
-        ):
-            cardinality_reason = "insufficient_hypotheses_for_core_workflow"
-        elif isinstance(maximum_hypotheses, int) and len(hypotheses) > maximum_hypotheses:
-            cardinality_reason = "hypothesis_count_exceeds_profile_budget"
         if cardinality_reason is not None:
             failed = self.uow.commit_lifecycle_batch(
                 run_id=run_id,
@@ -2125,31 +2174,60 @@ class Supervisor:
     ) -> CommitResult:
         """Bind a scientist soft stop to one durable convergence checkpoint."""
 
-        state = RunState(self.uow.run_state(run_id))
-        if state not in {RunState.RUNNING, RunState.PAUSED, RunState.STOPPING}:
-            raise ValueError(f"run state {state.value} does not allow a soft stop")
         events = self.uow.load(run_id)
-        if not events or events[-1].sequence != expected_sequence:
-            actual = events[-1].sequence if events else 0
-            raise ConcurrencyConflict(f"expected {expected_sequence}, got {actual}")
-        checkpoint_event = next(
+        exact_checkpoint = next(
             (
                 event
-                for event in reversed(events)
+                for event in events
                 if event.event_type == "ConvergenceCheckpointRecorded"
+                and event.payload.get("stop_cause") == "scientist_stop"
+                and event.payload.get("source_sequence") == expected_sequence
             ),
             None,
         )
-        if checkpoint_event is None:
-            recorded = ConvergenceCheckpointBuilder(self.uow).build_and_record(
-                run_id=run_id,
-                expected_sequence=expected_sequence,
+        if exact_checkpoint is not None:
+            checkpoint_id = str(exact_checkpoint.payload["checkpoint_id"])
+            prior = self.uow.load_command_commit(
+                run_id, f"ensure-finalization:{checkpoint_id}"
             )
-            checkpoint_id = recorded.checkpoint_id
-            tick_sequence = recorded.commit.last_sequence
-        else:
-            checkpoint_id = str(checkpoint_event.payload["checkpoint_id"])
-            tick_sequence = expected_sequence
+            if prior is not None:
+                return prior
+            if events[-1].sequence != exact_checkpoint.sequence:
+                raise ConcurrencyConflict(
+                    "soft stop checkpoint has unexpected durable progress"
+                )
+            state = RunState(self.uow.run_state(run_id))
+            if state not in {RunState.RUNNING, RunState.PAUSED, RunState.STOPPING}:
+                raise ValueError(f"run state {state.value} does not allow a soft stop")
+            outcome = self.tick(
+                run_id=run_id,
+                expected_sequence=exact_checkpoint.sequence,
+                checkpoint_id=checkpoint_id,
+                scientist_action="soft_stop",
+            )
+            if outcome.commit is None:
+                raise AssertionError("soft stop did not create or replay finalization")
+            return outcome.commit
+        if any(
+            event.event_type == "ConvergenceCheckpointRecorded"
+            and event.payload.get("stop_cause") == "scientist_stop"
+            for event in events
+        ):
+            raise ConcurrencyConflict("soft stop request does not match durable command")
+        state = RunState(self.uow.run_state(run_id))
+        if state not in {RunState.RUNNING, RunState.PAUSED, RunState.STOPPING}:
+            raise ValueError(f"run state {state.value} does not allow a soft stop")
+        if not events or events[-1].sequence != expected_sequence:
+            actual = events[-1].sequence if events else 0
+            raise ConcurrencyConflict(f"expected {expected_sequence}, got {actual}")
+        recorded = ConvergenceCheckpointBuilder(
+            self.uow
+        )._build_and_record_scientist_stop(
+            run_id=run_id,
+            expected_sequence=expected_sequence,
+        )
+        checkpoint_id = recorded.checkpoint_id
+        tick_sequence = recorded.commit.last_sequence
         outcome = self.tick(
             run_id=run_id,
             expected_sequence=tick_sequence,

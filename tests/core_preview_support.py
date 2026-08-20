@@ -30,6 +30,8 @@ def write_core_preview_inputs(
     hypothesis_count: int = 2,
     novelty_verdict: str = "partially_novel",
     max_hypotheses: int = 4,
+    max_model_calls: int = 20,
+    max_matches: int | None = None,
 ) -> tuple[Path, Path, dict[str, str]]:
     goal = {
         "title": "Lens regeneration mechanisms",
@@ -68,11 +70,13 @@ def write_core_preview_inputs(
         },
         "budget": {
             "max_usd": None,
-            "max_model_calls": 20,
+            "max_model_calls": max_model_calls,
             "max_input_tokens": None,
             "max_output_tokens": None,
             "max_hypotheses": max_hypotheses,
-            "max_matches": max(4, minimum_matches),
+            "max_matches": (
+                max_matches if max_matches is not None else max(4, minimum_matches)
+            ),
         },
         "providers": {"llm": "replay", "literature": "replay_pubmed"},
     }

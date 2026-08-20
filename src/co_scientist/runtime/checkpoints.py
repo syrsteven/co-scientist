@@ -5,7 +5,7 @@ from __future__ import annotations
 import hashlib
 import json
 from collections.abc import Mapping, Sequence
-from typing import Any
+from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict
 
@@ -255,13 +255,22 @@ class ConvergenceCheckpointBuilder:
                 snapshots.append((event.sequence, completed_match_id, ranked))
         return tuple(snapshots)
 
-    def _build(self, *, run_id: str, source_sequence: int) -> ConvergenceCheckpoint:
+    def _build(
+        self,
+        *,
+        run_id: str,
+        source_sequence: int,
+        stop_cause: Literal["scientist_stop"] | None = None,
+    ) -> ConvergenceCheckpoint:
+        allow_incomplete = stop_cause == "scientist_stop"
         events = tuple(
             event for event in self.uow.load(run_id) if event.sequence <= source_sequence
         )
         if not events or events[-1].sequence != source_sequence:
             raise ValueError("checkpoint source sequence is missing or stale")
-        if any(event.event_type == "ConvergenceCheckpointRecorded" for event in events):
+        if not allow_incomplete and any(
+            event.event_type == "ConvergenceCheckpointRecorded" for event in events
+        ):
             raise ValueError("checkpoint source sequence must precede checkpoint recording")
         manifest = self.uow.run_manifest(run_id)
         stop = self._stop_policy(manifest)
@@ -319,7 +328,7 @@ class ConvergenceCheckpointBuilder:
             if match_id in match_ids:
                 raise ValueError("comparison identity is not unique")
             match_ids.add(match_id)
-        if len(matches) < minimum_matches:
+        if not allow_incomplete and len(matches) < minimum_matches:
             raise ValueError("checkpoint has insufficient minimum coverage")
 
         rankings = self._rankings(
@@ -329,13 +338,15 @@ class ConvergenceCheckpointBuilder:
             top_k=top_k,
             candidate_ids=frozenset(hypothesis_ids),
         )
-        if len(rankings) < top_k_window:
+        if not allow_incomplete and len(rankings) < top_k_window:
             raise ValueError("checkpoint has insufficient top-k stability window")
         recent_rankings = rankings[-top_k_window:]
-        top_k_ids = recent_rankings[-1][2]
-        if len(top_k_ids) != top_k:
+        top_k_ids = recent_rankings[-1][2] if recent_rankings else ()
+        if not allow_incomplete and len(top_k_ids) != top_k:
             raise ValueError("checkpoint top-k membership is incomplete")
-        top_k_stable = all(snapshot == top_k_ids for _, _, snapshot in recent_rankings)
+        top_k_stable = len(recent_rankings) == top_k_window and all(
+            snapshot == top_k_ids for _, _, snapshot in recent_rankings
+        )
 
         comparison_by_anchor: dict[str, tuple[str, str]] = {}
         for match in matches:
@@ -362,12 +373,16 @@ class ConvergenceCheckpointBuilder:
                 or anchor_hash != anchor_hash_by_id[anchor_id]
             ):
                 raise ValueError("fixed anchor comparison provenance is invalid")
-            if not isinstance(candidate_id, str) or candidate_id not in top_k_ids:
+            if not isinstance(candidate_id, str):
+                raise TypeError("fixed anchor comparison candidate is malformed")
+            if candidate_id not in top_k_ids:
+                if allow_incomplete:
+                    continue
                 raise ValueError("anchor comparison candidate is not in the stable top-k cohort")
             if anchor_id in comparison_by_anchor:
                 raise ValueError("anchor has ambiguous fixed comparison identity")
             comparison_by_anchor[anchor_id] = (str(match.payload["match_id"]), candidate_id)
-        if set(comparison_by_anchor) != set(anchor_members):
+        if not allow_incomplete and set(comparison_by_anchor) != set(anchor_members):
             raise ValueError("checkpoint is missing fixed anchor comparison IDs")
 
         cluster_events = tuple(
@@ -385,7 +400,7 @@ class ConvergenceCheckpointBuilder:
                 str(event.payload["right_id"]),
             }.issubset(set(top_k_ids))
         )
-        if len(cluster_events) < cluster_window:
+        if not allow_incomplete and len(cluster_events) < cluster_window:
             raise ValueError("checkpoint has no complete cluster diversity snapshot")
         recent_clusters = cluster_events[-cluster_window:]
         cluster_membership_ids = tuple(
@@ -394,7 +409,7 @@ class ConvergenceCheckpointBuilder:
             if isinstance(event.payload.get("edge_id"), str)
             and event.payload.get("edge_id")
         )
-        if len(cluster_membership_ids) != cluster_window:
+        if len(cluster_membership_ids) != len(recent_clusters):
             raise ValueError("checkpoint has malformed cluster membership IDs")
         cluster_ids = tuple(
             sorted({str(event.payload["cluster_suggestion"]) for event in recent_clusters})
@@ -408,9 +423,13 @@ class ConvergenceCheckpointBuilder:
                 }
             )
         )
-        if set(cluster_cohort_ids) != set(top_k_ids):
+        if not allow_incomplete and set(cluster_cohort_ids) != set(top_k_ids):
             raise ValueError("cluster window is not bound to the stable top-k cohort")
-        cluster_diversity = len(cluster_ids) >= min(2, top_k)
+        cluster_diversity = (
+            len(recent_clusters) == cluster_window
+            and set(cluster_cohort_ids) == set(top_k_ids)
+            and len(cluster_ids) >= min(2, top_k)
+        )
 
         novelty_events = tuple(
             event
@@ -420,7 +439,7 @@ class ConvergenceCheckpointBuilder:
             and event.payload.get("research_plan_version") == epoch.research_plan_version
             and event.payload.get("hypothesis_id") in top_k_ids
         )
-        if len(novelty_events) < cluster_window:
+        if not allow_incomplete and len(novelty_events) < cluster_window:
             raise ValueError("checkpoint has no complete novelty plateau window")
         recent_novelty = novelty_events[-cluster_window:]
         novelty_assessment_ids = tuple(
@@ -432,17 +451,22 @@ class ConvergenceCheckpointBuilder:
         novelty_cohort_ids = tuple(
             sorted({str(event.payload["hypothesis_id"]) for event in recent_novelty})
         )
-        if (
+        if not allow_incomplete and (
             len(novelty_assessment_ids) != cluster_window
             or len(set(novelty_assessment_ids)) != cluster_window
             or set(novelty_cohort_ids) != set(top_k_ids)
         ):
             raise ValueError("novelty window is not bound to the stable top-k cohort")
-        novelty_plateau = all(event.payload.get("verdict") != "novel" for event in recent_novelty)
+        novelty_plateau = (
+            len(recent_novelty) == cluster_window
+            and len(set(novelty_assessment_ids)) == cluster_window
+            and set(novelty_cohort_ids) == set(top_k_ids)
+            and all(event.payload.get("verdict") != "novel" for event in recent_novelty)
+        )
         budget = self.uow.load_checkpoint_budget_snapshot(run_id)
-        if budget.settled.model_calls < minimum_model_calls:
+        if not allow_incomplete and budget.settled.model_calls < minimum_model_calls:
             raise ValueError("checkpoint has insufficient minimum model calls")
-        if len(hypothesis_ids) < minimum_hypotheses:
+        if not allow_incomplete and len(hypothesis_ids) < minimum_hypotheses:
             raise ValueError("checkpoint has insufficient minimum hypotheses")
 
         rating_events = tuple(
@@ -464,6 +488,7 @@ class ConvergenceCheckpointBuilder:
         data = {
             "run_id": run_id,
             "source_sequence": source_sequence,
+            "stop_cause": stop_cause,
             "policy_version": _identity(policy_document),
             **epoch.model_dump(mode="json"),
             "anchor_set_id": epoch.anchor_set_id,
@@ -472,10 +497,14 @@ class ConvergenceCheckpointBuilder:
                 content_hash for _, content_hash in frozen_anchor_members
             ),
             "anchor_comparison_ids": tuple(
-                comparison_by_anchor[anchor_id][0] for anchor_id in anchor_members
+                comparison_by_anchor[anchor_id][0]
+                for anchor_id in anchor_members
+                if anchor_id in comparison_by_anchor
             ),
             "anchor_comparison_candidate_ids": tuple(
-                comparison_by_anchor[anchor_id][1] for anchor_id in anchor_members
+                comparison_by_anchor[anchor_id][1]
+                for anchor_id in anchor_members
+                if anchor_id in comparison_by_anchor
             ),
             "top_k": top_k,
             "top_k_stability_window": top_k_window,
@@ -538,6 +567,31 @@ class ConvergenceCheckpointBuilder:
             commit=commit,
         )
 
+    def _build_and_record_scientist_stop(
+        self, *, run_id: str, expected_sequence: int
+    ) -> RecordedCheckpoint:
+        checkpoint = self._build(
+            run_id=run_id,
+            source_sequence=expected_sequence,
+            stop_cause="scientist_stop",
+        )
+        commit = self.uow.commit_domain_batch(
+            run_id=run_id,
+            expected_sequence=expected_sequence,
+            events=(
+                NewEvent(
+                    event_type="ConvergenceCheckpointRecorded",
+                    payload=checkpoint.model_dump(mode="json"),
+                ),
+            ),
+            idempotency_key=f"checkpoint:{checkpoint.checkpoint_id}",
+        )
+        return RecordedCheckpoint(
+            checkpoint_id=checkpoint.checkpoint_id,
+            source_sequence=checkpoint.source_sequence,
+            commit=commit,
+        )
+
     def load_recorded(
         self, *, run_id: str, checkpoint_id: str, expected_sequence: int
     ) -> ConvergenceCheckpoint:
@@ -574,7 +628,11 @@ class ConvergenceCheckpointBuilder:
         checkpoint = ConvergenceCheckpoint.model_validate(event.payload)
         if checkpoint.run_id != run_id or checkpoint.source_sequence + 1 != event.sequence:
             raise ValueError("checkpoint source binding is forged or stale")
-        rebuilt = self._build(run_id=run_id, source_sequence=checkpoint.source_sequence)
+        rebuilt = self._build(
+            run_id=run_id,
+            source_sequence=checkpoint.source_sequence,
+            stop_cause=checkpoint.stop_cause,
+        )
         if rebuilt != checkpoint:
             raise ValueError("checkpoint contains forged or stale evidence")
         return checkpoint

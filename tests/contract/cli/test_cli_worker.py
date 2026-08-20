@@ -69,31 +69,22 @@ def test_worker_rejects_pre_contract_run_with_sanitized_diagnostic(tmp_path: Pat
     assert "Traceback" not in result.stderr
 
 
-def test_cli_soft_stop_is_checkpoint_bound_durable_and_idempotent(tmp_path: Path) -> None:
-    goal, profile, environment = write_core_preview_inputs(
-        tmp_path,
-        novelty_verdict="novel",
-    )
+def test_cli_soft_stop_immediately_after_bootstrap_is_durable_and_idempotent(
+    tmp_path: Path,
+) -> None:
+    goal, profile, environment = write_core_preview_inputs(tmp_path)
     data_dir = tmp_path / "data"
-    executed = CliRunner().invoke(
-        app,
-        [
-            "run",
-            "execute",
-            "--goal",
-            str(goal),
-            "--profile",
-            str(profile),
-            "--provider",
-            "replay",
-            "--data-dir",
-            str(data_dir),
-        ],
-        env=environment,
+    config = resolve_run_config(
+        goal_file=goal,
+        profile_file=profile,
+        provider="replay",
+        environment=environment,
     )
-    assert executed.exit_code == 0, executed.output
-    run = json.loads(executed.stdout)
-    assert run["state"] == "running"
+    core = CoreRunner(data_dir=data_dir, environment=environment)
+    bootstrapped = core.supervisor.bootstrap_run(
+        run_id="run-immediate-stop",
+        manifest=config.model_dump(mode="json")["manifest"],
+    )
     data = ["--data-dir", str(data_dir)]
 
     first = CliRunner().invoke(
@@ -101,9 +92,9 @@ def test_cli_soft_stop_is_checkpoint_bound_durable_and_idempotent(tmp_path: Path
         [
             "run",
             "stop",
-            run["run_id"],
+            "run-immediate-stop",
             "--expected-sequence",
-            str(run["last_sequence"]),
+            str(bootstrapped.last_sequence),
             *data,
         ],
         env={},
@@ -116,9 +107,9 @@ def test_cli_soft_stop_is_checkpoint_bound_durable_and_idempotent(tmp_path: Path
         [
             "run",
             "stop",
-            run["run_id"],
+            "run-immediate-stop",
             "--expected-sequence",
-            str(stopping_sequence),
+            str(bootstrapped.last_sequence),
             *data,
         ],
         env={},
@@ -126,15 +117,41 @@ def test_cli_soft_stop_is_checkpoint_bound_durable_and_idempotent(tmp_path: Path
     assert second.exit_code == 0, second.output
     assert second.stdout == first.stdout
 
+    conflicting = CliRunner().invoke(
+        app,
+        [
+            "run",
+            "stop",
+            "run-immediate-stop",
+            "--expected-sequence",
+            str(stopping_sequence),
+            *data,
+        ],
+        env={},
+    )
+    assert conflicting.exit_code != 0
+    assert "concurrency conflict" in conflicting.stderr
+
     finalized = CliRunner().invoke(
         app,
-        ["worker", "run", run["run_id"], *data],
+        ["worker", "run", "run-immediate-stop", *data],
         env={},
     )
     assert finalized.exit_code == 0, finalized.output
-    assert json.loads(finalized.stdout)["state"] == "completed"
+    assert json.loads(finalized.stdout)["state"] == "completed_partial"
 
-    events = CoreRunner(data_dir=data_dir, environment={}).uow.load(run["run_id"])
+    events = CoreRunner(data_dir=data_dir, environment={}).uow.load(
+        "run-immediate-stop"
+    )
+    checkpoint = next(
+        event for event in events if event.event_type == "ConvergenceCheckpointRecorded"
+    )
+    assert checkpoint.payload["stop_cause"] == "scientist_stop"
+    assert checkpoint.payload["hypothesis_count"] == 0
+    assert checkpoint.payload["match_count"] == 0
+    assert checkpoint.payload["unresolved_task_ids"] == (
+        "generation:run-immediate-stop:1",
+    )
     assert sum(event.event_type == "StopSignalObserved" for event in events) == 1
     assert events[-2].event_type == "FinalizationCompleted"
-    assert events[-1].event_type == "RunCompleted"
+    assert events[-1].event_type == "RunCompletedPartial"

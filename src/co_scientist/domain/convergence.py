@@ -13,6 +13,7 @@ class ConvergenceCheckpoint(BaseModel):
     checkpoint_id: str
     run_id: str
     source_sequence: int
+    stop_cause: Literal["scientist_stop"] | None = None
     policy_version: str
     epoch_id: str
     research_plan_version: int
