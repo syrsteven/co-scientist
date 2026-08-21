@@ -123,6 +123,13 @@ def run_execute(
     provider: Annotated[
         Literal["replay", "openai"], typer.Option("--provider")
     ] = "replay",
+    run_id: Annotated[
+        str | None,
+        typer.Option(
+            "--run-id",
+            help="Stable operator-chosen identity for interruption and worker resume.",
+        ),
+    ] = None,
     data_dir: Annotated[
         Path, typer.Option("--data-dir", envvar="CO_SCIENTIST_DATA_DIR")
     ] = _DEFAULT_DATA_DIR,
@@ -131,7 +138,12 @@ def run_execute(
 
     result = _application_async_call(
         lambda: _service(context, data_dir=data_dir).execute_async(
-            ExecuteRun(goal_file=goal, profile_file=profile, provider=provider)
+            ExecuteRun(
+                goal_file=goal,
+                profile_file=profile,
+                provider=provider,
+                run_id=run_id,
+            )
         )
     )
     typer.echo(json.dumps(_json_document(result), ensure_ascii=False, sort_keys=True))

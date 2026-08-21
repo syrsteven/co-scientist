@@ -1,14 +1,14 @@
 # Co-Scientist Core Preview
 
-Core Preview is a single-machine, CLI-first engineering preview. Its release evidence
-is a deterministic offline replay of the lens-regeneration vertical slice, backed by
-SQLite events and tasks, raw filesystem artifacts, `ExternalCallRunner` recovery,
-Supervisor-owned result application and finalization, epoch-scoped Elo projections,
-and a durable multi-file export.
+Core Preview is a single-machine, CLI-first engineering preview. The foreground
+`CoreRunner` and durable `Worker` execute six typed agent skills, while the Supervisor
+alone creates tasks, applies scientific results, admits hypotheses, evaluates stopping,
+and finalizes the Run. SQLite stores Run, task, lease, reservation, checkpoint, and
+scientific events; raw provider bytes are written to the filesystem before validation.
 
-## Install
+## Install and initialize
 
-Use Python 3.11 from the repository root:
+Core Preview supports Python 3.11 and 3.12. From a repository checkout:
 
 ```bash
 python3.11 -m venv .venv
@@ -17,44 +17,146 @@ python -m pip install -e '.[dev]'
 co-scientist config check --data-dir .co-scientist
 ```
 
-## Credential-free replay smoke
-
-The release smoke is intentionally a test-hosted composition of the existing Core
-Preview interfaces. It does not use a hidden orchestration path: replayed responses go
-through `SkillExecutor`/`ExternalCallRunner`, raw persistence, SQLite external-call
-state, `Supervisor.handle_result`, admission, convergence stop, and finalization before
-`export_run` reads the durable state.
-
-The test's only direct domain seed is the first `TournamentEpochOpened` event, including
-its frozen baseline-anchor IDs and content hashes. Core Preview has no public Supervisor
-command for opening the initial epoch, so the fixture commits that event atomically
-through the unit of work. Worker results, task admission, stop selection, and
-finalization still pass through the Supervisor boundary.
+The application upgrades its SQLite database to Alembic head before every command and
+then checks the execution schema. The current head is `0003`. For an explicit migration:
 
 ```bash
-PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 python3.11 -m pytest \
-  -p pytest_asyncio.plugin \
-  tests/smoke/test_lens_replay_smoke.py -q -m 'not online'
+CO_SCIENTIST_DATABASE_URL=sqlite:////absolute/path/co-scientist.db \
+  python -m alembic upgrade head
 ```
 
-No credentials or network access are used. The smoke creates two mechanistic lens
-hypotheses, both required review stages, PubMed replay provenance, NoveltyAssessments,
-a Proximity edge, six decisive/non-decisive tournament matches, epoch-local ratings,
-quality-convergence stop evidence, complete finalization, and a deterministic export.
+There is intentionally no destructive reset command. To start clean, select a new
+`--data-dir`; archive an old directory if its audit trail matters. Schema migration does
+not make a pre-contract development Run executable: a Run without
+`execution_contract_version: 3` fails closed and should remain archival evidence.
 
-The replay test verifies behavior that ran locally. It does not establish the quality
-of a live model's scientific reasoning.
+## Credential-free replay
 
-## Opt-in OpenAI and PubMed smoke
+The checked-in profile resolves typed replay resources relative to its own location, so
+no test fixture or replay environment variable is required. A stable `--run-id` makes an
+interrupted foreground run discoverable and resumable:
 
-Live execution is disabled unless all three gates below are explicitly present. The
-separate PubMed contract additionally uses `CO_SCIENTIST_PUBMED_ONLINE=1`.
+```bash
+co-scientist run execute \
+  --run-id lens-replay-001 \
+  --goal examples/lens_regeneration_goal.yaml \
+  --profile configs/profiles/core_preview.yaml \
+  --provider replay \
+  --data-dir .co-scientist
+```
+
+The command prints JSON at its durable boundary. The checked-in lens trace reaches
+`completed` with stop reason `quality_converged`. It creates two hypotheses, completes
+the required reviews and PubMed-derived novelty evidence, runs six tournament matches,
+records epoch-local ratings and convergence evidence, then performs recoverable
+finalization.
+
+The production resources are:
+
+- `examples/lens_regeneration_replay/core_trace.json`, containing schema-valid results
+  for generation, reflection, ranking, evolution, proximity, and meta-review;
+- `examples/lens_regeneration_replay/pubmed_search.json`;
+- `examples/lens_regeneration_replay/pubmed_summary.json`.
+
+Resource paths and SHA-256 hashes are frozen into the Run manifest. The same CLI works
+from outside the repository working directory when goal and profile paths are absolute;
+core Skill paths are resolved from the installed source rather than the current working
+directory.
+
+## Interruption, resume, and status
+
+If `run execute` is interrupted, restart the durable worker with the same data directory
+and operator-chosen Run ID:
+
+```bash
+co-scientist run status lens-replay-001 --data-dir .co-scientist
+co-scientist worker run lens-replay-001 --data-dir .co-scientist
+```
+
+The worker reconstructs configuration from the frozen manifest, recovers expired leases,
+and resumes from the persisted external-call boundary. A raw response or submitted result
+is reused instead of recalling the provider; a call that returned but never durably wrote
+raw bytes may be called again. Completed, completed-partial, failed, cancelled, paused,
+and needs-attention Runs return without further work.
+
+Lifecycle controls use the sequence reported by `run status` for optimistic concurrency:
+
+```bash
+co-scientist run pause lens-replay-001 \
+  --expected-sequence N --data-dir .co-scientist
+co-scientist run resume lens-replay-001 \
+  --expected-sequence N --data-dir .co-scientist
+co-scientist run stop lens-replay-001 \
+  --expected-sequence N --data-dir .co-scientist
+co-scientist run cancel lens-replay-001 \
+  --expected-sequence N --data-dir .co-scientist
+```
+
+`stop` is a soft stop with Supervisor-owned partial finalization. `cancel` is a hard
+terminal transition. `run resume` changes a paused lifecycle state; `worker run` performs
+the actual durable work.
+
+## Budget semantics and provider charges
+
+A task claim and its budget reservation are one SQLite transaction. Estimates reserve
+model calls, input/output tokens, USD, hypotheses, and matches before provider invocation.
+The Supervisor settles actual usage exactly once when it applies the result, or releases
+the reservation when work cannot proceed. Settled plus active reservations are checked
+against every configured hard limit.
+
+The Core Preview profiles cap 40 model calls, six hypotheses, and 12 matches. Their
+`max_usd: null` means the software imposes no dollar ceiling. The OpenAI adapter records
+reported input/output tokens but currently stores `cost_usd: 0` with pricing version
+`unpriced`; it does not calculate an invoice estimate. Online operators are responsible
+for provider pricing, account limits, and charges.
+
+## Deterministic rich export
+
+Export requires a new destination directory and refuses to overwrite an existing one:
+
+```bash
+co-scientist run export lens-replay-001 \
+  --output lens-replay-001-export \
+  --data-dir .co-scientist
+```
+
+Database-backed files come from one SQLite transaction snapshot. Repeating the export to
+two new directories produces identical bytes for an unchanged Run. The exporter rejects
+raw artifacts whose digest, Run/task/call identity, request fingerprint, execution
+context, provider response ID, usage, or artifact reference disagrees with persistence.
+Reusable lease tokens and credentials are never exported.
+
+The evidence bundle contains:
+
+- `manifest.json`: frozen goal/profile/policies, execution contract, resource hashes,
+  provider/model/tool and prompt identities, anchor and epoch contracts, counts, costs,
+  admission provenance, ranking state, and final stop/finalization evidence;
+- `events.jsonl`, `tasks.json`, `budget_reservations.json`, and
+  `external_calls.json`: ordered events, attempts/max-attempts and token-free lease
+  history, reservation estimate/actual settlement, and raw-first call state;
+- `convergence_checkpoints.json` and `stop_decisions.json`: source-bound budget,
+  coverage, anchor, top-k, cluster, novelty, unresolved-work, stop, and finalization
+  provenance;
+- `hypotheses.json`, `hypothesis_projections.json`, `reviews.json`,
+  `novelty_assessments.json`, and `proximity.json`: immutable content revisions and
+  evidence-bound current projections;
+- `tournament_epochs.json`, `matches.json`, and `ratings.json`: frozen epoch contracts,
+  decisive and non-decisive results, and only legitimate epoch-local Elo updates;
+- `costs.json`, `literature.json`, and `artifacts.json`, plus byte-preserved files under
+  `raw_artifacts/`.
+
+`co-scientist replay RUN_ID --data-dir PATH` prints the event-reconstructed Run snapshot;
+it does not invoke a provider or mutate the Run.
+
+## Opt-in OpenAI and PubMed gate
+
+Live tests are selected only when a credential, an explicit model, and the explicit
+network flag are all present:
 
 ```bash
 export OPENAI_API_KEY='...'
 export CO_SCIENTIST_OPENAI_MODEL='your-enabled-model-id'
 export CO_SCIENTIST_NETWORK_ONLINE=1
-export CO_SCIENTIST_PUBMED_ONLINE=1
 
 PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 python3.11 -m pytest \
   -p pytest_asyncio.plugin -p respx.plugin \
@@ -63,116 +165,38 @@ PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 python3.11 -m pytest \
   tests/smoke/test_lens_online_smoke.py -q -m online
 ```
 
-`NCBI_TOOL` and `NCBI_EMAIL` are optional identity settings for the online lens smoke.
-The default tool name is `co-scientist-core`; no email is sent unless configured.
+`CO_SCIENTIST_PUBMED_EMAIL` is optional NCBI request identity. The online smoke uses the
+same independent `run execute`, `run status`, and rich `run export` CLI path as replay. It
+checks typed results, OpenAI model and PubMed tool identities, response IDs, raw manifests,
+one settled reservation and one logical cost per applied call, reported OpenAI token
+usage, terminal state, and stop/finalization evidence. If any prerequisite is absent, all
+three tests are skipped and online behavior remains unverified; mocked or replay results
+must never be reported as live success.
 
-The online lens smoke sends one schema-constrained OpenAI request and one PubMed
-E-Search request through the raw-first runner and applies both results through the
-Supervisor. It checks the configured OpenAI model and PubMed E-Search provider, nonempty
-provider response IDs, manifest-to-call cross-binding for every raw artifact, at least
-two generated hypotheses, at least one PMID, terminal ExternalCall states, positive
-OpenAI token usage, and exactly one logical cost entry per applied call. Online behavior
-remains unverified unless this opt-in command actually passes in the operator's
-configured environment.
+## Release verification
 
-## Durable export
-
-`export_run(run_id, output_dir, read_model, artifacts)` refuses to overwrite an
-existing output directory and writes the following deterministic bundle:
-
-- `manifest.json`: lifecycle history, stop/completeness/finalization, profile/goal,
-  epoch/anchor/ranking state, counts, provider/model/skill/request metadata, cost total,
-  and PubMed cutoff/access issues;
-- `events.jsonl`, `tasks.json`, and `external_calls.json`;
-- immutable `hypotheses.json` revisions and event-rebuilt current state in
-  `hypothesis_projections.json`;
-- `reviews.json`, `novelty_assessments.json`, `proximity.json`;
-- `tournament_epochs.json`, `matches.json`, and `ratings.json`;
-- `costs.json`, `literature.json`, and `artifacts.json`;
-- byte-preserved raw response files under `raw_artifacts/`.
-
-All database-backed files are read inside one explicit SQLite transaction snapshot.
-Artifact export additionally rejects any raw manifest whose run, task, request,
-execution context, provider response, usage, or artifact reference differs from its
-persisted ExternalCall. Ratings come only from Supervisor-persisted, versioned
-`RatingUpdated` events; prompt hashes and frozen anchor members are carried into the
-manifest rather than reconstructed from mutable configuration.
-
-The Task 14 bundle is currently a production Python interface:
-
-```python
-from pathlib import Path
-
-from co_scientist.adapters.artifacts.filesystem import FilesystemArtifactStore
-from co_scientist.adapters.persistence.sqlite import SqliteUnitOfWork
-from co_scientist.export import SqliteRunReadModel, export_run
-
-uow = SqliteUnitOfWork("sqlite:///path/to/co-scientist.db")
-export_run(
-    "run-id",
-    Path("run-export"),
-    SqliteRunReadModel(uow),
-    FilesystemArtifactStore(Path("path/to/artifacts")),
-)
-```
-
-The CLI `run export` command listed below is the earlier Task 13 single-file lifecycle
-snapshot, not this richer evidence bundle. This distinction is deliberate and avoids
-claiming a CLI integration that Core Preview does not yet have.
-
-## CLI operations
-
-Use one explicit `--data-dir` for every command so independent invocations share the
-same SQLite run. Status prints the current optimistic sequence needed by lifecycle
-commands.
-
-```bash
-co-scientist run start \
-  --goal examples/lens_regeneration_goal.yaml \
-  --profile configs/profiles/core_preview.yaml \
-  --provider replay \
-  --data-dir .co-scientist
-
-co-scientist run status RUN_ID --data-dir .co-scientist
-co-scientist run pause RUN_ID --expected-sequence N --data-dir .co-scientist
-co-scientist run resume RUN_ID --expected-sequence N --data-dir .co-scientist
-co-scientist run stop RUN_ID --expected-sequence N --data-dir .co-scientist
-co-scientist run cancel RUN_ID --expected-sequence N --data-dir .co-scientist
-co-scientist replay RUN_ID --data-dir .co-scientist
-co-scientist run export RUN_ID --output snapshot.json --data-dir .co-scientist
-```
-
-`run start` creates and starts durable lifecycle state; it does not itself execute the
-full autonomous lens workload or call a provider. `stop` performs the Core Preview
-synchronous partial-finalization path, while `cancel` is a distinct hard terminal path.
-
-## Budgets and release verification
-
-The Core Preview profile sets `max_usd: null`: dollar cost is unlimited. This is not a
-spending promise or safety cap. The profile still guards the run at 40 model calls, six
-hypotheses, and 12 matches; operators running online remain responsible for provider
-limits and charges.
-
-The complete offline release gate is:
+The credential-free release gate is:
 
 ```bash
 PYTEST_DISABLE_PLUGIN_AUTOLOAD=1 python3.11 -m pytest \
   -p pytest_asyncio.plugin -p respx.plugin \
   tests/unit tests/contract tests/scenario tests/smoke -q -m 'not online'
-python3.11 -m ruff check src tests
+python3.11 -m ruff check src tests alembic
 python3.11 -m mypy src/co_scientist
 git diff --check
 ```
 
-## Scope and reproduction disclaimer
+The persistence contracts cover both a fresh Alembic `head` and an upgrade from `0002`
+to `0003`.
 
-Core Preview excludes FastAPI/HTTP, SSE, React, four additional LLM providers,
-PostgreSQL deployment, GPQA, full benchmark and ablation packages, production
-multi-user isolation, and claims of wet-lab validation. Those belong to later preview
-stages.
+## Scope and reproducibility disclaimer
 
-The offline run is deterministic replay evidence for the implementation's engineering
-contracts. The online smoke, when explicitly run, is connectivity and traceability
-evidence. Neither is a bit-for-bit reproduction of unavailable internal systems, a
-replication of original paper scores or compute scale, a biomedical validation, or a
-claim that the ranked lens mechanisms are scientifically correct.
+Core Preview excludes FastAPI/HTTP, SSE, React, additional LLM providers, distributed
+queues, PostgreSQL deployment, GPQA, and full benchmark or ablation packages. It is a
+single-machine developer/researcher preview, not a production multi-user service.
+
+Offline replay demonstrates deterministic engineering behavior for the checked-in input
+and responses. The opt-in online gate demonstrates live connectivity and traceability
+only when it actually runs. Neither gate reproduces unavailable internal systems or
+original paper compute, validates a biomedical mechanism, establishes experimental
+safety, or guarantees that ranked hypotheses are scientifically correct.

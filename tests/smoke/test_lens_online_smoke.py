@@ -1,34 +1,17 @@
+from __future__ import annotations
+
 import json
 import os
+import subprocess
+import sys
 from pathlib import Path
-from types import SimpleNamespace
 from typing import Any
 
-import httpx
 import pytest
-from sqlalchemy import func, select
 
-from co_scientist.adapters.artifacts.filesystem import FilesystemArtifactStore
-from co_scientist.adapters.literature.pubmed import PubMedProvider
-from co_scientist.adapters.llm.openai_responses import OpenAIResponsesProvider
-from co_scientist.adapters.persistence.sqlite import (
-    CostEntryRow,
-    ExternalCallRow,
-    SqliteUnitOfWork,
-)
-from co_scientist.agents.payloads import GenerationResultV1
-from co_scientist.agents.result import AgentExecutionContext
-from co_scientist.domain.review import ReviewPolicy
-from co_scientist.domain.states import TaskState
-from co_scientist.domain.task import NewTask
-from co_scientist.ports.external_provider import RawExternalResponse
-from co_scientist.runtime.external_calls import (
-    ExternalCallRunner,
-    execution_context_fingerprint,
-    prompt_hash,
-    request_fingerprint,
-)
-from co_scientist.supervisor.orchestrator import Supervisor
+REPOSITORY_ROOT = Path(__file__).resolve().parents[2]
+GOAL = REPOSITORY_ROOT / "examples/lens_regeneration_goal.yaml"
+PROFILE = REPOSITORY_ROOT / "configs/profiles/core_preview_online.yaml"
 
 
 def _online_enabled() -> bool:
@@ -39,298 +22,155 @@ def _online_enabled() -> bool:
     )
 
 
-def _openai_payload(raw: bytes) -> dict[str, Any]:
-    envelope = json.loads(raw)
-    for output in envelope.get("output", []):
-        for content in output.get("content", []):
-            if content.get("type") == "output_text":
-                payload = json.loads(content["text"])
-                if isinstance(payload, dict):
-                    return payload
-    raise ValueError("OpenAI response did not contain structured output_text")
+def _invoke_cli(cwd: Path, *arguments: str) -> subprocess.CompletedProcess[str]:
+    environment = os.environ.copy()
+    for key in (
+        "CO_SCIENTIST_REPLAY_RESPONSES",
+        "CO_SCIENTIST_REPLAY_PUBMED_SEARCH",
+        "CO_SCIENTIST_REPLAY_PUBMED_SUMMARY",
+    ):
+        environment.pop(key, None)
+    return subprocess.run(
+        [
+            sys.executable,
+            "-c",
+            "from co_scientist.cli.app import main; main()",
+            *arguments,
+        ],
+        cwd=cwd,
+        env=environment,
+        capture_output=True,
+        check=False,
+        text=True,
+        timeout=1800,
+    )
 
 
-class _PubMedSearchCall:
-    def __init__(self, provider: PubMedProvider) -> None:
-        self.provider = provider
-
-    async def invoke(self, request: dict[str, Any]) -> RawExternalResponse:
-        return await self.provider.search(request["query"], request["limit"])
+def _read_json(root: Path, filename: str) -> Any:
+    return json.loads((root / filename).read_text(encoding="utf-8"))
 
 
-class OnlineCoreCli:
-    async def start_lens(
-        self,
-        *,
-        provider: str,
-        literature_provider: str,
-        data_dir: Path,
-    ) -> str:
-        assert provider == "openai"
-        assert literature_provider == "pubmed"
-        from openai import AsyncOpenAI
-
-        run_id = "lens-online-smoke"
-        uow = SqliteUnitOfWork(f"sqlite:///{data_dir / 'online-smoke.db'}")
-        uow.create_schema()
-        artifacts = FilesystemArtifactStore(data_dir / "online-artifacts")
-        supervisor = Supervisor(uow=uow, review_policy=ReviewPolicy(profile_id="online-smoke"))
-        started = supervisor.create_and_start_run(
-            run_id,
-            manifest={
-                "provider": "openai",
-                "model": os.environ["CO_SCIENTIST_OPENAI_MODEL"],
-                "literature_provider": "pubmed",
-            },
-            start_payload={"provider": "openai"},
-        )
-        runner = ExternalCallRunner(SimpleNamespace(uow=uow, artifacts=artifacts))
-        sequence = started.last_sequence
-
-        generation_task = NewTask(
-            task_id="online-generation",
-            run_id=run_id,
-            idempotency_key="online-generation",
-            intent_type="run_generation",
-            payload={},
-        )
-        scheduled = supervisor.enqueue_task(task=generation_task, expected_sequence=sequence)
-        sequence = scheduled.last_sequence
-        uow.transition_task(generation_task.task_id, TaskState.LEASED)
-        uow.transition_task(generation_task.task_id, TaskState.RUNNING)
-        generation_request = {
-            "model": os.environ["CO_SCIENTIST_OPENAI_MODEL"],
-            "system_prompt": (
-                "Return two mechanistically distinct, falsifiable hypotheses about transparent "
-                "versus fibrotic lens regeneration using the exact GenerationResultV1 schema. "
-                "Use schema_version 1 and research_plan_version 1; omit content_hash unless "
-                "you can reproduce the system's canonical SHA-256."
-            ),
-            "user_prompt": (
-                "Include surgical configuration, host age, early cell state, tissue "
-                "organization, and final morphology in every mechanism chain."
-            ),
-            "schema_name": "lens_hypotheses",
-            "json_schema": GenerationResultV1.model_json_schema(),
-        }
-        generation_context = AgentExecutionContext(
-            run_id=run_id,
-            task_id=generation_task.task_id,
-            idempotency_key=generation_task.idempotency_key,
-            skill_id="generation",
-            skill_version="0.2.0",
-            output_schema_id="GenerationResultV1",
-            output_schema_version=1,
-            research_plan_version=1,
-            provider="openai",
-            model_or_tool=os.environ["CO_SCIENTIST_OPENAI_MODEL"],
-            input_snapshot_hash="sha256:online-lens-goal",
-            prompt_hash=prompt_hash(str(generation_request["system_prompt"])),
-        )
-        uow.plan_external_call(
-            "online-openai-call",
-            request_fingerprint(generation_request),
-            run_id=run_id,
-            task_id=generation_task.task_id,
-            execution_context=generation_context.model_dump(mode="json"),
-            provider="openai",
-            model_or_tool=os.environ["CO_SCIENTIST_OPENAI_MODEL"],
-        )
-        openai_result = await runner.execute(
-            call_id="online-openai-call",
-            request=generation_request,
-            provider=OpenAIResponsesProvider(
-                AsyncOpenAI(api_key=os.environ["OPENAI_API_KEY"])
-            ),
-            validator=_openai_payload,
-            context=generation_context,
-        )
-        uow.transition_task(generation_task.task_id, TaskState.RESULT_RECEIVED)
-        sequence = supervisor.handle_result(
-            run_id,
-            generation_task.task_id,
-            openai_result,
-            expected_sequence=sequence,
-        ).last_sequence
-
-        literature_task = NewTask(
-            task_id="online-pubmed-search",
-            run_id=run_id,
-            idempotency_key="online-pubmed-search",
-            intent_type="run_meta_review",
-            payload={},
-        )
-        scheduled = supervisor.enqueue_task(task=literature_task, expected_sequence=sequence)
-        uow.transition_task(literature_task.task_id, TaskState.LEASED)
-        uow.transition_task(literature_task.task_id, TaskState.RUNNING)
-        pubmed_request = {
-            "query": "lens epithelial regeneration fibrosis",
-            "limit": 5,
-        }
-        pubmed_context = AgentExecutionContext(
-            run_id=run_id,
-            task_id=literature_task.task_id,
-            idempotency_key=literature_task.idempotency_key,
-            skill_id="meta_review",
-            skill_version="0.2.0",
-            output_schema_id="MetaReviewResultV1",
-            output_schema_version=1,
-            research_plan_version=1,
-            provider="pubmed",
-            model_or_tool="esearch",
-            input_snapshot_hash="sha256:online-pubmed-query",
-        )
-        uow.plan_external_call(
-            "online-pubmed-call",
-            request_fingerprint(pubmed_request),
-            run_id=run_id,
-            task_id=literature_task.task_id,
-            execution_context=pubmed_context.model_dump(mode="json"),
-            provider="pubmed",
-            model_or_tool="esearch",
-        )
-        async with httpx.AsyncClient() as client:
-            pubmed_result = await runner.execute(
-                call_id="online-pubmed-call",
-                request=pubmed_request,
-                provider=_PubMedSearchCall(
-                    PubMedProvider(
-                        client,
-                        tool=os.getenv("NCBI_TOOL", "co-scientist-core"),
-                        email=os.getenv("NCBI_EMAIL"),
-                    )
-                ),
-                validator=lambda raw: {
-                    "schema_version": 1,
-                    "research_plan_version": 1,
-                    "source_content_hashes": {},
-                    "system_feedback": ["PubMed search response persisted for review."],
-                    "overview": json.dumps(
-                        {"pmids": json.loads(raw)["esearchresult"]["idlist"]},
-                        separators=(",", ":"),
-                        sort_keys=True,
-                    ),
-                    "coverage_gaps": [],
-                    "safety_direction_check": "insufficient_evidence",
-                },
-                context=pubmed_context,
-            )
-        uow.transition_task(literature_task.task_id, TaskState.RESULT_RECEIVED)
-        supervisor.handle_result(
-            run_id,
-            literature_task.task_id,
-            pubmed_result,
-            expected_sequence=scheduled.last_sequence,
-        )
-        self.uow = uow
-        self.artifacts = artifacts
-        return run_id
-
-    def status(self, run_id: str) -> SimpleNamespace:
-        events = self.uow.load(run_id)
-        hypothesis_count = sum(
-            event.event_type == "HypothesisContentCreated" for event in events
-        )
-        pubmed_source_count = sum(
-            len(json.loads(str(event.payload.get("overview", "{}"))).get("pmids", ()))
-            for event in events
-            if event.event_type == "MetaReviewCompleted"
-        )
-        with self.uow.session_factory() as session:
-            calls = session.scalars(
-                select(ExternalCallRow).where(ExternalCallRow.run_id == run_id)
-            ).all()
-            completed_external_call_count = int(
-                session.scalar(
-                    select(func.count()).select_from(ExternalCallRow).where(
-                        ExternalCallRow.run_id == run_id,
-                        ExternalCallRow.state == "domain_result_applied",
-                    )
-                )
-                or 0
-            )
-            costs = session.scalars(
-                select(CostEntryRow).where(CostEntryRow.run_id == run_id)
-            ).all()
-        raw_manifests = []
-        for row in calls:
-            manifest = self.artifacts.discover_raw(row.external_call_id)
-            assert manifest is not None
-            self.artifacts.confirm_raw(manifest)
-            context = json.loads(row.execution_context_json or "null")
-            assert isinstance(context, dict)
-            assert manifest.call_id == row.external_call_id
-            assert manifest.run_id == row.run_id
-            assert manifest.task_id == row.task_id
-            assert manifest.request_fingerprint == row.request_fingerprint
-            assert manifest.execution_context_fingerprint == execution_context_fingerprint(
-                context
-            )
-            assert manifest.provider_response_id == row.provider_response_id
-            assert manifest.usage == json.loads(row.usage_json)
-            assert row.raw_artifact_ref_json is not None
-            assert manifest.artifact_ref.model_dump(mode="json") == json.loads(
-                row.raw_artifact_ref_json
-            )
-            raw_manifests.append(manifest)
-        return SimpleNamespace(
-            hypothesis_count=hypothesis_count,
-            pubmed_source_count=pubmed_source_count,
-            raw_artifact_count=sum(row.raw_artifact_ref_json is not None for row in calls),
-            completed_external_call_count=completed_external_call_count,
-            provider_models={(row.provider, row.model_or_tool) for row in calls},
-            provider_response_ids={
-                row.external_call_id: row.provider_response_id for row in calls
-            },
-            external_call_ids={row.external_call_id for row in calls},
-            raw_manifest_count=len(raw_manifests),
-            logical_cost_count=len(costs),
-            logical_cost_call_ids={row.external_call_id for row in costs},
-            openai_input_tokens=next(
-                row.input_tokens
-                for row in costs
-                if row.external_call_id == "online-openai-call"
-            ),
-            openai_output_tokens=next(
-                row.output_tokens
-                for row in costs
-                if row.external_call_id == "online-openai-call"
-            ),
-        )
-
-
-@pytest.fixture
-def online_core_cli() -> OnlineCoreCli:
+@pytest.mark.online
+def test_lens_smoke_with_openai_and_pubmed_uses_the_production_cli(
+    tmp_path: Path,
+) -> None:
     if not _online_enabled():
         pytest.skip(
             "requires OPENAI_API_KEY, CO_SCIENTIST_OPENAI_MODEL, and "
             "CO_SCIENTIST_NETWORK_ONLINE=1"
         )
-    return OnlineCoreCli()
 
+    operator_cwd = tmp_path / "researcher-cwd"
+    operator_cwd.mkdir()
+    data_dir = tmp_path / "data"
+    destination = tmp_path / "export"
+    run_id = "lens-online-smoke"
 
-@pytest.mark.online
-@pytest.mark.asyncio
-async def test_lens_smoke_with_openai_and_pubmed(
-    online_core_cli: OnlineCoreCli,
-    tmp_path: Path,
-) -> None:
-    run_id = await online_core_cli.start_lens(
-        provider="openai",
-        literature_provider="pubmed",
-        data_dir=tmp_path,
+    executed = _invoke_cli(
+        operator_cwd,
+        "run",
+        "execute",
+        "--goal",
+        str(GOAL),
+        "--profile",
+        str(PROFILE),
+        "--provider",
+        "openai",
+        "--run-id",
+        run_id,
+        "--data-dir",
+        str(data_dir),
     )
-    summary = online_core_cli.status(run_id)
-    assert summary.hypothesis_count >= 2
-    assert summary.pubmed_source_count >= 1
-    assert summary.raw_artifact_count == summary.completed_external_call_count
-    assert summary.provider_models == {
-        ("openai", os.environ["CO_SCIENTIST_OPENAI_MODEL"]),
-        ("pubmed", "esearch"),
+    assert executed.returncode == 0, executed.stderr
+    execution = json.loads(executed.stdout)
+    assert execution["run_id"] == run_id
+    assert execution["state"] == "completed"
+    assert execution["stop_reason"] == "quality_converged"
+
+    status = _invoke_cli(
+        operator_cwd,
+        "run",
+        "status",
+        execution["run_id"],
+        "--data-dir",
+        str(data_dir),
+    )
+    assert status.returncode == 0, status.stderr
+    assert json.loads(status.stdout) == {
+        "current_sequence": execution["last_sequence"],
+        "run_id": execution["run_id"],
+        "state": "completed",
     }
-    assert all(summary.provider_response_ids.values())
-    assert summary.raw_manifest_count == summary.completed_external_call_count
-    assert summary.logical_cost_count == summary.completed_external_call_count
-    assert summary.logical_cost_call_ids == summary.external_call_ids
-    assert summary.openai_input_tokens > 0
-    assert summary.openai_output_tokens > 0
+
+    exported = _invoke_cli(
+        operator_cwd,
+        "run",
+        "export",
+        execution["run_id"],
+        "--output",
+        str(destination),
+        "--data-dir",
+        str(data_dir),
+    )
+    assert exported.returncode == 0, exported.stderr
+
+    manifest = _read_json(destination, "manifest.json")
+    calls = _read_json(destination, "external_calls.json")
+    costs = _read_json(destination, "costs.json")
+    artifacts = _read_json(destination, "artifacts.json")
+    reservations = _read_json(destination, "budget_reservations.json")
+    checkpoints = _read_json(destination, "convergence_checkpoints.json")
+    stop_decisions = _read_json(destination, "stop_decisions.json")
+
+    assert manifest["final_state"] == "completed"
+    assert manifest["finalization_state"] == "completed"
+    assert manifest["stop_reason"] == "quality_converged"
+    assert manifest["profile"]["profile_id"] == "core_preview_online"
+    assert manifest["providers"] == {"literature": "pubmed", "llm": "openai"}
+    assert manifest["provider_configuration"]["model"] == os.environ[
+        "CO_SCIENTIST_OPENAI_MODEL"
+    ]
+
+    configured_model = os.environ["CO_SCIENTIST_OPENAI_MODEL"]
+    assert {call["provider"] for call in calls} == {
+        "openai",
+        "pubmed:search",
+        "pubmed:summary",
+    }
+    assert {
+        call["model_or_tool"] for call in calls if call["provider"] == "openai"
+    } == {configured_model}
+    assert {
+        call["model_or_tool"]
+        for call in calls
+        if call["provider"] in {"pubmed:search", "pubmed:summary"}
+    } == {"esearch", "esummary"}
+    assert all(call["provider_response_id"] for call in calls)
+    assert all(call["state"] == "domain_result_applied" for call in calls)
+    assert all(call["raw_artifact_ref"] for call in calls)
+    assert all(call["agent_result"] for call in calls)
+    assert all(call["execution_context"]["output_schema_id"] for call in calls)
+
+    call_by_id = {call["external_call_id"]: call for call in calls}
+    call_ids = set(call_by_id)
+    assert {cost["external_call_id"] for cost in costs} == call_ids
+    assert len(costs) == len(calls)
+    assert sum(
+        int(cost["input_tokens"] or 0)
+        for cost in costs
+        if call_by_id[cost["external_call_id"]]["provider"] == "openai"
+    ) > 0
+    assert sum(
+        int(cost["output_tokens"] or 0)
+        for cost in costs
+        if call_by_id[cost["external_call_id"]]["provider"] == "openai"
+    ) > 0
+    assert {artifact["external_call_id"] for artifact in artifacts} == call_ids
+    assert all(artifact["raw_manifest"]["provider_response_id"] for artifact in artifacts)
+    assert {
+        reservation["external_call_id"]
+        for reservation in reservations
+        if reservation["state"] == "settled"
+    } == call_ids
+    assert checkpoints[-1]["stop_reason"] == "quality_converged"
+    assert stop_decisions[-1]["finalization_state"] == "completed"

@@ -118,7 +118,8 @@ class CrashHarness:
         return asyncio.run(self._run_and_recover(boundary))
 
     async def _run_and_recover(self, boundary: str) -> RecoveryResult:
-        uow = SqliteUnitOfWork(f"sqlite:///{self.root / f'{boundary}.db'}")
+        database_url = f"sqlite:///{self.root / f'{boundary}.db'}"
+        uow = SqliteUnitOfWork(database_url)
         uow.create_schema()
         supervisor = Supervisor(uow=uow, review_policy=ReviewPolicy(profile_id="crash"))
         started = supervisor.create_and_start_run(
@@ -200,6 +201,18 @@ class CrashHarness:
                 call_id, **kwargs, reservation_id=fence.reservation_id, fence=fence
             )
 
+        def restart_from_persisted_state():
+            restarted_uow = SqliteUnitOfWork(database_url)
+            restarted_supervisor = Supervisor(
+                uow=restarted_uow,
+                review_policy=ReviewPolicy(profile_id="crash"),
+            )
+            restarted_runtime = SimpleNamespace(
+                uow=restarted_uow,
+                artifacts=FilesystemArtifactStore(self.root / f"{boundary}-artifacts"),
+            )
+            return restarted_uow, restarted_supervisor, restarted_runtime
+
         if boundary == "provider_returned_before_raw_persist":
             with pytest.raises(_SimulatedCrash, match="before raw persistence"):
                 await execute(
@@ -211,6 +224,7 @@ class CrashHarness:
                     context=context,
                 )
             calls_before_recovery = provider.call_count
+            uow, supervisor, runtime = restart_from_persisted_state()
             result = await execute(
                 ExternalCallRunner(runtime),
                 call_id="call-crash",
@@ -230,6 +244,7 @@ class CrashHarness:
                     context=context,
                 )
             calls_before_recovery = provider.call_count
+            uow, supervisor, runtime = restart_from_persisted_state()
             result = await resume(
                 ExternalCallRunner(runtime),
                 "call-crash",
@@ -247,6 +262,7 @@ class CrashHarness:
                 context=context,
             )
             calls_before_recovery = provider.call_count
+            uow, supervisor, runtime = restart_from_persisted_state()
             result = await resume(
                 ExternalCallRunner(runtime),
                 "call-crash",
@@ -273,6 +289,7 @@ class CrashHarness:
                 fence=fence,
             )
             calls_before_recovery = provider.call_count
+            uow, supervisor, runtime = restart_from_persisted_state()
             result = await resume(
                 ExternalCallRunner(runtime),
                 "call-crash",
@@ -369,8 +386,8 @@ def crash_harness(tmp_path: Path) -> CrashHarness:
         "domain_applied_before_worker_ack",
     ],
 )
-# Mutations caught: retrying from scratch after durable raw/submission/domain state,
-# duplicating domain events, or charging twice after an acknowledgement crash.
+# Mutations caught: retrying from scratch after a real SQLite/artifact restart,
+# retaining only same-UoW state, duplicating domain events, or charging twice.
 def test_restart_resumes_without_duplicate_domain_result(
     boundary: str,
     crash_harness: CrashHarness,

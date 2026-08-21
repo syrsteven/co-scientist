@@ -1,7 +1,7 @@
-profile_id: core_preview
+profile_id: core_preview_online
 admission_policy_version: admission-v1
 review_policy:
-  profile_id: core_preview
+  profile_id: core_preview_online
   required_before_admission: [initial_review, full_review]
   trigger_rules:
     deep_verification: [critical_assumption_low_confidence]
@@ -19,7 +19,7 @@ tournament:
 stop:
   minimum_matches: 6
   minimum_hypotheses: 2
-  minimum_model_calls: 2
+  minimum_model_calls: 13
   top_k: 2
   top_k_stability_window: 3
   cluster_diversity_window: 2
@@ -35,9 +35,5 @@ budget:
   max_hypotheses: 6
   max_matches: 12
 providers:
-  llm: replay
-  literature: replay_pubmed
-replay_resources:
-  llm_responses: ../../examples/lens_regeneration_replay/core_trace.json
-  pubmed_search: ../../examples/lens_regeneration_replay/pubmed_search.json
-  pubmed_summary: ../../examples/lens_regeneration_replay/pubmed_summary.json
+  llm: openai
+  literature: pubmed

@@ -99,6 +99,20 @@ CORE_SKILL_CONTRACTS: Mapping[str, SkillManifest] = MappingProxyType(
 )
 
 
+def core_skills_root() -> Path:
+    """Locate the checked-in Core skill catalog independently of caller CWD."""
+
+    return Path(__file__).resolve().parents[3] / "skills"
+
+
+def core_skill_directory(skill_id: str) -> Path:
+    """Resolve one Core skill directory from the installed source checkout."""
+
+    if skill_id not in CORE_SKILL_CONTRACTS:
+        raise KeyError(f"unknown Core skill: {skill_id}")
+    return core_skills_root() / skill_id
+
+
 def resolve_core_skill_contract(
     *,
     skill_id: str,

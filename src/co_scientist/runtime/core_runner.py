@@ -33,7 +33,7 @@ from co_scientist.domain.states import RunState
 from co_scientist.ports.external_provider import ExternalProvider, thaw_json
 from co_scientist.runtime.registry import ProviderRegistry, SkillRegistry
 from co_scientist.runtime.worker import Worker
-from co_scientist.skills.loader import CORE_SKILL_CONTRACTS
+from co_scientist.skills.loader import CORE_SKILL_CONTRACTS, core_skill_directory
 from co_scientist.supervisor.orchestrator import Supervisor
 
 
@@ -76,6 +76,21 @@ class CoreRunner:
         self.worker: Worker | None = None
         self.literature_bridges: dict[str, ExternalProvider] = {}
         self._pubmed_client: httpx.AsyncClient | None = None
+        self._openai_client: Any | None = None
+
+    async def aclose(self) -> None:
+        """Close any network clients composed for one foreground invocation."""
+
+        openai_client = self._openai_client
+        pubmed_client = self._pubmed_client
+        self._openai_client = None
+        self._pubmed_client = None
+        try:
+            if openai_client is not None:
+                await openai_client.close()
+        finally:
+            if pubmed_client is not None:
+                await pubmed_client.aclose()
 
     @staticmethod
     def _resource(manifest: Mapping[str, Any], kind: str) -> Path:
@@ -141,7 +156,8 @@ class CoreRunner:
                 raise ValueError("OPENAI_API_KEY is required to resume this Run")
             from openai import AsyncOpenAI
 
-            provider = OpenAIResponsesProvider(AsyncOpenAI(api_key=api_key))
+            self._openai_client = AsyncOpenAI(api_key=api_key)
+            provider = OpenAIResponsesProvider(self._openai_client)
         else:
             raise ValueError(f"unsupported persisted provider: {provider_id}")
         self._build_worker(ProviderRegistry({provider_id: provider, **self.literature_bridges}))
@@ -149,7 +165,7 @@ class CoreRunner:
     def _build_worker(self, providers: ProviderRegistry) -> None:
         skills = SkillRegistry(
             {
-                (contract.id, contract.version): Path("skills") / contract.id
+                (contract.id, contract.version): core_skill_directory(contract.id)
                 for contract in CORE_SKILL_CONTRACTS.values()
             }
         )
@@ -181,17 +197,31 @@ class CoreRunner:
             stop_reason=reason,
         )
 
-    async def execute(self, *, config: ResolvedRunConfig) -> RunExecutionResult:
-        run_id = f"run-{uuid4().hex}"
-        manifest = thaw_json(config.manifest)
-        if not isinstance(manifest, dict):
-            raise TypeError("resolved run manifest is not an object")
-        manifest["manifest_hash"] = config.manifest_hash
-        self._compose(manifest)
-        self.supervisor.bootstrap_run(run_id=run_id, manifest=manifest)
-        return await self.drive(run_id=run_id)
+    async def execute(
+        self,
+        *,
+        config: ResolvedRunConfig,
+        run_id: str | None = None,
+    ) -> RunExecutionResult:
+        try:
+            resolved_run_id = run_id or f"run-{uuid4().hex}"
+            manifest = thaw_json(config.manifest)
+            if not isinstance(manifest, dict):
+                raise TypeError("resolved run manifest is not an object")
+            manifest["manifest_hash"] = config.manifest_hash
+            self._compose(manifest)
+            self.supervisor.bootstrap_run(run_id=resolved_run_id, manifest=manifest)
+            return await self.drive(run_id=resolved_run_id)
+        finally:
+            await self.aclose()
 
     async def resume(self, *, run_id: str) -> RunExecutionResult:
+        try:
+            return await self._resume(run_id=run_id)
+        finally:
+            await self.aclose()
+
+    async def _resume(self, *, run_id: str) -> RunExecutionResult:
         state = RunState(self.uow.run_state(run_id))
         if state in {
             RunState.COMPLETED,

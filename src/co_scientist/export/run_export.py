@@ -7,6 +7,7 @@ import json
 import shutil
 from collections.abc import Iterator, Mapping
 from contextlib import AbstractContextManager, contextmanager
+from datetime import UTC, datetime
 from decimal import Decimal
 from pathlib import Path
 from typing import Any, Protocol
@@ -16,6 +17,7 @@ from sqlalchemy import select
 from sqlalchemy.orm import Session
 
 from co_scientist.adapters.persistence.sqlite import (
+    BudgetReservationRow,
     CostEntryRow,
     EventRow,
     ExternalCallRow,
@@ -34,6 +36,7 @@ from co_scientist.domain.tournament import (
 from co_scientist.events.models import DomainEvent
 from co_scientist.events.reducers import replay_hypothesis
 from co_scientist.ports.artifact_store import ArtifactRef, ArtifactStore
+from co_scientist.ports.external_provider import thaw_json
 from co_scientist.runtime.external_calls import execution_context_fingerprint
 
 
@@ -41,6 +44,10 @@ class RunReadModel(Protocol):
     """Read-only durable data needed by export and release verification."""
 
     def run_manifest(self, run_id: str) -> dict[str, Any]: ...
+
+    def source_manifest(self, run_id: str) -> dict[str, Any]: ...
+
+    def run_state(self, run_id: str) -> str: ...
 
     def events(self, run_id: str) -> list[dict[str, Any]]: ...
 
@@ -62,6 +69,12 @@ class RunReadModel(Protocol):
 
     def tasks(self, run_id: str) -> list[dict[str, Any]]: ...
 
+    def budget_reservations(self, run_id: str) -> list[dict[str, Any]]: ...
+
+    def convergence_checkpoints(self, run_id: str) -> list[dict[str, Any]]: ...
+
+    def stop_decisions(self, run_id: str) -> list[dict[str, Any]]: ...
+
     def external_calls(self, run_id: str) -> list[dict[str, Any]]: ...
 
     def costs(self, run_id: str) -> list[dict[str, Any]]: ...
@@ -80,6 +93,7 @@ _RUN_EVENT_STATES = {
     "RunCompleted": "completed",
     "RunCompletedPartial": "completed_partial",
     "RunCancelled": "cancelled",
+    "RunFailed": "failed",
 }
 
 
@@ -111,6 +125,14 @@ def _deduplicate(items: list[dict[str, Any]], key: str) -> list[dict[str, Any]]:
             raise ValueError(f"conflicting durable values for {key}={identifier}")
         unique[identifier] = item
     return [unique[identifier] for identifier in sorted(unique)]
+
+
+def _utc_iso(value: datetime | None) -> str | None:
+    if value is None:
+        return None
+    if value.tzinfo is None:
+        value = value.replace(tzinfo=UTC)
+    return value.astimezone(UTC).isoformat()
 
 
 class SqliteRunReadModel:
@@ -167,8 +189,14 @@ class SqliteRunReadModel:
             raise TypeError("run manifest must be a JSON object")
         return value
 
+    def source_manifest(self, run_id: str) -> dict[str, Any]:
+        return self._source_manifest(run_id)
+
     def events(self, run_id: str) -> list[dict[str, Any]]:
         return [event.model_dump(mode="json") for event in self._domain_events(run_id)]
+
+    def run_state(self, run_id: str) -> str:
+        return self._run_row(run_id).state
 
     def hypotheses(self, run_id: str) -> list[dict[str, Any]]:
         exported: list[dict[str, Any]] = []
@@ -392,6 +420,31 @@ class SqliteRunReadModel:
         else:
             with self.uow.session_factory() as session:
                 rows = session.scalars(statement).all()
+        lease_events: dict[str, list[dict[str, Any]]] = {}
+        for event in self._domain_events(run_id):
+            if event.event_type not in {
+                "TaskLeaseClaimed",
+                "TaskLeaseAdopted",
+                "TaskLeaseExpired",
+                "TaskLeaseExhausted",
+                "TaskRequeued",
+            }:
+                continue
+            task_id = event.payload.get("task_id")
+            if not isinstance(task_id, str):
+                continue
+            payload = {
+                key: value
+                for key, value in dict(thaw_json(event.payload)).items()
+                if key != "lease_token"
+            }
+            lease_events.setdefault(task_id, []).append(
+                {
+                    "sequence": event.sequence,
+                    "event_type": event.event_type,
+                    "payload": payload,
+                }
+            )
         return [
             {
                 "task_id": row.task_id,
@@ -401,9 +454,158 @@ class SqliteRunReadModel:
                 "state": row.state,
                 "payload": _loads(row.payload_json),
                 "attempt": row.attempt,
+                "max_attempts": row.max_attempts,
+                "lease_history": lease_events.get(row.task_id, []),
             }
             for row in rows
         ]
+
+    def budget_reservations(self, run_id: str) -> list[dict[str, Any]]:
+        statement = (
+            select(BudgetReservationRow)
+            .where(BudgetReservationRow.run_id == run_id)
+            .order_by(BudgetReservationRow.reservation_id)
+        )
+        if self._snapshot_session is not None:
+            rows = self._snapshot_session.scalars(statement).all()
+        else:
+            with self.uow.session_factory() as session:
+                rows = session.scalars(statement).all()
+        return [
+            {
+                "reservation_id": row.reservation_id,
+                "run_id": row.run_id,
+                "task_id": row.task_id,
+                "external_call_id": row.external_call_id,
+                "idempotency_key": row.idempotency_key,
+                "state": row.state,
+                "estimate": {
+                    "model_calls": row.estimated_model_calls,
+                    "input_tokens": row.estimated_input_tokens,
+                    "output_tokens": row.estimated_output_tokens,
+                    "cost_usd": row.estimated_cost_usd,
+                    "hypotheses": row.estimated_hypotheses,
+                    "matches": row.estimated_matches,
+                },
+                "actual": {
+                    "model_calls": row.actual_model_calls,
+                    "input_tokens": row.actual_input_tokens,
+                    "output_tokens": row.actual_output_tokens,
+                    "cost_usd": row.actual_cost_usd,
+                    "hypotheses": row.actual_hypotheses,
+                    "matches": row.actual_matches,
+                },
+                "version": row.version,
+                "created_at": _utc_iso(row.created_at),
+                "updated_at": _utc_iso(row.updated_at),
+            }
+            for row in rows
+        ]
+
+    def convergence_checkpoints(self, run_id: str) -> list[dict[str, Any]]:
+        events = self._domain_events(run_id)
+        stop_reasons = {
+            str(event.payload.get("checkpoint_id")): event.payload.get("reason")
+            for event in events
+            if event.event_type == "StopPolicyTriggered"
+        }
+        return [
+            {
+                **dict(thaw_json(event.payload)),
+                "recorded_sequence": event.sequence,
+                "stop_reason": stop_reasons.get(str(event.payload.get("checkpoint_id"))),
+            }
+            for event in events
+            if event.event_type == "ConvergenceCheckpointRecorded"
+        ]
+
+    def stop_decisions(self, run_id: str) -> list[dict[str, Any]]:
+        events = self._domain_events(run_id)
+        decisions: list[dict[str, Any]] = []
+        for trigger in events:
+            if trigger.event_type != "StopPolicyTriggered":
+                continue
+            checkpoint_id = trigger.payload.get("checkpoint_id")
+            suffix = [event for event in events if event.sequence > trigger.sequence]
+            signal = next(
+                (
+                    event
+                    for event in reversed(events[: trigger.sequence - 1])
+                    if event.event_type == "StopSignalObserved"
+                    and event.payload.get("checkpoint_id") == checkpoint_id
+                ),
+                None,
+            )
+            stopping = next(
+                (
+                    event
+                    for event in suffix
+                    if event.event_type == "RunStopping"
+                    and event.payload.get("checkpoint_id") == checkpoint_id
+                ),
+                None,
+            )
+            requested = next(
+                (
+                    event
+                    for event in suffix
+                    if event.event_type == "FinalizationRequested"
+                    and event.payload.get("checkpoint_id") == checkpoint_id
+                ),
+                None,
+            )
+            finalized = next(
+                (event for event in suffix if event.event_type == "FinalizationCompleted"),
+                None,
+            )
+            terminal = next(
+                (
+                    event
+                    for event in suffix
+                    if event.event_type
+                    in {"RunCompleted", "RunCompletedPartial", "RunCancelled", "RunFailed"}
+                ),
+                None,
+            )
+            decisions.append(
+                {
+                    "checkpoint_id": checkpoint_id,
+                    "checkpoint_source_sequence": trigger.payload.get(
+                        "checkpoint_source_sequence"
+                    ),
+                    "reason": trigger.payload.get("reason"),
+                    "signal": (
+                        dict(thaw_json(signal.payload)) if signal is not None else None
+                    ),
+                    "signal_sequence": signal.sequence if signal is not None else None,
+                    "trigger_sequence": trigger.sequence,
+                    "stopping_sequence": stopping.sequence if stopping is not None else None,
+                    "finalization_task_id": (
+                        requested.payload.get("task_id") if requested is not None else None
+                    ),
+                    "finalization_requested_sequence": (
+                        requested.sequence if requested is not None else None
+                    ),
+                    "finalization_state": (
+                        "completed"
+                        if finalized is not None
+                        else "requested"
+                        if requested is not None
+                        else "missing"
+                    ),
+                    "finalization_sequence": (
+                        finalized.sequence if finalized is not None else None
+                    ),
+                    "completeness": (
+                        finalized.payload.get("completeness")
+                        if finalized is not None
+                        else None
+                    ),
+                    "terminal_event": terminal.event_type if terminal is not None else None,
+                    "terminal_sequence": terminal.sequence if terminal is not None else None,
+                }
+            )
+        return decisions
 
     def external_calls(self, run_id: str) -> list[dict[str, Any]]:
         statement = (
@@ -529,6 +731,9 @@ class SqliteRunReadModel:
         literature = self.literature(run_id)
         epochs = self.epochs(run_id)
         ratings = self.ratings(run_id)
+        reservations = self.budget_reservations(run_id)
+        checkpoints = self.convergence_checkpoints(run_id)
+        stop_decisions = self.stop_decisions(run_id)
         raw_anchor_sets = source_manifest.get("anchor_sets", [])
         if not isinstance(raw_anchor_sets, list):
             raise TypeError("anchor_sets must be a list")
@@ -601,6 +806,16 @@ class SqliteRunReadModel:
                     "prompt_hash": context.get("prompt_hash"),
                 }
             )
+        admission_evidence = [
+            {
+                "sequence": event.sequence,
+                "hypothesis_id": event.payload.get("hypothesis_id"),
+                "epoch_id": event.payload.get("epoch_id"),
+                "evidence": thaw_json(event.payload),
+            }
+            for event in events
+            if event.event_type == "HypothesisTournamentReady"
+        ]
         return {
             **source_manifest,
             "run_id": run_id,
@@ -636,6 +851,20 @@ class SqliteRunReadModel:
             "raw_artifact_count": sum(call["raw_artifact_ref"] is not None for call in calls),
             "cost_entry_count": len(costs),
             "total_cost_usd": str(sum(Decimal(item["cost_usd"]) for item in costs)),
+            "budget_reservation_count": len(reservations),
+            "convergence_checkpoint_count": len(checkpoints),
+            "stop_decision_count": len(stop_decisions),
+            "final_stop_evidence": stop_decisions[-1] if stop_decisions else None,
+            "admission_evidence": admission_evidence,
+            "raw_artifact_bindings": [
+                {
+                    "external_call_id": call["external_call_id"],
+                    "raw_artifact_ref": call["raw_artifact_ref"],
+                    "provider_response_id": call["provider_response_id"],
+                }
+                for call in calls
+            ],
+            "cost_bindings": costs,
             "skill_prompt_provider_model_metadata": metadata,
             "ranking_prompt_hashes": sorted(
                 {str(epoch["ranking_prompt_hash"]) for epoch in epochs}
@@ -748,6 +977,18 @@ def export_run(
             _write_json(staging / "matches.json", snapshot.matches(run_id))
             _write_json(staging / "ratings.json", snapshot.ratings(run_id))
             _write_json(staging / "tasks.json", snapshot.tasks(run_id))
+            _write_json(
+                staging / "budget_reservations.json",
+                snapshot.budget_reservations(run_id),
+            )
+            _write_json(
+                staging / "convergence_checkpoints.json",
+                snapshot.convergence_checkpoints(run_id),
+            )
+            _write_json(
+                staging / "stop_decisions.json",
+                snapshot.stop_decisions(run_id),
+            )
             _write_json(staging / "external_calls.json", calls)
             _write_json(staging / "costs.json", snapshot.costs(run_id))
             _write_json(staging / "literature.json", snapshot.literature(run_id))
@@ -773,6 +1014,15 @@ class CoreReleaseReport(BaseModel):
     persisted_task_count: int
     external_call_count: int
     match_count: int
+    violation_count: int
+    stale_lease_accepted_count: int
+    external_call_without_reservation_count: int
+    invalid_budget_reservation_count: int
+    stop_without_valid_checkpoint_count: int
+    unrecoverable_stopping_count: int
+    terminal_mutation_count: int
+    projection_mismatch_count: int
+    bootstrap_epoch_bypass_count: int
     agent_created_task_count: int
     cross_epoch_elo_comparison_count: int
     non_decisive_rating_update_count: int
@@ -790,6 +1040,11 @@ def verify_core_release_invariants(
     events = read_model.events(run_id)
     tasks = read_model.tasks(run_id)
     calls = read_model.external_calls(run_id)
+    reservations = read_model.budget_reservations(run_id)
+    tasks_by_id = {str(task["task_id"]): task for task in tasks}
+    reservations_by_id = {
+        str(reservation["reservation_id"]): reservation for reservation in reservations
+    }
     supervisor_task_ids = {
         str(event["payload"]["task_id"])
         for event in events
@@ -800,6 +1055,70 @@ def verify_core_release_invariants(
     agent_created_tasks = sum(
         str(task["task_id"]) not in supervisor_task_ids for task in tasks
     )
+
+    stale_lease_accepted = 0
+    calls_without_reservation = 0
+    for call in calls:
+        context = call.get("execution_context")
+        context = context if isinstance(context, Mapping) else {}
+        task = tasks_by_id.get(str(call.get("task_id")))
+        if call.get("state") == "domain_result_applied" and (
+            task is None
+            or call.get("attempt") != task.get("attempt")
+            or context.get("attempt") != call.get("attempt")
+            or not _is_sha256(context.get("lease_fence_fingerprint"))
+        ):
+            stale_lease_accepted += 1
+        reservation_id = context.get("reservation_id")
+        reservation = (
+            reservations_by_id.get(str(reservation_id))
+            if isinstance(reservation_id, str)
+            else None
+        )
+        if (
+            reservation is None
+            or reservation.get("run_id") != run_id
+            or reservation.get("task_id") != call.get("task_id")
+            or reservation.get("external_call_id") != call.get("external_call_id")
+        ):
+            calls_without_reservation += 1
+
+    invalid_reservations = 0
+    for key in ("idempotency_key", "task_id", "external_call_id"):
+        values = [
+            str(item[key])
+            for item in reservations
+            if item.get(key) is not None
+        ]
+        invalid_reservations += len(values) - len(set(values))
+    invalid_reservations += sum(
+        reservation.get("run_id") != run_id
+        or str(reservation.get("task_id")) not in tasks_by_id
+        or reservation.get("state") not in {"reserved", "settled", "released"}
+        for reservation in reservations
+    )
+    source_manifest = read_model.source_manifest(run_id)
+    budget = source_manifest.get("budget")
+    budget = budget if isinstance(budget, Mapping) else {}
+    estimate_fields = {
+        "max_model_calls": "model_calls",
+        "max_input_tokens": "input_tokens",
+        "max_output_tokens": "output_tokens",
+        "max_usd": "cost_usd",
+        "max_hypotheses": "hypotheses",
+        "max_matches": "matches",
+    }
+    for limit_key, estimate_key in estimate_fields.items():
+        limit = budget.get(limit_key)
+        if limit is None:
+            continue
+        total = sum(
+            Decimal(str(reservation["estimate"][estimate_key]))
+            for reservation in reservations
+            if reservation.get("state") != "released"
+        )
+        if total > Decimal(str(limit)):
+            invalid_reservations += 1
 
     epoch_contracts = {
         str(event["payload"]["epoch_id"]): event["payload"]
@@ -878,7 +1197,85 @@ def verify_core_release_invariants(
         ):
             proximity_derived_novelty += 1
 
+    checkpoints = {
+        str(event["payload"].get("checkpoint_id")): event
+        for event in events
+        if event["event_type"] == "ConvergenceCheckpointRecorded"
+    }
+    stop_without_checkpoint = 0
+    for checkpoint_id, event in checkpoints.items():
+        if (
+            not checkpoint_id
+            or event["payload"].get("run_id") != run_id
+            or event["payload"].get("source_sequence") != event["sequence"] - 1
+        ):
+            stop_without_checkpoint += 1
+    checkpoint_control_types = {
+        "StopSignalObserved",
+        "StopPolicyTriggered",
+        "RunStopping",
+        "FinalizationRequested",
+    }
+    stop_without_checkpoint += sum(
+        event["event_type"] in checkpoint_control_types
+        and str(event["payload"].get("checkpoint_id")) not in checkpoints
+        for event in events
+    )
+
+    unrecoverable_stopping = 0
+    for stopping in (event for event in events if event["event_type"] == "RunStopping"):
+        checkpoint_id = stopping["payload"].get("checkpoint_id")
+        requests = [
+            event
+            for event in events
+            if event["event_type"] == "FinalizationRequested"
+            and event["payload"].get("checkpoint_id") == checkpoint_id
+            and event["sequence"] > stopping["sequence"]
+        ]
+        if len(requests) != 1:
+            unrecoverable_stopping += 1
+            continue
+        task_id = requests[0]["payload"].get("task_id")
+        task = tasks_by_id.get(str(task_id))
+        enqueued = [
+            event
+            for event in events
+            if event["event_type"] == "TaskEnqueued"
+            and event["payload"].get("task_id") == task_id
+        ]
+        if (
+            task is None
+            or task.get("intent_type") != "finalize_run"
+            or len(enqueued) != 1
+            or enqueued[0]["payload"].get("payload") != task.get("payload")
+        ):
+            unrecoverable_stopping += 1
+
     terminal_indexes = [
+        index
+        for index, event in enumerate(events)
+        if event["event_type"]
+        in {"RunCompleted", "RunCompletedPartial", "RunCancelled", "RunFailed"}
+    ]
+    terminal_mutations = (
+        len(events) - terminal_indexes[0] - 1 if terminal_indexes else 0
+    )
+    projected_state = "created"
+    for event in events:
+        projected_state = _RUN_EVENT_STATES.get(event["event_type"], projected_state)
+    projection_mismatches = int(read_model.run_state(run_id) != projected_state)
+
+    bootstrap_bypass = int(
+        len(events) < 3
+        or [event["event_type"] for event in events[:3]]
+        != ["RunStarted", "TournamentEpochOpened", "TaskEnqueued"]
+        or [event["sequence"] for event in events[:3]] != [1, 2, 3]
+        or events[2]["payload"].get("created_by") != "supervisor"
+        or events[2]["payload"].get("intent_type") != "run_generation"
+        or events[2]["payload"].get("run_id") != run_id
+    )
+
+    completion_indexes = [
         index
         for index, event in enumerate(events)
         if event["event_type"] in {"RunCompleted", "RunCompletedPartial"}
@@ -888,7 +1285,7 @@ def verify_core_release_invariants(
             event["event_type"] == "FinalizationCompleted"
             for event in events[:terminal_index]
         )
-        for terminal_index in terminal_indexes
+        for terminal_index in completion_indexes
     )
     parsed_without_raw = sum(
         (
@@ -899,10 +1296,35 @@ def verify_core_release_invariants(
         and call.get("raw_artifact_ref") is None
         for call in calls
     )
+    violation_counts = (
+        stale_lease_accepted,
+        calls_without_reservation,
+        invalid_reservations,
+        stop_without_checkpoint,
+        unrecoverable_stopping,
+        terminal_mutations,
+        projection_mismatches,
+        bootstrap_bypass,
+        agent_created_tasks,
+        cross_epoch,
+        non_decisive_rating_updates,
+        proximity_derived_novelty,
+        completed_without_finalization,
+        parsed_without_raw,
+    )
     return CoreReleaseReport(
         persisted_task_count=len(tasks),
         external_call_count=len(calls),
         match_count=sum(event["event_type"] == "MatchEvaluated" for event in events),
+        violation_count=sum(violation_counts),
+        stale_lease_accepted_count=stale_lease_accepted,
+        external_call_without_reservation_count=calls_without_reservation,
+        invalid_budget_reservation_count=invalid_reservations,
+        stop_without_valid_checkpoint_count=stop_without_checkpoint,
+        unrecoverable_stopping_count=unrecoverable_stopping,
+        terminal_mutation_count=terminal_mutations,
+        projection_mismatch_count=projection_mismatches,
+        bootstrap_epoch_bypass_count=bootstrap_bypass,
         agent_created_task_count=agent_created_tasks,
         cross_epoch_elo_comparison_count=cross_epoch,
         non_decisive_rating_update_count=non_decisive_rating_updates,

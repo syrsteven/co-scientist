@@ -17,6 +17,42 @@ from co_scientist.runtime.core_runner import CoreRunner
 from tests.core_preview_support import write_core_preview_inputs
 
 
+class _CloseTracker:
+    def __init__(self) -> None:
+        self.close_count = 0
+
+    async def aclose(self) -> None:
+        self.close_count += 1
+
+
+@pytest.mark.asyncio
+async def test_execute_closes_provider_clients_when_composition_fails(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    goal_file, profile_file, environment = write_core_preview_inputs(tmp_path)
+    config = resolve_run_config(
+        goal_file=goal_file,
+        profile_file=profile_file,
+        provider="replay",
+        environment=environment,
+    )
+    runner = CoreRunner(data_dir=tmp_path / "data", environment=environment)
+    client = _CloseTracker()
+
+    def fail_after_client_creation(_manifest: object) -> None:
+        runner._pubmed_client = client
+        raise RuntimeError("composition failed after client creation")
+
+    monkeypatch.setattr(runner, "_compose", fail_after_client_creation)
+
+    with pytest.raises(RuntimeError, match="composition failed"):
+        await runner.execute(config=config)
+
+    assert client.close_count == 1
+    assert runner._pubmed_client is None
+
+
 @pytest.mark.asyncio
 async def test_supervisor_bootstrap_and_core_runner_execute_use_one_durable_path(
     tmp_path: Path,
@@ -657,10 +693,19 @@ async def test_openai_shape_uses_the_same_worker_literature_path(
             )
             return _OfflineOpenAIResponse(responses[key], f"resp-{self.count}")
 
+    class FakeOpenAI:
+        def __init__(self, responses: FakeResponses) -> None:
+            self.responses = responses
+            self.close_count = 0
+
+        async def close(self) -> None:
+            self.close_count += 1
+
     fake_responses = FakeResponses()
+    fake_openai = FakeOpenAI(fake_responses)
     monkeypatch.setattr(
         "openai.AsyncOpenAI",
-        lambda **_kwargs: SimpleNamespace(responses=fake_responses),
+        lambda **_kwargs: fake_openai,
     )
     respx_mock.get("https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esearch.fcgi").mock(
         return_value=httpx.Response(
@@ -698,3 +743,4 @@ async def test_openai_shape_uses_the_same_worker_literature_path(
         "pubmed:summary",
     }
     assert all(call["state"] == "domain_result_applied" for call in calls)
+    assert fake_openai.close_count == 1

@@ -15,6 +15,7 @@ from co_scientist.domain.budget import BudgetPolicy
 from co_scientist.domain.review import ReviewPolicy
 from co_scientist.ports.external_provider import freeze_json, thaw_json
 from co_scientist.runtime.external_calls import prompt_hash
+from co_scientist.skills.loader import core_skill_directory
 
 
 class ResearchGoal(BaseModel):
@@ -58,6 +59,14 @@ class ProviderProfile(BaseModel):
     literature: Literal["replay_pubmed", "pubmed"]
 
 
+class ReplayResourcesProfile(BaseModel):
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    llm_responses: str = Field(min_length=1)
+    pubmed_search: str = Field(min_length=1)
+    pubmed_summary: str = Field(min_length=1)
+
+
 class CoreProfile(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid")
 
@@ -70,6 +79,7 @@ class CoreProfile(BaseModel):
     stop: StopProfile
     budget: BudgetPolicy
     providers: ProviderProfile
+    replay_resources: ReplayResourcesProfile | None = None
 
 
 class ResolvedRunConfig(BaseModel):
@@ -109,10 +119,19 @@ def _load_yaml(path: Path, *, label: str) -> Mapping[str, Any]:
     return cast(Mapping[str, Any], value)
 
 
-def _resource(path_value: str | None, *, environment_key: str, kind: str) -> dict[str, str]:
+def _resource(
+    path_value: str | None,
+    *,
+    environment_key: str,
+    kind: str,
+    relative_to: Path | None = None,
+) -> dict[str, str]:
     if not path_value:
         raise ValueError(f"{environment_key} is required")
-    path = Path(path_value).expanduser().resolve()
+    path = Path(path_value).expanduser()
+    if not path.is_absolute() and relative_to is not None:
+        path = relative_to / path
+    path = path.resolve()
     if not path.is_file():
         raise ValueError(f"{environment_key} does not name a file: {path}")
     body = path.read_bytes()
@@ -201,10 +220,16 @@ def resolve_run_config(
     provider_configuration: dict[str, Any]
     replay_resources: list[dict[str, str]] = []
     if provider == "replay":
+        replay_profile = profile.replay_resources
         llm_resource = _resource(
-            environment.get("CO_SCIENTIST_REPLAY_RESPONSES"),
+            (
+                replay_profile.llm_responses
+                if replay_profile is not None
+                else environment.get("CO_SCIENTIST_REPLAY_RESPONSES")
+            ),
             environment_key="CO_SCIENTIST_REPLAY_RESPONSES",
             kind="llm_responses",
+            relative_to=profile_file.parent if replay_profile is not None else None,
         )
         replay_resources.append(llm_resource)
         try:
@@ -240,15 +265,26 @@ def resolve_run_config(
             raise ValueError(f"{', '.join(missing)} is required")
         provider_configuration = {"provider": "openai", "model": model}
     if profile.providers.literature == "replay_pubmed":
+        replay_profile = profile.replay_resources
         search_resource = _resource(
-            environment.get("CO_SCIENTIST_REPLAY_PUBMED_SEARCH"),
+            (
+                replay_profile.pubmed_search
+                if replay_profile is not None
+                else environment.get("CO_SCIENTIST_REPLAY_PUBMED_SEARCH")
+            ),
             environment_key="CO_SCIENTIST_REPLAY_PUBMED_SEARCH",
             kind="pubmed_search",
+            relative_to=profile_file.parent if replay_profile is not None else None,
         )
         summary_resource = _resource(
-            environment.get("CO_SCIENTIST_REPLAY_PUBMED_SUMMARY"),
+            (
+                replay_profile.pubmed_summary
+                if replay_profile is not None
+                else environment.get("CO_SCIENTIST_REPLAY_PUBMED_SUMMARY")
+            ),
             environment_key="CO_SCIENTIST_REPLAY_PUBMED_SUMMARY",
             kind="pubmed_summary",
+            relative_to=profile_file.parent if replay_profile is not None else None,
         )
         _validate_pubmed_replay(Path(search_resource["path"]), operation="search")
         _validate_pubmed_replay(Path(summary_resource["path"]), operation="summary")
@@ -262,7 +298,9 @@ def resolve_run_config(
     goal_document = goal.model_dump(mode="json")
     profile_document = profile.model_dump(mode="json")
     tournament = profile.tournament
-    ranking_prompt = Path("skills/ranking/prompts/system.md").read_text(encoding="utf-8")
+    ranking_prompt = (core_skill_directory("ranking") / "prompts/system.md").read_text(
+        encoding="utf-8"
+    )
     tournament_contract = {
         "epoch_id": "epoch-1",
         "research_plan_version": 1,

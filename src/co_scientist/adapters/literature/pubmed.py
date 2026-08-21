@@ -1,5 +1,6 @@
 """Raw-response PubMed E-utilities adapter."""
 
+import hashlib
 import json
 from typing import Any, Literal
 
@@ -67,10 +68,14 @@ class PubMedProvider:
                 response.status_code,
                 retryable=response.status_code == 429 or response.status_code >= 500,
             )
+        body = response.content
+        response_id = response.headers.get("ncbi-phid")
+        if not response_id:
+            response_id = f"sha256:{hashlib.sha256(body).hexdigest()}"
         return RawExternalResponse(
-            body=response.content,
+            body=body,
             mime_type=response.headers.get("content-type", "application/json"),
-            provider_response_id=response.headers.get("ncbi-phid"),
+            provider_response_id=response_id,
         )
 
 

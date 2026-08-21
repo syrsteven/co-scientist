@@ -204,6 +204,186 @@ def test_multiple_agreeing_novelty_assessments_use_latest_provenance() -> None:
     assert snapshot.source_event_sequences == (1, 2, 3, 4, 5, 6, 7)
 
 
+# Mutations caught: letting content-v1 evidence admit content-v2, treating a delayed
+# stale result as current, or dropping exact provenance for current mixed replay input.
+def test_content_revision_replay_selects_only_current_evidence_provenance() -> None:
+    current_hash = "sha256:" + "c" * 64
+    events = [
+        _event(
+            1,
+            "TournamentEpochOpened",
+            {
+                "epoch_id": "epoch-1",
+                "research_plan_version": 2,
+                "evaluation_rules_hash": "sha256:rules",
+                "ranking_prompt_hash": "sha256:prompt",
+                "judge_profile_hash": "sha256:judge",
+                "rating_policy_version": "elo-32-v1",
+                "admission_policy_version": "admission-v1",
+            },
+        ),
+        _event(
+            2,
+            "HypothesisContentCreated",
+            {
+                "hypothesis_id": "h-1",
+                "content_id": "content-v1",
+                "content_hash": CONTENT_HASH,
+                "research_plan_version": 1,
+            },
+            schema_version=2,
+        ),
+        _event(
+            3,
+            "ReviewCompleted",
+            {
+                "review_id": "v1-initial",
+                "hypothesis_id": "h-1",
+                "content_hash": CONTENT_HASH,
+                "research_plan_version": 1,
+                "stage": "initial_review",
+                "recommendation": "pass",
+                "safety_status": "passed",
+                "critical_flaws": [],
+            },
+            schema_version=2,
+        ),
+        _event(
+            4,
+            "NoveltyAssessmentRecorded",
+            {
+                "assessment_id": "v1-novelty",
+                "hypothesis_id": "h-1",
+                "content_hash": CONTENT_HASH,
+                "research_plan_version": 1,
+                "verdict": "novel",
+            },
+        ),
+        _event(
+            5,
+            "HypothesisContentCreated",
+            {
+                "hypothesis_id": "h-1",
+                "content_id": "content-v2",
+                "content_hash": current_hash,
+                "research_plan_version": 2,
+                "supersedes_content_id": "content-v1",
+            },
+            schema_version=2,
+        ),
+        _event(
+            6,
+            "ReviewCompleted",
+            {
+                "review_id": "delayed-v1-full",
+                "hypothesis_id": "h-1",
+                "content_hash": CONTENT_HASH,
+                "research_plan_version": 1,
+                "stage": "full_review",
+                "recommendation": "pass",
+                "safety_status": "not_assessed",
+                "critical_flaws": [],
+            },
+            schema_version=2,
+        ),
+        _event(
+            7,
+            "ReviewCompleted",
+            {
+                "review_id": "v2-initial",
+                "hypothesis_id": "h-1",
+                "content_hash": current_hash,
+                "research_plan_version": 2,
+                "stage": "initial_review",
+                "recommendation": "pass",
+                "safety_status": "passed",
+                "critical_flaws": [],
+            },
+            schema_version=2,
+        ),
+        _event(
+            8,
+            "NoveltyAssessmentRecorded",
+            {
+                "assessment_id": "delayed-v1-novelty",
+                "hypothesis_id": "h-1",
+                "content_hash": CONTENT_HASH,
+                "research_plan_version": 1,
+                "verdict": "novel",
+            },
+        ),
+        _event(
+            9,
+            "ReviewCompleted",
+            {
+                "review_id": "v2-full",
+                "hypothesis_id": "h-1",
+                "content_hash": current_hash,
+                "research_plan_version": 2,
+                "stage": "full_review",
+                "recommendation": "pass",
+                "safety_status": "not_assessed",
+                "critical_flaws": [],
+            },
+            schema_version=2,
+        ),
+        _event(
+            10,
+            "NoveltyAssessmentRecorded",
+            {
+                "assessment_id": "v2-novelty",
+                "hypothesis_id": "h-1",
+                "content_hash": current_hash,
+                "research_plan_version": 2,
+                "verdict": "partially_novel",
+            },
+        ),
+        _event(
+            11,
+            "ProximityAssessed",
+            {
+                "edge_id": "delayed-v1-edge",
+                "research_plan_version": 1,
+                "left_id": "h-1",
+                "left_content_hash": CONTENT_HASH,
+                "right_id": "h-2",
+                "right_content_hash": OTHER_CONTENT_HASH,
+                "similarity": 2,
+                "duplicate_likelihood": 0.1,
+                "rationale": "stale",
+            },
+            schema_version=2,
+        ),
+        _event(
+            12,
+            "ProximityAssessed",
+            {
+                "edge_id": "v2-edge",
+                "research_plan_version": 2,
+                "left_id": "h-1",
+                "left_content_hash": current_hash,
+                "right_id": "h-2",
+                "right_content_hash": OTHER_CONTENT_HASH,
+                "similarity": 2,
+                "duplicate_likelihood": 0.1,
+                "rationale": "current",
+            },
+            schema_version=2,
+        ),
+    ]
+
+    snapshot = _reduce(events)
+
+    assert snapshot.content_id == "content-v2"
+    assert snapshot.content_hash == current_hash
+    assert snapshot.review_ids == ("v2-initial", "v2-full")
+    assert snapshot.novelty_assessment_id == "v2-novelty"
+    assert snapshot.proximity_edge_ids == ("v2-edge",)
+    assert snapshot.missing_requirements == ()
+    assert snapshot.conflicting_evidence == ()
+    assert snapshot.source_event_sequences == (1, 5, 7, 9, 10, 12)
+
+
 def _remove(event_type: str, *, stage: str | None = None) -> Callable[[list[DomainEvent]], None]:
     def mutate(events: list[DomainEvent]) -> None:
         events[:] = [

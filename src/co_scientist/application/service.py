@@ -326,7 +326,7 @@ class _SupervisorCommandHandler:
                 )
             except (FileNotFoundError, TypeError, ValidationError, ValueError) as error:
                 raise ApplicationConfigurationError(str(error)) from None
-            return await self._runner.execute(config=config)
+            return await self._runner.execute(config=config, run_id=command.run_id)
         if isinstance(command, RunWorker):
             return await self._runner.resume(run_id=command.run_id)
         return self.handle_command(command)

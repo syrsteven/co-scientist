@@ -5,7 +5,6 @@ from __future__ import annotations
 import json
 from collections.abc import Mapping, Sequence
 from decimal import Decimal
-from pathlib import Path
 from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict
@@ -57,7 +56,11 @@ from co_scientist.ports.event_store import ConcurrencyConflict
 from co_scientist.runtime.checkpoints import ConvergenceCheckpointBuilder
 from co_scientist.runtime.external_calls import prompt_hash, request_fingerprint
 from co_scientist.runtime.task_payload import WorkerTaskPayload
-from co_scientist.skills.loader import load_skill, resolve_core_skill_contract
+from co_scientist.skills.loader import (
+    core_skill_directory,
+    load_skill,
+    resolve_core_skill_contract,
+)
 from co_scientist.supervisor.followups import FollowupIntent, derive_followup_intents
 
 
@@ -586,7 +589,7 @@ class Supervisor:
         def reflection_task(
             *, hypothesis_id: str, content_hash: str, stage: str, inputs: dict[str, Any]
         ) -> NewTask:
-            directory = Path("skills/reflection")
+            directory = core_skill_directory("reflection")
             skill = load_skill(directory)
             payload = WorkerTaskPayload(
                 skill_id=skill.id,
@@ -1598,14 +1601,13 @@ class Supervisor:
         hypotheses: int = 0,
         model_calls: int = 1,
     ) -> NewTask:
+        directory = core_skill_directory(skill_id)
         contract = resolve_core_skill_contract(
             skill_id=skill_id,
             skill_version="0.2.0",
-            output_schema_id=load_skill(Path("skills") / skill_id).output_schema,
+            output_schema_id=load_skill(directory).output_schema,
         )
-        system_prompt = (Path("skills") / skill_id / contract.prompt_path).read_text(
-            encoding="utf-8"
-        )
+        system_prompt = (directory / contract.prompt_path).read_text(encoding="utf-8")
         payload = WorkerTaskPayload(
             skill_id=contract.id,
             skill_version=contract.version,

@@ -1,3 +1,4 @@
+import hashlib
 from pathlib import Path
 
 import httpx
@@ -18,6 +19,23 @@ async def test_pubmed_search_returns_raw_before_record_parsing(respx_mock) -> No
 
     assert raw.mime_type.startswith("application/json")
     assert b'"123"' in raw.body
+
+
+# Mutation caught: trusting NCBI to always return its optional request header and
+# leaving online raw provenance without a stable provider response identity.
+@pytest.mark.asyncio
+async def test_pubmed_search_falls_back_to_a_body_bound_response_id(respx_mock) -> None:
+    body = b'{"esearchresult":{"idlist":["123"]}}'
+    respx_mock.get(PubMedProvider.SEARCH_URL).respond(
+        200,
+        content=body,
+        headers={"content-type": "application/json"},
+    )
+    async with httpx.AsyncClient() as client:
+        provider = PubMedProvider(client, tool="co-scientist-core", email=None)
+        raw = await provider.search("lens epithelial fibrosis", limit=5)
+
+    assert raw.provider_response_id == f"sha256:{hashlib.sha256(body).hexdigest()}"
 
 
 @pytest.mark.asyncio
@@ -116,3 +134,15 @@ async def test_replay_provider_returns_committed_lens_fixtures() -> None:
     assert b"Lens epithelial cell state after minimally invasive surgery" in summary.body
     assert search.provider_response_id == "replay-pubmed-search-lens"
     assert summary.provider_response_id == "replay-pubmed-summary-lens"
+
+
+# Mutation caught: loading arbitrary fixture bytes into the production replay
+# provider without validating the typed PubMed search/summary envelopes.
+def test_replay_provider_rejects_malformed_typed_resources(tmp_path: Path) -> None:
+    search = tmp_path / "search.json"
+    summary = tmp_path / "summary.json"
+    search.write_text('{"esearchresult":{"idlist":"1001"}}', encoding="utf-8")
+    summary.write_text('{"result":{"uids":["1001"]}}', encoding="utf-8")
+
+    with pytest.raises(ValueError, match="typed PubMed replay resource"):
+        ReplayLiteratureProvider(search, summary)

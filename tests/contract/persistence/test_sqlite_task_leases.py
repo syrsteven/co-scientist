@@ -1,3 +1,4 @@
+import threading
 from concurrent.futures import ThreadPoolExecutor
 from datetime import UTC, datetime, timedelta, timezone
 
@@ -57,8 +58,10 @@ def _task(task_id: str, *, model_calls: int = 1) -> NewTask:
 def test_two_connections_only_one_worker_claims_the_same_task(tmp_path) -> None:
     database_url, setup = _create_running_store(tmp_path)
     setup.enqueue_tasks([_task("task-1")])
+    contention = threading.Barrier(2)
 
     def claim(worker_number: int):
+        contention.wait(timeout=5)
         return _store(database_url).claim_next_task(
             run_id="r-1",
             worker_id=f"worker-{worker_number}",
