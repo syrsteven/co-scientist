@@ -28,6 +28,7 @@ from co_scientist.adapters.persistence.migrations import (
 )
 from co_scientist.adapters.persistence.sqlite import SqliteUnitOfWork
 from co_scientist.application.config import ResolvedRunConfig
+from co_scientist.domain.identifiers import validate_run_id
 from co_scientist.domain.review import ReviewPolicy
 from co_scientist.domain.states import RunState
 from co_scientist.ports.external_provider import ExternalProvider, thaw_json
@@ -204,7 +205,7 @@ class CoreRunner:
         run_id: str | None = None,
     ) -> RunExecutionResult:
         try:
-            resolved_run_id = run_id or f"run-{uuid4().hex}"
+            resolved_run_id = validate_run_id(run_id or f"run-{uuid4().hex}")
             manifest = thaw_json(config.manifest)
             if not isinstance(manifest, dict):
                 raise TypeError("resolved run manifest is not an object")
@@ -217,7 +218,7 @@ class CoreRunner:
 
     async def resume(self, *, run_id: str) -> RunExecutionResult:
         try:
-            return await self._resume(run_id=run_id)
+            return await self._resume(run_id=validate_run_id(run_id))
         finally:
             await self.aclose()
 

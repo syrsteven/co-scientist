@@ -9,7 +9,7 @@ from pathlib import Path
 from typing import Annotated, Any, Literal, TypeVar, cast
 
 import typer
-from pydantic import BaseModel
+from pydantic import BaseModel, ValidationError
 
 from co_scientist.application.commands import (
     CreateRun,
@@ -57,6 +57,9 @@ def _application_call(operation: Callable[[], _ResultT]) -> _ResultT:
     except ApplicationError as error:
         typer.echo(f"{error.category}: {error}", err=True)
         raise typer.Exit(code=error.exit_code) from None
+    except ValidationError:
+        typer.echo("invalid request: run_id must be a safe identifier", err=True)
+        raise typer.Exit(code=5) from None
 
 
 def _application_async_call(operation: Callable[[], Any]) -> object:
@@ -65,6 +68,9 @@ def _application_async_call(operation: Callable[[], Any]) -> object:
     except ApplicationError as error:
         typer.echo(f"{error.category}: {error}", err=True)
         raise typer.Exit(code=error.exit_code) from None
+    except ValidationError:
+        typer.echo("invalid request: run_id must be a safe identifier", err=True)
+        raise typer.Exit(code=5) from None
 
 
 def _json_document(result: object) -> dict[str, Any]:

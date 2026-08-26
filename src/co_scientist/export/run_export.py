@@ -35,7 +35,7 @@ from co_scientist.domain.tournament import (
 )
 from co_scientist.events.models import DomainEvent
 from co_scientist.events.reducers import replay_hypothesis
-from co_scientist.ports.artifact_store import ArtifactRef, ArtifactStore
+from co_scientist.ports.artifact_store import ArtifactRef, ArtifactStore, RawArtifactManifest
 from co_scientist.ports.external_provider import thaw_json
 from co_scientist.runtime.external_calls import execution_context_fingerprint
 
@@ -886,31 +886,33 @@ def _write_jsonl(path: Path, values: list[dict[str, Any]]) -> None:
     path.write_text("\n".join(lines) + ("\n" if lines else ""), encoding="utf-8")
 
 
-def _export_artifacts(
-    output_dir: Path,
+_RAW_REQUIRED_STATES = {
+    "raw_response_persisted",
+    "validated",
+    "agent_result_submitted",
+    "domain_result_applied",
+}
+
+
+def _validate_raw_artifacts(
     calls: list[dict[str, Any]],
     artifacts: ArtifactStore,
-) -> list[dict[str, Any]]:
-    exported: list[dict[str, Any]] = []
-    raw_dir = output_dir / "raw_artifacts"
+) -> list[tuple[dict[str, Any], ArtifactRef, bytes, RawArtifactManifest]]:
+    validated: list[tuple[dict[str, Any], ArtifactRef, bytes, RawArtifactManifest]] = []
     for call in calls:
         raw_value = call.get("raw_artifact_ref")
         if raw_value is None:
+            if call.get("state") in _RAW_REQUIRED_STATES:
+                raise ValueError(
+                    f"call {call['external_call_id']} in state {call['state']} "
+                    "requires persisted raw evidence"
+                )
             continue
         ref = ArtifactRef.model_validate(raw_value)
         body = artifacts.read(ref)
         digest = hashlib.sha256(body).hexdigest()
         if ref.sha256 != f"sha256:{digest}" or ref.byte_length != len(body):
             raise ValueError(f"raw artifact integrity mismatch for {call['external_call_id']}")
-        suffix = ".json" if ref.mime_type.startswith("application/json") else ".bin"
-        relative_path = Path("raw_artifacts") / f"{digest}{suffix}"
-        destination = output_dir / relative_path
-        raw_dir.mkdir(parents=True, exist_ok=True)
-        if destination.exists():
-            if destination.read_bytes() != body:
-                raise ValueError(f"raw artifact hash collision for {digest}")
-        else:
-            destination.write_bytes(body)
         manifest = artifacts.discover_raw(str(call["external_call_id"]))
         if manifest is None:
             raise ValueError(f"raw manifest missing for {call['external_call_id']}")
@@ -932,6 +934,27 @@ def _export_artifacts(
                 f"raw manifest does not match persisted call {call['external_call_id']}"
             )
         artifacts.confirm_raw(manifest)
+        validated.append((call, ref, body, manifest))
+    return validated
+
+
+def _export_artifacts(
+    output_dir: Path,
+    validated: list[tuple[dict[str, Any], ArtifactRef, bytes, RawArtifactManifest]],
+) -> list[dict[str, Any]]:
+    exported: list[dict[str, Any]] = []
+    raw_dir = output_dir / "raw_artifacts"
+    for call, ref, body, manifest in validated:
+        digest = ref.sha256.removeprefix("sha256:")
+        suffix = ".json" if ref.mime_type.startswith("application/json") else ".bin"
+        relative_path = Path("raw_artifacts") / f"{digest}{suffix}"
+        destination = output_dir / relative_path
+        raw_dir.mkdir(parents=True, exist_ok=True)
+        if destination.exists():
+            if destination.read_bytes() != body:
+                raise ValueError(f"raw artifact hash collision for {digest}")
+        else:
+            destination.write_bytes(body)
         exported.append(
             {
                 "external_call_id": call["external_call_id"],
@@ -960,6 +983,7 @@ def export_run(
     try:
         with read_model.snapshot(run_id) as snapshot:
             calls = snapshot.external_calls(run_id)
+            raw_artifacts = _validate_raw_artifacts(calls, artifacts)
             _write_json(staging / "manifest.json", snapshot.run_manifest(run_id))
             _write_jsonl(staging / "events.jsonl", snapshot.events(run_id))
             _write_json(staging / "hypotheses.json", snapshot.hypotheses(run_id))
@@ -994,7 +1018,7 @@ def export_run(
             _write_json(staging / "literature.json", snapshot.literature(run_id))
             _write_json(
                 staging / "artifacts.json",
-                _export_artifacts(staging, calls, artifacts),
+                _export_artifacts(staging, raw_artifacts),
             )
         if output_dir.exists():
             raise FileExistsError(output_dir)
@@ -1055,6 +1079,18 @@ def verify_core_release_invariants(
     agent_created_tasks = sum(
         str(task["task_id"]) not in supervisor_task_ids for task in tasks
     )
+    durable_lease_fingerprints = {
+        (
+            str(event["payload"].get("task_id")),
+            event["payload"].get("attempt"),
+            event["payload"].get("lease_fence_fingerprint"),
+        )
+        for event in events
+        if event["event_type"] in {"TaskLeaseClaimed", "TaskLeaseAdopted"}
+        and isinstance(event["payload"].get("task_id"), str)
+        and isinstance(event["payload"].get("attempt"), int)
+        and _is_sha256(event["payload"].get("lease_fence_fingerprint"))
+    }
 
     stale_lease_accepted = 0
     calls_without_reservation = 0
@@ -1062,11 +1098,16 @@ def verify_core_release_invariants(
         context = call.get("execution_context")
         context = context if isinstance(context, Mapping) else {}
         task = tasks_by_id.get(str(call.get("task_id")))
+        lease_binding = (
+            str(call.get("task_id")),
+            call.get("attempt"),
+            context.get("lease_fence_fingerprint"),
+        )
         if call.get("state") == "domain_result_applied" and (
             task is None
             or call.get("attempt") != task.get("attempt")
             or context.get("attempt") != call.get("attempt")
-            or not _is_sha256(context.get("lease_fence_fingerprint"))
+            or lease_binding not in durable_lease_fingerprints
         ):
             stale_lease_accepted += 1
         reservation_id = context.get("reservation_id")
@@ -1197,40 +1238,83 @@ def verify_core_release_invariants(
         ):
             proximity_derived_novelty += 1
 
+    checkpoint_events: dict[str, list[dict[str, Any]]] = {}
+    for event in events:
+        if event["event_type"] != "ConvergenceCheckpointRecorded":
+            continue
+        checkpoint_events.setdefault(str(event["payload"].get("checkpoint_id")), []).append(
+            event
+        )
     checkpoints = {
-        str(event["payload"].get("checkpoint_id")): event
-        for event in events
-        if event["event_type"] == "ConvergenceCheckpointRecorded"
+        checkpoint_id: records[0]
+        for checkpoint_id, records in checkpoint_events.items()
+        if len(records) == 1
     }
     stop_without_checkpoint = 0
-    for checkpoint_id, event in checkpoints.items():
+    for checkpoint_id, records in checkpoint_events.items():
+        event = records[0]
         if (
             not checkpoint_id
+            or len(records) != 1
             or event["payload"].get("run_id") != run_id
             or event["payload"].get("source_sequence") != event["sequence"] - 1
         ):
             stop_without_checkpoint += 1
-    checkpoint_control_types = {
-        "StopSignalObserved",
-        "StopPolicyTriggered",
-        "RunStopping",
-        "FinalizationRequested",
-    }
-    stop_without_checkpoint += sum(
-        event["event_type"] in checkpoint_control_types
-        and str(event["payload"].get("checkpoint_id")) not in checkpoints
-        for event in events
-    )
+    valid_triggers: dict[str, list[dict[str, Any]]] = {}
+    valid_stopping: dict[str, list[dict[str, Any]]] = {}
+    for event in events:
+        event_type = event["event_type"]
+        if event_type not in {
+            "StopSignalObserved",
+            "StopPolicyTriggered",
+            "RunStopping",
+            "FinalizationRequested",
+        }:
+            continue
+        checkpoint_id = str(event["payload"].get("checkpoint_id"))
+        checkpoint = checkpoints.get(checkpoint_id)
+        checkpoint_valid = (
+            checkpoint is not None
+            and checkpoint["payload"].get("run_id") == run_id
+            and checkpoint["payload"].get("source_sequence")
+            == checkpoint["sequence"] - 1
+            and checkpoint["sequence"] < event["sequence"]
+        )
+        if event_type == "StopSignalObserved":
+            valid = checkpoint_valid
+        elif event_type == "StopPolicyTriggered":
+            valid = (
+                checkpoint is not None
+                and checkpoint_valid
+                and event["payload"].get("checkpoint_source_sequence")
+                == checkpoint["payload"].get("source_sequence")
+            )
+            if valid:
+                valid_triggers.setdefault(checkpoint_id, []).append(event)
+        elif event_type == "RunStopping":
+            triggers = valid_triggers.get(checkpoint_id, [])
+            valid = len(triggers) == 1 and triggers[0]["sequence"] < event["sequence"]
+            if valid:
+                valid_stopping.setdefault(checkpoint_id, []).append(event)
+        else:
+            stopping_events = valid_stopping.get(checkpoint_id, [])
+            valid = (
+                len(stopping_events) == 1
+                and stopping_events[0]["sequence"] < event["sequence"]
+            )
+        stop_without_checkpoint += not valid
 
     unrecoverable_stopping = 0
-    for stopping in (event for event in events if event["event_type"] == "RunStopping"):
-        checkpoint_id = stopping["payload"].get("checkpoint_id")
+    for stopping_event in (
+        event for event in events if event["event_type"] == "RunStopping"
+    ):
+        checkpoint_id = stopping_event["payload"].get("checkpoint_id")
         requests = [
             event
             for event in events
             if event["event_type"] == "FinalizationRequested"
             and event["payload"].get("checkpoint_id") == checkpoint_id
-            and event["sequence"] > stopping["sequence"]
+            and event["sequence"] > stopping_event["sequence"]
         ]
         if len(requests) != 1:
             unrecoverable_stopping += 1

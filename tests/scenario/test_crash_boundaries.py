@@ -22,6 +22,7 @@ from co_scientist.ports.external_provider import RawExternalResponse
 from co_scientist.runtime.external_calls import ExternalCallRunner, prompt_hash, request_fingerprint
 from co_scientist.runtime.registry import ProviderRegistry, SkillRegistry
 from co_scientist.runtime.worker import Worker
+from co_scientist.skills.loader import core_skill_directory
 from co_scientist.supervisor.orchestrator import Supervisor
 
 NOW = datetime(2026, 8, 17, 10, 0, tzinfo=UTC)
@@ -399,7 +400,7 @@ def test_restart_resumes_without_duplicate_domain_result(
         assert recovered.provider_recall_count == 0
 
 
-META_DIRECTORY = Path("skills/meta_review")
+META_DIRECTORY = core_skill_directory("meta_review")
 
 
 class _MetaProvider:

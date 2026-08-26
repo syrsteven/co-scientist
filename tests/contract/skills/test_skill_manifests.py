@@ -4,7 +4,7 @@ from pathlib import Path
 import pytest
 
 from co_scientist.skills import loader
-from co_scientist.skills.loader import load_skill
+from co_scientist.skills.loader import core_skill_directory, load_skill
 
 CORE_SKILL_CONTRACTS = {
     "generation": {
@@ -73,7 +73,7 @@ CORE_SKILL_CONTRACTS = {
 # Mutation caught: changing any checked-in field in the exact six-skill contract matrix.
 def test_all_six_core_skills_match_the_independent_canonical_matrix() -> None:
     actual = {
-        name: load_skill(Path("skills") / name).model_dump(mode="json")
+        name: load_skill(core_skill_directory(name)).model_dump(mode="json")
         for name in CORE_SKILL_CONTRACTS
     }
 

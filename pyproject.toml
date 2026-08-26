@@ -33,6 +33,12 @@ co-scientist = "co_scientist.cli.app:main"
 [tool.setuptools.packages.find]
 where = ["src"]
 
+[tool.setuptools.package-data]
+"co_scientist.skills" = [
+  "resources/*/manifest.yaml",
+  "resources/*/prompts/*.md",
+]
+
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 markers = ["online: requires live external credentials"]

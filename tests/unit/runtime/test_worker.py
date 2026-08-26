@@ -2,7 +2,6 @@ import hashlib
 import inspect
 import json
 from datetime import UTC, datetime, timedelta
-from pathlib import Path
 from typing import get_type_hints
 
 import anyio
@@ -17,10 +16,11 @@ from co_scientist.ports.task_runtime import TaskRuntimePort
 from co_scientist.runtime.external_calls import prompt_hash, request_fingerprint
 from co_scientist.runtime.registry import ProviderRegistry, SkillRegistry
 from co_scientist.runtime.worker import Worker, WorkerTaskPayload
+from co_scientist.skills.loader import core_skill_directory
 from co_scientist.supervisor.orchestrator import Supervisor
 
 NOW = datetime(2026, 8, 17, 10, 0, tzinfo=UTC)
-GENERATION_DIRECTORY = Path("skills/generation")
+GENERATION_DIRECTORY = core_skill_directory("generation")
 
 
 class _ProtocolTaskRuntimeFake(TaskRuntimePort):
@@ -386,7 +386,7 @@ async def test_supervisor_followup_is_a_complete_executable_worker_task(tmp_path
             skills=SkillRegistry(
                 {
                     ("generation", "0.2.0"): GENERATION_DIRECTORY,
-                    ("reflection", "0.2.0"): Path("skills/reflection"),
+                    ("reflection", "0.2.0"): core_skill_directory("reflection"),
                 }
             ),
             providers=ProviderRegistry({"provider-fixed": provider}),

@@ -6,7 +6,9 @@ from typing import Any
 import httpx
 import pytest
 import yaml
+from sqlalchemy import func, select
 
+from co_scientist.adapters.persistence.sqlite import RunRow
 from co_scientist.application.config import resolve_run_config
 from co_scientist.domain.states import RunState
 from co_scientist.export.run_export import SqliteRunReadModel
@@ -51,6 +53,36 @@ async def test_execute_closes_provider_clients_when_composition_fails(
 
     assert client.close_count == 1
     assert runner._pubmed_client is None
+
+
+@pytest.mark.asyncio
+async def test_execute_rejects_unsafe_run_id_before_provider_composition(
+    tmp_path: Path,
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    goal_file, profile_file, environment = write_core_preview_inputs(tmp_path)
+    config = resolve_run_config(
+        goal_file=goal_file,
+        profile_file=profile_file,
+        provider="replay",
+        environment=environment,
+    )
+    runner = CoreRunner(data_dir=tmp_path / "data", environment=environment)
+    composed = False
+
+    def record_composition(_manifest: object) -> None:
+        nonlocal composed
+        composed = True
+
+    monkeypatch.setattr(runner, "_compose", record_composition)
+
+    with pytest.raises(ValueError, match="safe identifier"):
+        await runner.execute(config=config, run_id="../unsafe")
+
+    assert not composed
+    with runner.uow.session_factory() as session:
+        count = session.scalar(select(func.count()).select_from(RunRow))
+    assert count == 0
 
 
 @pytest.mark.asyncio

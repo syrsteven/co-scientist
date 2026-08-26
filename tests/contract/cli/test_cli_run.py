@@ -3,6 +3,7 @@ from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
+from sqlalchemy import create_engine, text
 from sqlalchemy.exc import OperationalError
 from typer.testing import CliRunner
 
@@ -206,6 +207,43 @@ def test_cli_openai_selection_only_builds_the_application_command(tmp_path: Path
 
     assert result.exit_code == 0, result.output
     assert "run_id=" in result.stdout
+
+
+@pytest.mark.parametrize(
+    "run_id",
+    ["../escaped", "segment/child", r"segment\child", "has space", "x" * 129],
+)
+# Mutation caught: allowing an unsafe operator ID to reach persistence or artifact paths.
+def test_cli_execute_rejects_unsafe_run_id_before_durable_side_effects(
+    tmp_path: Path,
+    run_id: str,
+) -> None:
+    data_dir = tmp_path / "data"
+    result = CliRunner().invoke(
+        app,
+        [
+            "run",
+            "execute",
+            "--goal",
+            "examples/lens_regeneration_goal.yaml",
+            "--profile",
+            "configs/profiles/core_preview.yaml",
+            "--provider",
+            "replay",
+            "--run-id",
+            run_id,
+            "--data-dir",
+            str(data_dir),
+        ],
+    )
+
+    assert result.exit_code != 0
+    database = data_dir / "co-scientist.db"
+    if database.exists():
+        with create_engine(f"sqlite:///{database}").connect() as connection:
+            assert connection.execute(text("SELECT count(*) FROM runs")).scalar_one() == 0
+    artifacts = data_dir / "artifacts"
+    assert not artifacts.exists() or not any(artifacts.rglob("*"))
 
 
 # Mutation caught: later invocations silently reopening the default data directory.

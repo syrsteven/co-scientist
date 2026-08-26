@@ -30,6 +30,7 @@ from co_scientist.runtime.external_calls import (
     prompt_hash,
     request_fingerprint,
 )
+from co_scientist.skills.loader import core_skill_directory
 from co_scientist.supervisor.orchestrator import Supervisor
 from tests._fenced_runtime import (
     acknowledge_result,
@@ -157,7 +158,9 @@ def test_supervisor_revalidates_persisted_schema_invalid_agent_result_before_eff
 
 
 def _valid_ranking_payload() -> dict[str, object]:
-    ranking_prompt = Path("skills/ranking/prompts/system.md").read_text(encoding="utf-8")
+    ranking_prompt = (core_skill_directory("ranking") / "prompts/system.md").read_text(
+        encoding="utf-8"
+    )
     return {
         "schema_version": 1,
         "match_id": "match-1",
@@ -567,7 +570,7 @@ async def _execute_ranking_result(
             ),
         ).execute(
             call_id="ranking-call",
-            skill_directory=Path("skills/ranking"),
+            skill_directory=core_skill_directory("ranking"),
             inputs={"comparison": "h-1 versus h-2"},
             context=fenced_context(
                 AgentExecutionContext(
@@ -806,7 +809,7 @@ async def test_skill_executor_uses_raw_first_runner_and_returns_agent_result(tmp
     artifacts = FilesystemArtifactStore(tmp_path / "artifacts")
     runner = ExternalCallRunner(SimpleNamespace(uow=uow, artifacts=artifacts))
     expected_request = build_skill_request(
-        skill_directory=Path("skills/generation"),
+        skill_directory=core_skill_directory("generation"),
         inputs={"research_goal": "test regeneration"},
         model="replay-v1",
     )
@@ -831,7 +834,7 @@ async def test_skill_executor_uses_raw_first_runner_and_returns_agent_result(tmp
 
     result = await SkillExecutor(runner, provider).execute(
         call_id="call-1",
-        skill_directory=Path("skills/generation"),
+        skill_directory=core_skill_directory("generation"),
         inputs={"research_goal": "test regeneration"},
         context=context,
         reservation_id=claimed.reservation_id,
@@ -910,7 +913,7 @@ async def test_skill_executor_rejects_incompatible_context_before_provider_call(
     with pytest.raises(ValueError, match=message):
         await SkillExecutor(runner, provider).execute(
             call_id="call-1",
-            skill_directory=Path("skills/generation"),
+            skill_directory=core_skill_directory("generation"),
             inputs={},
             context=fenced_context(AgentExecutionContext(**context_data), claimed),
             reservation_id=claimed.reservation_id,
@@ -962,7 +965,7 @@ async def test_skill_executor_rejects_non_object_or_nonstandard_json_after_raw_p
     with pytest.raises(error_type, match=message):
         await SkillExecutor(runner, FakeLLMProvider([raw_body])).execute(
             call_id="call-1",
-            skill_directory=Path("skills/generation"),
+            skill_directory=core_skill_directory("generation"),
             inputs={},
             context=fenced_context(
                 AgentExecutionContext(
@@ -1002,9 +1005,9 @@ class _CoreHarness:
         for response in responses:
             payload = copy.deepcopy(response["payload"])
             if response["skill"] == "ranking":
-                ranking_prompt = Path("skills/ranking/prompts/system.md").read_text(
-                    encoding="utf-8"
-                )
+                ranking_prompt = (
+                    core_skill_directory("ranking") / "prompts/system.md"
+                ).read_text(encoding="utf-8")
                 payload["ranking_prompt_hash"] = prompt_hash(ranking_prompt)
             payloads.append(payload)
         return payloads
@@ -1077,7 +1080,9 @@ class _CoreHarness:
             research_plan_version=1,
             evaluation_rules_hash="sha256:rules",
             ranking_prompt_hash=prompt_hash(
-                Path("skills/ranking/prompts/system.md").read_text(encoding="utf-8")
+                (core_skill_directory("ranking") / "prompts/system.md").read_text(
+                    encoding="utf-8"
+                )
             ),
             judge_profile_hash="sha256:judge",
             rating_policy_version="elo-32-v1",
@@ -1154,7 +1159,7 @@ class _CoreHarness:
             input_hash = _content_hash(inputs)
             result = await SkillExecutor(runner, provider).execute(
                 call_id=f"call-{index}",
-                skill_directory=Path("skills") / response["skill"],
+                skill_directory=core_skill_directory(response["skill"]),
                 inputs=inputs,
                 context=fenced_context(
                     AgentExecutionContext(

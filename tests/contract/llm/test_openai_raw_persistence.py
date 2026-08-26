@@ -1,5 +1,4 @@
 import json
-from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
@@ -14,6 +13,7 @@ from co_scientist.domain.task import NewTask
 from co_scientist.events.models import NewEvent
 from co_scientist.ports.external_provider import RawExternalResponse
 from co_scientist.runtime.external_calls import ExternalCallRunner, prompt_hash
+from co_scientist.skills.loader import core_skill_directory
 from tests._fenced_runtime import (
     budgeted_task,
     claim_running_task,
@@ -185,7 +185,7 @@ async def test_skill_executor_validates_real_responses_output_after_raw_persiste
         RealShapeOpenAIProvider(),
     ).execute(
         call_id="call-real-shape",
-        skill_directory=Path("skills/generation"),
+        skill_directory=core_skill_directory("generation"),
         inputs={"research_goal": "test"},
         context=context,
         reservation_id=claimed.reservation_id,

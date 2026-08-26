@@ -2,7 +2,9 @@
 
 from pathlib import Path
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict
+
+from co_scientist.domain.identifiers import RunId
 
 
 class CheckConfig(BaseModel):
@@ -18,7 +20,7 @@ class GetRunStatus(BaseModel):
 
     model_config = ConfigDict(frozen=True)
 
-    run_id: str = Field(min_length=1)
+    run_id: RunId
 
 
 class ReplayRun(BaseModel):
@@ -26,4 +28,4 @@ class ReplayRun(BaseModel):
 
     model_config = ConfigDict(frozen=True)
 
-    run_id: str = Field(min_length=1)
+    run_id: RunId

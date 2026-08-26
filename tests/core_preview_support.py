@@ -13,6 +13,7 @@ from co_scientist.domain.hypothesis import (
     hypothesis_content_from_draft,
 )
 from co_scientist.runtime.external_calls import prompt_hash
+from co_scientist.skills.loader import core_skill_directory
 
 
 def _sha256(value: Any) -> str:
@@ -247,7 +248,9 @@ def write_core_preview_inputs(
         )
 
     ranking_prompt_hash = prompt_hash(
-        Path("skills/ranking/prompts/system.md").read_text(encoding="utf-8")
+        (core_skill_directory("ranking") / "prompts/system.md").read_text(
+            encoding="utf-8"
+        )
     )
     evaluation_rules_hash = _sha256(
         {

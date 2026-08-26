@@ -95,9 +95,11 @@ def test_core_release_invariants_are_zero_for_the_cli_replay(
     ("violation", "counter"),
     [
         ("stale_lease", "stale_lease_accepted_count"),
+        ("forged_lease_fingerprint", "stale_lease_accepted_count"),
         ("call_without_reservation", "external_call_without_reservation_count"),
         ("oversubscribed_reservation", "invalid_budget_reservation_count"),
         ("stop_without_checkpoint", "stop_without_valid_checkpoint_count"),
+        ("stop_wrong_source_sequence", "stop_without_valid_checkpoint_count"),
         ("unrecoverable_stopping", "unrecoverable_stopping_count"),
         ("terminal_mutation", "terminal_mutation_count"),
         ("projection_mismatch", "projection_mismatch_count"),
@@ -128,6 +130,14 @@ def test_release_report_detects_real_persisted_negative_controls(
             )
             assert call is not None
             call.attempt = 0
+        elif violation == "forged_lease_fingerprint":
+            call = session.scalar(
+                select(ExternalCallRow).where(ExternalCallRow.run_id == release_run.run_id)
+            )
+            assert call is not None
+            context = json.loads(call.execution_context_json or "{}")
+            context["lease_fence_fingerprint"] = "sha256:" + "f" * 64
+            call.execution_context_json = json.dumps(context, sort_keys=True)
         elif violation == "call_without_reservation":
             call = session.scalar(
                 select(ExternalCallRow).where(ExternalCallRow.run_id == release_run.run_id)
@@ -149,6 +159,13 @@ def test_release_report_detects_real_persisted_negative_controls(
             event = next(item for item in events if item.event_type == "StopPolicyTriggered")
             payload = json.loads(event.payload_json)
             payload["checkpoint_id"] = "missing-checkpoint"
+            event.payload_json = json.dumps(payload, sort_keys=True)
+        elif violation == "stop_wrong_source_sequence":
+            event = next(item for item in events if item.event_type == "StopPolicyTriggered")
+            payload = json.loads(event.payload_json)
+            payload["checkpoint_source_sequence"] = int(
+                payload["checkpoint_source_sequence"]
+            ) - 1
             event.payload_json = json.dumps(payload, sort_keys=True)
         elif violation == "unrecoverable_stopping":
             requested = next(item for item in events if item.event_type == "FinalizationRequested")
@@ -257,3 +274,120 @@ def test_export_rejects_a_real_persisted_raw_artifact_call_mismatch(
             SqliteRunReadModel(release_run.uow),
             release_run.artifacts,
         )
+
+
+@pytest.mark.parametrize(
+    "state",
+    [
+        "raw_response_persisted",
+        "validated",
+        "agent_result_submitted",
+        "domain_result_applied",
+    ],
+)
+# Mutation caught: silently omitting mandatory raw evidence from a polished export.
+def test_export_rejects_required_call_states_with_a_null_raw_reference(
+    release_run: PersistedReleaseRun,
+    tmp_path: Path,
+    state: str,
+) -> None:
+    with release_run.uow.session_factory.begin() as session:
+        call = session.scalar(
+            select(ExternalCallRow).where(ExternalCallRow.run_id == release_run.run_id)
+        )
+        assert call is not None
+        call.state = state
+        call.raw_artifact_ref_json = None
+    output = tmp_path / f"null-raw-{state}"
+
+    with pytest.raises(ValueError, match="requires persisted raw evidence"):
+        export_run(
+            release_run.run_id,
+            output,
+            SqliteRunReadModel(release_run.uow),
+            release_run.artifacts,
+        )
+
+    assert not output.exists()
+
+
+# Mutation caught: treating a database ArtifactRef as sufficient when the referenced
+# content-addressed body no longer exists.
+def test_export_rejects_a_missing_raw_artifact_body(
+    release_run: PersistedReleaseRun,
+    tmp_path: Path,
+) -> None:
+    call = SqliteRunReadModel(release_run.uow).external_calls(release_run.run_id)[0]
+    raw_ref = call["raw_artifact_ref"]
+    assert isinstance(raw_ref, dict)
+    body = release_run.artifacts.root / str(raw_ref["path"])
+    body.rename(body.with_name(body.name + ".missing"))
+    output = tmp_path / "missing-raw"
+
+    with pytest.raises(FileNotFoundError):
+        export_run(
+            release_run.run_id,
+            output,
+            SqliteRunReadModel(release_run.uow),
+            release_run.artifacts,
+        )
+
+    assert not output.exists()
+
+
+# Mutation caught: accepting a valid artifact belonging to a different durable call.
+def test_export_rejects_a_cross_call_raw_artifact_reference(
+    release_run: PersistedReleaseRun,
+    tmp_path: Path,
+) -> None:
+    calls = SqliteRunReadModel(release_run.uow).external_calls(release_run.run_id)
+    assert len(calls) >= 2
+    with release_run.uow.session_factory.begin() as session:
+        call = session.get(ExternalCallRow, calls[0]["external_call_id"])
+        assert call is not None
+        call.raw_artifact_ref_json = json.dumps(calls[1]["raw_artifact_ref"], sort_keys=True)
+    output = tmp_path / "cross-call-raw"
+
+    with pytest.raises(ValueError, match="raw manifest.*persisted call"):
+        export_run(
+            release_run.run_id,
+            output,
+            SqliteRunReadModel(release_run.uow),
+            release_run.artifacts,
+        )
+
+    assert not output.exists()
+
+
+@pytest.mark.parametrize("state", ["planned", "started"])
+# Mutation caught: requiring raw evidence before a provider response can exist.
+def test_export_keeps_partial_pre_response_call_states_honest(
+    release_run: PersistedReleaseRun,
+    tmp_path: Path,
+    state: str,
+) -> None:
+    with release_run.uow.session_factory.begin() as session:
+        call = session.scalar(
+            select(ExternalCallRow).where(ExternalCallRow.run_id == release_run.run_id)
+        )
+        assert call is not None
+        call.state = state
+        call.raw_artifact_ref_json = None
+        call.validated_artifact_ref_json = None
+        call.agent_result_id = None
+        call.agent_result_json = None
+        call.applied_domain_sequence = None
+        call.provider_response_id = None
+        call.usage_json = "{}"
+    output = tmp_path / f"partial-{state}"
+
+    export_run(
+        release_run.run_id,
+        output,
+        SqliteRunReadModel(release_run.uow),
+        release_run.artifacts,
+    )
+
+    exported = json.loads((output / "external_calls.json").read_text(encoding="utf-8"))
+    partial = next(item for item in exported if item["state"] == state)
+    assert partial["raw_artifact_ref"] is None

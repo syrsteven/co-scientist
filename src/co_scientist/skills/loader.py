@@ -1,6 +1,7 @@
 """Load and validate project runtime skill manifests."""
 
 from collections.abc import Mapping
+from importlib.resources import files
 from pathlib import Path
 from types import MappingProxyType
 from typing import Literal
@@ -100,13 +101,16 @@ CORE_SKILL_CONTRACTS: Mapping[str, SkillManifest] = MappingProxyType(
 
 
 def core_skills_root() -> Path:
-    """Locate the checked-in Core skill catalog independently of caller CWD."""
+    """Locate the package-owned Core skill catalog independently of caller CWD."""
 
-    return Path(__file__).resolve().parents[3] / "skills"
+    root = files("co_scientist.skills").joinpath("resources")
+    if not isinstance(root, Path) or not root.is_dir():
+        raise RuntimeError("installed Core skill resources are not filesystem-backed")
+    return root
 
 
 def core_skill_directory(skill_id: str) -> Path:
-    """Resolve one Core skill directory from the installed source checkout."""
+    """Resolve one Core skill directory from installed package resources."""
 
     if skill_id not in CORE_SKILL_CONTRACTS:
         raise KeyError(f"unknown Core skill: {skill_id}")

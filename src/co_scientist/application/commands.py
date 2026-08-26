@@ -5,6 +5,8 @@ from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field
 
+from co_scientist.domain.identifiers import RunId
+
 
 class CreateRun(BaseModel):
     """Create and start one developer-preview run without invoking a provider."""
@@ -24,7 +26,7 @@ class ExecuteRun(BaseModel):
     goal_file: Path
     profile_file: Path
     provider: Literal["replay", "openai"]
-    run_id: str | None = Field(default=None, min_length=1)
+    run_id: RunId | None = None
 
 
 class RunWorker(BaseModel):
@@ -32,7 +34,7 @@ class RunWorker(BaseModel):
 
     model_config = ConfigDict(frozen=True, extra="forbid")
 
-    run_id: str = Field(min_length=1)
+    run_id: RunId
 
 
 class RunCommand(BaseModel):
@@ -40,7 +42,7 @@ class RunCommand(BaseModel):
 
     model_config = ConfigDict(frozen=True)
 
-    run_id: str = Field(min_length=1)
+    run_id: RunId
     expected_run_sequence: int = Field(ge=0)
     command: Literal["start", "pause", "resume", "stop", "cancel"]
 
@@ -50,5 +52,5 @@ class ExportRun(BaseModel):
 
     model_config = ConfigDict(frozen=True)
 
-    run_id: str = Field(min_length=1)
+    run_id: RunId
     output: Path

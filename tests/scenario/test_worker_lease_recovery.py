@@ -1,6 +1,5 @@
 import json
 from datetime import UTC, datetime, timedelta
-from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
@@ -21,6 +20,7 @@ from co_scientist.ports.external_provider import RawExternalResponse
 from co_scientist.runtime.external_calls import prompt_hash, request_fingerprint
 from co_scientist.runtime.registry import ProviderRegistry, SkillRegistry
 from co_scientist.runtime.worker import Worker
+from co_scientist.skills.loader import core_skill_directory
 from co_scientist.supervisor.orchestrator import Supervisor
 
 NOW = datetime(2026, 8, 17, 10, 0, tzinfo=UTC)
@@ -575,7 +575,7 @@ async def test_real_workers_exhaust_invalid_output_without_scientific_pollution(
         manifest={"execution_contract_version": 3, "budget": {}},
         start_payload={},
     )
-    skill_directory = Path("skills/generation")
+    skill_directory = core_skill_directory("generation")
     inputs = {"research_question": "reject malformed output"}
     supervisor.enqueue_task(
         task=NewTask(
