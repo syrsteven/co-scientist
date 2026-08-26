@@ -1239,70 +1239,137 @@ def verify_core_release_invariants(
             proximity_derived_novelty += 1
 
     checkpoint_events: dict[str, list[dict[str, Any]]] = {}
+    stop_without_checkpoint = 0
     for event in events:
         if event["event_type"] != "ConvergenceCheckpointRecorded":
             continue
-        checkpoint_events.setdefault(str(event["payload"].get("checkpoint_id")), []).append(
-            event
-        )
+        checkpoint_id = event["payload"].get("checkpoint_id")
+        if not isinstance(checkpoint_id, str) or not checkpoint_id:
+            stop_without_checkpoint += 1
+            continue
+        checkpoint_events.setdefault(checkpoint_id, []).append(event)
     checkpoints = {
         checkpoint_id: records[0]
         for checkpoint_id, records in checkpoint_events.items()
         if len(records) == 1
+        and records[0]["payload"].get("run_id") == run_id
+        and records[0]["payload"].get("source_sequence")
+        == records[0]["sequence"] - 1
     }
-    stop_without_checkpoint = 0
     for checkpoint_id, records in checkpoint_events.items():
         event = records[0]
         if (
-            not checkpoint_id
-            or len(records) != 1
+            len(records) != 1
             or event["payload"].get("run_id") != run_id
             or event["payload"].get("source_sequence") != event["sequence"] - 1
         ):
             stop_without_checkpoint += 1
-    valid_triggers: dict[str, list[dict[str, Any]]] = {}
-    valid_stopping: dict[str, list[dict[str, Any]]] = {}
+
+    signals_by_checkpoint: dict[str, list[dict[str, Any]]] = {}
+    triggers_by_checkpoint: dict[str, list[dict[str, Any]]] = {}
+    stopping_by_checkpoint: dict[str, list[dict[str, Any]]] = {}
+    requests_by_checkpoint: dict[str, list[dict[str, Any]]] = {}
+    controls_by_type = {
+        "StopSignalObserved": signals_by_checkpoint,
+        "StopPolicyTriggered": triggers_by_checkpoint,
+        "RunStopping": stopping_by_checkpoint,
+        "FinalizationRequested": requests_by_checkpoint,
+    }
     for event in events:
         event_type = event["event_type"]
-        if event_type not in {
-            "StopSignalObserved",
-            "StopPolicyTriggered",
-            "RunStopping",
-            "FinalizationRequested",
-        }:
+        destination = controls_by_type.get(event_type)
+        if destination is None:
             continue
-        checkpoint_id = str(event["payload"].get("checkpoint_id"))
-        checkpoint = checkpoints.get(checkpoint_id)
-        checkpoint_valid = (
-            checkpoint is not None
-            and checkpoint["payload"].get("run_id") == run_id
-            and checkpoint["payload"].get("source_sequence")
-            == checkpoint["sequence"] - 1
-            and checkpoint["sequence"] < event["sequence"]
+        checkpoint_id = event["payload"].get("checkpoint_id")
+        if isinstance(checkpoint_id, str) and checkpoint_id:
+            destination.setdefault(checkpoint_id, []).append(event)
+
+    cancellations = [event for event in events if event["event_type"] == "RunCancelled"]
+    valid_finalization_control_sequences: set[int] = set()
+    valid_soft_signal_sequences: set[int] = set()
+    for checkpoint_id, checkpoint in checkpoints.items():
+        signals = signals_by_checkpoint.get(checkpoint_id, [])
+        triggers = triggers_by_checkpoint.get(checkpoint_id, [])
+        stopping_events = stopping_by_checkpoint.get(checkpoint_id, [])
+        requests = requests_by_checkpoint.get(checkpoint_id, [])
+        if cancellations or not (
+            len(triggers) == len(stopping_events) == len(requests) == 1
+        ):
+            continue
+        trigger = triggers[0]
+        stopping_event = stopping_events[0]
+        request = requests[0]
+        if trigger["payload"].get("checkpoint_source_sequence") != checkpoint[
+            "payload"
+        ].get("source_sequence"):
+            continue
+        control_sequences = (
+            checkpoint["sequence"],
+            trigger["sequence"],
+            stopping_event["sequence"],
+            request["sequence"],
         )
-        if event_type == "StopSignalObserved":
-            valid = checkpoint_valid
-        elif event_type == "StopPolicyTriggered":
-            valid = (
-                checkpoint is not None
-                and checkpoint_valid
-                and event["payload"].get("checkpoint_source_sequence")
-                == checkpoint["payload"].get("source_sequence")
-            )
-            if valid:
-                valid_triggers.setdefault(checkpoint_id, []).append(event)
-        elif event_type == "RunStopping":
-            triggers = valid_triggers.get(checkpoint_id, [])
-            valid = len(triggers) == 1 and triggers[0]["sequence"] < event["sequence"]
-            if valid:
-                valid_stopping.setdefault(checkpoint_id, []).append(event)
-        else:
-            stopping_events = valid_stopping.get(checkpoint_id, [])
-            valid = (
-                len(stopping_events) == 1
-                and stopping_events[0]["sequence"] < event["sequence"]
-            )
-        stop_without_checkpoint += not valid
+        if control_sequences != tuple(sorted(control_sequences)):
+            continue
+        if signals:
+            if (
+                len(signals) != 1
+                or signals[0]["payload"].get("action") != "soft_stop"
+                or checkpoint["payload"].get("stop_cause") != "scientist_stop"
+                or not (
+                    checkpoint["sequence"]
+                    < signals[0]["sequence"]
+                    < trigger["sequence"]
+                )
+            ):
+                continue
+            valid_soft_signal_sequences.add(signals[0]["sequence"])
+        elif checkpoint["payload"].get("stop_cause") is not None:
+            continue
+        valid_finalization_control_sequences.update(control_sequences[1:])
+
+    signals = [
+        event for event in events if event["event_type"] == "StopSignalObserved"
+    ]
+    finalization_controls = [
+        event
+        for event in events
+        if event["event_type"]
+        in {"StopPolicyTriggered", "RunStopping", "FinalizationRequested"}
+    ]
+    valid_hard_signal_sequences: set[int] = set()
+    if (
+        len(signals) == 1
+        and signals[0]["payload"].get("action") == "hard_cancel"
+        and not finalization_controls
+        and len(cancellations) == 1
+        and events
+        and events[-1]["event_type"] == "RunCancelled"
+        and cancellations[0]["sequence"] == signals[0]["sequence"] + 1
+    ):
+        hard_checkpoint_id = signals[0]["payload"].get("checkpoint_id")
+        hard_checkpoint = (
+            checkpoints.get(hard_checkpoint_id)
+            if isinstance(hard_checkpoint_id, str)
+            else None
+        )
+        if (
+            hard_checkpoint is not None
+            and hard_checkpoint["payload"].get("stop_cause") == "scientist_stop"
+            and hard_checkpoint["sequence"] < signals[0]["sequence"]
+        ):
+            valid_hard_signal_sequences.add(signals[0]["sequence"])
+
+    valid_signal_sequences = (
+        valid_soft_signal_sequences | valid_hard_signal_sequences
+    )
+    stop_without_checkpoint += sum(
+        event["sequence"] not in valid_signal_sequences for event in signals
+    )
+    stop_without_checkpoint += sum(
+        event["sequence"] not in valid_finalization_control_sequences
+        for event in finalization_controls
+    )
 
     unrecoverable_stopping = 0
     for stopping_event in (

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import json
 import shutil
 from dataclasses import dataclass
@@ -7,7 +8,7 @@ from datetime import UTC, datetime
 from pathlib import Path
 
 import pytest
-from sqlalchemy import select
+from sqlalchemy import select, update
 
 from co_scientist.adapters.artifacts.filesystem import FilesystemArtifactStore
 from co_scientist.adapters.persistence.sqlite import (
@@ -18,11 +19,15 @@ from co_scientist.adapters.persistence.sqlite import (
     SqliteUnitOfWork,
     TaskRow,
 )
+from co_scientist.application.config import resolve_run_config
 from co_scientist.export.run_export import (
     SqliteRunReadModel,
     export_run,
     verify_core_release_invariants,
 )
+from co_scientist.runtime.checkpoints import ConvergenceCheckpointBuilder
+from co_scientist.runtime.core_runner import CoreRunner
+from tests.core_preview_support import write_core_preview_inputs
 from tests.smoke.test_lens_replay_smoke import GOAL, PROFILE, _invoke_cli
 
 
@@ -78,6 +83,50 @@ def release_run(
     )
 
 
+def _insert_stop_signal(
+    release_run: PersistedReleaseRun,
+    *,
+    sequence: int,
+    checkpoint_id: str,
+    action: str,
+) -> None:
+    with release_run.uow.session_factory.begin() as session:
+        session.execute(
+            update(EventRow)
+            .where(
+                EventRow.run_id == release_run.run_id,
+                EventRow.sequence >= sequence,
+            )
+            .values(sequence=EventRow.sequence + 1000)
+        )
+        session.execute(
+            update(EventRow)
+            .where(
+                EventRow.run_id == release_run.run_id,
+                EventRow.sequence >= sequence + 1000,
+            )
+            .values(sequence=EventRow.sequence - 999)
+        )
+        run = session.get(RunRow, release_run.run_id)
+        assert run is not None
+        run.current_sequence += 1
+        session.add(
+            EventRow(
+                run_id=release_run.run_id,
+                sequence=sequence,
+                event_type="StopSignalObserved",
+                schema_version=1,
+                payload_json=json.dumps(
+                    {"action": action, "checkpoint_id": checkpoint_id},
+                    sort_keys=True,
+                ),
+                occurred_at=datetime.now(UTC),
+                causation_id=None,
+                correlation_id=None,
+            )
+        )
+
+
 # Mutation caught: defaulting release certification to success without inspecting
 # persisted task, lease, reservation, stopping, projection, and scientific evidence.
 def test_core_release_invariants_are_zero_for_the_cli_replay(
@@ -89,6 +138,128 @@ def test_core_release_invariants_are_zero_for_the_cli_replay(
     assert report.external_call_count > 0
     assert report.match_count == 6
     assert report.violation_count == 0
+
+
+def _bootstrapped_runner(tmp_path: Path, *, run_id: str) -> tuple[CoreRunner, int]:
+    goal_file, profile_file, environment = write_core_preview_inputs(tmp_path)
+    config = resolve_run_config(
+        goal_file=goal_file,
+        profile_file=profile_file,
+        provider="replay",
+        environment=environment,
+    )
+    runner = CoreRunner(data_dir=tmp_path / "data", environment=environment)
+    started = runner.supervisor.bootstrap_run(
+        run_id=run_id,
+        manifest=config.model_dump(mode="json")["manifest"],
+    )
+    return runner, started.last_sequence
+
+
+# Mutation caught: tightening the verifier so far that the production scientist
+# soft-stop -> finalization path can no longer certify.
+def test_release_report_accepts_production_soft_stop_path(tmp_path: Path) -> None:
+    runner, sequence = _bootstrapped_runner(tmp_path, run_id="release-soft-stop")
+    runner.supervisor.request_soft_stop(
+        "release-soft-stop", expected_sequence=sequence
+    )
+    asyncio.run(runner.resume(run_id="release-soft-stop"))
+
+    report = verify_core_release_invariants(
+        "release-soft-stop", SqliteRunReadModel(runner.uow)
+    )
+
+    assert report.stop_without_valid_checkpoint_count == 0
+
+
+# Mutation caught: treating every hard-cancel signal as contradictory even when it is
+# immediately followed by the production cancellation terminal.
+def test_release_report_accepts_production_hard_cancel_path(tmp_path: Path) -> None:
+    runner, sequence = _bootstrapped_runner(tmp_path, run_id="release-hard-cancel")
+    recorded = ConvergenceCheckpointBuilder(
+        runner.uow
+    )._build_and_record_scientist_stop(
+        run_id="release-hard-cancel", expected_sequence=sequence
+    )
+    runner.supervisor.tick(
+        run_id="release-hard-cancel",
+        expected_sequence=recorded.commit.last_sequence,
+        checkpoint_id=recorded.checkpoint_id,
+        scientist_action="hard_cancel",
+    )
+
+    report = verify_core_release_invariants(
+        "release-hard-cancel", SqliteRunReadModel(runner.uow)
+    )
+
+    assert report.stop_without_valid_checkpoint_count == 0
+
+
+@pytest.mark.parametrize("action", ["hard_cancel", "soft_stop"])
+# Mutation caught: accepting a scientist signal after the finalization decision and
+# request merely because its checkpoint exists earlier in the Run.
+def test_release_report_rejects_stop_signals_after_finalization_request(
+    release_run: PersistedReleaseRun,
+    action: str,
+) -> None:
+    events = SqliteRunReadModel(release_run.uow).events(release_run.run_id)
+    trigger = next(event for event in events if event["event_type"] == "StopPolicyTriggered")
+    requested = next(
+        event for event in events if event["event_type"] == "FinalizationRequested"
+    )
+    _insert_stop_signal(
+        release_run,
+        sequence=int(requested["sequence"]) + 1,
+        checkpoint_id=str(trigger["payload"]["checkpoint_id"]),
+        action=action,
+    )
+
+    report = release_run.verify()
+
+    assert report.stop_without_valid_checkpoint_count > 0
+    assert report.violation_count > 0
+
+
+@pytest.mark.parametrize("action", ["unsupported_stop", "hard_cancel"])
+# Mutation caught: accepting an unsupported signal or a cancellation action as the
+# preface to a policy-triggered finalization path.
+def test_release_report_rejects_actions_that_contradict_finalization(
+    release_run: PersistedReleaseRun,
+    action: str,
+) -> None:
+    events = SqliteRunReadModel(release_run.uow).events(release_run.run_id)
+    trigger = next(event for event in events if event["event_type"] == "StopPolicyTriggered")
+    _insert_stop_signal(
+        release_run,
+        sequence=int(trigger["sequence"]),
+        checkpoint_id=str(trigger["payload"]["checkpoint_id"]),
+        action=action,
+    )
+
+    report = release_run.verify()
+
+    assert report.stop_without_valid_checkpoint_count > 0
+    assert report.violation_count > 0
+
+
+# Mutation caught: treating a signal as source-bound merely because some valid
+# checkpoint exists earlier in the Run, even though its own checkpoint ID does not.
+def test_release_report_rejects_signal_bound_to_a_different_checkpoint(
+    release_run: PersistedReleaseRun,
+) -> None:
+    events = SqliteRunReadModel(release_run.uow).events(release_run.run_id)
+    trigger = next(event for event in events if event["event_type"] == "StopPolicyTriggered")
+    _insert_stop_signal(
+        release_run,
+        sequence=int(trigger["sequence"]),
+        checkpoint_id="different-checkpoint",
+        action="soft_stop",
+    )
+
+    report = release_run.verify()
+
+    assert report.stop_without_valid_checkpoint_count > 0
+    assert report.violation_count > 0
 
 
 @pytest.mark.parametrize(
