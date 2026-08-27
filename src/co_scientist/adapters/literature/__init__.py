@@ -1,0 +1,1 @@
+"""Literature provider adapters."""

@@ -1,0 +1,8 @@
+id: reflection
+agent_type: reflection
+version: 0.2.0
+prompt_path: prompts/system.md
+input_schema: ReflectionInputV1
+output_schema: ReflectionResultV1
+allowed_tools: [literature_search]
+allowed_capabilities: [return_agent_result]

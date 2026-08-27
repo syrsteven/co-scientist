@@ -1700,7 +1700,9 @@ def test_failed_followup_insert_rolls_back_events_and_task_success(store) -> Non
             cost_entries=(),
         )
     assert store.load("r-1") == []
-    assert store.task_state("task-1") == "pending"
+    # The RESULT_RECEIVED transition committed before this failed batch and
+    # therefore remains durable; only work attempted inside the batch rolls back.
+    assert store.task_state("task-1") == "result_received"
 ```
 
 - [ ] **Step 7: Run migrations and contract tests**
@@ -1728,6 +1730,21 @@ git commit -m "feat: persist events and raw artifacts atomically"
 - Create: `src/co_scientist/runtime/external_calls.py`
 - Create: `tests/scenario/test_external_call_raw_first.py`
 - Create: `tests/scenario/test_external_call_recovery.py`
+- Modify: `src/co_scientist/ports/artifact_store.py`
+- Modify: `src/co_scientist/adapters/artifacts/filesystem.py`
+- Modify: `src/co_scientist/adapters/persistence/sqlite.py`
+- Modify: `alembic/versions/0001_core_tables.py`
+- Create: `alembic/versions/0002_external_call_recovery.py`
+- Modify: `tests/contract/persistence/test_filesystem_artifacts.py`
+- Modify: `tests/contract/persistence/test_sqlite_event_store.py`
+- Modify: `tests/contract/persistence/test_sqlite_uow_atomic.py`
+
+**Approved scope amendment (2026-07-31):** After Task 8's recovery-critical review,
+the scientist authorized these narrow cross-task persistence changes. They are required
+to reconcile a raw artifact durably written before its database metadata commit, bind
+ExternalCall to its Run/Task and execution context, and reconstruct an already-submitted
+AgentResult without a provider recall. This amendment supersedes Task 8's original
+file-list boundary for only the files listed above.
 
 **Interfaces:**
 - Consumes: `SqliteUnitOfWork`, `FilesystemArtifactStore`, ExternalCall transitions
@@ -1993,14 +2010,29 @@ git commit -m "feat: enforce raw-first external call recovery"
 - Create: `src/co_scientist/supervisor/followups.py`
 - Create: `src/co_scientist/supervisor/orchestrator.py`
 - Create: `src/co_scientist/domain/research_plan.py`
+- Modify: `src/co_scientist/adapters/persistence/sqlite.py`
+- Modify: `src/co_scientist/domain/transitions.py`
 - Create: `tests/unit/supervisor/test_followups.py`
 - Create: `tests/unit/supervisor/test_admission.py`
 - Create: `tests/scenario/test_epoch_rollover.py`
 - Create: `tests/scenario/test_finalization_path.py`
+- Modify: `tests/contract/persistence/test_sqlite_uow_atomic.py`
+- Modify: `tests/unit/domain/test_task_transitions.py`
 
 **Interfaces:**
 - Consumes: events, state machines, review policy, tournament, budget, convergence, submitted AgentResult
 - Produces: `Supervisor.handle_result`, `Supervisor.tick`, `derive_followup_intents`, `AdmissionDecision`
+
+**Authorized Task 9 review corrections:**
+
+- The user authorized the narrow cross-task file expansion above after the first Task 9 review. No schema migration is required.
+- `commit_domain_batch` must optionally apply a validated Run state transition in the same transaction as its events, Task mutations, follow-ups, costs, ExternalCall application, idempotency record, and sequence update. Run and Task mutations must validate the durable current state through the domain transition functions; they must also participate in the batch fingerprint and rollback together on any failure.
+- Supervisor stopping, cancellation, finalization, admission, convergence, and plan-revision commands must derive Run and active TournamentEpoch identity from durable state, not trust caller-supplied state or epoch identity. Opening a replacement epoch with the same ID is invalid.
+- Finalization may only complete from a durable `stopping` Run and a durable finalization Task in `result_received`; the final atomic batch performs only the legal `result_received → succeeded` and `stopping → completed|completed_partial` transitions.
+- Supervisor owns an atomic admission command. A successful command emits `HypothesisTournamentReady`, `TournamentEntryCreated`, and `InitialRatingAssigned` in the durable active epoch and assigns the internal default initial Elo 1200; callers cannot supply a rating.
+- When novelty is required, a `NoveltyAssessment` is applicable only if hypothesis ID, content hash, and ResearchPlan version match the admission target and active epoch. Only `novel` and `partially_novel` satisfy this Core Preview admission policy.
+- AgentResult status semantics are explicit: `completed` applies typed scientific events and policy-owned follow-ups; `partial` emits an audit-only partial-result event and no scientific follow-ups; `rejected` and `failed` emit audit events and fail the Task. All four statuses settle cost and atomically mark the ExternalCall `domain_result_applied`. The Task transition table therefore permits `result_received → failed`.
+- TDD evidence must cover atomic Run-state rollback, invalid Task-transition rollback, legal finalization progression, stale/spoofed epoch rejection, atomic admission plus initial 1200 assignment, all four AgentResult statuses, and NoveltyAssessment identity/version/verdict cases.
 
 - [ ] **Step 1: Write failing single-authority follow-up test**
 
@@ -2209,6 +2241,7 @@ git commit -m "feat: make Supervisor the sole orchestration authority"
 - Create: `src/co_scientist/agents/executor.py`
 - Create: `src/co_scientist/adapters/llm/fake.py`
 - Create: `src/co_scientist/adapters/llm/replay.py`
+- Modify: `src/co_scientist/supervisor/orchestrator.py`
 - Create: `skills/generation/manifest.yaml`
 - Create: `skills/generation/prompts/system.md`
 - Create: `skills/reflection/manifest.yaml`
@@ -2224,10 +2257,21 @@ git commit -m "feat: make Supervisor the sole orchestration authority"
 - Create: `tests/contract/skills/test_skill_manifests.py`
 - Create: `tests/scenario/test_fake_core_loop.py`
 - Create: `tests/scenario/fixtures/core_loop_trace.json`
+- Modify: `tests/unit/supervisor/test_admission.py`
+- Modify: `tests/scenario/test_finalization_path.py`
 
 **Interfaces:**
 - Consumes: `ExternalCallRunner`, domain AgentResult payloads
 - Produces: `SkillManifest`, `load_skill`, `SkillExecutor`, `FakeLLMProvider`, `ReplayLLMProvider`
+
+**Authorized Task 10 review corrections:**
+
+- The user authorized the narrow cross-task file expansion above after the first Task 10 review. No SQLite schema or Alembic migration is required.
+- Supervisor must expose one atomic task-enqueue command that commits a `TaskEnqueued` event containing the full immutable `NewTask` provenance, including `created_by: supervisor`, together with the same task in `followup_tasks`. The command owns a task-enqueue-specific idempotency key namespace.
+- Result-derived review follow-ups and the mandatory finalization task must also persist one matching `TaskEnqueued` event in the same domain batch that inserts each task. The deterministic scenario must create every worker task through Supervisor commands or Supervisor-derived follow-up batches and assert creator provenance from committed events, never by reconstructing `NewTask` defaults from Task rows.
+- Child admission facts must be derived fail-closed from applied provider results and policy: safety from committed Reflection review payloads, candidate duplication from committed Proximity output using an explicit policy threshold, required stages from `required_review_stages(review_policy)`, and child identity/content hash from committed Evolution content. Scientific verdicts cannot be injected as harness-only admission constants.
+- `load_skill` must fail closed over the exact six-skill Core Preview matrix. The immutable model forbids extra fields; directory name, manifest ID, and agent type must agree; version, prompt path, input/output schema, allowed tools, and allowed capabilities must equal the canonical per-agent contract. Contract-test expected values must be independent hand-written literals, not derived from the production mapping.
+- TDD evidence must cover atomic Supervisor enqueue/provenance, result-derived and finalization task provenance, removal of tautological ownership reconstruction, omission/change of scientific admission evidence, and manifest mutations for ID/version/schema/tools/extra fields.
 
 - [ ] **Step 1: Write failing manifest contract test**
 
@@ -2941,7 +2985,7 @@ Expected: PASS.
 - [ ] **Step 8: Commit**
 
 ```bash
-git add src/co_scientist/ports/literature.py src/co_scientist/adapters/literature tests/contract/literature
+git add src/co_scientist/ports/literature.py src/co_scientist/adapters/literature tests/contract/literature tests/scenario/fixtures/pubmed_search_lens.json tests/scenario/fixtures/pubmed_summary_lens.json
 git commit -m "feat: add PubMed evidence provider"
 ```
 
@@ -2959,10 +3003,24 @@ git commit -m "feat: add PubMed evidence provider"
 - Create: `tests/unit/application/test_service_boundary.py`
 - Create: `tests/contract/cli/test_cli_run.py`
 - Create: `tests/contract/cli/test_cli_stop.py`
+- Modify: `src/co_scientist/supervisor/orchestrator.py`
+- Modify: `src/co_scientist/adapters/persistence/sqlite.py`
+- Modify: `tests/contract/persistence/test_sqlite_uow_atomic.py`
+- Modify: `tests/scenario/test_finalization_path.py`
 
 **Interfaces:**
 - Consumes: Supervisor and read projections
 - Produces: `ApplicationService.execute(command)`, `ApplicationService.query(query)`, `co-scientist` CLI
+
+**Authorized Task 13 review corrections:**
+
+- The user authorized this narrow cross-task expansion after the first Task 13 review. It requires SQLite/UoW implementation changes but no table change, schema change, Alembic migration, or domain-transition change.
+- Supervisor remains the sole lifecycle authority. Add Supervisor-owned operations for atomic create-and-start, pause, resume, cancel, and synchronous Core Preview stop-and-finalize-partial. The application command handler may translate typed commands and format outcomes, but it must not access `Supervisor.uow`, construct lifecycle events, mutate Tasks/Runs, or define state transitions itself.
+- Add one atomic SQLite run-initialization operation under the existing `BEGIN IMMEDIATE` transaction. It must insert the Run, validate `created -> running`, persist `RunStarted`, record sequence and idempotency, and roll back the Run row if any part fails. A split `create_run` followed by a later start batch is not acceptable.
+- Lifecycle commits must validate `expected_sequence` before returning an idempotent replay. Preserve replay-first behavior for existing non-lifecycle domain batches. Lifecycle idempotency keys are sequence-scoped: `pause-request:{run_id}:{expected_sequence}`, `pause-complete:{run_id}:{pausing_sequence}`, `resume:{run_id}:{expected_sequence}`, `stop:{run_id}:{expected_sequence}`, `cancel:{run_id}:{expected_sequence}`, and `finalization:{run_id}:{expected_sequence}`. Multiple valid pause/resume cycles must produce new commits, while stale retries must fail concurrency validation.
+- Storage selection belongs to application composition, not `CreateRun`; remove or reject command-level `data_dir`. Every CLI command that reads or mutates a Run must accept the same `--data-dir` selection (and may support `CO_SCIENTIST_DATA_DIR`) so separate uninjected CLI invocations can operate on the same durable run.
+- `config check` must validate actionable local configuration rather than merely confirming that composition already created a directory. Expected configuration, not-found, concurrency, invalid-transition, validation, and filesystem failures must become concise stderr diagnostics with stable non-zero CLI exit codes, not raw tracebacks.
+- TDD coverage must include atomic initialization success and rollback, lifecycle sequence-before-idempotency behavior, multiple valid pause/resume cycles, stale retries after successful mutations, Supervisor-owned finalization/cancel, separate uninjected CLI invocations against one custom data directory, config failure paths, and stable CLI error codes/messages.
 
 - [ ] **Step 1: Write failing boundary test**
 

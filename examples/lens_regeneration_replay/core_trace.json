@@ -1,0 +1,578 @@
+{
+  "model": "core-preview-replay-v1",
+  "replay_version": 1,
+  "responses": [
+    {
+      "inputs": {
+        "goal_title": "Mechanistic determinants of transparent versus fibrotic lens regeneration after minimally invasive lens surgery",
+        "required_causal_chain": [
+          "surgical_configuration",
+          "host_age_or_development",
+          "early_postoperative_cell_state",
+          "tissue_organization_and_morphogenesis",
+          "final_morphology_and_transparency"
+        ],
+        "required_outputs": [
+          "earliest_causal_determinant",
+          "falsifiers",
+          "discriminating_experiments"
+        ],
+        "research_goal": "Develop and rank mechanistically explicit, falsifiable hypotheses explaining how surgical configuration, host age, early postoperative cell state, tissue organization, and morphogenesis determine transparent versus fibrotic lens regeneration.\n"
+      },
+      "response": {
+        "hypotheses": [
+          {
+            "assumptions": [
+              "strain is sensed early"
+            ],
+            "claim": "Capsule strain precedes fibrotic commitment.",
+            "content_id": "c-1",
+            "falsifiers": [
+              "commitment precedes strain sensing"
+            ],
+            "generation_strategy": "causal contrast",
+            "hypothesis_id": "h-1",
+            "mechanism_chain": [
+              "surgical_configuration",
+              "host_age_or_development",
+              "early_postoperative_cell_state",
+              "tissue_organization_and_morphogenesis",
+              "final_morphology_and_transparency"
+            ],
+            "predictions": [
+              "normalizing strain reduces fibrosis"
+            ],
+            "research_plan_version": 1,
+            "schema_version": 1,
+            "title": "Mechanical gate"
+          },
+          {
+            "assumptions": [
+              "cytokine duration is measurable"
+            ],
+            "claim": "Cytokine duration precedes fibrotic commitment.",
+            "content_id": "c-2",
+            "falsifiers": [
+              "duration has no effect"
+            ],
+            "generation_strategy": "causal contrast",
+            "hypothesis_id": "h-2",
+            "mechanism_chain": [
+              "surgical_configuration",
+              "host_age_or_development",
+              "early_postoperative_cell_state",
+              "tissue_organization_and_morphogenesis",
+              "final_morphology_and_transparency"
+            ],
+            "predictions": [
+              "short exposure reduces fibrosis"
+            ],
+            "research_plan_version": 1,
+            "schema_version": 1,
+            "title": "Inflammatory gate"
+          }
+        ],
+        "research_plan_version": 1,
+        "schema_version": 1
+      },
+      "skill_id": "generation"
+    },
+    {
+      "inputs": {
+        "content_hash": "sha256:43b307aba2fb131b865b7d5babc30473833923d8d584225f7679543289deb753",
+        "hypothesis_id": "h-1",
+        "literature_evidence": {
+          "query": "Mechanistic determinants of transparent versus fibrotic lens regeneration after minimally invasive lens surgery lens epithelial regeneration fibrosis",
+          "raw_sha256": "sha256:cf3e059656ab8fb23317f6914d3e09f831e0e3ab6d9c931bf296e55c4db14ad3",
+          "source_ids": [
+            "pubmed:1001",
+            "pubmed:1002"
+          ]
+        },
+        "review_stage": "full_review"
+      },
+      "response": {
+        "content_hash": "sha256:43b307aba2fb131b865b7d5babc30473833923d8d584225f7679543289deb753",
+        "critical_flaws": [],
+        "dimension_scores": {},
+        "evidence_ids": [
+          "pubmed:1001",
+          "pubmed:1002"
+        ],
+        "hypothesis_id": "h-1",
+        "novelty_assessment": {
+          "assessment_id": "novelty-h-1",
+          "closest_prior_work_ids": [
+            "pubmed:1001",
+            "pubmed:1002"
+          ],
+          "content_hash": "sha256:43b307aba2fb131b865b7d5babc30473833923d8d584225f7679543289deb753",
+          "evidence_ids": [
+            "pubmed:1001",
+            "pubmed:1002"
+          ],
+          "hypothesis_id": "h-1",
+          "research_plan_version": 1,
+          "verdict": "partially_novel"
+        },
+        "recommendation": "pass",
+        "research_plan_version": 1,
+        "review_id": "review-full_review-h-1",
+        "safety_status": "not_assessed",
+        "schema_version": 1,
+        "stage": "full_review"
+      },
+      "skill_id": "reflection"
+    },
+    {
+      "inputs": {
+        "content_hash": "sha256:43b307aba2fb131b865b7d5babc30473833923d8d584225f7679543289deb753",
+        "hypothesis_id": "h-1",
+        "review_stage": "initial_review"
+      },
+      "response": {
+        "content_hash": "sha256:43b307aba2fb131b865b7d5babc30473833923d8d584225f7679543289deb753",
+        "critical_flaws": [],
+        "dimension_scores": {},
+        "evidence_ids": [],
+        "hypothesis_id": "h-1",
+        "recommendation": "pass",
+        "research_plan_version": 1,
+        "review_id": "review-initial_review-h-1",
+        "safety_status": "passed",
+        "schema_version": 1,
+        "stage": "initial_review"
+      },
+      "skill_id": "reflection"
+    },
+    {
+      "inputs": {
+        "content_hash": "sha256:f4a9a17c9c4130aa138a24c2b4956a2088952f848c99e878b6fdfbe75e726945",
+        "hypothesis_id": "h-2",
+        "literature_evidence": {
+          "query": "Mechanistic determinants of transparent versus fibrotic lens regeneration after minimally invasive lens surgery lens epithelial regeneration fibrosis",
+          "raw_sha256": "sha256:cf3e059656ab8fb23317f6914d3e09f831e0e3ab6d9c931bf296e55c4db14ad3",
+          "source_ids": [
+            "pubmed:1001",
+            "pubmed:1002"
+          ]
+        },
+        "review_stage": "full_review"
+      },
+      "response": {
+        "content_hash": "sha256:f4a9a17c9c4130aa138a24c2b4956a2088952f848c99e878b6fdfbe75e726945",
+        "critical_flaws": [],
+        "dimension_scores": {},
+        "evidence_ids": [
+          "pubmed:1001",
+          "pubmed:1002"
+        ],
+        "hypothesis_id": "h-2",
+        "novelty_assessment": {
+          "assessment_id": "novelty-h-2",
+          "closest_prior_work_ids": [
+            "pubmed:1001",
+            "pubmed:1002"
+          ],
+          "content_hash": "sha256:f4a9a17c9c4130aa138a24c2b4956a2088952f848c99e878b6fdfbe75e726945",
+          "evidence_ids": [
+            "pubmed:1001",
+            "pubmed:1002"
+          ],
+          "hypothesis_id": "h-2",
+          "research_plan_version": 1,
+          "verdict": "partially_novel"
+        },
+        "recommendation": "pass",
+        "research_plan_version": 1,
+        "review_id": "review-full_review-h-2",
+        "safety_status": "not_assessed",
+        "schema_version": 1,
+        "stage": "full_review"
+      },
+      "skill_id": "reflection"
+    },
+    {
+      "inputs": {
+        "content_hash": "sha256:f4a9a17c9c4130aa138a24c2b4956a2088952f848c99e878b6fdfbe75e726945",
+        "hypothesis_id": "h-2",
+        "review_stage": "initial_review"
+      },
+      "response": {
+        "content_hash": "sha256:f4a9a17c9c4130aa138a24c2b4956a2088952f848c99e878b6fdfbe75e726945",
+        "critical_flaws": [],
+        "dimension_scores": {},
+        "evidence_ids": [],
+        "hypothesis_id": "h-2",
+        "recommendation": "pass",
+        "research_plan_version": 1,
+        "review_id": "review-initial_review-h-2",
+        "safety_status": "passed",
+        "schema_version": 1,
+        "stage": "initial_review"
+      },
+      "skill_id": "reflection"
+    },
+    {
+      "inputs": {
+        "edge_id": "edge-1",
+        "left_content_hash": "sha256:43b307aba2fb131b865b7d5babc30473833923d8d584225f7679543289deb753",
+        "left_id": "h-1",
+        "right_content_hash": "sha256:f4a9a17c9c4130aa138a24c2b4956a2088952f848c99e878b6fdfbe75e726945",
+        "right_id": "h-2"
+      },
+      "response": {
+        "access_issues": [],
+        "cluster_suggestion": "mechanical",
+        "duplicate_likelihood": 0.05,
+        "edge_id": "edge-1",
+        "left_content_hash": "sha256:43b307aba2fb131b865b7d5babc30473833923d8d584225f7679543289deb753",
+        "left_id": "h-1",
+        "mechanism_overlap": [],
+        "rationale": "The mechanisms remain distinguishable.",
+        "research_plan_version": 1,
+        "right_content_hash": "sha256:f4a9a17c9c4130aa138a24c2b4956a2088952f848c99e878b6fdfbe75e726945",
+        "right_id": "h-2",
+        "schema_version": 1,
+        "similarity": 2
+      },
+      "skill_id": "proximity"
+    },
+    {
+      "inputs": {
+        "edge_id": "edge-2",
+        "left_content_hash": "sha256:f4a9a17c9c4130aa138a24c2b4956a2088952f848c99e878b6fdfbe75e726945",
+        "left_id": "h-2",
+        "right_content_hash": "sha256:43b307aba2fb131b865b7d5babc30473833923d8d584225f7679543289deb753",
+        "right_id": "h-1"
+      },
+      "response": {
+        "access_issues": [],
+        "cluster_suggestion": "inflammatory",
+        "duplicate_likelihood": 0.05,
+        "edge_id": "edge-2",
+        "left_content_hash": "sha256:f4a9a17c9c4130aa138a24c2b4956a2088952f848c99e878b6fdfbe75e726945",
+        "left_id": "h-2",
+        "mechanism_overlap": [],
+        "rationale": "The mechanisms remain distinguishable.",
+        "research_plan_version": 1,
+        "right_content_hash": "sha256:43b307aba2fb131b865b7d5babc30473833923d8d584225f7679543289deb753",
+        "right_id": "h-1",
+        "schema_version": 1,
+        "similarity": 2
+      },
+      "skill_id": "proximity"
+    },
+    {
+      "inputs": {
+        "admission_policy_version": "admission-v1",
+        "anchor_set_id": "core-preview-anchors-v1",
+        "comparison_kind": "opportunistic",
+        "epoch_id": "epoch-1",
+        "evaluation_rules_hash": "sha256:228749731c99f43e6373f591a02da823675351dc31da16f15a54092d1487fd2b",
+        "judge_profile_hash": "sha256:5a9bf0dcf09d680ce9524c9346d629e487bf0c82341f0951cd0e48ed2d9d7cd4",
+        "left_content_hash": "sha256:43b307aba2fb131b865b7d5babc30473833923d8d584225f7679543289deb753",
+        "left_id": "h-1",
+        "match_id": "opportunistic-match-1",
+        "ranking_prompt_hash": "sha256:095aaad7ad06b0b28944270448a493a198592212904f14dbb84c407298367213",
+        "rating_policy_version": "elo-32-v1",
+        "research_plan_version": 1,
+        "right_content_hash": "sha256:f4a9a17c9c4130aa138a24c2b4956a2088952f848c99e878b6fdfbe75e726945",
+        "right_id": "h-2"
+      },
+      "response": {
+        "admission_policy_version": "admission-v1",
+        "confidence": 0.8,
+        "decision_status": "decisive",
+        "dimension_reasons": {
+          "mechanism": "Replay fixture decision."
+        },
+        "epoch_id": "epoch-1",
+        "evaluation_rules_hash": "sha256:228749731c99f43e6373f591a02da823675351dc31da16f15a54092d1487fd2b",
+        "judge_profile_hash": "sha256:5a9bf0dcf09d680ce9524c9346d629e487bf0c82341f0951cd0e48ed2d9d7cd4",
+        "left_content_hash": "sha256:43b307aba2fb131b865b7d5babc30473833923d8d584225f7679543289deb753",
+        "left_id": "h-1",
+        "match_id": "opportunistic-match-1",
+        "ranking_prompt_hash": "sha256:095aaad7ad06b0b28944270448a493a198592212904f14dbb84c407298367213",
+        "rating_policy_version": "elo-32-v1",
+        "research_plan_version": 1,
+        "right_content_hash": "sha256:f4a9a17c9c4130aa138a24c2b4956a2088952f848c99e878b6fdfbe75e726945",
+        "right_id": "h-2",
+        "schema_version": 1,
+        "unresolved_disagreements": [],
+        "winner_slot": 1
+      },
+      "skill_id": "ranking"
+    },
+    {
+      "inputs": {
+        "admission_policy_version": "admission-v1",
+        "anchor_set_id": "core-preview-anchors-v1",
+        "comparison_kind": "opportunistic",
+        "epoch_id": "epoch-1",
+        "evaluation_rules_hash": "sha256:228749731c99f43e6373f591a02da823675351dc31da16f15a54092d1487fd2b",
+        "judge_profile_hash": "sha256:5a9bf0dcf09d680ce9524c9346d629e487bf0c82341f0951cd0e48ed2d9d7cd4",
+        "left_content_hash": "sha256:43b307aba2fb131b865b7d5babc30473833923d8d584225f7679543289deb753",
+        "left_id": "h-1",
+        "match_id": "opportunistic-match-2",
+        "ranking_prompt_hash": "sha256:095aaad7ad06b0b28944270448a493a198592212904f14dbb84c407298367213",
+        "rating_policy_version": "elo-32-v1",
+        "research_plan_version": 1,
+        "right_content_hash": "sha256:f4a9a17c9c4130aa138a24c2b4956a2088952f848c99e878b6fdfbe75e726945",
+        "right_id": "h-2"
+      },
+      "response": {
+        "admission_policy_version": "admission-v1",
+        "confidence": 0.8,
+        "decision_status": "decisive",
+        "dimension_reasons": {
+          "mechanism": "Replay fixture decision."
+        },
+        "epoch_id": "epoch-1",
+        "evaluation_rules_hash": "sha256:228749731c99f43e6373f591a02da823675351dc31da16f15a54092d1487fd2b",
+        "judge_profile_hash": "sha256:5a9bf0dcf09d680ce9524c9346d629e487bf0c82341f0951cd0e48ed2d9d7cd4",
+        "left_content_hash": "sha256:43b307aba2fb131b865b7d5babc30473833923d8d584225f7679543289deb753",
+        "left_id": "h-1",
+        "match_id": "opportunistic-match-2",
+        "ranking_prompt_hash": "sha256:095aaad7ad06b0b28944270448a493a198592212904f14dbb84c407298367213",
+        "rating_policy_version": "elo-32-v1",
+        "research_plan_version": 1,
+        "right_content_hash": "sha256:f4a9a17c9c4130aa138a24c2b4956a2088952f848c99e878b6fdfbe75e726945",
+        "right_id": "h-2",
+        "schema_version": 1,
+        "unresolved_disagreements": [],
+        "winner_slot": 1
+      },
+      "skill_id": "ranking"
+    },
+    {
+      "inputs": {
+        "admission_policy_version": "admission-v1",
+        "anchor_set_id": "core-preview-anchors-v1",
+        "comparison_kind": "opportunistic",
+        "epoch_id": "epoch-1",
+        "evaluation_rules_hash": "sha256:228749731c99f43e6373f591a02da823675351dc31da16f15a54092d1487fd2b",
+        "judge_profile_hash": "sha256:5a9bf0dcf09d680ce9524c9346d629e487bf0c82341f0951cd0e48ed2d9d7cd4",
+        "left_content_hash": "sha256:43b307aba2fb131b865b7d5babc30473833923d8d584225f7679543289deb753",
+        "left_id": "h-1",
+        "match_id": "opportunistic-match-3",
+        "ranking_prompt_hash": "sha256:095aaad7ad06b0b28944270448a493a198592212904f14dbb84c407298367213",
+        "rating_policy_version": "elo-32-v1",
+        "research_plan_version": 1,
+        "right_content_hash": "sha256:f4a9a17c9c4130aa138a24c2b4956a2088952f848c99e878b6fdfbe75e726945",
+        "right_id": "h-2"
+      },
+      "response": {
+        "admission_policy_version": "admission-v1",
+        "confidence": 0.8,
+        "decision_status": "decisive",
+        "dimension_reasons": {
+          "mechanism": "Replay fixture decision."
+        },
+        "epoch_id": "epoch-1",
+        "evaluation_rules_hash": "sha256:228749731c99f43e6373f591a02da823675351dc31da16f15a54092d1487fd2b",
+        "judge_profile_hash": "sha256:5a9bf0dcf09d680ce9524c9346d629e487bf0c82341f0951cd0e48ed2d9d7cd4",
+        "left_content_hash": "sha256:43b307aba2fb131b865b7d5babc30473833923d8d584225f7679543289deb753",
+        "left_id": "h-1",
+        "match_id": "opportunistic-match-3",
+        "ranking_prompt_hash": "sha256:095aaad7ad06b0b28944270448a493a198592212904f14dbb84c407298367213",
+        "rating_policy_version": "elo-32-v1",
+        "research_plan_version": 1,
+        "right_content_hash": "sha256:f4a9a17c9c4130aa138a24c2b4956a2088952f848c99e878b6fdfbe75e726945",
+        "right_id": "h-2",
+        "schema_version": 1,
+        "unresolved_disagreements": [],
+        "winner_slot": 1
+      },
+      "skill_id": "ranking"
+    },
+    {
+      "inputs": {
+        "admission_policy_version": "admission-v1",
+        "anchor_set_id": "core-preview-anchors-v1",
+        "comparison_kind": "opportunistic",
+        "epoch_id": "epoch-1",
+        "evaluation_rules_hash": "sha256:228749731c99f43e6373f591a02da823675351dc31da16f15a54092d1487fd2b",
+        "judge_profile_hash": "sha256:5a9bf0dcf09d680ce9524c9346d629e487bf0c82341f0951cd0e48ed2d9d7cd4",
+        "left_content_hash": "sha256:43b307aba2fb131b865b7d5babc30473833923d8d584225f7679543289deb753",
+        "left_id": "h-1",
+        "match_id": "opportunistic-match-4",
+        "ranking_prompt_hash": "sha256:095aaad7ad06b0b28944270448a493a198592212904f14dbb84c407298367213",
+        "rating_policy_version": "elo-32-v1",
+        "research_plan_version": 1,
+        "right_content_hash": "sha256:f4a9a17c9c4130aa138a24c2b4956a2088952f848c99e878b6fdfbe75e726945",
+        "right_id": "h-2"
+      },
+      "response": {
+        "admission_policy_version": "admission-v1",
+        "confidence": 0.8,
+        "decision_status": "decisive",
+        "dimension_reasons": {
+          "mechanism": "Replay fixture decision."
+        },
+        "epoch_id": "epoch-1",
+        "evaluation_rules_hash": "sha256:228749731c99f43e6373f591a02da823675351dc31da16f15a54092d1487fd2b",
+        "judge_profile_hash": "sha256:5a9bf0dcf09d680ce9524c9346d629e487bf0c82341f0951cd0e48ed2d9d7cd4",
+        "left_content_hash": "sha256:43b307aba2fb131b865b7d5babc30473833923d8d584225f7679543289deb753",
+        "left_id": "h-1",
+        "match_id": "opportunistic-match-4",
+        "ranking_prompt_hash": "sha256:095aaad7ad06b0b28944270448a493a198592212904f14dbb84c407298367213",
+        "rating_policy_version": "elo-32-v1",
+        "research_plan_version": 1,
+        "right_content_hash": "sha256:f4a9a17c9c4130aa138a24c2b4956a2088952f848c99e878b6fdfbe75e726945",
+        "right_id": "h-2",
+        "schema_version": 1,
+        "unresolved_disagreements": [],
+        "winner_slot": 1
+      },
+      "skill_id": "ranking"
+    },
+    {
+      "inputs": {
+        "admission_policy_version": "admission-v1",
+        "anchor_set_id": "core-preview-anchors-v1",
+        "comparison_kind": "fixed_anchor",
+        "epoch_id": "epoch-1",
+        "evaluation_rules_hash": "sha256:228749731c99f43e6373f591a02da823675351dc31da16f15a54092d1487fd2b",
+        "judge_profile_hash": "sha256:5a9bf0dcf09d680ce9524c9346d629e487bf0c82341f0951cd0e48ed2d9d7cd4",
+        "left_content_hash": "sha256:43b307aba2fb131b865b7d5babc30473833923d8d584225f7679543289deb753",
+        "left_id": "h-1",
+        "match_id": "anchor-match-1",
+        "ranking_prompt_hash": "sha256:095aaad7ad06b0b28944270448a493a198592212904f14dbb84c407298367213",
+        "rating_policy_version": "elo-32-v1",
+        "research_plan_version": 1,
+        "right_content_hash": "sha256:a4290169107a4b39f542fceb573a08cab02c677e67c323f12b570e83bf13747c",
+        "right_id": "transparent-regeneration-baseline-v1"
+      },
+      "response": {
+        "admission_policy_version": "admission-v1",
+        "confidence": 0.8,
+        "decision_status": "decisive",
+        "dimension_reasons": {
+          "mechanism": "Replay fixture decision."
+        },
+        "epoch_id": "epoch-1",
+        "evaluation_rules_hash": "sha256:228749731c99f43e6373f591a02da823675351dc31da16f15a54092d1487fd2b",
+        "judge_profile_hash": "sha256:5a9bf0dcf09d680ce9524c9346d629e487bf0c82341f0951cd0e48ed2d9d7cd4",
+        "left_content_hash": "sha256:43b307aba2fb131b865b7d5babc30473833923d8d584225f7679543289deb753",
+        "left_id": "h-1",
+        "match_id": "anchor-match-1",
+        "ranking_prompt_hash": "sha256:095aaad7ad06b0b28944270448a493a198592212904f14dbb84c407298367213",
+        "rating_policy_version": "elo-32-v1",
+        "research_plan_version": 1,
+        "right_content_hash": "sha256:a4290169107a4b39f542fceb573a08cab02c677e67c323f12b570e83bf13747c",
+        "right_id": "transparent-regeneration-baseline-v1",
+        "schema_version": 1,
+        "unresolved_disagreements": [],
+        "winner_slot": 1
+      },
+      "skill_id": "ranking"
+    },
+    {
+      "inputs": {
+        "admission_policy_version": "admission-v1",
+        "anchor_set_id": "core-preview-anchors-v1",
+        "comparison_kind": "fixed_anchor",
+        "epoch_id": "epoch-1",
+        "evaluation_rules_hash": "sha256:228749731c99f43e6373f591a02da823675351dc31da16f15a54092d1487fd2b",
+        "judge_profile_hash": "sha256:5a9bf0dcf09d680ce9524c9346d629e487bf0c82341f0951cd0e48ed2d9d7cd4",
+        "left_content_hash": "sha256:f4a9a17c9c4130aa138a24c2b4956a2088952f848c99e878b6fdfbe75e726945",
+        "left_id": "h-2",
+        "match_id": "anchor-match-2",
+        "ranking_prompt_hash": "sha256:095aaad7ad06b0b28944270448a493a198592212904f14dbb84c407298367213",
+        "rating_policy_version": "elo-32-v1",
+        "research_plan_version": 1,
+        "right_content_hash": "sha256:0f6b42cabde32da2257addfcdb23a795bd5d1dce56f9a250d89e30029c3a35b3",
+        "right_id": "fibrotic-regeneration-baseline-v1"
+      },
+      "response": {
+        "admission_policy_version": "admission-v1",
+        "confidence": 0.8,
+        "decision_status": "decisive",
+        "dimension_reasons": {
+          "mechanism": "Replay fixture decision."
+        },
+        "epoch_id": "epoch-1",
+        "evaluation_rules_hash": "sha256:228749731c99f43e6373f591a02da823675351dc31da16f15a54092d1487fd2b",
+        "judge_profile_hash": "sha256:5a9bf0dcf09d680ce9524c9346d629e487bf0c82341f0951cd0e48ed2d9d7cd4",
+        "left_content_hash": "sha256:f4a9a17c9c4130aa138a24c2b4956a2088952f848c99e878b6fdfbe75e726945",
+        "left_id": "h-2",
+        "match_id": "anchor-match-2",
+        "ranking_prompt_hash": "sha256:095aaad7ad06b0b28944270448a493a198592212904f14dbb84c407298367213",
+        "rating_policy_version": "elo-32-v1",
+        "research_plan_version": 1,
+        "right_content_hash": "sha256:0f6b42cabde32da2257addfcdb23a795bd5d1dce56f9a250d89e30029c3a35b3",
+        "right_id": "fibrotic-regeneration-baseline-v1",
+        "schema_version": 1,
+        "unresolved_disagreements": [],
+        "winner_slot": 1
+      },
+      "skill_id": "ranking"
+    },
+    {
+      "inputs": {
+        "objective": "typed production replay exemplar",
+        "parent_content_ids": [
+          "c-1"
+        ]
+      },
+      "response": {
+        "change_rationales": {
+          "h-evolution-resource": "Makes the intervention timing falsifiable."
+        },
+        "children": [
+          {
+            "assumptions": [
+              "the early state is experimentally addressable"
+            ],
+            "claim": "An early epithelial-state intervention may redirect fibrotic repair.",
+            "content_id": "c-evolution-resource",
+            "falsifiers": [
+              "early intervention leaves morphology unchanged"
+            ],
+            "generation_strategy": "mechanism-preserving evolution",
+            "hypothesis_id": "h-evolution-resource",
+            "mechanism_chain": [
+              "surgical_configuration",
+              "host_age_or_development",
+              "early_postoperative_cell_state",
+              "tissue_organization_and_morphogenesis",
+              "final_morphology_and_transparency"
+            ],
+            "parent_content_ids": [
+              "c-1"
+            ],
+            "predictions": [
+              "early intervention improves ordered fiber formation"
+            ],
+            "research_plan_version": 1,
+            "schema_version": 1,
+            "title": "Typed evolution replay exemplar"
+          }
+        ],
+        "research_plan_version": 1,
+        "schema_version": 1
+      },
+      "skill_id": "evolution"
+    },
+    {
+      "inputs": {
+        "scope": "typed production replay exemplar"
+      },
+      "response": {
+        "coverage_gaps": [],
+        "overview": "The replay trace exercises every Core agent result schema.",
+        "research_plan_version": 1,
+        "safety_direction_check": "clear",
+        "schema_version": 1,
+        "source_content_hashes": {
+          "h-1": "sha256:43b307aba2fb131b865b7d5babc30473833923d8d584225f7679543289deb753"
+        },
+        "system_feedback": [
+          "Preserve raw-first scientific provenance."
+        ]
+      },
+      "skill_id": "meta_review"
+    }
+  ]
+}

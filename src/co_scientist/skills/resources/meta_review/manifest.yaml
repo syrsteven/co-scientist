@@ -1,0 +1,8 @@
+id: meta_review
+agent_type: meta_review
+version: 0.2.0
+prompt_path: prompts/system.md
+input_schema: MetaReviewInputV1
+output_schema: MetaReviewResultV1
+allowed_tools: []
+allowed_capabilities: [return_agent_result]

@@ -1,0 +1,814 @@
+import hashlib
+from datetime import UTC, datetime, timedelta
+from decimal import Decimal
+
+import pytest
+from sqlalchemy import text
+
+from co_scientist.adapters.persistence.sqlite import SqliteUnitOfWork
+from co_scientist.agents.result import AgentResult
+from co_scientist.domain.budget import CostEntry
+from co_scientist.domain.review import ReviewPolicy
+from co_scientist.domain.states import ExternalCallState, RunState, TaskState
+from co_scientist.domain.task import (
+    NewTask,
+    TaskLeaseFence,
+    TaskMutation,
+    lease_fence_fingerprint,
+)
+from co_scientist.events.models import NewEvent
+from co_scientist.ports.artifact_store import ArtifactRef
+from co_scientist.runtime.external_calls import request_fingerprint
+from co_scientist.supervisor.orchestrator import Supervisor
+
+_TASK_INPUTS: dict[str, object] = {}
+_TASK_INPUT_HASH = request_fingerprint(_TASK_INPUTS)
+_TASK_PROMPT_HASH = "sha256:fixture-prompt"
+
+
+def _context(*, task_id: str = "generate-1", key: str = "generation:1") -> dict[str, object]:
+    fence = _fence(task_id=task_id)
+    return {
+        "run_id": "run-1",
+        "task_id": task_id,
+        "idempotency_key": key,
+        "skill_id": "generation",
+        "skill_version": "0.2.0",
+        "output_schema_id": "GenerationResultV1",
+        "output_schema_version": 1,
+        "research_plan_version": 1,
+        "provider": "stub",
+        "model_or_tool": "stub-model",
+        "input_snapshot_hash": _TASK_INPUT_HASH,
+        "prompt_hash": _TASK_PROMPT_HASH,
+        "attempt": 1,
+        "reservation_id": _reservation_id(key),
+        "lease_fence_fingerprint": lease_fence_fingerprint(fence),
+    }
+
+
+def _reservation_id(key: str = "generation:1") -> str:
+    digest = hashlib.sha256(f"run-1\0{key}".encode()).hexdigest()
+    return f"reservation-{digest}"
+
+
+def _fence(*, task_id: str = "generate-1") -> TaskLeaseFence:
+    return TaskLeaseFence(run_id="run-1", task_id=task_id, lease_token="fence-lease", attempt=1)
+
+
+def _generation_payload() -> dict[str, object]:
+    return {
+        "schema_version": 1,
+        "research_plan_version": 1,
+        "hypotheses": [
+            {
+                "schema_version": 1,
+                "hypothesis_id": "h-1",
+                "content_id": "content-1",
+                "research_plan_version": 1,
+                "title": "Stopping settlement",
+                "claim": "Already-submitted results may settle while stopping.",
+                "mechanism_chain": ["submit", "stop", "settle"],
+                "assumptions": [],
+                "predictions": [],
+                "falsifiers": [],
+                "generation_strategy": "state fence fixture",
+                "parent_content_ids": [],
+                "supersedes_content_id": None,
+                "content_hash": None,
+            }
+        ],
+    }
+
+
+def _submitted_generation(tmp_path) -> tuple[Supervisor, AgentResult]:
+    tmp_path.mkdir(parents=True, exist_ok=True)
+    uow = SqliteUnitOfWork(f"sqlite:///{tmp_path / 'fences.db'}")
+    uow.create_schema()
+    uow.create_started_run(
+        "run-1",
+        manifest={"execution_contract_version": 3, "budget": {}},
+        event=NewEvent(event_type="RunStarted", payload={}),
+        idempotency_key="start:run-1:0",
+    )
+    task = NewTask(
+        task_id="generate-1",
+        run_id="run-1",
+        idempotency_key="generation:1",
+        intent_type="generate",
+        payload={
+            "skill_id": "generation",
+            "skill_version": "0.2.0",
+            "output_schema_id": "GenerationResultV1",
+            "output_schema_version": 1,
+            "research_plan_version": 1,
+            "provider_id": "stub",
+            "model_or_tool": "stub-model",
+            "inputs": _TASK_INPUTS,
+            "input_snapshot_hash": _TASK_INPUT_HASH,
+            "prompt_hash": _TASK_PROMPT_HASH,
+            "budget_estimate": {
+                "model_calls": 1,
+                "input_tokens": 3,
+                "output_tokens": 2,
+                "cost_usd": "0.01",
+                "hypotheses": 1,
+                "matches": 0,
+            }
+        },
+    )
+    uow.enqueue_tasks((task,))
+    claimed = uow.claim_next_task(
+        run_id="run-1",
+        worker_id="fence-worker",
+        lease_token="fence-lease",
+        now=datetime(2026, 8, 17, 10, 0, tzinfo=UTC),
+        lease_duration=timedelta(minutes=5),
+    ).task
+    assert claimed is not None
+    uow.mark_task_running(fence=claimed)
+    uow.plan_external_call(
+        "call-1",
+        "sha256:request",
+        run_id="run-1",
+        task_id=task.task_id,
+        execution_context=_context(),
+        reservation_id=claimed.reservation_id,
+        fence=claimed,
+    )
+    uow.transition_call(
+        "call-1",
+        ExternalCallState.STARTED,
+        reservation_id=claimed.reservation_id,
+        fence=claimed,
+    )
+    raw_ref = ArtifactRef(
+        path="raw/call-1/digest",
+        sha256="sha256:digest",
+        mime_type="application/json",
+        byte_length=2,
+    )
+    uow.record_raw_and_transition(
+        "call-1",
+        raw_ref,
+        ExternalCallState.RAW_RESPONSE_PERSISTED,
+        usage={
+            "input_tokens": 3,
+            "output_tokens": 2,
+            "cost_usd": "0.01",
+            "pricing_version": "test",
+        },
+        reservation_id=claimed.reservation_id,
+        fence=claimed,
+    )
+    payload = _generation_payload()
+    result = AgentResult(
+        result_id="result-1",
+        external_call_id="call-1",
+        run_id="run-1",
+        task_id=task.task_id,
+        idempotency_key=task.idempotency_key,
+        skill_id="generation",
+        skill_version="0.2.0",
+        output_schema_id="GenerationResultV1",
+        output_schema_version=1,
+        research_plan_version=1,
+        provider="stub",
+        model_or_tool="stub-model",
+        input_snapshot_hash=_TASK_INPUT_HASH,
+        prompt_hash=_TASK_PROMPT_HASH,
+        attempt=claimed.attempt,
+        reservation_id=claimed.reservation_id,
+        lease_fence_fingerprint=lease_fence_fingerprint(claimed),
+        status="completed",
+        payload=payload,
+        raw_artifact_ref=raw_ref,
+    )
+    uow.record_validated_and_submitted(
+        "call-1",
+        payload,
+        result,
+        reservation_id=claimed.reservation_id,
+        fence=claimed,
+    )
+    uow.acknowledge_task(fence=claimed, target_state=TaskState.RESULT_RECEIVED)
+    return Supervisor(uow=uow, review_policy=ReviewPolicy(profile_id="minimal")), result
+
+
+def _inflight_generation(tmp_path) -> tuple[Supervisor, TaskLeaseFence, ArtifactRef]:
+    tmp_path.mkdir(parents=True, exist_ok=True)
+    uow = SqliteUnitOfWork(f"sqlite:///{tmp_path / 'inflight-fences.db'}")
+    uow.create_schema()
+    uow.create_started_run(
+        "run-1",
+        manifest={"execution_contract_version": 3, "budget": {}},
+        event=NewEvent(event_type="RunStarted", payload={}),
+        idempotency_key="start:run-1:0",
+    )
+    task = NewTask(
+        task_id="generate-1",
+        run_id="run-1",
+        idempotency_key="generation:1",
+        intent_type="generate",
+        payload={"budget_estimate": {"model_calls": 1}},
+    )
+    uow.enqueue_tasks((task,))
+    claimed = uow.claim_next_task(
+        run_id="run-1",
+        worker_id="fence-worker",
+        lease_token="fence-lease",
+        now=datetime(2026, 8, 17, 10, 0, tzinfo=UTC),
+        lease_duration=timedelta(minutes=5),
+    ).task
+    assert claimed is not None
+    uow.mark_task_running(fence=claimed)
+    uow.plan_external_call(
+        "call-1",
+        "sha256:request",
+        run_id="run-1",
+        task_id=task.task_id,
+        execution_context=_context(),
+        reservation_id=claimed.reservation_id,
+        fence=claimed,
+    )
+    uow.transition_call(
+        "call-1",
+        ExternalCallState.STARTED,
+        reservation_id=claimed.reservation_id,
+        fence=claimed,
+    )
+    ref = ArtifactRef(
+        path="raw/call-1/inflight",
+        sha256="sha256:" + "e" * 64,
+        mime_type="application/json",
+        byte_length=2,
+    )
+    return Supervisor(uow=uow, review_policy=ReviewPolicy(profile_id="minimal")), claimed, ref
+
+
+def _prepare_call_boundary(
+    supervisor: Supervisor,
+    fence: TaskLeaseFence,
+    ref: ArtifactRef,
+    mutation: str,
+) -> AgentResult:
+    uow = supervisor.uow
+    payload = _generation_payload()
+    result = AgentResult(
+        result_id="result-inflight",
+        external_call_id="call-1",
+        run_id="run-1",
+        task_id="generate-1",
+        idempotency_key="generation:1",
+        skill_id="generation",
+        skill_version="0.2.0",
+        output_schema_id="GenerationResultV1",
+        output_schema_version=1,
+        research_plan_version=1,
+        provider="stub",
+        model_or_tool="stub-model",
+        input_snapshot_hash=_TASK_INPUT_HASH,
+        prompt_hash=_TASK_PROMPT_HASH,
+        attempt=fence.attempt,
+        reservation_id=fence.reservation_id,
+        lease_fence_fingerprint=lease_fence_fingerprint(fence),
+        status="completed",
+        payload=payload,
+        raw_artifact_ref=ref,
+    )
+    if mutation in {"validated", "submitted"}:
+        uow.record_raw_and_transition(
+            "call-1",
+            ref,
+            ExternalCallState.RAW_RESPONSE_PERSISTED,
+            usage={},
+            reservation_id=fence.reservation_id,
+            fence=fence,
+        )
+    if mutation == "submitted":
+        uow.record_validated(
+            "call-1", payload, reservation_id=fence.reservation_id, fence=fence
+        )
+    return result
+
+
+def _mutate_call_boundary(
+    supervisor: Supervisor,
+    fence: TaskLeaseFence,
+    ref: ArtifactRef,
+    result: AgentResult,
+    mutation: str,
+) -> None:
+    uow = supervisor.uow
+    if mutation == "raw":
+        uow.record_raw_and_transition(
+            "call-1",
+            ref,
+            ExternalCallState.RAW_RESPONSE_PERSISTED,
+            usage={},
+            reservation_id=fence.reservation_id,
+            fence=fence,
+        )
+    elif mutation == "validated":
+        uow.record_validated(
+            "call-1",
+            _generation_payload(),
+            reservation_id=fence.reservation_id,
+            fence=fence,
+        )
+    elif mutation == "submitted":
+        uow.record_submitted_result(
+            "call-1", result, reservation_id=fence.reservation_id, fence=fence
+        )
+    elif mutation == "validated_and_submitted":
+        uow.record_raw_and_transition(
+            "call-1",
+            ref,
+            ExternalCallState.RAW_RESPONSE_PERSISTED,
+            usage={},
+            reservation_id=fence.reservation_id,
+            fence=fence,
+        )
+        uow.record_validated_and_submitted(
+            "call-1",
+            _generation_payload(),
+            result,
+            reservation_id=fence.reservation_id,
+            fence=fence,
+        )
+    elif mutation == "transition":
+        uow.transition_call(
+            "call-1",
+            ExternalCallState.FAILED_BEFORE_RESPONSE,
+            reservation_id=fence.reservation_id,
+            fence=fence,
+        )
+    else:
+        raise AssertionError(mutation)
+
+
+def _enter_state(supervisor: Supervisor, target: RunState) -> None:
+    uow = supervisor.uow
+    if target in {RunState.COMPLETED, RunState.COMPLETED_PARTIAL}:
+        stopping = uow.commit_lifecycle_batch(
+            run_id="run-1",
+            expected_sequence=uow.load("run-1")[-1].sequence,
+            events=(NewEvent(event_type="RunStopping", payload={}),),
+            target_run_state=RunState.STOPPING,
+            idempotency_key="enter-stopping",
+        )
+        terminal_event = "RunCompleted" if target is RunState.COMPLETED else "RunCompletedPartial"
+        uow.commit_lifecycle_batch(
+            run_id="run-1",
+            expected_sequence=stopping.last_sequence,
+            events=(
+                NewEvent(event_type="FinalizationCompleted", payload={}),
+                NewEvent(event_type=terminal_event, payload={}),
+            ),
+            target_run_state=target,
+            idempotency_key=f"enter-{target.value}",
+        )
+        return
+    terminal_event = "RunFailed" if target is RunState.FAILED else "RunCancelled"
+    uow.commit_lifecycle_batch(
+        run_id="run-1",
+        expected_sequence=uow.load("run-1")[-1].sequence,
+        events=(NewEvent(event_type=terminal_event, payload={}),),
+        target_run_state=target,
+        idempotency_key=f"enter-{target.value}",
+    )
+
+
+def _snapshot(uow: SqliteUnitOfWork) -> tuple[object, ...]:
+    with uow.engine.connect() as connection:
+        return connection.execute(
+            text(
+                "SELECT state, current_sequence, "
+                "(SELECT COUNT(*) FROM events WHERE run_id = 'run-1'), "
+                "(SELECT COUNT(*) FROM tasks WHERE run_id = 'run-1'), "
+                "(SELECT COUNT(*) FROM external_calls WHERE run_id = 'run-1'), "
+                "(SELECT COUNT(*) FROM cost_entries WHERE run_id = 'run-1'), "
+                "(SELECT state FROM tasks WHERE task_id = 'generate-1'), "
+                "(SELECT state FROM external_calls WHERE external_call_id = 'call-1'), "
+                "(SELECT applied_domain_sequence FROM external_calls "
+                " WHERE external_call_id = 'call-1') "
+                "FROM runs WHERE run_id = 'run-1'"
+            )
+        ).one()
+
+
+def _late_task(task_id: str, *, intent_type: str = "run_initial_review") -> NewTask:
+    return NewTask(
+        task_id=task_id,
+        run_id="run-1",
+        idempotency_key=task_id,
+        intent_type=intent_type,
+        payload={},
+    )
+
+
+def _attempt_terminal_mutation(
+    mutation: str, supervisor: Supervisor, result: AgentResult, sequence: int
+) -> None:
+    uow = supervisor.uow
+    if mutation == "supervisor_enqueue":
+        supervisor.enqueue_task(task=_late_task("supervisor-late"), expected_sequence=sequence)
+    elif mutation == "uow_enqueue":
+        uow.enqueue_tasks((_late_task("uow-late"),))
+    elif mutation == "followup":
+        task = _late_task("followup-late")
+        uow.commit_domain_batch(
+            run_id="run-1",
+            expected_sequence=sequence,
+            events=(NewEvent(event_type="TaskEnqueued", payload=task.model_dump(mode="json")),),
+            followup_tasks=(task,),
+            idempotency_key="late-followup",
+        )
+    elif mutation == "call_plan":
+        uow.plan_external_call(
+            "call-late",
+            "sha256:late",
+            run_id="run-1",
+            task_id="generate-1",
+            execution_context=_context(),
+            reservation_id=_reservation_id(),
+            fence=_fence(),
+        )
+    elif mutation == "scientific_event":
+        uow.commit_domain_batch(
+            run_id="run-1",
+            expected_sequence=sequence,
+            events=(
+                NewEvent(
+                    event_type="ReviewCompleted",
+                    schema_version=2,
+                    payload={"hypothesis_id": "h-1", "review_id": "late"},
+                ),
+            ),
+            idempotency_key="late-science",
+        )
+    elif mutation == "direct_append":
+        uow.append(
+            "run-1",
+            expected_sequence=sequence,
+            events=(
+                NewEvent(
+                    event_type="ReviewCompleted",
+                    schema_version=2,
+                    payload={"hypothesis_id": "h-1", "review_id": "late"},
+                ),
+            ),
+        )
+    elif mutation == "run_science_batch":
+        uow.commit_domain_batch(
+            run_id="run-1",
+            expected_sequence=sequence,
+            events=(
+                NewEvent(
+                    event_type="ResearchPlanAccepted",
+                    payload={"version": 2, "action": "new_epoch"},
+                ),
+            ),
+            idempotency_key="late-plan-science",
+        )
+    elif mutation == "run_science_direct":
+        uow.append(
+            "run-1",
+            expected_sequence=sequence,
+            events=(
+                NewEvent(
+                    event_type="TournamentEpochClosed",
+                    payload={"epoch_id": "epoch-1", "plan_version": 1},
+                ),
+            ),
+        )
+    elif mutation == "result_application":
+        uow.commit_domain_batch(
+            run_id="run-1",
+            expected_sequence=sequence,
+            events=(
+                NewEvent(
+                    event_type="HypothesisContentCreated",
+                    schema_version=2,
+                    payload={"hypothesis_id": "h-1", "content_id": "late"},
+                ),
+            ),
+            task_mutations=(TaskMutation.succeed("generate-1"),),
+            external_call_id=result.external_call_id,
+            reservation_id=_reservation_id(),
+            fence=_fence(),
+            idempotency_key=result.idempotency_key,
+        )
+    elif mutation == "cost":
+        uow.commit_domain_batch(
+            run_id="run-1",
+            expected_sequence=sequence,
+            events=(NewEvent(event_type="AgentResultFailed", payload={}),),
+            cost_entries=(
+                CostEntry(
+                    cost_entry_id="cost-late",
+                    run_id="run-1",
+                    external_call_id="call-1",
+                    cost_usd=Decimal("0.01"),
+                    pricing_version="test",
+                ),
+            ),
+            idempotency_key="late-cost",
+        )
+    else:
+        raise AssertionError(mutation)
+
+
+@pytest.mark.parametrize(
+    "terminal_state",
+    [
+        RunState.COMPLETED,
+        RunState.COMPLETED_PARTIAL,
+        RunState.FAILED,
+        RunState.CANCELLED,
+    ],
+)
+@pytest.mark.parametrize(
+    "mutation",
+    [
+        "supervisor_enqueue",
+        "uow_enqueue",
+        "followup",
+        "call_plan",
+        "scientific_event",
+        "direct_append",
+        "run_science_batch",
+        "run_science_direct",
+        "result_application",
+        "cost",
+    ],
+)
+# Mutations caught: allowing any post-terminal write through Supervisor or direct UoW APIs.
+def test_terminal_states_reject_every_run_mutation_without_side_effects(
+    tmp_path, terminal_state: RunState, mutation: str
+) -> None:
+    supervisor, result = _submitted_generation(tmp_path)
+    _enter_state(supervisor, terminal_state)
+    before = _snapshot(supervisor.uow)
+    sequence = int(before[1])
+
+    with pytest.raises(ValueError, match=terminal_state.value):
+        _attempt_terminal_mutation(mutation, supervisor, result, sequence)
+
+    assert _snapshot(supervisor.uow) == before
+
+
+# Mutations caught: rejecting an already-submitted result in stopping or leaking its
+# exploration follow-ups after settlement.
+def test_stopping_settles_submitted_result_without_exploration_followups(tmp_path) -> None:
+    supervisor, result = _submitted_generation(tmp_path)
+    stopping = supervisor.uow.commit_lifecycle_batch(
+        run_id="run-1",
+        expected_sequence=supervisor.uow.load("run-1")[-1].sequence,
+        events=(NewEvent(event_type="RunStopping", payload={}),),
+        target_run_state=RunState.STOPPING,
+        idempotency_key="enter-stopping",
+    )
+
+    committed = supervisor.handle_result(
+        "run-1",
+        "generate-1",
+        result,
+        expected_sequence=stopping.last_sequence,
+        reservation_id=_reservation_id(),
+        fence=_fence(),
+    )
+
+    assert [event.event_type for event in committed.events] == [
+        "HypothesisContentCreated",
+        "BudgetSettled",
+    ]
+    assert supervisor.uow.run_state("run-1") == "stopping"
+    assert supervisor.uow.task_state("generate-1") == "succeeded"
+    assert supervisor.uow.external_call_state("call-1") == "domain_result_applied"
+    with supervisor.uow.engine.connect() as connection:
+        assert (
+            connection.execute(
+                text("SELECT COUNT(*) FROM tasks WHERE run_id = 'run-1'")
+            ).scalar_one()
+            == 1
+        )
+        assert (
+            connection.execute(
+                text("SELECT COUNT(*) FROM cost_entries WHERE run_id = 'run-1'")
+            ).scalar_one()
+            == 1
+        )
+
+
+# Mutation caught: allowing non-finalization work creation while a Run is stopping.
+def test_stopping_allows_only_finalize_run_task_creation(tmp_path) -> None:
+    supervisor, _ = _submitted_generation(tmp_path)
+    supervisor.uow.commit_lifecycle_batch(
+        run_id="run-1",
+        expected_sequence=supervisor.uow.load("run-1")[-1].sequence,
+        events=(NewEvent(event_type="RunStopping", payload={}),),
+        target_run_state=RunState.STOPPING,
+        idempotency_key="enter-stopping",
+    )
+
+    with pytest.raises(ValueError, match="stopping.*exploration"):
+        supervisor.uow.enqueue_tasks((_late_task("late-exploration"),))
+
+    finalization = _late_task("finalize:run-1", intent_type="finalize_run")
+    supervisor.uow.enqueue_tasks((finalization,))
+
+    assert supervisor.uow.task_state(finalization.task_id) == "pending"
+
+
+# Mutation caught: treating a paused Run as eligible for new finalization work.
+def test_paused_run_preserves_work_without_creating_new_tasks(tmp_path) -> None:
+    supervisor, _ = _submitted_generation(tmp_path)
+    pausing = supervisor.uow.commit_lifecycle_batch(
+        run_id="run-1",
+        expected_sequence=supervisor.uow.load("run-1")[-1].sequence,
+        events=(NewEvent(event_type="RunPausing", payload={}),),
+        target_run_state=RunState.PAUSING,
+        idempotency_key="enter-pausing",
+    )
+    supervisor.uow.commit_lifecycle_batch(
+        run_id="run-1",
+        expected_sequence=pausing.last_sequence,
+        events=(NewEvent(event_type="RunPaused", payload={}),),
+        target_run_state=RunState.PAUSED,
+        idempotency_key="enter-paused",
+    )
+    before = _snapshot(supervisor.uow)
+
+    with pytest.raises(ValueError, match="paused.*enqueue_finalization_task"):
+        supervisor.uow.enqueue_tasks((_late_task("finalize:paused", intent_type="finalize_run"),))
+
+    assert _snapshot(supervisor.uow) == before
+
+
+@pytest.mark.parametrize("surface", ["supervisor", "uow"])
+# Mutation caught: allowing a finalization task to be created while still running.
+def test_running_rejects_direct_finalization_task_creation(tmp_path, surface: str) -> None:
+    supervisor, _ = _submitted_generation(tmp_path)
+    before = _snapshot(supervisor.uow)
+    task = _late_task(f"finalize:{surface}", intent_type="finalize_run")
+
+    with pytest.raises(ValueError, match="running.*enqueue_finalization_task"):
+        if surface == "supervisor":
+            supervisor.enqueue_task(task=task, expected_sequence=1)
+        else:
+            supervisor.uow.enqueue_tasks((task,))
+
+    assert _snapshot(supervisor.uow) == before
+
+
+# Mutation caught: authorizing exploration against the pre-transition running state
+# even though the same transaction enters stopping.
+def test_stop_transition_rejects_mixed_exploration_followup_without_side_effects(
+    tmp_path,
+) -> None:
+    supervisor, _ = _submitted_generation(tmp_path)
+    before = _snapshot(supervisor.uow)
+    exploration = _late_task("late-stop-exploration")
+
+    with pytest.raises(ValueError, match="stopping.*exploration"):
+        supervisor.uow.commit_lifecycle_batch(
+            run_id="run-1",
+            expected_sequence=supervisor.uow.load("run-1")[-1].sequence,
+            events=(
+                NewEvent(event_type="RunStopping", payload={}),
+                NewEvent(
+                    event_type="TaskEnqueued",
+                    payload=exploration.model_dump(mode="json"),
+                ),
+            ),
+            target_run_state=RunState.STOPPING,
+            followup_tasks=(exploration,),
+            idempotency_key="mixed-stop",
+        )
+
+    assert _snapshot(supervisor.uow) == before
+
+
+# Mutation caught: evaluating the authorized stop/finalization batch as running
+# instead of against its effective stopping state.
+def test_stop_transition_accepts_only_its_authorized_finalization_task(tmp_path) -> None:
+    supervisor, _ = _submitted_generation(tmp_path)
+    finalization = _late_task("finalize:run-1", intent_type="finalize_run")
+
+    committed = supervisor.uow.commit_lifecycle_batch(
+        run_id="run-1",
+        expected_sequence=supervisor.uow.load("run-1")[-1].sequence,
+        events=(
+            NewEvent(event_type="StopPolicyTriggered", payload={"checkpoint_id": "cp-1"}),
+            NewEvent(event_type="RunStopping", payload={"checkpoint_id": "cp-1"}),
+            NewEvent(
+                event_type="FinalizationRequested",
+                payload={"checkpoint_id": "cp-1", "task_id": finalization.task_id},
+            ),
+            NewEvent(
+                event_type="TaskEnqueued",
+                payload=finalization.model_dump(mode="json"),
+            ),
+        ),
+        target_run_state=RunState.STOPPING,
+        followup_tasks=(finalization,),
+        idempotency_key="stop:cp-1",
+    )
+
+    assert [event.event_type for event in committed.events] == [
+        "StopPolicyTriggered",
+        "RunStopping",
+        "FinalizationRequested",
+        "TaskEnqueued",
+    ]
+    assert supervisor.uow.run_state("run-1") == "stopping"
+    assert supervisor.uow.task_state("finalize:run-1") == "pending"
+
+
+@pytest.mark.parametrize(
+    "mutation", ["raw", "validated", "submitted", "validated_and_submitted", "transition"]
+)
+# Mutations caught: a provider invocation starts while running, then persists or
+# submits a previously unsubmitted result after the public soft-stop linearization.
+def test_soft_stop_fences_every_inflight_external_call_write(
+    tmp_path, mutation: str
+) -> None:
+    supervisor, fence, ref = _inflight_generation(tmp_path)
+    result = _prepare_call_boundary(supervisor, fence, ref, mutation)
+    supervisor.uow.commit_lifecycle_batch(
+        run_id="run-1",
+        expected_sequence=supervisor.uow.load("run-1")[-1].sequence,
+        events=(NewEvent(event_type="RunStopping", payload={}),),
+        target_run_state=RunState.STOPPING,
+        idempotency_key="soft-stop-inflight",
+    )
+    before = _snapshot(supervisor.uow)
+
+    with pytest.raises(ValueError, match="stopping"):
+        _mutate_call_boundary(supervisor, fence, ref, result, mutation)
+
+    assert _snapshot(supervisor.uow) == before
+
+
+@pytest.mark.parametrize(
+    "terminal_state",
+    [
+        RunState.COMPLETED,
+        RunState.COMPLETED_PARTIAL,
+        RunState.FAILED,
+        RunState.CANCELLED,
+    ],
+)
+@pytest.mark.parametrize("mutation", ["raw", "validated", "submitted"])
+def test_terminal_run_rejects_raw_validation_and_submission_boundaries(
+    tmp_path, terminal_state: RunState, mutation: str
+) -> None:
+    supervisor, fence, ref = _inflight_generation(tmp_path)
+    result = _prepare_call_boundary(supervisor, fence, ref, mutation)
+    _enter_state(supervisor, terminal_state)
+    before = _snapshot(supervisor.uow)
+
+    with pytest.raises(ValueError, match=terminal_state.value):
+        _mutate_call_boundary(supervisor, fence, ref, result, mutation)
+
+    assert _snapshot(supervisor.uow) == before
+
+
+def test_stopping_recovery_adopts_only_previously_submitted_results(tmp_path) -> None:
+    inflight, _fence, _ref = _inflight_generation(tmp_path / "inflight")
+    inflight.uow.commit_lifecycle_batch(
+        run_id="run-1",
+        expected_sequence=inflight.uow.load("run-1")[-1].sequence,
+        events=(NewEvent(event_type="RunStopping", payload={}),),
+        target_run_state=RunState.STOPPING,
+        idempotency_key="stop-inflight",
+    )
+
+    rejected = inflight.uow.adopt_recoverable_task(
+        run_id="run-1",
+        worker_id="fence-worker",
+        lease_token="fresh-inflight-token",
+        now=datetime(2026, 8, 17, 10, 1, tzinfo=UTC),
+        lease_duration=timedelta(minutes=5),
+    )
+    assert rejected.status == "no_task"
+
+    submitted, _result = _submitted_generation(tmp_path / "submitted")
+    submitted.uow.commit_lifecycle_batch(
+        run_id="run-1",
+        expected_sequence=submitted.uow.load("run-1")[-1].sequence,
+        events=(NewEvent(event_type="RunStopping", payload={}),),
+        target_run_state=RunState.STOPPING,
+        idempotency_key="stop-submitted",
+    )
+    adopted = submitted.uow.adopt_recoverable_task(
+        run_id="run-1",
+        worker_id="fence-worker",
+        lease_token="fresh-submitted-token",
+        now=datetime(2026, 8, 17, 10, 1, tzinfo=UTC),
+        lease_duration=timedelta(minutes=5),
+    )
+    assert adopted.status == "claimed"
+    assert adopted.task is not None
+    assert submitted.uow.external_call_state("call-1") == "agent_result_submitted"

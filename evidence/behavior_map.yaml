@@ -1,0 +1,21 @@
+behaviors:
+  - behavior_id: supervisor_single_authority
+    source_level: replica_default
+    source_refs: [nature_supplement:note_8]
+    statement: Supervisor alone creates tasks and applies state transitions.
+  - behavior_id: initial_elo_1200
+    source_level: paper_explicit
+    source_refs: [nature_article:methods]
+    statement: A newly admitted tournament entry receives rating 1200.
+  - behavior_id: evolution_child_readmission
+    source_level: supplement_explicit
+    source_refs: [nature_supplement:note_8]
+    statement: Evolution creates a child that re-enters the admission path.
+  - behavior_id: reflection_strategy_policy
+    source_level: replica_default
+    source_refs: [nature_supplement:reflection_ladder]
+    statement: Initial review is mandatory and advanced reviews are policy-driven.
+  - behavior_id: tournament_epoch_comparability
+    source_level: replica_default
+    source_refs: [nature_article:ranking_methods]
+    statement: Elo comparison is restricted to one frozen tournament contract.

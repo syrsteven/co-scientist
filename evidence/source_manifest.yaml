@@ -1,0 +1,7 @@
+sources:
+  - id: nature_article
+    url: https://www.nature.com/articles/s41586-026-10644-y
+    accessed: 2026-07-30
+  - id: nature_supplement
+    url: https://static-content.springer.com/esm/art%3A10.1038%2Fs41586-026-10644-y/MediaObjects/41586_2026_10644_MOESM1_ESM.pdf
+    accessed: 2026-07-30
