@@ -10,6 +10,7 @@ from sqlalchemy import func, select
 
 from co_scientist.adapters.persistence.sqlite import RunRow
 from co_scientist.application.config import resolve_run_config
+from co_scientist.domain.anchors import core_preview_anchor_sets
 from co_scientist.domain.states import RunState
 from co_scientist.export.run_export import SqliteRunReadModel
 from co_scientist.ports.artifact_store import ArtifactRef
@@ -17,6 +18,11 @@ from co_scientist.ports.event_store import ConcurrencyConflict
 from co_scientist.runtime.checkpoints import ConvergenceCheckpointBuilder
 from co_scientist.runtime.core_runner import CoreRunner
 from tests.core_preview_support import write_core_preview_inputs
+
+_ANCHOR_IDS = frozenset(
+    str(member["anchor_id"])
+    for member in core_preview_anchor_sets(2)[0]["members"]
+)
 
 
 class _CloseTracker:
@@ -103,12 +109,18 @@ async def test_supervisor_bootstrap_and_core_runner_execute_use_one_durable_path
     assert result.state is RunState.COMPLETED
     assert result.stop_reason == "quality_converged"
     events = runner.uow.load(result.run_id)
-    assert [event.event_type for event in events[:3]] == [
+    assert [event.event_type for event in events[:2]] == [
         "RunStarted",
         "TournamentEpochOpened",
-        "TaskEnqueued",
     ]
-    assert events[2].payload["task_id"].startswith("generation:")
+    assert {
+        str(event.payload["hypothesis_id"])
+        for event in events
+        if event.event_type == "HypothesisContentCreated"
+        and event.payload.get("hypothesis_id") in _ANCHOR_IDS
+    } == _ANCHOR_IDS
+    initial_task = next(event for event in events if event.event_type == "TaskEnqueued")
+    assert initial_task.payload["task_id"].startswith("generation:")
     assert events[-2].event_type == "FinalizationCompleted"
     assert events[-1].event_type == "RunCompleted"
     assert all(event.payload.get("created_by", "supervisor") == "supervisor" for event in events if event.event_type == "TaskEnqueued")
@@ -242,7 +254,10 @@ async def test_replay_literature_runs_raw_first_and_grounds_novelty(
         "pubmed:1002",
     }
     novelty = [
-        event for event in events if event.event_type == "NoveltyAssessmentRecorded"
+        event
+        for event in events
+        if event.event_type == "NoveltyAssessmentRecorded"
+        and event.payload.get("hypothesis_id") not in _ANCHOR_IDS
     ]
     assert novelty
     assert all(
@@ -280,8 +295,13 @@ async def test_literature_novelty_fails_closed_without_grounded_evidence(
     )
     runner = CoreRunner(data_dir=tmp_path / "data", environment=environment)
 
-    with pytest.raises(ValueError, match="grounded literature evidence"):
+    with pytest.raises(BaseExceptionGroup) as rejected:
         await runner.execute(config=config)
+    assert any(
+        isinstance(error, ValueError)
+        and "typed result does not match task inputs: literature_sources" in str(error)
+        for error in rejected.value.exceptions
+    )
 
 
 @pytest.mark.asyncio
@@ -570,7 +590,11 @@ async def test_supported_no_literature_profile_uses_review_path_without_tool_cal
 
     assert result.state is RunState.COMPLETED
     assert not runner.uow.unresolved_task_ids(result.run_id)
-    assert sum(event.event_type == "ReviewCompleted" for event in events) == 4
+    assert sum(
+        event.event_type == "ReviewCompleted"
+        and event.payload.get("hypothesis_id") not in _ANCHOR_IDS
+        for event in events
+    ) == 4
     assert not any(
         event.event_type == "MetaReviewCompleted"
         and event.payload.get("literature_operation") in {"search", "summary"}
@@ -628,7 +652,9 @@ async def test_partial_science_soft_stop_records_incomplete_durable_evidence(
     assert terminal.state is RunState.COMPLETED_PARTIAL
     assert terminal.stop_reason == "scientist_stop"
     assert not any(
-        event.event_type == "ReviewCompleted" for event in runner.uow.load(run_id)
+        event.event_type == "ReviewCompleted"
+        and event.payload.get("hypothesis_id") not in _ANCHOR_IDS
+        for event in runner.uow.load(run_id)
     )
 
 

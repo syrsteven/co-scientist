@@ -30,6 +30,7 @@ from co_scientist.runtime.external_calls import (
     prompt_hash,
     request_fingerprint,
 )
+from co_scientist.runtime.task_payload import WorkerTaskPayload
 from co_scientist.skills.loader import core_skill_directory
 from co_scientist.supervisor.orchestrator import Supervisor
 from tests._fenced_runtime import (
@@ -48,6 +49,81 @@ _OUTPUT_SCHEMAS = {
     "evolution": "EvolutionResultV1",
     "meta_review": "MetaReviewResultV1",
 }
+
+
+def _worker_payload(
+    skill_id: str,
+    inputs: dict[str, object],
+    *,
+    provider_id: str = "fake",
+    model_or_tool: str = "fake-v1",
+) -> dict[str, object]:
+    directory = core_skill_directory(skill_id)
+    return {
+        "skill_id": skill_id,
+        "skill_version": "0.2.0",
+        "output_schema_id": _OUTPUT_SCHEMAS[skill_id],
+        "output_schema_version": 1,
+        "research_plan_version": 1,
+        "provider_id": provider_id,
+        "model_or_tool": model_or_tool,
+        "inputs": inputs,
+        "input_snapshot_hash": request_fingerprint(inputs),
+        "prompt_hash": prompt_hash(
+            (directory / "prompts/system.md").read_text(encoding="utf-8")
+        ),
+        "budget_estimate": {
+            "model_calls": 1,
+            "input_tokens": 10,
+            "output_tokens": 20,
+            "cost_usd": "0.01",
+            "hypotheses": 1,
+            "matches": 1 if skill_id == "ranking" else 0,
+        },
+    }
+
+
+def _trace_inputs(
+    index: int, response: dict[str, object], payload: dict[str, object]
+) -> dict[str, object]:
+    inputs = {
+        "trace_index": index,
+        **{key: value for key, value in response.items() if key != "payload"},
+    }
+    if response["skill"] == "reflection":
+        inputs.update(
+            {
+                "hypothesis_id": payload["hypothesis_id"],
+                "content_hash": payload["content_hash"],
+                "review_stage": payload["stage"],
+            }
+        )
+    elif response["skill"] == "proximity":
+        for field in (
+            "edge_id",
+            "left_id",
+            "left_content_hash",
+            "right_id",
+            "right_content_hash",
+        ):
+            inputs[field] = payload[field]
+    elif response["skill"] == "ranking":
+        for field in (
+            "match_id",
+            "epoch_id",
+            "left_id",
+            "left_content_hash",
+            "right_id",
+            "right_content_hash",
+            "research_plan_version",
+            "evaluation_rules_hash",
+            "ranking_prompt_hash",
+            "judge_profile_hash",
+            "rating_policy_version",
+            "admission_policy_version",
+        ):
+            inputs[field] = payload[field]
+    return inputs
 
 
 def _create_running(uow: SqliteUnitOfWork, run_id: str = "run-1") -> None:
@@ -154,7 +230,7 @@ def test_supervisor_revalidates_persisted_schema_invalid_agent_result_before_eff
     assert uow.external_call_state("call-1") == "agent_result_submitted"
     with uow.engine.connect() as connection:
         assert connection.execute(text("SELECT COUNT(*) FROM tasks")).scalar_one() == 1
-        assert connection.execute(text("SELECT COUNT(*) FROM cost_entries")).scalar_one() == 0
+        assert connection.execute(text("SELECT COUNT(*) FROM cost_entries")).scalar_one() == 1
 
 
 def _valid_ranking_payload() -> dict[str, object]:
@@ -543,13 +619,31 @@ async def _execute_ranking_result(
         )
         expected_sequence = seeded.last_sequence
     supervisor = Supervisor(uow=uow, review_policy=ReviewPolicy(profile_id="minimal"))
+    ranking_inputs = {
+        field: payload[field]
+        for field in (
+            "match_id",
+            "epoch_id",
+            "left_id",
+            "left_content_hash",
+            "right_id",
+            "right_content_hash",
+            "research_plan_version",
+            "evaluation_rules_hash",
+            "ranking_prompt_hash",
+            "judge_profile_hash",
+            "rating_policy_version",
+            "admission_policy_version",
+        )
+        if field in payload
+    }
     task = budgeted_task(
         NewTask(
             task_id="ranking-task",
             run_id="run-1",
             idempotency_key="ranking-task",
             intent_type="run_ranking",
-            payload={},
+            payload=_worker_payload("ranking", ranking_inputs),
         )
     )
     scheduled = supervisor.enqueue_task(task=task, expected_sequence=expected_sequence)
@@ -571,7 +665,7 @@ async def _execute_ranking_result(
         ).execute(
             call_id="ranking-call",
             skill_directory=core_skill_directory("ranking"),
-            inputs={"comparison": "h-1 versus h-2"},
+            inputs=ranking_inputs,
             context=fenced_context(
                 AgentExecutionContext(
                     run_id="run-1",
@@ -584,7 +678,12 @@ async def _execute_ranking_result(
                     research_plan_version=1,
                     provider="fake",
                     model_or_tool="fake-v1",
-                    input_snapshot_hash="sha256:input",
+                    input_snapshot_hash=request_fingerprint(ranking_inputs),
+                    prompt_hash=prompt_hash(
+                        (
+                            core_skill_directory("ranking") / "prompts/system.md"
+                        ).read_text(encoding="utf-8")
+                    ),
                 ),
                 claimed,
             ),
@@ -1132,8 +1231,14 @@ class _CoreHarness:
                     expected_sequence=expected_sequence,
                 )
             task_id = self._task_id(index, response)
+            inputs = _trace_inputs(index, response, payload)
             try:
-                uow.task_state(task_id)
+                task_definition = uow.task_definition(task_id)
+                inputs = dict(
+                    WorkerTaskPayload.model_validate(
+                        dict(task_definition.payload)
+                    ).inputs
+                )
             except KeyError:
                 scheduled = supervisor.enqueue_task(
                     task=budgeted_task(
@@ -1142,9 +1247,7 @@ class _CoreHarness:
                             run_id="run-1",
                             idempotency_key=task_id,
                             intent_type=f"run_{response['skill']}",
-                            payload={
-                                key: value for key, value in response.items() if key != "payload"
-                            },
+                            payload=_worker_payload(response["skill"], inputs),
                         )
                     ),
                     expected_sequence=expected_sequence,
@@ -1152,11 +1255,7 @@ class _CoreHarness:
                 expected_sequence = scheduled.last_sequence
             claimed = claim_running_task(uow, run_id="run-1", task_id=task_id)
             expected_sequence = uow.load("run-1")[-1].sequence
-            inputs = {
-                "trace_index": index,
-                **{key: value for key, value in response.items() if key != "payload"},
-            }
-            input_hash = _content_hash(inputs)
+            input_hash = request_fingerprint(inputs)
             result = await SkillExecutor(runner, provider).execute(
                 call_id=f"call-{index}",
                 skill_directory=core_skill_directory(response["skill"]),
@@ -1174,6 +1273,12 @@ class _CoreHarness:
                         provider="fake",
                         model_or_tool="fake-v1",
                         input_snapshot_hash=input_hash,
+                        prompt_hash=prompt_hash(
+                            (
+                                core_skill_directory(response["skill"])
+                                / "prompts/system.md"
+                            ).read_text(encoding="utf-8")
+                        ),
                     ),
                     claimed,
                 ),

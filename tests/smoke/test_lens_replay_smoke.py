@@ -196,6 +196,17 @@ def test_lens_replay_cli_exports_a_deterministic_traceable_ranked_result(
     assert calls and all(call["state"] == "domain_result_applied" for call in calls)
     assert len(calls) == len(artifacts)
     assert {row["state"] for row in reservations} <= {"settled", "released"}
+    literature_reservations = [
+        row
+        for row in reservations
+        if ":literature:" in row["task_id"] and row["state"] == "settled"
+    ]
+    assert {row["task_id"].rsplit(":", 1)[-1] for row in literature_reservations} == {
+        "search",
+        "summary",
+    }
+    assert all(row["estimate"]["model_calls"] == 1 for row in literature_reservations)
+    assert all(row["actual"]["model_calls"] == 1 for row in literature_reservations)
     assert checkpoints[-1]["stop_reason"] == "quality_converged"
     assert stop_decisions[-1]["finalization_state"] == "completed"
 

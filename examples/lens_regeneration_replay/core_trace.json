@@ -441,7 +441,7 @@
         "ranking_prompt_hash": "sha256:095aaad7ad06b0b28944270448a493a198592212904f14dbb84c407298367213",
         "rating_policy_version": "elo-32-v1",
         "research_plan_version": 1,
-        "right_content_hash": "sha256:95b2fba7d07fb8c3a46511070cc7d4e4aa60e02fea821f2bc146551f0ac3eab4",
+        "right_content_hash": "sha256:a4290169107a4b39f542fceb573a08cab02c677e67c323f12b570e83bf13747c",
         "right_id": "transparent-regeneration-baseline-v1"
       },
       "response": {
@@ -460,7 +460,7 @@
         "ranking_prompt_hash": "sha256:095aaad7ad06b0b28944270448a493a198592212904f14dbb84c407298367213",
         "rating_policy_version": "elo-32-v1",
         "research_plan_version": 1,
-        "right_content_hash": "sha256:95b2fba7d07fb8c3a46511070cc7d4e4aa60e02fea821f2bc146551f0ac3eab4",
+        "right_content_hash": "sha256:a4290169107a4b39f542fceb573a08cab02c677e67c323f12b570e83bf13747c",
         "right_id": "transparent-regeneration-baseline-v1",
         "schema_version": 1,
         "unresolved_disagreements": [],
@@ -482,7 +482,7 @@
         "ranking_prompt_hash": "sha256:095aaad7ad06b0b28944270448a493a198592212904f14dbb84c407298367213",
         "rating_policy_version": "elo-32-v1",
         "research_plan_version": 1,
-        "right_content_hash": "sha256:d30f826709fcd1580df848dd246fb1c98e17beda55b48f3c55fc1c80144bbd83",
+        "right_content_hash": "sha256:0f6b42cabde32da2257addfcdb23a795bd5d1dce56f9a250d89e30029c3a35b3",
         "right_id": "fibrotic-regeneration-baseline-v1"
       },
       "response": {
@@ -501,7 +501,7 @@
         "ranking_prompt_hash": "sha256:095aaad7ad06b0b28944270448a493a198592212904f14dbb84c407298367213",
         "rating_policy_version": "elo-32-v1",
         "research_plan_version": 1,
-        "right_content_hash": "sha256:d30f826709fcd1580df848dd246fb1c98e17beda55b48f3c55fc1c80144bbd83",
+        "right_content_hash": "sha256:0f6b42cabde32da2257addfcdb23a795bd5d1dce56f9a250d89e30029c3a35b3",
         "right_id": "fibrotic-regeneration-baseline-v1",
         "schema_version": 1,
         "unresolved_disagreements": [],

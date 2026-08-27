@@ -277,6 +277,7 @@ async def test_skill_executor_rejects_malformed_scientific_json_after_raw_persis
         "RunStarted",
         "TaskLeaseClaimed",
         "BudgetReserved",
+        "ExternalCallAttemptFailed",
     ]
     assert uow.task_state(task_id) == "running"
     assert call.usage == {}

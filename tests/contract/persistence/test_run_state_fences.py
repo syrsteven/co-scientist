@@ -18,7 +18,12 @@ from co_scientist.domain.task import (
 )
 from co_scientist.events.models import NewEvent
 from co_scientist.ports.artifact_store import ArtifactRef
+from co_scientist.runtime.external_calls import request_fingerprint
 from co_scientist.supervisor.orchestrator import Supervisor
+
+_TASK_INPUTS: dict[str, object] = {}
+_TASK_INPUT_HASH = request_fingerprint(_TASK_INPUTS)
+_TASK_PROMPT_HASH = "sha256:fixture-prompt"
 
 
 def _context(*, task_id: str = "generate-1", key: str = "generation:1") -> dict[str, object]:
@@ -34,7 +39,8 @@ def _context(*, task_id: str = "generate-1", key: str = "generation:1") -> dict[
         "research_plan_version": 1,
         "provider": "stub",
         "model_or_tool": "stub-model",
-        "input_snapshot_hash": "sha256:input",
+        "input_snapshot_hash": _TASK_INPUT_HASH,
+        "prompt_hash": _TASK_PROMPT_HASH,
         "attempt": 1,
         "reservation_id": _reservation_id(key),
         "lease_fence_fingerprint": lease_fence_fingerprint(fence),
@@ -76,6 +82,7 @@ def _generation_payload() -> dict[str, object]:
 
 
 def _submitted_generation(tmp_path) -> tuple[Supervisor, AgentResult]:
+    tmp_path.mkdir(parents=True, exist_ok=True)
     uow = SqliteUnitOfWork(f"sqlite:///{tmp_path / 'fences.db'}")
     uow.create_schema()
     uow.create_started_run(
@@ -90,6 +97,16 @@ def _submitted_generation(tmp_path) -> tuple[Supervisor, AgentResult]:
         idempotency_key="generation:1",
         intent_type="generate",
         payload={
+            "skill_id": "generation",
+            "skill_version": "0.2.0",
+            "output_schema_id": "GenerationResultV1",
+            "output_schema_version": 1,
+            "research_plan_version": 1,
+            "provider_id": "stub",
+            "model_or_tool": "stub-model",
+            "inputs": _TASK_INPUTS,
+            "input_snapshot_hash": _TASK_INPUT_HASH,
+            "prompt_hash": _TASK_PROMPT_HASH,
             "budget_estimate": {
                 "model_calls": 1,
                 "input_tokens": 3,
@@ -158,7 +175,8 @@ def _submitted_generation(tmp_path) -> tuple[Supervisor, AgentResult]:
         research_plan_version=1,
         provider="stub",
         model_or_tool="stub-model",
-        input_snapshot_hash="sha256:input",
+        input_snapshot_hash=_TASK_INPUT_HASH,
+        prompt_hash=_TASK_PROMPT_HASH,
         attempt=claimed.attempt,
         reservation_id=claimed.reservation_id,
         lease_fence_fingerprint=lease_fence_fingerprint(claimed),
@@ -175,6 +193,158 @@ def _submitted_generation(tmp_path) -> tuple[Supervisor, AgentResult]:
     )
     uow.acknowledge_task(fence=claimed, target_state=TaskState.RESULT_RECEIVED)
     return Supervisor(uow=uow, review_policy=ReviewPolicy(profile_id="minimal")), result
+
+
+def _inflight_generation(tmp_path) -> tuple[Supervisor, TaskLeaseFence, ArtifactRef]:
+    tmp_path.mkdir(parents=True, exist_ok=True)
+    uow = SqliteUnitOfWork(f"sqlite:///{tmp_path / 'inflight-fences.db'}")
+    uow.create_schema()
+    uow.create_started_run(
+        "run-1",
+        manifest={"execution_contract_version": 3, "budget": {}},
+        event=NewEvent(event_type="RunStarted", payload={}),
+        idempotency_key="start:run-1:0",
+    )
+    task = NewTask(
+        task_id="generate-1",
+        run_id="run-1",
+        idempotency_key="generation:1",
+        intent_type="generate",
+        payload={"budget_estimate": {"model_calls": 1}},
+    )
+    uow.enqueue_tasks((task,))
+    claimed = uow.claim_next_task(
+        run_id="run-1",
+        worker_id="fence-worker",
+        lease_token="fence-lease",
+        now=datetime(2026, 8, 17, 10, 0, tzinfo=UTC),
+        lease_duration=timedelta(minutes=5),
+    ).task
+    assert claimed is not None
+    uow.mark_task_running(fence=claimed)
+    uow.plan_external_call(
+        "call-1",
+        "sha256:request",
+        run_id="run-1",
+        task_id=task.task_id,
+        execution_context=_context(),
+        reservation_id=claimed.reservation_id,
+        fence=claimed,
+    )
+    uow.transition_call(
+        "call-1",
+        ExternalCallState.STARTED,
+        reservation_id=claimed.reservation_id,
+        fence=claimed,
+    )
+    ref = ArtifactRef(
+        path="raw/call-1/inflight",
+        sha256="sha256:" + "e" * 64,
+        mime_type="application/json",
+        byte_length=2,
+    )
+    return Supervisor(uow=uow, review_policy=ReviewPolicy(profile_id="minimal")), claimed, ref
+
+
+def _prepare_call_boundary(
+    supervisor: Supervisor,
+    fence: TaskLeaseFence,
+    ref: ArtifactRef,
+    mutation: str,
+) -> AgentResult:
+    uow = supervisor.uow
+    payload = _generation_payload()
+    result = AgentResult(
+        result_id="result-inflight",
+        external_call_id="call-1",
+        run_id="run-1",
+        task_id="generate-1",
+        idempotency_key="generation:1",
+        skill_id="generation",
+        skill_version="0.2.0",
+        output_schema_id="GenerationResultV1",
+        output_schema_version=1,
+        research_plan_version=1,
+        provider="stub",
+        model_or_tool="stub-model",
+        input_snapshot_hash=_TASK_INPUT_HASH,
+        prompt_hash=_TASK_PROMPT_HASH,
+        attempt=fence.attempt,
+        reservation_id=fence.reservation_id,
+        lease_fence_fingerprint=lease_fence_fingerprint(fence),
+        status="completed",
+        payload=payload,
+        raw_artifact_ref=ref,
+    )
+    if mutation in {"validated", "submitted"}:
+        uow.record_raw_and_transition(
+            "call-1",
+            ref,
+            ExternalCallState.RAW_RESPONSE_PERSISTED,
+            usage={},
+            reservation_id=fence.reservation_id,
+            fence=fence,
+        )
+    if mutation == "submitted":
+        uow.record_validated(
+            "call-1", payload, reservation_id=fence.reservation_id, fence=fence
+        )
+    return result
+
+
+def _mutate_call_boundary(
+    supervisor: Supervisor,
+    fence: TaskLeaseFence,
+    ref: ArtifactRef,
+    result: AgentResult,
+    mutation: str,
+) -> None:
+    uow = supervisor.uow
+    if mutation == "raw":
+        uow.record_raw_and_transition(
+            "call-1",
+            ref,
+            ExternalCallState.RAW_RESPONSE_PERSISTED,
+            usage={},
+            reservation_id=fence.reservation_id,
+            fence=fence,
+        )
+    elif mutation == "validated":
+        uow.record_validated(
+            "call-1",
+            _generation_payload(),
+            reservation_id=fence.reservation_id,
+            fence=fence,
+        )
+    elif mutation == "submitted":
+        uow.record_submitted_result(
+            "call-1", result, reservation_id=fence.reservation_id, fence=fence
+        )
+    elif mutation == "validated_and_submitted":
+        uow.record_raw_and_transition(
+            "call-1",
+            ref,
+            ExternalCallState.RAW_RESPONSE_PERSISTED,
+            usage={},
+            reservation_id=fence.reservation_id,
+            fence=fence,
+        )
+        uow.record_validated_and_submitted(
+            "call-1",
+            _generation_payload(),
+            result,
+            reservation_id=fence.reservation_id,
+            fence=fence,
+        )
+    elif mutation == "transition":
+        uow.transition_call(
+            "call-1",
+            ExternalCallState.FAILED_BEFORE_RESPONSE,
+            reservation_id=fence.reservation_id,
+            fence=fence,
+        )
+    else:
+        raise AssertionError(mutation)
 
 
 def _enter_state(supervisor: Supervisor, target: RunState) -> None:
@@ -554,3 +724,91 @@ def test_stop_transition_accepts_only_its_authorized_finalization_task(tmp_path)
     ]
     assert supervisor.uow.run_state("run-1") == "stopping"
     assert supervisor.uow.task_state("finalize:run-1") == "pending"
+
+
+@pytest.mark.parametrize(
+    "mutation", ["raw", "validated", "submitted", "validated_and_submitted", "transition"]
+)
+# Mutations caught: a provider invocation starts while running, then persists or
+# submits a previously unsubmitted result after the public soft-stop linearization.
+def test_soft_stop_fences_every_inflight_external_call_write(
+    tmp_path, mutation: str
+) -> None:
+    supervisor, fence, ref = _inflight_generation(tmp_path)
+    result = _prepare_call_boundary(supervisor, fence, ref, mutation)
+    supervisor.uow.commit_lifecycle_batch(
+        run_id="run-1",
+        expected_sequence=supervisor.uow.load("run-1")[-1].sequence,
+        events=(NewEvent(event_type="RunStopping", payload={}),),
+        target_run_state=RunState.STOPPING,
+        idempotency_key="soft-stop-inflight",
+    )
+    before = _snapshot(supervisor.uow)
+
+    with pytest.raises(ValueError, match="stopping"):
+        _mutate_call_boundary(supervisor, fence, ref, result, mutation)
+
+    assert _snapshot(supervisor.uow) == before
+
+
+@pytest.mark.parametrize(
+    "terminal_state",
+    [
+        RunState.COMPLETED,
+        RunState.COMPLETED_PARTIAL,
+        RunState.FAILED,
+        RunState.CANCELLED,
+    ],
+)
+@pytest.mark.parametrize("mutation", ["raw", "validated", "submitted"])
+def test_terminal_run_rejects_raw_validation_and_submission_boundaries(
+    tmp_path, terminal_state: RunState, mutation: str
+) -> None:
+    supervisor, fence, ref = _inflight_generation(tmp_path)
+    result = _prepare_call_boundary(supervisor, fence, ref, mutation)
+    _enter_state(supervisor, terminal_state)
+    before = _snapshot(supervisor.uow)
+
+    with pytest.raises(ValueError, match=terminal_state.value):
+        _mutate_call_boundary(supervisor, fence, ref, result, mutation)
+
+    assert _snapshot(supervisor.uow) == before
+
+
+def test_stopping_recovery_adopts_only_previously_submitted_results(tmp_path) -> None:
+    inflight, _fence, _ref = _inflight_generation(tmp_path / "inflight")
+    inflight.uow.commit_lifecycle_batch(
+        run_id="run-1",
+        expected_sequence=inflight.uow.load("run-1")[-1].sequence,
+        events=(NewEvent(event_type="RunStopping", payload={}),),
+        target_run_state=RunState.STOPPING,
+        idempotency_key="stop-inflight",
+    )
+
+    rejected = inflight.uow.adopt_recoverable_task(
+        run_id="run-1",
+        worker_id="fence-worker",
+        lease_token="fresh-inflight-token",
+        now=datetime(2026, 8, 17, 10, 1, tzinfo=UTC),
+        lease_duration=timedelta(minutes=5),
+    )
+    assert rejected.status == "no_task"
+
+    submitted, _result = _submitted_generation(tmp_path / "submitted")
+    submitted.uow.commit_lifecycle_batch(
+        run_id="run-1",
+        expected_sequence=submitted.uow.load("run-1")[-1].sequence,
+        events=(NewEvent(event_type="RunStopping", payload={}),),
+        target_run_state=RunState.STOPPING,
+        idempotency_key="stop-submitted",
+    )
+    adopted = submitted.uow.adopt_recoverable_task(
+        run_id="run-1",
+        worker_id="fence-worker",
+        lease_token="fresh-submitted-token",
+        now=datetime(2026, 8, 17, 10, 1, tzinfo=UTC),
+        lease_duration=timedelta(minutes=5),
+    )
+    assert adopted.status == "claimed"
+    assert adopted.task is not None
+    assert submitted.uow.external_call_state("call-1") == "agent_result_submitted"

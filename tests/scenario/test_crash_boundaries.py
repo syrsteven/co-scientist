@@ -133,12 +133,29 @@ class CrashHarness:
             },
             start_payload={"provider": "replay"},
         )
+        request = {"prompt": "produce one crash-safe hypothesis"}
+        input_snapshot_hash = request_fingerprint(request)
+        bound_prompt_hash = prompt_hash(
+            (core_skill_directory("generation") / "prompts/system.md").read_text(
+                encoding="utf-8"
+            )
+        )
         task = NewTask(
             task_id="task-crash",
             run_id="run-crash",
             idempotency_key="task-crash",
             intent_type="run_generation",
             payload={
+                "skill_id": "generation",
+                "skill_version": "0.2.0",
+                "output_schema_id": "GenerationResultV1",
+                "output_schema_version": 1,
+                "research_plan_version": 1,
+                "provider_id": "stub",
+                "model_or_tool": "stub-model",
+                "inputs": request,
+                "input_snapshot_hash": input_snapshot_hash,
+                "prompt_hash": bound_prompt_hash,
                 "budget_estimate": {
                     "model_calls": 1,
                     "input_tokens": 11,
@@ -168,7 +185,6 @@ class CrashHarness:
         runtime = SimpleNamespace(uow=uow, artifacts=artifacts)
         runner = ExternalCallRunner(runtime)
         provider = _CountingProvider()
-        request = {"prompt": "produce one crash-safe hypothesis"}
         context = AgentExecutionContext(
             run_id="run-crash",
             task_id=task.task_id,
@@ -180,7 +196,8 @@ class CrashHarness:
             research_plan_version=1,
             provider="stub",
             model_or_tool="stub-model",
-            input_snapshot_hash="sha256:crash-input",
+            input_snapshot_hash=input_snapshot_hash,
+            prompt_hash=bound_prompt_hash,
             attempt=fence.attempt,
             reservation_id=fence.reservation_id,
             lease_fence_fingerprint=lease_fence_fingerprint(fence),

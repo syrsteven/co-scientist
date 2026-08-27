@@ -3,21 +3,32 @@
 from __future__ import annotations
 
 import json
-from pathlib import Path
 from typing import Any
 
 from alembic.config import Config
 from alembic.script import ScriptDirectory
 from sqlalchemy import create_engine, inspect, text
 
+from alembic import command
+
 EXECUTION_CONTRACT_VERSION = 3
+ALEMBIC_SCRIPT_LOCATION = "co_scientist:_migrations"
 
 
-def _alembic_config() -> Config:
-    project_root = Path(__file__).parents[4]
-    config = Config(str(project_root / "alembic.ini"))
-    config.set_main_option("script_location", str(project_root / "alembic"))
+def _alembic_config(*, database_url: str | None = None) -> Config:
+    config = Config()
+    config.set_main_option("script_location", ALEMBIC_SCRIPT_LOCATION)
+    if database_url is not None:
+        config.set_main_option("sqlalchemy.url", database_url)
     return config
+
+
+def upgrade_database(database_url: str) -> None:
+    """Upgrade one database through migration resources shipped in the package."""
+
+    command.upgrade(_alembic_config(database_url=database_url), "head")
+    if not database_at_head(database_url):
+        raise ValueError("database schema is not at Alembic head")
 
 
 def database_revision(database_url: str) -> str | None:

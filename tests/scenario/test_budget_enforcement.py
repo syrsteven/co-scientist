@@ -8,10 +8,14 @@ import pytest
 from sqlalchemy import text
 
 from co_scientist.adapters.persistence.sqlite import SqliteUnitOfWork
+from co_scientist.agents.result import AgentResult
 from co_scientist.domain.budget import CostEntry
+from co_scientist.domain.review import ReviewPolicy
 from co_scientist.domain.states import TaskState
 from co_scientist.domain.task import NewTask, TaskMutation
 from co_scientist.events.models import NewEvent
+from co_scientist.ports.artifact_store import ArtifactRef
+from co_scientist.supervisor.orchestrator import Supervisor
 from tests._fenced_runtime import claim_running_task, execution_manifest, fenced_context
 
 
@@ -364,3 +368,135 @@ def test_two_workers_cannot_reserve_past_the_same_hard_budget(tmp_path) -> None:
     snapshot = uow.load_budget_snapshot("run-1")
     assert snapshot.actively_reserved.model_calls == 1
     assert snapshot.hard_limit_reached
+
+
+def _literature_source_result(*, operation: str) -> AgentResult:
+    overview = (
+        {"operation": "search", "query": "lens regeneration", "pmids": ["1001"]}
+        if operation == "search"
+        else {"operation": "generation"}
+    )
+    return AgentResult(
+        result_id=f"result-{operation}",
+        external_call_id=f"call-{operation}",
+        run_id="run-literature",
+        task_id=f"task-{operation}",
+        idempotency_key=f"task-{operation}",
+        skill_id="meta_review" if operation == "search" else "generation",
+        skill_version="0.2.0",
+        output_schema_id=(
+            "MetaReviewResultV1" if operation == "search" else "GenerationResultV1"
+        ),
+        output_schema_version=1,
+        research_plan_version=1,
+        provider=("replay_pubmed:search" if operation == "search" else "replay"),
+        model_or_tool="fixture",
+        input_snapshot_hash="sha256:input",
+        prompt_hash="sha256:prompt",
+        status="completed",
+        payload=(
+            {
+                "schema_version": 1,
+                "research_plan_version": 1,
+                "source_content_hashes": {},
+                "system_feedback": ["search complete"],
+                "overview": json.dumps(overview),
+                "coverage_gaps": [],
+                "safety_direction_check": "insufficient_evidence",
+            }
+            if operation == "search"
+            else {
+                "schema_version": 1,
+                "research_plan_version": 1,
+                "hypotheses": [
+                    {
+                        "schema_version": 1,
+                        "hypothesis_id": "h-1",
+                        "content_id": "c-1",
+                        "research_plan_version": 1,
+                        "title": "Fixture",
+                        "claim": "Fixture claim",
+                        "mechanism_chain": [],
+                        "assumptions": [],
+                        "predictions": [],
+                        "falsifiers": [],
+                        "generation_strategy": "fixture",
+                    }
+                ],
+            }
+        ),
+        raw_artifact_ref=ArtifactRef(
+            path=f"raw/{operation}",
+            sha256="sha256:" + "d" * 64,
+            mime_type="application/json",
+            byte_length=2,
+        ),
+    )
+
+
+# Mutations caught: PubMed calls reserve zero model calls even though settlement
+# charges one actual external invocation, letting near-limit work slip through.
+def test_literature_search_and_summary_reserve_their_actual_external_call(
+    tmp_path,
+) -> None:
+    uow = SqliteUnitOfWork(f"sqlite:///{tmp_path / 'literature-budget.db'}")
+    uow.create_schema()
+    uow.create_started_run(
+        "run-literature",
+        manifest=execution_manifest(
+            budget={"max_model_calls": 0},
+            providers={"literature": "replay_pubmed"},
+            provider_configuration={"provider": "replay", "model": "fixture"},
+            profile={"literature_novelty_required": True},
+        ),
+        event=NewEvent(event_type="RunStarted", payload={}),
+        idempotency_key="start:run-literature:0",
+    )
+    supervisor = Supervisor(uow=uow, review_policy=ReviewPolicy(profile_id="minimal"))
+    content_events = (
+        NewEvent(
+            event_type="HypothesisContentCreated",
+            schema_version=2,
+            payload={"hypothesis_id": "h-1", "content_hash": "sha256:" + "a" * 64},
+        ),
+        NewEvent(
+            event_type="HypothesisContentCreated",
+            schema_version=2,
+            payload={"hypothesis_id": "h-2", "content_hash": "sha256:" + "b" * 64},
+        ),
+    )
+    generation_followups = supervisor._followup_tasks(
+        run_id="run-literature",
+        events=content_events,
+        source_result=_literature_source_result(operation="generation"),
+    )
+    search = next(task for task in generation_followups if "literature:search" in task.task_id)
+    summary = supervisor._followup_tasks(
+        run_id="run-literature",
+        events=(
+            NewEvent(
+                event_type="MetaReviewCompleted",
+                schema_version=2,
+                payload={
+                    "literature_operation": "search",
+                    "pubmed_query": "lens regeneration",
+                    "pmids": ["1001"],
+                },
+            ),
+        ),
+        source_result=_literature_source_result(operation="search"),
+    )[0]
+
+    assert search.payload["budget_estimate"]["model_calls"] == 1
+    assert summary.payload["budget_estimate"]["model_calls"] == 1
+
+    uow.enqueue_tasks((search,))
+    rejected = uow.claim_next_task(
+        run_id="run-literature",
+        worker_id="literature-worker",
+        lease_token="literature-token",
+        now=datetime(2026, 8, 18, 10, 0, tzinfo=UTC),
+        lease_duration=timedelta(minutes=5),
+    )
+    assert rejected.status == "budget_exhausted"
+    assert rejected.task is None

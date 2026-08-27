@@ -10,6 +10,7 @@ from co_scientist.domain.task import NewTask
 from co_scientist.domain.tournament import TournamentEpoch
 from co_scientist.events.models import NewEvent
 from co_scientist.ports.artifact_store import ArtifactRef
+from co_scientist.runtime.external_calls import request_fingerprint
 from co_scientist.supervisor.orchestrator import Supervisor, plan_revision_action
 from tests._fenced_runtime import (
     acknowledge_result,
@@ -178,6 +179,25 @@ def _apply_scientific_result(
     payload: dict[str, object],
 ) -> int:
     uow = supervisor.uow
+    inputs: dict[str, object] = {}
+    if skill_id == "reflection":
+        inputs = {
+            "hypothesis_id": payload["hypothesis_id"],
+            "content_hash": payload["content_hash"],
+            "review_stage": payload["stage"],
+        }
+    elif skill_id == "proximity":
+        inputs = {
+            field: payload[field]
+            for field in (
+                "edge_id",
+                "left_id",
+                "left_content_hash",
+                "right_id",
+                "right_content_hash",
+            )
+        }
+    input_snapshot_hash = request_fingerprint(inputs)
     try:
         uow.task_state(task_id)
     except KeyError:
@@ -188,7 +208,18 @@ def _apply_scientific_result(
                     run_id="run-1",
                     idempotency_key=task_id,
                     intent_type=f"run_{skill_id}",
-                    payload={},
+                    payload={
+                        "skill_id": skill_id,
+                        "skill_version": "0.2.0",
+                        "output_schema_id": output_schema_id,
+                        "output_schema_version": 1,
+                        "research_plan_version": plan_version,
+                        "provider_id": "scenario",
+                        "model_or_tool": "typed-fixture",
+                        "inputs": inputs,
+                        "input_snapshot_hash": input_snapshot_hash,
+                        "prompt_hash": "sha256:prompt",
+                    },
                 )
             ),
             expected_sequence=expected_sequence,
@@ -209,7 +240,7 @@ def _apply_scientific_result(
             "research_plan_version": plan_version,
             "provider": "scenario",
             "model_or_tool": "typed-fixture",
-            "input_snapshot_hash": "sha256:input",
+            "input_snapshot_hash": input_snapshot_hash,
             "prompt_hash": "sha256:prompt",
         },
         claimed,

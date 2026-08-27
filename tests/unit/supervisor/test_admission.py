@@ -14,6 +14,7 @@ from co_scientist.domain.tournament import TournamentEpoch
 from co_scientist.events.models import NewEvent
 from co_scientist.ports.artifact_store import ArtifactRef
 from co_scientist.ports.event_store import ConcurrencyConflict
+from co_scientist.runtime.external_calls import request_fingerprint
 from co_scientist.runtime.task_payload import WorkerTaskPayload
 from co_scientist.supervisor.orchestrator import Supervisor
 from tests._fenced_runtime import (
@@ -23,6 +24,25 @@ from tests._fenced_runtime import (
     execution_manifest,
     fenced_context,
 )
+
+_GENERATION_INPUTS: dict[str, object] = {}
+_GENERATION_INPUT_HASH = request_fingerprint(_GENERATION_INPUTS)
+_GENERATION_PROMPT_HASH = "sha256:fixture-prompt"
+
+
+def _generation_task_payload() -> dict[str, object]:
+    return {
+        "skill_id": "generation",
+        "skill_version": "0.2.0",
+        "output_schema_id": "GenerationResultV1",
+        "output_schema_version": 1,
+        "research_plan_version": 1,
+        "provider_id": "stub",
+        "model_or_tool": "stub-model",
+        "inputs": _GENERATION_INPUTS,
+        "input_snapshot_hash": _GENERATION_INPUT_HASH,
+        "prompt_hash": _GENERATION_PROMPT_HASH,
+    }
 
 
 def _generation_payload() -> dict[str, object]:
@@ -591,7 +611,7 @@ def test_handle_result_atomically_applies_policy_owned_work_and_ignores_agent_ac
                     run_id="run-1",
                     idempotency_key="generation:run-1:1",
                     intent_type="generate",
-                    payload={},
+                    payload=_generation_task_payload(),
                 )
             )
         ]
@@ -609,7 +629,8 @@ def test_handle_result_atomically_applies_policy_owned_work_and_ignores_agent_ac
             "research_plan_version": 1,
             "provider": "stub",
             "model_or_tool": "stub-model",
-            "input_snapshot_hash": "sha256:input",
+            "input_snapshot_hash": _GENERATION_INPUT_HASH,
+            "prompt_hash": _GENERATION_PROMPT_HASH,
         },
         claimed,
     ).model_dump(mode="json")
@@ -661,7 +682,8 @@ def test_handle_result_atomically_applies_policy_owned_work_and_ignores_agent_ac
         research_plan_version=1,
         provider="stub",
         model_or_tool="stub-model",
-        input_snapshot_hash="sha256:input",
+        input_snapshot_hash=_GENERATION_INPUT_HASH,
+        prompt_hash=_GENERATION_PROMPT_HASH,
         attempt=claimed.attempt,
         reservation_id=claimed.reservation_id,
         lease_fence_fingerprint=context["lease_fence_fingerprint"],
@@ -745,7 +767,7 @@ def _submitted_generation_result(tmp_path, status: str):
                     run_id="run-1",
                     idempotency_key="generation:run-1:1",
                     intent_type="generate",
-                    payload={},
+                    payload=_generation_task_payload(),
                 )
             )
         ]
@@ -763,7 +785,8 @@ def _submitted_generation_result(tmp_path, status: str):
             "research_plan_version": 1,
             "provider": "stub",
             "model_or_tool": "stub-model",
-            "input_snapshot_hash": "sha256:input",
+            "input_snapshot_hash": _GENERATION_INPUT_HASH,
+            "prompt_hash": _GENERATION_PROMPT_HASH,
         },
         claimed,
     ).model_dump(mode="json")
@@ -810,7 +833,8 @@ def _submitted_generation_result(tmp_path, status: str):
         research_plan_version=1,
         provider="stub",
         model_or_tool="stub-model",
-        input_snapshot_hash="sha256:input",
+        input_snapshot_hash=_GENERATION_INPUT_HASH,
+        prompt_hash=_GENERATION_PROMPT_HASH,
         attempt=claimed.attempt,
         reservation_id=claimed.reservation_id,
         lease_fence_fingerprint=context["lease_fence_fingerprint"],

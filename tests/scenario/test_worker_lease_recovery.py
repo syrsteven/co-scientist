@@ -562,7 +562,8 @@ class _InvalidProvider:
 
 
 @pytest.mark.asyncio
-# Mutation caught: invalid typed output stops after one attempt or pollutes cost/science.
+# Mutations caught: invalid typed output stops after one attempt, erases attempt
+# usage by rebinding one reservation, or pollutes the scientific stream.
 async def test_real_workers_exhaust_invalid_output_without_scientific_pollution(
     tmp_path,
 ) -> None:
@@ -651,11 +652,32 @@ async def test_real_workers_exhaust_invalid_output_without_scientific_pollution(
             .scalars()
             .all()
         )
-        cost_count = connection.execute(
-            text("SELECT COUNT(*) FROM cost_entries WHERE run_id = 'run-invalid'")
-        ).scalar_one()
+        costs = connection.execute(
+            text(
+                "SELECT external_call_id, input_tokens, output_tokens, cost_usd "
+                "FROM cost_entries WHERE run_id = 'run-invalid' ORDER BY external_call_id"
+            )
+        ).all()
+        reservation = connection.execute(
+            text(
+                "SELECT state, actual_model_calls, actual_input_tokens, "
+                "actual_output_tokens, actual_cost_usd FROM budget_reservations "
+                "WHERE task_id = 'task-invalid'"
+            )
+        ).one()
     assert call_ids == ["call-invalid-1", "call-invalid-2", "call-invalid-3"]
-    assert cost_count == 0
+    assert costs == [
+        ("call-invalid-1", 1, 1, "0.01"),
+        ("call-invalid-2", 1, 1, "0.01"),
+        ("call-invalid-3", 1, 1, "0.01"),
+    ]
+    assert reservation == ("settled", 3, 3, 3, "0.03")
+    attempt_failures = [
+        event
+        for event in uow.load("run-invalid")
+        if event.event_type == "ExternalCallAttemptFailed"
+    ]
+    assert [event.payload["external_call_id"] for event in attempt_failures] == call_ids
     assert not any(
         event.event_type.startswith(("Hypothesis", "Review", "Match"))
         for event in uow.load("run-invalid")

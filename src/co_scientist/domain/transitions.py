@@ -42,7 +42,12 @@ RUN_TRANSITIONS = {
 }
 
 TASK_TRANSITIONS = {
-    TaskState.PENDING: {TaskState.LEASED, TaskState.BLOCKED, TaskState.CANCELLED},
+    TaskState.PENDING: {
+        TaskState.LEASED,
+        TaskState.BLOCKED,
+        TaskState.FAILED,
+        TaskState.CANCELLED,
+    },
     TaskState.LEASED: {TaskState.RUNNING, TaskState.PENDING, TaskState.CANCELLED},
     TaskState.RUNNING: {
         TaskState.RESULT_RECEIVED,

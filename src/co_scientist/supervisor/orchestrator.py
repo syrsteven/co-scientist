@@ -5,12 +5,13 @@ from __future__ import annotations
 import json
 from collections.abc import Mapping, Sequence
 from decimal import Decimal
-from typing import Any, Literal
+from typing import Any, Literal, cast
 
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, ValidationError
 
 from co_scientist.adapters.persistence.sqlite import CommitResult, SqliteUnitOfWork
 from co_scientist.agents.payloads import (
+    CoreScientificResultV1,
     EvolutionResultV1,
     GenerationResultV1,
     MetaReviewResultV1,
@@ -25,9 +26,11 @@ from co_scientist.domain.admission import (
     admission_policy_from_manifest,
     reduce_admission_evidence,
 )
+from co_scientist.domain.anchors import core_preview_anchor_sets
 from co_scientist.domain.budget import BudgetEstimate, CostEntry
 from co_scientist.domain.convergence import ConvergenceCheckpoint, StopDecision, evaluate_stop
 from co_scientist.domain.hypothesis import (
+    HypothesisContent,
     compute_hypothesis_content_hash,
     hypothesis_content_from_draft,
 )
@@ -55,7 +58,10 @@ from co_scientist.events.reducers import replay_tournament
 from co_scientist.ports.event_store import ConcurrencyConflict
 from co_scientist.runtime.checkpoints import ConvergenceCheckpointBuilder
 from co_scientist.runtime.external_calls import prompt_hash, request_fingerprint
-from co_scientist.runtime.task_payload import WorkerTaskPayload
+from co_scientist.runtime.task_payload import (
+    WorkerTaskPayload,
+    validate_result_task_binding,
+)
 from co_scientist.skills.loader import (
     core_skill_directory,
     load_skill,
@@ -660,7 +666,7 @@ class Supervisor:
                 inputs={"query": query, "limit": 10},
                 provider_id=f"{literature_provider}:search",
                 model_or_tool="esearch",
-                model_calls=0,
+                model_calls=1,
             )
             return (*initial, search)
 
@@ -688,7 +694,7 @@ class Supervisor:
                     },
                     provider_id=source_result.provider.replace(":search", ":summary"),
                     model_or_tool="esummary",
-                    model_calls=0,
+                    model_calls=1,
                 ),
             )
 
@@ -714,6 +720,18 @@ class Supervisor:
                 str(event.payload["hypothesis_id"]): str(event.payload["content_hash"])
                 for event in self.uow.load(run_id)
                 if event.event_type == "HypothesisContentCreated"
+            }
+            anchor_ids = {
+                str(member.get("anchor_id"))
+                for anchor_set in manifest_document.get("anchor_sets", [])
+                if isinstance(anchor_set, Mapping)
+                for member in anchor_set.get("members", [])
+                if isinstance(member, Mapping)
+            }
+            persisted_contents = {
+                hypothesis_id: content_hash
+                for hypothesis_id, content_hash in persisted_contents.items()
+                if hypothesis_id not in anchor_ids
             }
             ordered = sorted(persisted_contents)
             review_order = [*ordered[2:], *ordered[:2]]
@@ -1037,6 +1055,49 @@ class Supervisor:
             and typed_plan_version != persisted_context.research_plan_version
         ):
             raise ValueError("durable payload does not match execution research plan")
+        if persisted_status == "completed":
+            task_definition = self.uow.task_definition(task_id)
+            try:
+                task_payload = WorkerTaskPayload.model_validate(
+                    dict(task_definition.payload)
+                )
+            except ValidationError as error:
+                raise ValueError(
+                    "durable task has no valid immutable WorkerTaskPayload"
+                ) from error
+            expected_context = {
+                "skill_id": task_payload.skill_id,
+                "skill_version": task_payload.skill_version,
+                "output_schema_id": task_payload.output_schema_id,
+                "output_schema_version": task_payload.output_schema_version,
+                "research_plan_version": task_payload.research_plan_version,
+                "provider": task_payload.provider_id,
+                "model_or_tool": task_payload.model_or_tool,
+                "input_snapshot_hash": task_payload.input_snapshot_hash,
+                "prompt_hash": task_payload.prompt_hash,
+            }
+            context_mismatches = [
+                field
+                for field, value in expected_context.items()
+                if getattr(persisted_context, field) != value
+            ]
+            if context_mismatches:
+                raise ValueError(
+                    "durable execution context does not match WorkerTaskPayload: "
+                    + ", ".join(context_mismatches)
+                )
+            literature_operation: Literal["search", "summary"] | None = None
+            if task_definition.intent_type == "run_literature_search":
+                literature_operation = "search"
+            elif task_definition.intent_type == "run_literature_summary":
+                literature_operation = "summary"
+            validate_result_task_binding(
+                task_inputs=task_payload.inputs,
+                task_research_plan_version=task_payload.research_plan_version,
+                provider_id=task_payload.provider_id,
+                result=cast(CoreScientificResultV1, typed_payload),
+                literature_operation=literature_operation,
+            )
         durable_result = AgentResult.model_validate(persisted_data)
         self._validate_submitted_result(
             run_id=run_id,
@@ -1148,13 +1209,6 @@ class Supervisor:
             reservation_id=reservation_id,
             lease_fence=fence,
             settle_reservation_id=reservation_id,
-            cost_entries=(
-                self._cost_entry(
-                    run_id=run_id,
-                    external_call_id=result.external_call_id,
-                    usage=call.usage,
-                ),
-            ),
         )
 
     def accept_plan_revision(
@@ -1639,10 +1693,20 @@ class Supervisor:
         goal = manifest.get("goal")
         contract = manifest.get("tournament_contract")
         provider = manifest.get("provider_configuration")
+        profile = manifest.get("profile")
+        tournament = profile.get("tournament") if isinstance(profile, Mapping) else None
+        anchor_count = tournament.get("anchor_count") if isinstance(tournament, Mapping) else None
         if not isinstance(goal, Mapping) or not isinstance(contract, Mapping):
             raise TypeError("run manifest lacks goal or tournament contract")
         if not isinstance(provider, Mapping):
             raise TypeError("run manifest lacks provider configuration")
+        if not isinstance(anchor_count, int) or isinstance(anchor_count, bool):
+            raise ValueError(  # noqa: TRY004 - malformed persisted manifest value
+                "run manifest has no canonical anchor count"
+            )
+        canonical_anchor_sets = core_preview_anchor_sets(anchor_count)
+        if manifest.get("anchor_sets") != canonical_anchor_sets:
+            raise ValueError("run manifest anchor content or evidence is not canonical")
         provider_id = str(provider.get("provider", ""))
         model = str(provider.get("model", ""))
         if not provider_id or not model:
@@ -1663,6 +1727,84 @@ class Supervisor:
             model_or_tool=model,
             hypotheses=2,
         )
+        members = canonical_anchor_sets[0]["members"]
+        anchor_events: list[NewEvent] = []
+        for member in members:
+            anchor_id = str(member["anchor_id"])
+            content = HypothesisContent.model_validate(member["content"])
+            if content.content_hash != member["content_hash"]:
+                raise ValueError("run manifest anchor content hash is not canonical")
+            anchor_events.append(
+                NewEvent(
+                    event_type="HypothesisContentCreated",
+                    schema_version=2,
+                    payload={
+                        **content.model_dump(mode="json"),
+                        "hypothesis_id": anchor_id,
+                        "research_plan_version": epoch.research_plan_version,
+                    },
+                )
+            )
+        proximity_payloads: dict[str, dict[str, Any]] = {}
+        for member in members:
+            evidence = member.get("evidence")
+            if not isinstance(evidence, Mapping):
+                raise ValueError(  # noqa: TRY004 - malformed persisted manifest value
+                    "run manifest anchor evidence is incomplete"
+                )
+            sources = evidence.get("sources")
+            reviews = evidence.get("reviews")
+            novelty = evidence.get("novelty_assessment")
+            proximity = evidence.get("proximity_assessment")
+            if (
+                not isinstance(sources, list)
+                or not sources
+                or not isinstance(reviews, list)
+                or len(reviews) < 2
+                or not isinstance(novelty, Mapping)
+                or not isinstance(proximity, Mapping)
+            ):
+                raise ValueError("run manifest anchor evidence is incomplete")
+            source_ids = {
+                str(source.get("source_id"))
+                for source in sources
+                if isinstance(source, Mapping) and source.get("source_id")
+            }
+            if len(source_ids) != len(sources):
+                raise ValueError("run manifest anchor evidence sources are incomplete")
+            for review in reviews:
+                if not isinstance(review, Mapping) or not review.get("evidence_ids"):
+                    raise ValueError("run manifest anchor review evidence is incomplete")
+                anchor_events.append(
+                    NewEvent(
+                        event_type="ReviewCompleted",
+                        schema_version=2,
+                        payload=dict(review),
+                    )
+                )
+            if not novelty.get("evidence_ids") or not novelty.get(
+                "closest_prior_work_ids"
+            ):
+                raise ValueError("run manifest anchor novelty evidence is incomplete")
+            anchor_events.append(
+                NewEvent(
+                    event_type="NoveltyAssessmentRecorded",
+                    schema_version=1,
+                    payload=dict(novelty),
+                )
+            )
+            edge_id = proximity.get("edge_id")
+            if not isinstance(edge_id, str) or not edge_id:
+                raise ValueError("run manifest anchor proximity evidence is incomplete")
+            proximity_payloads[edge_id] = dict(proximity)
+        anchor_events.extend(
+            NewEvent(
+                event_type="ProximityAssessed",
+                schema_version=2,
+                payload=payload,
+            )
+            for payload in proximity_payloads.values()
+        )
         return self.uow.create_started_run(
             run_id,
             manifest=manifest,
@@ -1679,6 +1821,7 @@ class Supervisor:
                     event_type="TournamentEpochOpened",
                     payload=epoch.model_dump(mode="json"),
                 ),
+                *anchor_events,
                 self._task_enqueued_event(initial, correlation_id=run_id),
             ),
             initial_tasks=(initial,),
@@ -1826,10 +1969,26 @@ class Supervisor:
             raise ConcurrencyConflict(f"expected {expected_sequence}, got durable stream tip")
         manifest = self.uow.run_manifest(run_id)
         provider_id, model = self._manifest_provider(manifest)
-        hypotheses = {
+        anchor_sets = manifest.get("anchor_sets")
+        if not isinstance(anchor_sets, list) or len(anchor_sets) != 1:
+            raise ValueError("run manifest has no unique frozen anchor set")
+        members = anchor_sets[0].get("members")
+        if not isinstance(members, list) or not members:
+            raise ValueError("run manifest has no frozen anchor members")
+        anchor_ids = tuple(str(member.get("anchor_id")) for member in members)
+        if any(not anchor_id for anchor_id in anchor_ids) or len(set(anchor_ids)) != len(
+            anchor_ids
+        ):
+            raise ValueError("run manifest has malformed frozen anchor members")
+        all_hypotheses = {
             str(event.payload["hypothesis_id"]): str(event.payload["content_hash"])
             for event in events
             if event.event_type == "HypothesisContentCreated"
+        }
+        hypotheses = {
+            hypothesis_id: content_hash
+            for hypothesis_id, content_hash in all_hypotheses.items()
+            if hypothesis_id not in anchor_ids
         }
         profile = manifest.get("profile")
         stop = profile.get("stop") if isinstance(profile, Mapping) else None
@@ -1923,78 +2082,20 @@ class Supervisor:
                     )
                 return AdvanceOutcome(action="admitted", commit=admission.commit)
 
-        anchor_sets = manifest.get("anchor_sets")
-        if not isinstance(anchor_sets, list) or len(anchor_sets) != 1:
-            raise ValueError("run manifest has no unique frozen anchor set")
-        members = anchor_sets[0].get("members")
-        if not isinstance(members, list) or not members:
-            raise ValueError("run manifest has no frozen anchor members")
-        missing_anchors = [
-            member for member in members if str(member.get("anchor_id")) not in entry_ids
-        ]
-        if missing_anchors:
-            epoch = self._active_epoch(run_id)
-            policy = get_rating_policy(epoch.rating_policy_version)
-            anchor_events: list[NewEvent] = []
-            for member in missing_anchors:
-                anchor_id = str(member["anchor_id"])
-                anchor_events.extend(
-                    (
-                        NewEvent(
-                            event_type="HypothesisTournamentReady",
-                            schema_version=2,
-                            payload={
-                                "run_id": run_id,
-                                "hypothesis_id": anchor_id,
-                                "content_id": anchor_id,
-                                "content_hash": member["content_hash"],
-                                "research_plan_version": epoch.research_plan_version,
-                                "admission_policy_version": epoch.admission_policy_version,
-                                "required_review_stages": [],
-                                "safety_status": "passed",
-                                "novelty_assessment_id": None,
-                                "duplicate_detected": False,
-                                "epoch_id": epoch.epoch_id,
-                                "rating_policy_version": policy.version,
-                                "missing_requirements": [],
-                                "conflicting_evidence": [],
-                                "source_event_sequences": [],
-                                "review_ids": [],
-                                "proximity_edge_ids": [],
-                                "content_event_sequence": None,
-                                "novelty_event_sequence": None,
-                                "proximity_event_sequences": [],
-                                "epoch_event_sequence": None,
-                            },
-                        ),
-                        NewEvent(
-                            event_type="TournamentEntryCreated",
-                            payload={
-                                "epoch_id": epoch.epoch_id,
-                                "hypothesis_id": anchor_id,
-                                "content_hash": member["content_hash"],
-                                "rating": policy.initial_rating,
-                                "matches_played": 0,
-                            },
-                        ),
-                        NewEvent(
-                            event_type="InitialRatingAssigned",
-                            payload={
-                                "epoch_id": epoch.epoch_id,
-                                "hypothesis_id": anchor_id,
-                                "rating": policy.initial_rating,
-                                "rating_policy_version": policy.version,
-                            },
-                        ),
-                    )
+        for anchor_id in anchor_ids:
+            if anchor_id not in entry_ids:
+                admission = self.admit_hypothesis(
+                    run_id=run_id,
+                    hypothesis_id=anchor_id,
+                    expected_sequence=expected_sequence,
+                    idempotency_key=f"admit:epoch-1:{anchor_id}",
                 )
-            commit = self.uow.commit_domain_batch(
-                run_id=run_id,
-                expected_sequence=expected_sequence,
-                events=tuple(anchor_events),
-                idempotency_key=f"anchors:{run_id}:{epoch.epoch_id}",
-            )
-            return AdvanceOutcome(action="admitted", commit=commit)
+                if admission.commit is None:
+                    raise ValueError(
+                        f"anchor {anchor_id} is not admissible: "
+                        f"{admission.decision.missing_requirements}"
+                    )
+                return AdvanceOutcome(action="admitted", commit=admission.commit)
 
         matches = {
             str(event.payload.get("match_id"))

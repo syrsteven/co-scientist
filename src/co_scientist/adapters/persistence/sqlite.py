@@ -708,26 +708,16 @@ class SqliteUnitOfWork:
             )
         ).all()
         for row in rows:
-            values = (
-                BudgetEstimate(
-                    model_calls=row.actual_model_calls,
-                    input_tokens=row.actual_input_tokens,
-                    output_tokens=row.actual_output_tokens,
-                    cost_usd=Decimal(row.actual_cost_usd),
-                    hypotheses=row.actual_hypotheses,
-                    matches=row.actual_matches,
+            if row.state == "settled":
+                values = SqliteUnitOfWork._reservation_actual(row)
+            else:
+                values = add_budget_usage(
+                    SqliteUnitOfWork._provider_usage_for_task(
+                        session, run_id=row.run_id, task_id=row.task_id
+                    ),
+                    SqliteUnitOfWork._active_reservation_estimate(session, row),
                 )
-                if row.state == "settled"
-                else SqliteUnitOfWork._reservation_estimate(row)
-            )
-            usage = BudgetUsage(
-                model_calls=usage.model_calls + values.model_calls,
-                input_tokens=usage.input_tokens + values.input_tokens,
-                output_tokens=usage.output_tokens + values.output_tokens,
-                cost_usd=usage.cost_usd + values.cost_usd,
-                hypotheses=usage.hypotheses + values.hypotheses,
-                matches=usage.matches + values.matches,
-            )
+            usage = add_budget_usage(usage, values)
         return usage
 
     @staticmethod
@@ -744,6 +734,82 @@ class SqliteUnitOfWork:
             cost_usd=Decimal(row.actual_cost_usd),
             hypotheses=row.actual_hypotheses,
             matches=row.actual_matches,
+        )
+
+    @staticmethod
+    def _provider_usage_for_task(
+        session: Session, *, run_id: str, task_id: str
+    ) -> BudgetUsage:
+        """Aggregate every paid provider attempt for one logical task."""
+
+        rows = session.execute(
+            select(CostEntryRow)
+            .join(
+                ExternalCallRow,
+                ExternalCallRow.external_call_id == CostEntryRow.external_call_id,
+            )
+            .where(
+                CostEntryRow.run_id == run_id,
+                ExternalCallRow.run_id == run_id,
+                ExternalCallRow.task_id == task_id,
+            )
+            .order_by(CostEntryRow.cost_entry_id)
+        ).scalars().all()
+        return BudgetUsage(
+            model_calls=len(rows),
+            input_tokens=sum(row.input_tokens for row in rows),
+            output_tokens=sum(row.output_tokens for row in rows),
+            cost_usd=sum((Decimal(row.cost_usd) for row in rows), start=Decimal(0)),
+        )
+
+    @staticmethod
+    def _active_reservation_estimate(
+        session: Session, reservation: BudgetReservationRow
+    ) -> BudgetEstimate:
+        """Return only work that is still reserved but not durably consumed."""
+
+        task = session.get(TaskRow, reservation.task_id)
+        if task is None:
+            raise ValueError(
+                f"budget reservation {reservation.reservation_id} has no persisted task"
+            )
+        current_attempt_paid = False
+        if reservation.external_call_id is not None:
+            call = session.get(ExternalCallRow, reservation.external_call_id)
+            if call is None:
+                raise ValueError("budget reservation points at an unknown external call")
+            current_attempt_paid = bool(
+                call.attempt == task.attempt
+                and session.scalar(
+                    select(func.count())
+                    .select_from(CostEntryRow)
+                    .where(CostEntryRow.external_call_id == call.external_call_id)
+                )
+            )
+        paid_usage = SqliteUnitOfWork._provider_usage_for_task(
+            session, run_id=reservation.run_id, task_id=reservation.task_id
+        )
+        provider_attempt_reserved = paid_usage.model_calls == 0 or (
+            TaskState(task.state) in {TaskState.LEASED, TaskState.RUNNING}
+            and not current_attempt_paid
+        )
+        estimate = SqliteUnitOfWork._reservation_estimate(reservation)
+        return BudgetEstimate(
+            model_calls=estimate.model_calls if provider_attempt_reserved else 0,
+            input_tokens=estimate.input_tokens if provider_attempt_reserved else 0,
+            output_tokens=estimate.output_tokens if provider_attempt_reserved else 0,
+            cost_usd=estimate.cost_usd if provider_attempt_reserved else Decimal(0),
+            hypotheses=estimate.hypotheses,
+            matches=estimate.matches,
+        )
+
+    @staticmethod
+    def _retry_provider_estimate(estimate: BudgetEstimate) -> BudgetEstimate:
+        return BudgetEstimate(
+            model_calls=estimate.model_calls,
+            input_tokens=estimate.input_tokens,
+            output_tokens=estimate.output_tokens,
+            cost_usd=estimate.cost_usd,
         )
 
     @classmethod
@@ -782,19 +848,34 @@ class SqliteUnitOfWork:
             if row.state == "settled":
                 settled = add_budget_usage(settled, cls._reservation_actual(row))
                 reservation_ids.append(row.reservation_id)
-                if row.external_call_id is not None:
-                    cost_ids.extend(
-                        str(value)
-                        for value in session.scalars(
-                            select(CostEntryRow.cost_entry_id).where(
-                                CostEntryRow.run_id == run_id,
-                                CostEntryRow.external_call_id == row.external_call_id,
-                            )
-                        ).all()
-                    )
             elif row.state == "reserved":
-                reserved = add_budget_usage(reserved, cls._reservation_estimate(row))
+                settled = add_budget_usage(
+                    settled,
+                    cls._provider_usage_for_task(
+                        session, run_id=row.run_id, task_id=row.task_id
+                    ),
+                )
+                reserved = add_budget_usage(
+                    reserved, cls._active_reservation_estimate(session, row)
+                )
                 reservation_ids.append(row.reservation_id)
+            if row.state in {"reserved", "settled"}:
+                cost_ids.extend(
+                    str(value)
+                    for value in session.scalars(
+                        select(CostEntryRow.cost_entry_id)
+                        .join(
+                            ExternalCallRow,
+                            ExternalCallRow.external_call_id
+                            == CostEntryRow.external_call_id,
+                        )
+                        .where(
+                            CostEntryRow.run_id == run_id,
+                            ExternalCallRow.run_id == run_id,
+                            ExternalCallRow.task_id == row.task_id,
+                        )
+                    ).all()
+                )
         total = add_budget_usage(settled, reserved)
         return DurableBudgetSnapshot(
             run_id=run_id,
@@ -1000,6 +1081,48 @@ class SqliteUnitOfWork:
             if existing_reservation is not None:
                 self._assert_exact_reservation(task, existing_reservation)
                 reservation = existing_reservation
+                paid_usage = self._provider_usage_for_task(
+                    session, run_id=run_id, task_id=task.task_id
+                )
+                policy = BudgetPolicy.model_validate(manifest.get("budget", {}))
+                retry_exceeds_budget = paid_usage.model_calls > 0 and not self._fits_budget(
+                    policy,
+                    self._budget_usage(session, run_id),
+                    self._retry_provider_estimate(estimate),
+                )
+                if retry_exceeds_budget:
+                    if reservation.external_call_id is None:
+                        raise ValueError("paid retry reservation has no external call")
+                    task.state = validate_task_transition(
+                        TaskState(task.state), TaskState.FAILED
+                    ).value
+                    current_sequence = self._current_sequence(session, run_id)
+                    settlement = self._settle_budget_reservation(
+                        session,
+                        run_id=run_id,
+                        reservation_id=reservation.reservation_id,
+                        external_call_id=reservation.external_call_id,
+                        events=(),
+                    )
+                    events = self._insert_events(
+                        session,
+                        run_id,
+                        current_sequence,
+                        (
+                            NewEvent(
+                                event_type="TaskRetryBudgetExhausted",
+                                payload={
+                                    "task_id": task.task_id,
+                                    "attempts_consumed": task.attempt,
+                                    "reservation_id": reservation.reservation_id,
+                                },
+                            ),
+                            settlement,
+                        ),
+                    )
+                    self._set_run_sequence(session, run_id, events[-1].sequence, required=True)
+                    session.flush()
+                    return ClaimOutcome(status="budget_exhausted")
             else:
                 policy = BudgetPolicy.model_validate(manifest.get("budget", {}))
                 if not self._fits_budget(policy, self._budget_usage(session, run_id), estimate):
@@ -1077,7 +1200,7 @@ class SqliteUnitOfWork:
         if lease_duration <= timedelta(0):
             raise ValueError("lease_duration must be positive")
         now = self._runtime_utc(now)
-        durable_states = (
+        running_durable_states = (
             ExternalCallState.STARTED.value,
             ExternalCallState.RAW_RESPONSE_PERSISTED.value,
             ExternalCallState.VALIDATED.value,
@@ -1105,6 +1228,11 @@ class SqliteUnitOfWork:
                 return ClaimOutcome(status="paused")
             if state is RunState.CREATED:
                 raise ValueError("run state created does not allow task adoption")
+            durable_states = (
+                (ExternalCallState.AGENT_RESULT_SUBMITTED.value,)
+                if state is RunState.STOPPING
+                else running_durable_states
+            )
             if (
                 session.scalar(select(TaskRow.task_id).where(TaskRow.lease_token == lease_token))
                 is not None
@@ -1411,6 +1539,18 @@ class SqliteUnitOfWork:
                                 lease_fence=expired_fence,
                             )
                         )
+                    elif reservation.state == "reserved":
+                        if reservation.external_call_id is None:
+                            raise ValueError("paid exhausted reservation has no external call")
+                        new_events.append(
+                            self._settle_budget_reservation(
+                                session,
+                                run_id=run_id,
+                                reservation_id=reservation.reservation_id,
+                                external_call_id=reservation.external_call_id,
+                                events=(),
+                            )
+                        )
                 else:
                     row.state = validate_task_transition(
                         TaskState(row.state), TaskState.PENDING
@@ -1674,6 +1814,16 @@ class SqliteUnitOfWork:
             raise ValueError("external call reservation binding is not current")
         return row
 
+    @staticmethod
+    def _validate_external_call_write_state(
+        session: Session, row: ExternalCallRow
+    ) -> None:
+        state = SqliteUnitOfWork._run_state_in_transaction(session, row.run_id)
+        if state is not RunState.RUNNING:
+            raise ValueError(
+                f"run state {state.value} does not allow external call write"
+            )
+
     def assert_task_fence(self, *, fence: TaskLeaseFence) -> None:
         """Validate a lease immediately before a non-database side effect."""
 
@@ -1719,7 +1869,8 @@ class SqliteUnitOfWork:
     ) -> None:
         with self.session_factory.begin() as session:
             self._begin_immediate(session)
-            self._fenced_external_call(session, call_id, reservation_id, fence)
+            row = self._fenced_external_call(session, call_id, reservation_id, fence)
+            self._validate_external_call_write_state(session, row)
 
     def transition_call(
         self,
@@ -1733,7 +1884,27 @@ class SqliteUnitOfWork:
         with self.session_factory.begin() as session:
             self._begin_immediate(session)
             row = self._fenced_external_call(session, call_id, reservation_id, fence)
+            self._validate_external_call_write_state(session, row)
             row.state = transition_external_call(ExternalCallState(row.state), target).value
+            if target is ExternalCallState.VALIDATION_FAILED:
+                event = self._insert_events(
+                    session,
+                    row.run_id,
+                    self._current_sequence(session, row.run_id),
+                    (
+                        NewEvent(
+                            event_type="ExternalCallAttemptFailed",
+                            payload={
+                                "external_call_id": row.external_call_id,
+                                "task_id": row.task_id,
+                                "attempt": row.attempt,
+                                "reservation_id": reservation_id,
+                                "failure_state": target.value,
+                            },
+                        ),
+                    ),
+                )[0]
+                self._set_run_sequence(session, row.run_id, event.sequence, required=True)
 
     def external_call_state(self, call_id: str) -> str:
         with self.session_factory() as session:
@@ -1759,10 +1930,12 @@ class SqliteUnitOfWork:
         with self.session_factory.begin() as session:
             self._begin_immediate(session)
             row = self._fenced_external_call(session, call_id, reservation_id, fence)
+            self._validate_external_call_write_state(session, row)
             row.raw_artifact_ref_json = ref.model_dump_json()
             row.provider_response_id = provider_response_id
             row.usage_json = _json(thaw_json(usage or {}))
             row.state = transition_external_call(ExternalCallState(row.state), target).value
+            self._insert_cost_entries(session, row.run_id, (self._call_cost_entry(row),))
 
     def record_validated(
         self,
@@ -1775,6 +1948,7 @@ class SqliteUnitOfWork:
         with self.session_factory.begin() as session:
             self._begin_immediate(session)
             row = self._fenced_external_call(session, call_id, reservation_id, fence)
+            self._validate_external_call_write_state(session, row)
             row.validated_artifact_ref_json = _json(dict(payload))
             row.state = transition_external_call(
                 ExternalCallState(row.state), ExternalCallState.VALIDATED
@@ -1832,6 +2006,7 @@ class SqliteUnitOfWork:
         with self.session_factory.begin() as session:
             self._begin_immediate(session)
             row = self._fenced_external_call(session, call_id, reservation_id, fence)
+            self._validate_external_call_write_state(session, row)
             self._assert_result_matches_call(row, result_data)
             result_id = getattr(result, "result_id", None)
             if not isinstance(result_id, str):
@@ -1860,6 +2035,7 @@ class SqliteUnitOfWork:
         with self.session_factory.begin() as session:
             self._begin_immediate(session)
             row = self._fenced_external_call(session, call_id, reservation_id, fence)
+            self._validate_external_call_write_state(session, row)
             self._assert_result_matches_call(row, result_data, payload=payload)
             validated = transition_external_call(
                 ExternalCallState(row.state), ExternalCallState.VALIDATED
@@ -2088,20 +2264,29 @@ class SqliteUnitOfWork:
             raise ValueError("budget settlement reservation is not bound to external call")
         if reservation.state != "reserved":
             raise ValueError("budget settlement requires an active reservation")
-        cost_rows = session.scalars(
-            select(CostEntryRow).where(
-                CostEntryRow.run_id == run_id,
-                CostEntryRow.external_call_id == external_call_id,
+        cost_rows = session.execute(
+            select(CostEntryRow)
+            .join(
+                ExternalCallRow,
+                ExternalCallRow.external_call_id == CostEntryRow.external_call_id,
             )
-        ).all()
-        if len(cost_rows) != 1:
-            raise ValueError("budget settlement requires exactly one persisted cost entry")
-        cost = cost_rows[0]
+            .where(
+                CostEntryRow.run_id == run_id,
+                ExternalCallRow.run_id == run_id,
+                ExternalCallRow.task_id == reservation.task_id,
+            )
+            .order_by(CostEntryRow.cost_entry_id)
+        ).scalars().all()
+        if not cost_rows:
+            raise ValueError("budget settlement requires persisted provider cost")
+        provider_actual = cls._provider_usage_for_task(
+            session, run_id=run_id, task_id=reservation.task_id
+        )
         actual = BudgetUsage(
-            model_calls=1,
-            input_tokens=cost.input_tokens,
-            output_tokens=cost.output_tokens,
-            cost_usd=Decimal(cost.cost_usd),
+            model_calls=provider_actual.model_calls,
+            input_tokens=provider_actual.input_tokens,
+            output_tokens=provider_actual.output_tokens,
+            cost_usd=provider_actual.cost_usd,
             hypotheses=sum(event.event_type == "HypothesisContentCreated" for event in events),
             matches=sum(event.event_type == "MatchEvaluated" for event in events),
         )
@@ -2120,7 +2305,7 @@ class SqliteUnitOfWork:
                 "reservation_id": reservation_id,
                 "external_call_id": external_call_id,
                 "actual": actual.model_dump(mode="json"),
-                "source_cost_entry_ids": (cost.cost_entry_id,),
+                "source_cost_entry_ids": tuple(row.cost_entry_id for row in cost_rows),
             },
         )
 
@@ -2132,19 +2317,31 @@ class SqliteUnitOfWork:
     ) -> bool:
         if reservation.external_call_id is None:
             return True
-        call = cls._external_call(session, reservation.external_call_id)
+        calls = session.scalars(
+            select(ExternalCallRow).where(
+                ExternalCallRow.run_id == reservation.run_id,
+                ExternalCallRow.task_id == reservation.task_id,
+            )
+        ).all()
         safe_states = {
             ExternalCallState.PLANNED,
             ExternalCallState.FAILED_BEFORE_RESPONSE,
         }
-        return bool(
+        return all(
             ExternalCallState(call.state) in safe_states
             and call.raw_artifact_ref_json is None
             and call.provider_response_id is None
-            and not session.scalar(
-                select(func.count())
-                .select_from(CostEntryRow)
-                .where(CostEntryRow.external_call_id == call.external_call_id)
+            for call in calls
+        ) and not session.scalar(
+            select(func.count())
+            .select_from(CostEntryRow)
+            .join(
+                ExternalCallRow,
+                ExternalCallRow.external_call_id == CostEntryRow.external_call_id,
+            )
+            .where(
+                ExternalCallRow.run_id == reservation.run_id,
+                ExternalCallRow.task_id == reservation.task_id,
             )
         )
 

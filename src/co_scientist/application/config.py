@@ -11,6 +11,7 @@ from typing import Any, Literal, cast
 import yaml  # type: ignore[import-untyped]
 from pydantic import BaseModel, ConfigDict, Field, field_serializer, field_validator
 
+from co_scientist.domain.anchors import core_preview_anchor_sets
 from co_scientist.domain.budget import BudgetPolicy
 from co_scientist.domain.review import ReviewPolicy
 from co_scientist.ports.external_provider import freeze_json, thaw_json
@@ -181,24 +182,6 @@ def _validate_pubmed_replay(path: Path, *, operation: Literal["search", "summary
         raise ValueError(f"CO_SCIENTIST_REPLAY_PUBMED_{label} is malformed") from error
 
 
-def _anchor_sets(anchor_count: int) -> list[dict[str, Any]]:
-    members = [
-        {
-            "anchor_id": "transparent-regeneration-baseline-v1",
-            "kind": "baseline_reference",
-            "content_hash": _identity("ordered transparent lens regeneration baseline"),
-        },
-        {
-            "anchor_id": "fibrotic-regeneration-baseline-v1",
-            "kind": "baseline_reference",
-            "content_hash": _identity("disorganized fibrotic lens regeneration baseline"),
-        },
-    ]
-    if anchor_count != len(members):
-        raise ValueError("Core Preview requires exactly two frozen anchor members")
-    return [{"anchor_set_id": "core-preview-anchors-v1", "members": members}]
-
-
 def resolve_run_config(
     *,
     goal_file: Path,
@@ -338,7 +321,7 @@ def resolve_run_config(
         },
         "provider_configuration": provider_configuration,
         "tournament_contract": tournament_contract,
-        "anchor_sets": _anchor_sets(tournament.anchor_count),
+        "anchor_sets": core_preview_anchor_sets(tournament.anchor_count),
         "replay_resources": replay_resources,
     }
     return ResolvedRunConfig(

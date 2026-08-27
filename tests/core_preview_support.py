@@ -8,6 +8,7 @@ from typing import Any
 import yaml
 
 from co_scientist.agents.payloads import HypothesisDraftV1
+from co_scientist.domain.anchors import core_preview_anchor_sets
 from co_scientist.domain.hypothesis import (
     compute_hypothesis_content_hash,
     hypothesis_content_from_draft,
@@ -259,15 +260,9 @@ def write_core_preview_inputs(
         }
     )
     judge_profile_hash = _sha256({"judge_profile_id": "core-preview-judge-v1"})
-    anchors = (
-        (
-            "transparent-regeneration-baseline-v1",
-            _sha256("ordered transparent lens regeneration baseline"),
-        ),
-        (
-            "fibrotic-regeneration-baseline-v1",
-            _sha256("disorganized fibrotic lens regeneration baseline"),
-        ),
+    anchors = tuple(
+        (str(member["anchor_id"]), str(member["content_hash"]))
+        for member in core_preview_anchor_sets(2)[0]["members"]
     )
     opportunistic_matches = (
         max(

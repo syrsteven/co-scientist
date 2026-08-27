@@ -10,10 +10,8 @@ from typing import Any
 from uuid import uuid4
 
 import httpx
-from alembic.config import Config
 from pydantic import BaseModel, ConfigDict
 
-from alembic import command
 from co_scientist.adapters.artifacts.filesystem import FilesystemArtifactStore
 from co_scientist.adapters.literature.pubmed import PubMedBridge, PubMedProvider
 from co_scientist.adapters.literature.replay import (
@@ -23,8 +21,8 @@ from co_scientist.adapters.literature.replay import (
 from co_scientist.adapters.llm.openai_responses import OpenAIResponsesProvider
 from co_scientist.adapters.llm.replay import ReplayLLMProvider
 from co_scientist.adapters.persistence.migrations import (
-    database_at_head,
     execution_contract_diagnostic,
+    upgrade_database,
 )
 from co_scientist.adapters.persistence.sqlite import SqliteUnitOfWork
 from co_scientist.application.config import ResolvedRunConfig
@@ -45,18 +43,6 @@ class RunExecutionResult(BaseModel):
     state: RunState
     last_sequence: int
     stop_reason: str | None = None
-
-
-def upgrade_database(database_url: str) -> None:
-    """Upgrade one local database to Alembic head and fail on drift."""
-
-    project_root = Path(__file__).parents[3]
-    config = Config()
-    config.set_main_option("script_location", str(project_root / "alembic"))
-    config.set_main_option("sqlalchemy.url", database_url)
-    command.upgrade(config, "head")
-    if not database_at_head(database_url):
-        raise ValueError("database schema is not at Alembic head")
 
 
 class CoreRunner:

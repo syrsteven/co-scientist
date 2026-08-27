@@ -325,7 +325,7 @@ def test_release_report_detects_real_persisted_negative_controls(
                 )
             )
             assert reservation is not None
-            reservation.estimated_model_calls = 41
+            reservation.actual_model_calls = 41
         elif violation == "stop_without_checkpoint":
             event = next(item for item in events if item.event_type == "StopPolicyTriggered")
             payload = json.loads(event.payload_json)
@@ -388,7 +388,12 @@ def test_release_report_detects_real_persisted_negative_controls(
             payload["epoch_id"] = "epoch-not-opened"
             event.payload_json = json.dumps(payload, sort_keys=True)
         elif violation == "proximity_novelty":
-            proximity = next(item for item in events if item.event_type == "ProximityAssessed")
+            proximity = next(
+                item
+                for item in events
+                if item.event_type == "ProximityAssessed"
+                and json.loads(item.payload_json).get("source_result_id") is not None
+            )
             novelty = next(
                 item for item in events if item.event_type == "NoveltyAssessmentRecorded"
             )

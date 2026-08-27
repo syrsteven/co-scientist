@@ -192,6 +192,21 @@ class SqliteRunReadModel:
     def source_manifest(self, run_id: str) -> dict[str, Any]:
         return self._source_manifest(run_id)
 
+    def _anchor_ids(self, run_id: str) -> frozenset[str]:
+        manifest = self._source_manifest(run_id)
+        raw_sets = manifest.get("anchor_sets", [])
+        if not isinstance(raw_sets, list):
+            raise TypeError("anchor_sets must be a list")
+        return frozenset(
+            str(member["anchor_id"])
+            for anchor_set in raw_sets
+            if isinstance(anchor_set, Mapping)
+            for member in anchor_set.get("members", [])
+            if isinstance(member, Mapping)
+            and isinstance(member.get("anchor_id"), str)
+            and member.get("anchor_id")
+        )
+
     def events(self, run_id: str) -> list[dict[str, Any]]:
         return [event.model_dump(mode="json") for event in self._domain_events(run_id)]
 
@@ -200,12 +215,15 @@ class SqliteRunReadModel:
 
     def hypotheses(self, run_id: str) -> list[dict[str, Any]]:
         exported: list[dict[str, Any]] = []
+        anchor_ids = self._anchor_ids(run_id)
         for event in self._domain_events(run_id):
             if event.event_type != "HypothesisContentCreated":
                 continue
             hypothesis_id = event.payload.get("hypothesis_id")
             if not isinstance(hypothesis_id, str) or not hypothesis_id:
                 raise ValueError("HypothesisContentCreated is missing hypothesis_id")
+            if hypothesis_id in anchor_ids:
+                continue
             content = HypothesisContent.model_validate(event.payload)
             item = content.model_dump(mode="json")
             item.update(
@@ -220,11 +238,13 @@ class SqliteRunReadModel:
 
     def hypothesis_projections(self, run_id: str) -> list[dict[str, Any]]:
         events = self._domain_events(run_id)
+        anchor_ids = self._anchor_ids(run_id)
         hypothesis_ids = sorted(
             {
                 str(event.payload["hypothesis_id"])
                 for event in events
                 if event.event_type == "HypothesisContentCreated"
+                and str(event.payload["hypothesis_id"]) not in anchor_ids
             }
         )
         return [
@@ -1154,7 +1174,13 @@ def verify_core_release_invariants(
         if limit is None:
             continue
         total = sum(
-            Decimal(str(reservation["estimate"][estimate_key]))
+            Decimal(
+                str(
+                    reservation[
+                        "actual" if reservation.get("state") == "settled" else "estimate"
+                    ][estimate_key]
+                )
+            )
             for reservation in reservations
             if reservation.get("state") != "released"
         )
@@ -1416,14 +1442,104 @@ def verify_core_release_invariants(
         projected_state = _RUN_EVENT_STATES.get(event["event_type"], projected_state)
     projection_mismatches = int(read_model.run_state(run_id) != projected_state)
 
+    raw_anchor_sets = source_manifest.get("anchor_sets")
+    anchor_members: list[Mapping[str, Any]] = []
+    anchor_manifest_valid = False
+    if (
+        isinstance(raw_anchor_sets, list)
+        and len(raw_anchor_sets) == 1
+        and isinstance(raw_anchor_sets[0], Mapping)
+    ):
+        raw_members = raw_anchor_sets[0].get("members")
+        if isinstance(raw_members, list) and raw_members:
+            anchor_members = [member for member in raw_members if isinstance(member, Mapping)]
+            anchor_manifest_valid = len(anchor_members) == len(raw_members)
+
+    expected_anchor_events: list[tuple[str, dict[str, Any]]] = []
+    proximity_by_id: dict[str, dict[str, Any]] = {}
+    epoch_payload = events[1]["payload"] if len(events) > 1 else {}
+    research_plan_version = epoch_payload.get("research_plan_version")
+    if anchor_manifest_valid:
+        for member in anchor_members:
+            anchor_id = member.get("anchor_id")
+            content = member.get("content")
+            if not isinstance(anchor_id, str) or not isinstance(content, Mapping):
+                anchor_manifest_valid = False
+                break
+            expected_anchor_events.append(
+                (
+                    "HypothesisContentCreated",
+                    {
+                        **dict(content),
+                        "hypothesis_id": anchor_id,
+                        "research_plan_version": research_plan_version,
+                    },
+                )
+            )
+    if anchor_manifest_valid:
+        for member in anchor_members:
+            evidence = member.get("evidence")
+            if not isinstance(evidence, Mapping):
+                anchor_manifest_valid = False
+                break
+            reviews = evidence.get("reviews")
+            novelty = evidence.get("novelty_assessment")
+            proximity = evidence.get("proximity_assessment")
+            if (
+                not isinstance(reviews, list)
+                or not reviews
+                or not all(isinstance(review, Mapping) for review in reviews)
+                or not isinstance(novelty, Mapping)
+                or not isinstance(proximity, Mapping)
+            ):
+                anchor_manifest_valid = False
+                break
+            expected_anchor_events.extend(
+                ("ReviewCompleted", dict(review)) for review in reviews
+            )
+            expected_anchor_events.append(
+                ("NoveltyAssessmentRecorded", dict(novelty))
+            )
+            edge_id = proximity.get("edge_id")
+            if not isinstance(edge_id, str) or not edge_id:
+                anchor_manifest_valid = False
+                break
+            proximity_by_id[edge_id] = dict(proximity)
+    if anchor_manifest_valid:
+        expected_anchor_events.extend(
+            ("ProximityAssessed", payload) for payload in proximity_by_id.values()
+        )
+
+    generation_indexes = [
+        index
+        for index, event in enumerate(events)
+        if event["event_type"] == "TaskEnqueued"
+        and event["payload"].get("intent_type") == "run_generation"
+    ]
+    generation_index = generation_indexes[0] if len(generation_indexes) == 1 else None
+    anchor_prefix: list[tuple[str, dict[str, Any]]] = []
+    generation_event: dict[str, Any] | None = None
+    bootstrap_sequences_valid = False
+    if generation_index is not None:
+        anchor_prefix = [
+            (event["event_type"], event["payload"])
+            for event in events[2:generation_index]
+        ]
+        generation_event = events[generation_index]
+        bootstrap_sequences_valid = [
+            event["sequence"] for event in events[: generation_index + 1]
+        ] == list(range(1, generation_index + 2))
     bootstrap_bypass = int(
         len(events) < 3
-        or [event["event_type"] for event in events[:3]]
-        != ["RunStarted", "TournamentEpochOpened", "TaskEnqueued"]
-        or [event["sequence"] for event in events[:3]] != [1, 2, 3]
-        or events[2]["payload"].get("created_by") != "supervisor"
-        or events[2]["payload"].get("intent_type") != "run_generation"
-        or events[2]["payload"].get("run_id") != run_id
+        or not anchor_manifest_valid
+        or [event["event_type"] for event in events[:2]]
+        != ["RunStarted", "TournamentEpochOpened"]
+        or [event["sequence"] for event in events[:2]] != [1, 2]
+        or generation_event is None
+        or not bootstrap_sequences_valid
+        or anchor_prefix != expected_anchor_events
+        or generation_event["payload"].get("created_by") != "supervisor"
+        or generation_event["payload"].get("run_id") != run_id
     )
 
     completion_indexes = [

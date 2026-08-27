@@ -3,14 +3,19 @@
 import json
 from collections.abc import Callable, Mapping
 from pathlib import Path
-from typing import Any, Literal
+from typing import Any, Literal, cast
 
 from co_scientist.adapters.literature.pubmed import parse_pubmed_records
-from co_scientist.agents.payloads import resolve_output_schema
+from co_scientist.agents.payloads import (
+    CoreScientificResultV1,
+    MetaReviewResultV1,
+    resolve_output_schema,
+)
 from co_scientist.agents.result import AgentExecutionContext, AgentResult
 from co_scientist.domain.task import TaskLeaseFence
 from co_scientist.ports.external_provider import ExternalProvider
 from co_scientist.runtime.external_calls import ExternalCallRunner, prompt_hash
+from co_scientist.runtime.task_payload import validate_result_task_binding
 from co_scientist.skills.loader import load_skill, resolve_core_skill_contract
 
 
@@ -147,6 +152,12 @@ class SkillExecutor:
                 raise ValueError(
                     "payload research plan version does not match execution context"
                 )
+            validate_result_task_binding(
+                task_inputs=inputs,
+                task_research_plan_version=context.research_plan_version,
+                provider_id=context.provider,
+                result=cast(CoreScientificResultV1, validated),
+            )
             return validated.model_dump(mode="json")
 
         return await self.runner.execute(
@@ -219,7 +230,7 @@ class LiteratureToolExecutor:
                     ],
                 }
                 feedback = "PubMed summary raw response persisted before source parsing."
-            return {
+            payload = {
                 "schema_version": 1,
                 "research_plan_version": context.research_plan_version,
                 "source_content_hashes": {},
@@ -233,6 +244,15 @@ class LiteratureToolExecutor:
                 "coverage_gaps": [],
                 "safety_direction_check": "insufficient_evidence",
             }
+            validated = MetaReviewResultV1.model_validate(payload)
+            validate_result_task_binding(
+                task_inputs=inputs,
+                task_research_plan_version=context.research_plan_version,
+                provider_id=context.provider,
+                result=validated,
+                literature_operation=operation,
+            )
+            return validated.model_dump(mode="json")
 
         return await self.runner.execute(
             call_id=call_id,

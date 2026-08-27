@@ -296,6 +296,7 @@ class ConvergenceCheckpointBuilder:
             and event.payload.get("research_plan_version") == epoch.research_plan_version
             and isinstance(event.payload.get("hypothesis_id"), str)
         }
+        hypothesis_ids.difference_update(anchor_members)
         matches = tuple(
             event
             for event in epoch_events
