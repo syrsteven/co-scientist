@@ -143,6 +143,10 @@ class SkillExecutor:
             if context.provider == "openai":
                 envelope = _decode_payload(raw)
                 validation_body = _openai_output_text(envelope).encode("utf-8")
+            elif context.provider in {"deepseek", "qwen", "gemini", "claude"}:
+                from co_scientist.adapters.llm.multi_provider import output_text
+
+                validation_body = output_text(context.provider, dict(_decode_payload(raw))).encode("utf-8")
             decoded = _decode_payload(validation_body)
             validated = output_schema.model_validate(decoded)
             if (

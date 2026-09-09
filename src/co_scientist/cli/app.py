@@ -127,7 +127,7 @@ def run_execute(
     goal: Annotated[Path, typer.Option("--goal")],
     profile: Annotated[Path, typer.Option("--profile")],
     provider: Annotated[
-        Literal["replay", "openai"], typer.Option("--provider")
+        Literal["replay", "openai", "deepseek", "qwen", "gemini", "claude"], typer.Option("--provider")
     ] = "replay",
     run_id: Annotated[
         str | None,

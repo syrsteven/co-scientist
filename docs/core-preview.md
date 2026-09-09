@@ -191,7 +191,11 @@ to `0003`.
 
 ## Scope and reproducibility disclaimer
 
-Core Preview excludes FastAPI/HTTP, SSE, React, additional LLM providers, distributed
+The CLI now also supports DeepSeek, Qwen, Gemini and Claude; see
+[multi-provider usage](multi-provider.md) for credentials and example commands.
+Live results for these adapters require separate credentialed validation.
+
+Core Preview excludes FastAPI/HTTP, SSE, React, role-level model mixing, distributed
 queues, PostgreSQL deployment, GPQA, and full benchmark or ablation packages. It is a
 single-machine developer/researcher preview, not a production multi-user service.
 

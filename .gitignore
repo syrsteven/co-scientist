@@ -11,3 +11,12 @@ __pycache__/
 .venv/
 build/
 dist/
+.env
+.env.*
+!.env.example
+.co-scientist*/
+*-export/
+.planning/
+/findings.md
+/progress.md
+/task_plan.md

@@ -56,7 +56,7 @@ class StopProfile(BaseModel):
 class ProviderProfile(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid")
 
-    llm: Literal["replay", "openai"]
+    llm: Literal["replay", "openai", "deepseek", "qwen", "gemini", "claude"]
     literature: Literal["replay_pubmed", "pubmed"]
 
 
@@ -186,12 +186,12 @@ def resolve_run_config(
     *,
     goal_file: Path,
     profile_file: Path,
-    provider: Literal["replay", "openai"],
+    provider: Literal["replay", "openai", "deepseek", "qwen", "gemini", "claude"],
     environment: Mapping[str, str],
 ) -> ResolvedRunConfig:
     """Resolve all execution inputs and fail before any Run can be created."""
 
-    if provider not in {"replay", "openai"}:
+    if provider not in {"replay", "openai", "deepseek", "qwen", "gemini", "claude"}:
         raise ValueError(f"unsupported provider: {provider}")
     goal = ResearchGoal.model_validate(_load_yaml(goal_file, label="goal"))
     profile = CoreProfile.model_validate(_load_yaml(profile_file, label="profile"))
@@ -234,19 +234,23 @@ def resolve_run_config(
             raise ValueError("CO_SCIENTIST_REPLAY_RESPONSES is malformed") from error
         provider_configuration = {"provider": "replay", "model": replay_model}
     else:
-        model = environment.get("CO_SCIENTIST_OPENAI_MODEL")
-        api_key = environment.get("OPENAI_API_KEY")
+        from co_scientist.adapters.llm.multi_provider import KEY_NAMES
+
+        model_key = f"CO_SCIENTIST_{provider.upper()}_MODEL"
+        key_name = KEY_NAMES[provider]
+        model = environment.get(model_key)
+        api_key = environment.get(key_name)
         missing = [
             key
             for key, value in (
-                ("OPENAI_API_KEY", api_key),
-                ("CO_SCIENTIST_OPENAI_MODEL", model),
+                (key_name, api_key),
+                (model_key, model),
             )
             if not value
         ]
         if missing:
             raise ValueError(f"{', '.join(missing)} is required")
-        provider_configuration = {"provider": "openai", "model": model}
+        provider_configuration = {"provider": provider, "model": model}
     if profile.providers.literature == "replay_pubmed":
         replay_profile = profile.replay_resources
         search_resource = _resource(

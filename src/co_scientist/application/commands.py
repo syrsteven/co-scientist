@@ -25,7 +25,7 @@ class ExecuteRun(BaseModel):
 
     goal_file: Path
     profile_file: Path
-    provider: Literal["replay", "openai"]
+    provider: Literal["replay", "openai", "deepseek", "qwen", "gemini", "claude"]
     run_id: RunId | None = None
 
 

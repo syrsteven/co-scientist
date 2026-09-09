@@ -1,0 +1,39 @@
+profile_id: core_preview_qwen
+admission_policy_version: admission-v1
+review_policy:
+  profile_id: core_preview_online
+  required_before_admission: [initial_review, full_review]
+  trigger_rules:
+    deep_verification: [critical_assumption_low_confidence]
+    observation_review: [scientist_request]
+    simulation_review: [high_rank_low_testability]
+    recurrent_review: [needs_tiebreaker]
+literature_novelty_required: true
+duplicate_likelihood_threshold: 0.5
+tournament:
+  rating_policy_version: elo-32-v1
+  evaluation_rules_id: core-preview-rules-v1
+  judge_profile_id: core-preview-judge-v1
+  match_mode: research
+  anchor_count: 2
+stop:
+  minimum_matches: 6
+  minimum_hypotheses: 2
+  minimum_model_calls: 13
+  top_k: 2
+  top_k_stability_window: 3
+  cluster_diversity_window: 2
+  elo_plateau_window: 4
+  require_anchor_plateau: true
+  require_top_k_stability: true
+  require_cluster_diversity_plateau: true
+budget:
+  max_usd: null
+  max_model_calls: 40
+  max_input_tokens: null
+  max_output_tokens: null
+  max_hypotheses: 6
+  max_matches: 12
+providers:
+  llm: qwen
+  literature: pubmed

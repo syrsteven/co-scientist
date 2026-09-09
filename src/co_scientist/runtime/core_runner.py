@@ -64,6 +64,7 @@ class CoreRunner:
         self.literature_bridges: dict[str, ExternalProvider] = {}
         self._pubmed_client: httpx.AsyncClient | None = None
         self._openai_client: Any | None = None
+        self._native_client: httpx.AsyncClient | None = None
 
     async def aclose(self) -> None:
         """Close any network clients composed for one foreground invocation."""
@@ -78,6 +79,9 @@ class CoreRunner:
         finally:
             if pubmed_client is not None:
                 await pubmed_client.aclose()
+            if self._native_client is not None:
+                await self._native_client.aclose()
+                self._native_client = None
 
     @staticmethod
     def _resource(manifest: Mapping[str, Any], kind: str) -> Path:
@@ -143,8 +147,17 @@ class CoreRunner:
                 raise ValueError("OPENAI_API_KEY is required to resume this Run")
             from openai import AsyncOpenAI
 
-            self._openai_client = AsyncOpenAI(api_key=api_key)
+            self._openai_client = AsyncOpenAI(api_key=api_key, max_retries=0)
             provider = OpenAIResponsesProvider(self._openai_client)
+        elif provider_id in {"deepseek", "qwen", "gemini", "claude"}:
+            from co_scientist.adapters.llm.multi_provider import KEY_NAMES, NativeJSONProvider
+
+            key_name = KEY_NAMES[provider_id]
+            api_key = self.environment.get(key_name)
+            if not api_key:
+                raise ValueError(f"{key_name} is required to resume this Run")
+            self._native_client = httpx.AsyncClient(timeout=180.0)
+            provider = NativeJSONProvider(self._native_client, provider=provider_id, api_key=api_key)
         else:
             raise ValueError(f"unsupported persisted provider: {provider_id}")
         self._build_worker(ProviderRegistry({provider_id: provider, **self.literature_bridges}))
