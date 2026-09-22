@@ -9,6 +9,21 @@ review_policy:
     simulation_review: [high_rank_low_testability]
     recurrent_review: [needs_tiebreaker]
 literature_novelty_required: true
+scientific_context: true
+research_protocol_version: research-v1
+meta_review:
+  max_rounds: 2
+  match_interval: 2
+  max_children_per_round: 1
+evolution:
+  max_rounds: 3
+  max_children_per_round: 2
+literature_content: abstracts
+literature_sort: relevance
+literature_search_queries:
+  - '("lens regeneration"[Title/Abstract] OR ("lens epithelial"[Title/Abstract] AND (fibros*[Title/Abstract] OR regenerat*[Title/Abstract])))'
+  - 'lens[Title/Abstract] AND epithelial[Title/Abstract] AND (regenerat*[Title/Abstract] OR fibros*[Title/Abstract])'
+  - 'lens[Title/Abstract] AND (regeneration[Title/Abstract] OR "posterior capsule opacification"[Title/Abstract])'
 duplicate_likelihood_threshold: 0.5
 tournament:
   rating_policy_version: elo-32-v1
@@ -37,3 +52,8 @@ budget:
 providers:
   llm: deepseek
   literature: pubmed
+  deepseek_generation:
+    max_tokens: 32768
+    thinking: enabled
+    reasoning_effort: low
+    timeout_seconds: 300

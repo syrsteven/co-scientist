@@ -3,7 +3,7 @@
 from pathlib import Path
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, StrictBool, StrictInt
 
 from co_scientist.domain.identifiers import RunId
 
@@ -47,6 +47,17 @@ class RunCommand(BaseModel):
     command: Literal["start", "pause", "resume", "stop", "cancel"]
 
 
+class RetryInvalidOutput(BaseModel):
+    """Authorize one unchanged task attempt, without starting a Worker."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    run_id: RunId
+    external_call_id: str = Field(min_length=1)
+    expected_run_sequence: StrictInt = Field(ge=0)
+    confirmed: StrictBool
+
+
 class ExportRun(BaseModel):
     """Write the deterministic rich bundle to a new directory."""
 
@@ -54,3 +65,15 @@ class ExportRun(BaseModel):
 
     run_id: RunId
     output: Path
+
+
+class SubmitScientistFeedback(BaseModel):
+    """Record a researcher's opinion and request one bounded independent review."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid", str_strip_whitespace=True)
+    run_id: RunId
+    feedback_id: str = Field(min_length=1, max_length=2048)
+    expected_run_sequence: StrictInt = Field(ge=0)
+    actor: str = Field(min_length=1, max_length=200)
+    note: str = Field(min_length=1, max_length=12000)
+    confirmed: StrictBool

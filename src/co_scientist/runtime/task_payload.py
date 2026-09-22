@@ -111,6 +111,13 @@ def validate_result_task_binding(
     """Bind one typed scientific result to the immutable task input snapshot."""
 
     mismatches: list[str] = []
+    protocol = task_inputs.get("scientific_protocol")
+    if (isinstance(protocol, Mapping) and protocol.get("version") == "research-v1"
+            and isinstance(result, GenerationResultV1 | EvolutionResultV1)):
+        drafts = result.hypotheses if isinstance(result, GenerationResultV1) else result.children
+        if any(not getattr(draft, field) for draft in drafts
+               for field in ("mechanism_chain", "assumptions", "predictions", "falsifiers")):
+            mismatches.append("scientific_content_completeness")
     if result.research_plan_version != task_research_plan_version:
         mismatches.append("research_plan_version")
     if isinstance(result, ReflectionResultV1):
@@ -137,9 +144,20 @@ def validate_result_task_binding(
                 if novelty is not None:
                     claimed.update(novelty.evidence_ids)
                     claimed.update(novelty.closest_prior_work_ids)
-                if not claimed or not claimed.issubset(scheduled):
+                explicit_gap = result.recommendation != "pass" and (
+                    novelty is None or novelty.verdict == "insufficient_evidence"
+                )
+                if (not claimed and not explicit_gap) or not claimed.issubset(scheduled):
                     mismatches.append("literature_sources")
     elif isinstance(result, RankingResultV1):
+        if (isinstance(protocol, Mapping) and protocol.get("version") == "research-v1"
+                and result.decision_status == "decisive"):
+            rubric = task_inputs.get("evaluation_rubric")
+            dimensions = rubric.get("dimensions") if isinstance(rubric, Mapping) else None
+            if not isinstance(dimensions, Mapping) or not dimensions or any(
+                not result.dimension_reasons.get(key, "").strip() for key in dimensions
+            ):
+                mismatches.append("evaluation_rubric.dimension_reasons")
         mismatches.extend(
             _task_input_mismatches(
                 task_inputs,
@@ -190,8 +208,24 @@ def validate_result_task_binding(
         source_content_ids = task_inputs.get("source_content_ids")
         if isinstance(source_content_ids, list) and source_content_ids:
             expected = {str(content_id) for content_id in source_content_ids}
-            if any(not set(child.parent_content_ids).issubset(expected) for child in result.children):
+            if any(not child.parent_content_ids or not set(child.parent_content_ids).issubset(expected)
+                   for child in result.children):
                 mismatches.append("source_content_ids")
+        max_children = task_inputs.get("max_children")
+        if isinstance(max_children, int) and len(result.children) > max_children:
+            mismatches.append("max_children")
+        if isinstance(max_children, int) and any(child.supersedes_content_id is not None
+                                                for child in result.children):
+            mismatches.append("supersedes_content_id")
+        for field, attr in (("existing_hypothesis_ids", "hypothesis_id"),
+                            ("existing_content_ids", "content_id")):
+            existing = task_inputs.get(field)
+            if isinstance(existing, list) and any(
+                getattr(child, attr) in existing for child in result.children
+            ):
+                mismatches.append(field)
+        if len({child.content_id for child in result.children}) != len(result.children):
+            mismatches.append("unique_child_content_ids")
         expected_children = task_inputs.get("expected_child_hypothesis_ids")
         if isinstance(expected_children, list) and {
             child.hypothesis_id for child in result.children

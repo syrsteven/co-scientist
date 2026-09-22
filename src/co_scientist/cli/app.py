@@ -15,8 +15,10 @@ from co_scientist.application.commands import (
     CreateRun,
     ExecuteRun,
     ExportRun,
+    RetryInvalidOutput,
     RunCommand,
     RunWorker,
+    SubmitScientistFeedback,
 )
 from co_scientist.application.queries import CheckConfig, GetRunStatus, ReplayRun
 from co_scientist.application.service import (
@@ -168,6 +170,43 @@ def run_status(
     result = _application_call(
         lambda: _service(context, data_dir=data_dir).query(GetRunStatus(run_id=run_id))
     )
+    typer.echo(json.dumps(_json_document(result), ensure_ascii=False, sort_keys=True))
+
+
+@run_app.command("retry-output")
+def run_retry_output(
+    context: typer.Context,
+    run_id: str,
+    call_id: Annotated[str, typer.Option("--call-id")],
+    expected_sequence: Annotated[int, typer.Option("--expected-sequence", min=0)],
+    confirm: Annotated[bool, typer.Option("--confirm", help="Accept possible costs for one new attempt.")] = False,
+    data_dir: Annotated[
+        Path, typer.Option("--data-dir", envvar="CO_SCIENTIST_DATA_DIR")
+    ] = _DEFAULT_DATA_DIR,
+) -> None:
+    """Explicitly requeue invalid output within frozen limits; does not start a Worker."""
+    result = _application_call(lambda: _service(context, data_dir=data_dir).execute(
+        RetryInvalidOutput(run_id=run_id, external_call_id=call_id,
+                           expected_run_sequence=expected_sequence, confirmed=confirm)
+    ))
+    typer.echo(json.dumps(_json_document(result), ensure_ascii=False, sort_keys=True))
+
+
+@run_app.command("scientist-feedback")
+def run_scientist_feedback(
+    context: typer.Context, run_id: str,
+    feedback_id: Annotated[str, typer.Option("--feedback-id")],
+    expected_sequence: Annotated[int, typer.Option("--expected-sequence", min=0)],
+    actor: Annotated[str, typer.Option("--actor")],
+    note_file: Annotated[Path, typer.Option("--note-file", exists=True, dir_okay=False)],
+    confirm: Annotated[bool, typer.Option("--confirm")] = False,
+    data_dir: Annotated[Path, typer.Option("--data-dir")] = _DEFAULT_DATA_DIR,
+) -> None:
+    """Record a scientist's note and queue one independent review without starting a Worker."""
+    result = _application_call(lambda: _service(context, data_dir=data_dir).execute(
+        SubmitScientistFeedback(run_id=run_id, feedback_id=feedback_id,
+            expected_run_sequence=expected_sequence, actor=actor,
+            note=note_file.read_text(encoding="utf-8"), confirmed=confirm)))
     typer.echo(json.dumps(_json_document(result), ensure_ascii=False, sort_keys=True))
 
 

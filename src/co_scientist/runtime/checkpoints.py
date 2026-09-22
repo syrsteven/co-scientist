@@ -11,6 +11,7 @@ from pydantic import BaseModel, ConfigDict
 
 from co_scientist.adapters.persistence.sqlite import CommitResult, SqliteUnitOfWork
 from co_scientist.domain.convergence import ConvergenceCheckpoint
+from co_scientist.domain.research_feedback import feedback_enabled
 from co_scientist.domain.tournament import (
     MatchDecision,
     MatchResult,
@@ -268,11 +269,20 @@ class ConvergenceCheckpointBuilder:
         )
         if not events or events[-1].sequence != source_sequence:
             raise ValueError("checkpoint source sequence is missing or stale")
-        if not allow_incomplete and any(
-            event.event_type == "ConvergenceCheckpointRecorded" for event in events
+        prior_checkpoint = next((event for event in reversed(events)
+                                 if event.event_type == "ConvergenceCheckpointRecorded"), None)
+        if not allow_incomplete and prior_checkpoint is not None and not any(
+            event.sequence > prior_checkpoint.sequence and event.event_type in {
+                "MatchEvaluated", "BudgetSettled", "HypothesisContentCreated",
+                "ReviewCompleted", "NoveltyAssessmentRecorded", "ProximityAssessed",
+            } for event in events
         ):
-            raise ValueError("checkpoint source sequence must precede checkpoint recording")
+            raise ValueError("a new checkpoint requires new scientific or budget evidence")
         manifest = self.uow.run_manifest(run_id)
+        # A growing candidate pool can legitimately lack convergence coverage.
+        # Keep validating provenance; missing coverage remains a false stop signal,
+        # not a malformed run. Legacy checkpoint behavior is unchanged.
+        allow_incomplete = allow_incomplete or feedback_enabled(manifest)
         stop = self._stop_policy(manifest)
         minimum_matches = _required_non_negative(stop, "minimum_matches")
         minimum_hypotheses = _required_non_negative(stop, "minimum_hypotheses")
@@ -339,6 +349,12 @@ class ConvergenceCheckpointBuilder:
             top_k=top_k,
             candidate_ids=frozenset(hypothesis_ids),
         )
+        if feedback_enabled(manifest):
+            # A new candidate/entry invalidates earlier ranking-stability samples.
+            cohort_start = max((event.sequence for event in epoch_events
+                                if event.event_type in {"HypothesisContentCreated", "TournamentEntryCreated"}
+                                and event.payload.get("hypothesis_id") in hypothesis_ids), default=0)
+            rankings = tuple(item for item in rankings if item[0] > cohort_start)
         if not allow_incomplete and len(rankings) < top_k_window:
             raise ValueError("checkpoint has insufficient top-k stability window")
         recent_rankings = rankings[-top_k_window:]
@@ -380,8 +396,8 @@ class ConvergenceCheckpointBuilder:
                 if allow_incomplete:
                     continue
                 raise ValueError("anchor comparison candidate is not in the stable top-k cohort")
-            if anchor_id in comparison_by_anchor:
-                raise ValueError("anchor has ambiguous fixed comparison identity")
+            # Match IDs and provenance were validated above. In later rounds,
+            # use the latest comparison per frozen anchor, preserving its ID.
             comparison_by_anchor[anchor_id] = (str(match.payload["match_id"]), candidate_id)
         if not allow_incomplete and set(comparison_by_anchor) != set(anchor_members):
             raise ValueError("checkpoint is missing fixed anchor comparison IDs")

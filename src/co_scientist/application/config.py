@@ -9,10 +9,22 @@ from pathlib import Path
 from typing import Any, Literal, cast
 
 import yaml  # type: ignore[import-untyped]
-from pydantic import BaseModel, ConfigDict, Field, field_serializer, field_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    Field,
+    SerializerFunctionWrapHandler,
+    field_serializer,
+    field_validator,
+    model_serializer,
+    model_validator,
+)
 
 from co_scientist.domain.anchors import core_preview_anchor_sets
 from co_scientist.domain.budget import BudgetPolicy
+from co_scientist.domain.ranking_output import strict_ranking_contract
+from co_scientist.domain.research_feedback import feedback_contract
+from co_scientist.domain.research_protocol import protocol_hash, research_protocol_v1
 from co_scientist.domain.review import ReviewPolicy
 from co_scientist.ports.external_provider import freeze_json, thaw_json
 from co_scientist.runtime.external_calls import prompt_hash
@@ -53,11 +65,29 @@ class StopProfile(BaseModel):
     require_cluster_diversity_plateau: bool
 
 
+class DeepSeekGenerationProfile(BaseModel):
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    max_tokens: int = Field(default=32768, ge=1, le=384000, strict=True)
+    thinking: Literal["enabled", "disabled"] = "enabled"
+    reasoning_effort: Literal["low", "high", "max"] = "low"
+    timeout_seconds: int = Field(default=300, ge=1, le=1800, strict=True)
+
+
 class ProviderProfile(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid")
 
     llm: Literal["replay", "openai", "deepseek", "qwen", "gemini", "claude"]
     literature: Literal["replay_pubmed", "pubmed"]
+    deepseek_generation: DeepSeekGenerationProfile | None = None
+
+
+class EvolutionProfile(BaseModel):
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    # Zero rounds preserves existing replay and frozen-run behavior.
+    max_rounds: int = Field(default=0, ge=0, le=10, strict=True)
+    max_children_per_round: int = Field(default=2, ge=1, le=10, strict=True)
 
 
 class ReplayResourcesProfile(BaseModel):
@@ -68,6 +98,22 @@ class ReplayResourcesProfile(BaseModel):
     pubmed_summary: str = Field(min_length=1)
 
 
+class MetaReviewProfile(BaseModel):
+    model_config = ConfigDict(frozen=True, extra="forbid")
+
+    contract_version: Literal["meta-review-loop-v1", "meta-review-loop-v2"] = "meta-review-loop-v1"
+    max_rounds: int = Field(default=0, ge=0, le=10, strict=True)
+    match_interval: int = Field(default=2, ge=1, le=100, strict=True)
+    max_children_per_round: int = Field(default=1, ge=1, le=5, strict=True)
+
+    @model_serializer(mode="wrap")
+    def serialize_profile(self, handler: SerializerFunctionWrapHandler) -> dict[str, Any]:
+        document = handler(self)
+        if self.contract_version == "meta-review-loop-v1":
+            document.pop("contract_version", None)
+        return document
+
+
 class CoreProfile(BaseModel):
     model_config = ConfigDict(frozen=True, extra="forbid")
 
@@ -75,12 +121,63 @@ class CoreProfile(BaseModel):
     admission_policy_version: str = Field(min_length=1)
     review_policy: ReviewPolicy
     literature_novelty_required: bool
+    literature_search_queries: tuple[str, ...] = Field(default=(), max_length=5)
+    scientific_context: bool = False
+    research_protocol_version: Literal["research-v1"] | None = None
+    ranking_output_protocol: Literal["deepseek-strict-tool-v1", "deepseek-strict-tool-v2"] | None = None
+    literature_content: Literal["metadata", "abstracts"] = "metadata"
+    literature_sort: Literal["relevance", "pub_date"] | None = None
+    evolution: EvolutionProfile = Field(default_factory=EvolutionProfile)
+    meta_review: MetaReviewProfile = Field(default_factory=MetaReviewProfile)
     duplicate_likelihood_threshold: float = Field(ge=0.0, le=1.0)
     tournament: TournamentProfile
     stop: StopProfile
     budget: BudgetPolicy
     providers: ProviderProfile
     replay_resources: ReplayResourcesProfile | None = None
+
+    @model_serializer(mode="wrap")
+    def serialize_profile(self, handler: SerializerFunctionWrapHandler) -> dict[str, Any]:
+        document = handler(self)
+        if self.research_protocol_version is None:
+            # No new field in legacy canonical manifests or saved profile round-trips.
+            document.pop("research_protocol_version", None)
+        if self.ranking_output_protocol is None:
+            document.pop("ranking_output_protocol", None)
+        if self.meta_review == MetaReviewProfile():
+            document.pop("meta_review", None)
+        return cast(dict[str, Any], document)
+
+    @field_validator("literature_search_queries")
+    @classmethod
+    def validate_search_queries(cls, queries: tuple[str, ...]) -> tuple[str, ...]:
+        if any(not query.strip() for query in queries) or len(set(queries)) != len(queries):
+            raise ValueError("literature queries must be nonblank and unique")
+        return queries
+
+    @model_validator(mode="after")
+    def validate_abstract_mode(self) -> CoreProfile:
+        if self.ranking_output_protocol and (
+            self.research_protocol_version != "research-v1" or self.providers.llm != "deepseek"
+        ):
+            raise ValueError("ranking_output_protocol requires DeepSeek and research-v1")
+        if self.meta_review.max_rounds and (
+            self.research_protocol_version != "research-v1" or not self.evolution.max_rounds
+        ):
+            raise ValueError("meta_review requires research-v1 and an evolution round allowance")
+        if self.meta_review.max_rounds and (self.budget.max_model_calls is None or self.budget.max_matches is None):
+            raise ValueError("meta_review requires finite model-call and match budgets")
+        if self.research_protocol_version and not self.scientific_context:
+            raise ValueError("research_protocol_version requires scientific_context")
+        if self.research_protocol_version and self.tournament.match_mode != "research":
+            raise ValueError("research-v1 supports research match mode, not binary benchmark")
+        if self.evolution.max_rounds and not self.scientific_context:
+            raise ValueError("evolution requires scientific_context")
+        if self.literature_content == "abstracts" and (
+            not self.scientific_context or self.providers.literature != "pubmed"
+        ):
+            raise ValueError("abstract mode requires scientific_context and live PubMed")
+        return self
 
 
 class ResolvedRunConfig(BaseModel):
@@ -251,6 +348,12 @@ def resolve_run_config(
         if missing:
             raise ValueError(f"{', '.join(missing)} is required")
         provider_configuration = {"provider": provider, "model": model}
+        if provider == "deepseek" and profile.providers.deepseek_generation is not None:
+            provider_configuration["generation"] = (
+                profile.providers.deepseek_generation.model_dump(mode="json")
+            )
+        elif provider != "deepseek" and profile.providers.deepseek_generation is not None:
+            raise ValueError("deepseek_generation requires the deepseek provider")
     if profile.providers.literature == "replay_pubmed":
         replay_profile = profile.replay_resources
         search_resource = _resource(
@@ -284,6 +387,18 @@ def resolve_run_config(
 
     goal_document = goal.model_dump(mode="json")
     profile_document = profile.model_dump(mode="json")
+    protocol = research_protocol_v1() if profile.research_protocol_version else None
+    ranking_output = (
+        strict_ranking_contract(profile.ranking_output_protocol) if profile.ranking_output_protocol else None
+    )
+    if ranking_output is not None:
+        if provider != "deepseek":
+            raise ValueError("ranking_output_protocol requires the deepseek provider")
+        provider_configuration["ranking_output_protocol"] = profile.ranking_output_protocol
+    if protocol is not None and (not goal.required_causal_chain or not goal.required_outputs
+          or any(not value.strip() for value in
+                 (goal.title, goal.goal, *goal.required_causal_chain, *goal.required_outputs))):
+        raise ValueError("research-v1 requires a complete research goal")
     tournament = profile.tournament
     ranking_prompt = (core_skill_directory("ranking") / "prompts/system.md").read_text(
         encoding="utf-8"
@@ -305,6 +420,21 @@ def resolve_run_config(
         "admission_policy_version": profile.admission_policy_version,
         "anchor_set_id": "core-preview-anchors-v1",
     }
+    if protocol is not None:
+        rules: dict[str, Any] = {
+            "evaluation_rules_id": tournament.evaluation_rules_id,
+            "match_mode": tournament.match_mode,
+            "research_protocol_hash": protocol_hash(protocol),
+        }
+        if profile.meta_review.max_rounds:
+            rules["feedback_contract_hash"] = protocol_hash(feedback_contract(profile.meta_review.contract_version))
+        if ranking_output is not None:
+            rules["ranking_output_contract_hash"] = protocol_hash(ranking_output)
+        tournament_contract["evaluation_rules_hash"] = _identity(rules)
+        tournament_contract["judge_profile_hash"] = _identity({
+            "judge_profile_id": tournament.judge_profile_id,
+            "provider_configuration": provider_configuration,
+        })
     admission_policy = {
         "version": profile.admission_policy_version,
         "review_policy": profile.review_policy.model_dump(mode="json"),
@@ -328,6 +458,15 @@ def resolve_run_config(
         "anchor_sets": core_preview_anchor_sets(tournament.anchor_count),
         "replay_resources": replay_resources,
     }
+    if protocol is not None:
+        manifest["research_protocol"] = protocol
+        manifest["research_protocol_hash"] = protocol_hash(protocol)
+    if profile.meta_review.max_rounds:
+        manifest["feedback_contract"] = feedback_contract(profile.meta_review.contract_version)
+        manifest["feedback_contract_hash"] = protocol_hash(manifest["feedback_contract"])
+    if ranking_output is not None:
+        manifest["ranking_output_contract"] = ranking_output
+        manifest["ranking_output_contract_hash"] = protocol_hash(ranking_output)
     return ResolvedRunConfig(
         goal=goal,
         profile=profile,

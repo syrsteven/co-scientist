@@ -2,22 +2,62 @@
 
 面向生物医学研究者的 Co-Scientist 开发版：从研究目标出发，生成机制假设、开展文献审查、比较候选、演化修订，并保存可追溯的研究过程。
 
-本项目受 [Nature Co-Scientist 论文](https://www.nature.com/articles/s41586-026-10644-y)启发，为独立实现，不是原作者发布的代码。当前完成 CLI Core Preview，附有晶状体再生示例；工程流程可离线重放，科学效果与原论文性能尚未建立等效性。
+本项目受 [Nature Co-Scientist 论文](https://www.nature.com/articles/s41586-026-10644-y)启发，为独立实现，不是原作者发布的代码。当前提供 CLI Core Preview 和本地研究驾驶舱，附有晶状体再生示例；工程流程可离线重放，科学效果与原论文性能尚未建立等效性。
 
 ## 当前能力
 
 - Supervisor 统一创建和调度任务，控制生命周期、预算、假设准入、停止与最终汇总。
-- 六类 Agent：Generation、Reflection、Ranking、Evolution、Proximity、Meta-review。
+- 六类 Agent 契约与执行入口：Generation、Reflection、Ranking、Evolution、Proximity、Meta-review；新真实模型模板支持由 Supervisor 调度的有界 Meta-review 反馈闭环。
 - 假设科学内容不可变；审查覆盖、状态、聚类和 Elo 由事件投影重建。
-- initial review 必需，其余审查由策略控制；演化子假设重新审查后才能进入比赛。
+- initial review 必需，full review 根据 profile；条件触发的深度/观察/模拟/复审尚未完整接线。演化子假设重新审查后才能进入比赛。
 - 文献新颖性由 Reflection 评估，Proximity 负责候选间相似度。
 - 每个 TournamentEpoch 固定评价规则；非 decisive 比赛不更新 Elo。
 - SQLite 保存任务、租约、预算、事件与调用状态，文件系统保存原始响应。
 - 支持中断恢复、原始响应重用、确定性导出及事件重放。
 - 接入 OpenAI、DeepSeek、Qwen、Gemini、Claude；当前每个 Run 使用一个模型。
+- 五家真实模型新模板启用 Research v1：完整科学正文、六角色科研指令、内容绑定的评审依据与六维 Ranking 标准；协议和模型身份冻结到新运行，旧 Replay 不变。
 - 文献来源支持 PubMed；离线模式使用仓库内固定响应。
+- 本地 Web 研究驾驶舱：运行阶段、任务输入/产物、假设血缘、证据评审、竞技场、事件和成本；支持只读数据库轮询与导出目录离线浏览。
+- 可视化设置：七组参数菜单、同源后端校验、保存新运行 YAML 配置与启动命令，以及刷新频率/阅读密度偏好。
+- 模型目录：五家供应商共 19 个公开型号及日期化参考报价，保留自定义 ID；见[模型与价格](docs/model-catalog.md)。
+- 人工控制：暂停/恢复调度、请求收尾；显式确认和 sequence 校验，不启动 Worker、不修改冻结计划。展示任务心跳与租约，不把 running 当存活证明。
+- 科学阻断处理：网页或`run scientist-feedback`提交署名意见，在原预算/Meta-review轮次内排队独立复评；保留原结论，复评非clear仍暂停。提交不启动Worker，但存活Worker可能继续付费执行。详见[人工核查与复评](docs/research-cockpit.md#meta-review判定与人工核查)。
 
-尚未实现：Web 界面、角色级多模型合作、自动模型路由、单/多模型对照实验平台、原论文完整基准复现、分布式部署。
+尚未实现：Web 创建运行/启动 Worker、任意阶段人工反馈与自有假设导入、角色级多模型合作、自动模型路由、单/多模型对照实验平台、原论文完整基准复现、分布式部署。当前科学行为和输入质量的具体缺口见[论文对齐审计与验收指南](docs/reports/2026-09-17-paper-alignment-audit.md)，不要把六角色覆盖测试当自主工作流等效证明。
+
+## 打开可视化研究驾驶舱
+
+安装好下方 Python 项目环境后，另需 Node.js 22+。在项目根目录运行（无需 `npm install`）：
+
+```bash
+npm --prefix web run dev
+```
+
+打开 [本地研究驾驶舱](http://127.0.0.1:4173)。默认发现项目根目录 `.co-scientist*` 下的 `co-scientist.db`，以及 `*-export` 导出目录。左上角切换运行；点击任一阶段 → 任务 → 调用，展开输入和结构化产物；假设卡片可查看机制链、证伪条件、评审与准入证据。
+
+数据库模式每 5 秒读取一致性快照，CLI 在另一个终端执行时可以同时观察。导出模式是历史快照，不会自动更新。页面不会启动 Worker、调用模型、迁移数据库或上传本地目录；无需在浏览器配置 API key。
+
+“运行总览 → 运行监控与人工干预”提供有限生命周期控制。暂停不保证取消供应商在途请求；继续调度不保证原 CLI 进程仍在；需要时按提示手动启动 Worker。更新 `web/server.mjs` 后必须重启网页服务才有新的控制接口。
+
+左侧进入“设置”，按研究目标 → 模型连接 → 文献检索 → 评审与演化 → 竞技场与停止 → 计算预算逐项调整。可以从当前运行复制、载入仓库模板，或读取已保存配置。点击“校验配置”，再“保存为新配置”：文件保存在项目 `.co-scientist-configs/<版本>/`（Git 已忽略），页面提供启动命令。保存本身不会运行模型，也不改变历史 Run；真正执行 CLI 命令时才产生在线调用。界面偏好单独保存到浏览器，可调整自动刷新、5/10/30/60 秒刷新间隔和阅读密度。
+
+旧运行副本仍保留 **Legacy**。要使用本轮科研输入修复，在“文献检索”确认科学上下文已开启，再在“评审与演化 → 科研指令协议”选择 **Research v1**，保存后使用新 Run ID 启动；不要用旧 Run 的 resume 代替升级。新仓库模板已默认启用，内置 Replay 继续使用 Legacy。具体输入、评分维度及验收方式见 [Research v1 协议](docs/research-protocol.md)。
+
+“评审与演化 → Meta-review 反馈闭环”可设置总结轮次、比赛间隔和每次反馈的子代上限。新真实模型模板默认最多 2 次总结、间隔至少 2 场新增比赛、每次最多 1 个子代；设总结轮次为 `0` 关闭。开启时需要 Research v1、启用 Evolution，以及有限的调用数和比赛数预算。运行总览的“反馈闭环追踪”展示反馈版本和接收到该版本的下游任务；传入反馈不等于科学上采纳或改进。旧 Run 不会自动出现新策略。
+
+DeepSeek + Research v1 可在“竞技场与停止 → Ranking 输出协议”显式选择严格工具输出，仅用于新运行的 Ranking。默认仍为标准 JSON，不升级历史 Run。一次兼容性检查通过，但[Run010 真实测试](docs/reports/2026-09-20-strict-workflow-live.md)在 7 场比赛及一次科学 Meta-review 后，第 8 场仍因非法工具参数暂停；完整闭环未通过，不保证 JSON 有效。使用限制及实现见[Ranking 严格输出协议](docs/ranking-output.md)。原始响应窗口提供只读错误位置提示，不自动修补或重试。
+
+另提供实验性 `deepseek-strict-tool-v2`，把六维理由改为顶层字段后无损映射回原结果。仅离线验证，不自动替换 v1，也不保证减少在线错误；需在上述设置中显式选择并创建新 Run。
+
+指定不同数据目录或 Python 解释器：
+
+```bash
+CO_SCIENTIST_DATA_DIR=.co-scientist-deepseek \
+CO_SCIENTIST_PYTHON="$PWD/.venv/bin/python" \
+npm --prefix web run dev
+```
+
+详情见 [驾驶舱使用与前端设计](docs/research-cockpit.md)，包含七个视图、API 契约、测试方法和当前边界。
 
 ## 安装
 
@@ -76,6 +116,11 @@ export CO_SCIENTIST_DEEPSEEK_MODEL='YOUR_DEEPSEEK_MODEL_ID'
 这些设置只对当前终端及其子进程有效。在另一个终端或桌面应用中运行时，需要在那里配置环境。
 
 ## 用 DeepSeek 和 OpenAI 测试完整流程
+
+五家真实模型模板已启用摘要证据和有限 Evolution：修复不合格候选与根据 Meta-review 改进合格父代，共享最多 3 次 Evolution 调度；单次修复最多 2 个子代，反馈驱动时另受每次最多 1 个子代限制。
+可在 profile 的 `evolution` 与 `meta_review` 参数组调节。要关闭全部 Evolution，需同时将两组的 `max_rounds` 设为 `0`。预算、质量收敛、人工停止和安全方向检查优先，不保证每个 Run 都用完所有轮次。
+配置对新运行生效；真实研究假设可能未通过评审，因此命令执行不保证最终产生排名。
+详细流程与限制见 [多供应商指南](docs/multi-provider.md)。
 
 ```bash
 co-scientist run execute \
@@ -136,6 +181,19 @@ co-scientist run cancel RUN_ID --expected-sequence N --data-dir DATA_DIR
 ```
 
 `resume` 修改暂停状态后，再用 `worker run` 执行任务。`stop` 请求部分结果汇总；`cancel` 直接取消。并发状态变化时应重新查询序号。
+
+若为 `needs_attention / provider_output_invalid`（例如模型返回坏 JSON），普通 `resume` 不会绕过失败。可以明确授权一次**原任务、原输入、原模型**的重新调用：
+
+```bash
+co-scientist run retry-output RUN_ID --call-id FAILED_CALL_ID \
+  --expected-sequence N --confirm --data-dir DATA_DIR
+# 上一步只重新排队，不启动 Worker；确认没有其他 Worker 后再执行：
+co-scientist worker run RUN_ID --data-dir DATA_DIR
+```
+
+失败 call ID 来自前端事件详情的 `RunNeedsAttention.external_call_id` 或导出 `external_calls.json`。新尝试可能收费；旧 raw、失败状态和 token/费用保留，绝不修补 JSON 或覆盖模型结论。必须有有限的剩余调用预算且未达到任务 `max_attempts`（当前默认 3，包含首次及网络恢复尝试）；再次无效仍暂停。
+
+也可在网页“运行总览 → 运行监控与人工干预 → 输出失败”中查看原始响应、核对预算和次数，点击“检查并授权一次重试…”，明确勾选费用确认后重新排队。页面不启动 Worker。更新服务代码后需重启网页服务；导出目录保持只读。完整限制与审计方法见[显式输出重试](docs/output-retry.md)。
 
 ## 导出与结果阅读
 

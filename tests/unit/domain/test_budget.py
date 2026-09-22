@@ -29,6 +29,26 @@ def test_hypothesis_and_match_limits_are_hard_budget_limits_at_threshold() -> No
     assert BudgetPolicy(max_matches=4).reached(BudgetUsage(matches=4))
 
 
+def test_candidate_capacity_allows_downstream_work_but_not_overflow() -> None:
+    policy = BudgetPolicy(hypothesis_limit_policy="capacity-v2", max_hypotheses=3,
+                          max_model_calls=10, max_matches=4)
+    assert not policy.reached(BudgetUsage(hypotheses=3))
+    assert policy.reached(BudgetUsage(hypotheses=4))
+    assert policy.reached(BudgetUsage(hypotheses=3, model_calls=10))
+    assert policy.reached(BudgetUsage(hypotheses=3, matches=4))
+    assert "hypothesis_limit_policy" not in BudgetPolicy().model_dump()
+    assert BudgetPolicy.model_validate(policy.model_dump()) == policy
+
+
+def test_capacity_reservations_allow_processing_but_reject_new_candidates() -> None:
+    from co_scientist.adapters.persistence.sqlite import SqliteUnitOfWork
+
+    policy = BudgetPolicy(hypothesis_limit_policy="capacity-v2", max_hypotheses=3)
+    usage = BudgetUsage(hypotheses=3)
+    assert SqliteUnitOfWork._fits_budget(policy, usage, BudgetEstimate(model_calls=1))
+    assert not SqliteUnitOfWork._fits_budget(policy, usage, BudgetEstimate(hypotheses=1))
+
+
 # Mutation caught: token limits are collapsed into model-call or USD accounting.
 def test_input_and_output_token_limits_are_independent_hard_limits() -> None:
     assert BudgetPolicy(max_input_tokens=10).reached(BudgetUsage(input_tokens=10))

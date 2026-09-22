@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE PubmedArticleSet SYSTEM "https://dtd.nlm.nih.gov/ncbi/pubmed/out/pubmed_250101.dtd">
+<PubmedArticleSet>
+  <PubmedArticle><MedlineCitation><PMID>1001</PMID><Article>
+    <ArticleTitle>Lens <i>epithelial</i> regeneration</ArticleTitle>
+    <Journal><JournalIssue><PubDate><Year>2016</Year><Month>Mar</Month></PubDate></JournalIssue></Journal>
+    <Abstract><AbstractText Label="BACKGROUND">Synthetic fixture, not scientific evidence.</AbstractText>
+      <AbstractText Label="RESULTS">Preserved cells retain <i>regenerative</i> potential.</AbstractText></Abstract>
+    <AuthorList><Author><LastName>Example</LastName><ForeName>Alice</ForeName></Author></AuthorList>
+  </Article></MedlineCitation></PubmedArticle>
+  <PubmedArticle><MedlineCitation><PMID>1002</PMID><Article>
+    <ArticleTitle>Lens fibrosis fixture without an abstract</ArticleTitle>
+    <Journal><JournalIssue><PubDate><MedlineDate>2020 Winter</MedlineDate></PubDate></JournalIssue></Journal>
+    <AuthorList><Author><CollectiveName>Example Group</CollectiveName></Author></AuthorList>
+  </Article></MedlineCitation></PubmedArticle>
+</PubmedArticleSet>

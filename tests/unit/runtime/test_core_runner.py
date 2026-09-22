@@ -1,3 +1,4 @@
+import hashlib
 import json
 from pathlib import Path
 from types import SimpleNamespace
@@ -716,20 +717,32 @@ class _OfflineOpenAIResponse:
 
 
 @pytest.mark.asyncio
+@pytest.mark.parametrize("invalid_review", [False, True])
+@pytest.mark.parametrize("content_mode", ["metadata", "abstracts"])
 async def test_openai_shape_uses_the_same_worker_literature_path(
     tmp_path: Path,
     monkeypatch: pytest.MonkeyPatch,
     respx_mock: Any,
+    invalid_review: bool,
+    content_mode: str,
 ) -> None:
     goal_file, profile_file, replay_environment = write_core_preview_inputs(tmp_path)
     profile = yaml.safe_load(profile_file.read_text(encoding="utf-8"))
     profile["providers"] = {"llm": "openai", "literature": "pubmed"}
+    profile["scientific_context"] = True
+    profile["literature_content"] = content_mode
+    profile["literature_sort"] = "relevance"
     profile_file.write_text(yaml.safe_dump(profile), encoding="utf-8")
     replay = json.loads(
         Path(replay_environment["CO_SCIENTIST_REPLAY_RESPONSES"]).read_text(
             encoding="utf-8"
         )
     )
+    if content_mode == "abstracts":
+        abstract_hash = "sha256:" + hashlib.sha256(Path("tests/scenario/fixtures/pubmed_abstracts_lens.xml").read_bytes()).hexdigest()
+        for record in replay["responses"]:
+            if "literature_evidence" in record["inputs"]:
+                record["inputs"]["literature_evidence"]["raw_sha256"] = abstract_hash
     responses = {
         (
             record["skill_id"],
@@ -741,15 +754,45 @@ async def test_openai_shape_uses_the_same_worker_literature_path(
     class FakeResponses:
         def __init__(self) -> None:
             self.count = 0
+            self.context_skills: set[str] = set()
+            self.initial_ids: set[str] = set()
 
         async def create(self, **request: Any) -> _OfflineOpenAIResponse:
             self.count += 1
             user = json.loads(request["input"])
+            inputs = user["input"]
+            if "hypothesis_contents" in inputs:
+                self.context_skills.add(request["text"]["format"]["name"])
+                assert inputs.pop("research_goal")["title"]
+                contents = inputs.pop("hypothesis_contents")
+                if inputs.get("review_stage"):
+                    assert inputs.pop("review_requirements")["evidence_policy"]
+                if inputs.get("review_stage") == "initial_review":
+                    self.initial_ids.add(inputs["hypothesis_id"])
+                if inputs.get("review_stage") == "full_review":
+                    assert inputs["hypothesis_id"] in self.initial_ids
+                for key in ("hypothesis_id", "left_id", "right_id"):
+                    if key in inputs:
+                        content = contents[inputs[key]]
+                        assert content["claim"] and content["mechanism_chain"]
+                        hash_key = "content_hash" if key == "hypothesis_id" else key.replace("_id", "_content_hash")
+                        assert content["content_hash"] == inputs[hash_key]
+                evidence = inputs.get("literature_evidence")
+                if evidence is not None:
+                    assert evidence.pop("coverage_limit")
+                    documents = evidence.pop("source_documents")
+                    assert all(source["title"] for source in documents)
+                    if content_mode == "abstracts":
+                        assert documents[0]["abstract"] and documents[0]["content_level"] == "abstract"
+                        assert documents[1]["abstract"] is None
             key = (
                 request["text"]["format"]["name"].removesuffix("ResultV1").lower(),
                 json.dumps(user["input"], separators=(",", ":"), sort_keys=True),
             )
-            return _OfflineOpenAIResponse(responses[key], f"resp-{self.count}")
+            response = responses[key]
+            if invalid_review and inputs.get("review_stage") == "full_review":
+                response = {**response, "recommendation": "pass", "evidence_ids": [], "novelty_assessment": None}
+            return _OfflineOpenAIResponse(response, f"resp-{self.count}")
 
     class FakeOpenAI:
         def __init__(self, responses: FakeResponses) -> None:
@@ -772,10 +815,12 @@ async def test_openai_shape_uses_the_same_worker_literature_path(
             headers={"content-type": "application/json", "ncbi-phid": "search-1"},
         )
     )
-    respx_mock.get("https://eutils.ncbi.nlm.nih.gov/entrez/eutils/esummary.fcgi").mock(
+    retrieval_tool = "efetch" if content_mode == "abstracts" else "esummary"
+    fixture = "pubmed_abstracts_lens.xml" if content_mode == "abstracts" else "pubmed_summary_lens.json"
+    respx_mock.get(f"https://eutils.ncbi.nlm.nih.gov/entrez/eutils/{retrieval_tool}.fcgi").mock(
         return_value=httpx.Response(
             200,
-            content=Path("tests/scenario/fixtures/pubmed_summary_lens.json").read_bytes(),
+            content=(Path("tests/scenario/fixtures") / fixture).read_bytes(),
             headers={"content-type": "application/json", "ncbi-phid": "summary-1"},
         )
     )
@@ -793,6 +838,18 @@ async def test_openai_shape_uses_the_same_worker_literature_path(
 
     result = await runner.execute(config=config)
 
+    if invalid_review:
+        assert result.state is RunState.NEEDS_ATTENTION
+        assert result.stop_reason == "provider_output_invalid"
+        calls = SqliteRunReadModel(runner.uow).external_calls(result.run_id)
+        assert sum(call["state"] == "validation_failed" for call in calls) == 1
+        assert not any(event.event_type == "MatchEvaluated" for event in runner.uow.load(result.run_id))
+        count = fake_responses.count
+        resumed = await CoreRunner(data_dir=tmp_path / "data", environment=environment).resume(run_id=result.run_id)
+        assert resumed.state is RunState.NEEDS_ATTENTION
+        assert fake_responses.count == count
+        return
+
     assert result.state is RunState.COMPLETED
     calls = SqliteRunReadModel(runner.uow).external_calls(result.run_id)
     assert {call["provider"] for call in calls} >= {
@@ -802,3 +859,8 @@ async def test_openai_shape_uses_the_same_worker_literature_path(
     }
     assert all(call["state"] == "domain_result_applied" for call in calls)
     assert fake_openai.close_count == 1
+    retrieval = next(call for call in calls if call["model_or_tool"] == retrieval_tool)
+    assert runner.artifacts.read(ArtifactRef.model_validate(retrieval["raw_artifact_ref"])) == (Path("tests/scenario/fixtures") / fixture).read_bytes()
+    assert fake_responses.context_skills >= {
+        "ReflectionResultV1", "ProximityResultV1", "RankingResultV1",
+    }

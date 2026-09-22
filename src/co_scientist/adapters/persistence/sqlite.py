@@ -917,6 +917,16 @@ class SqliteUnitOfWork:
         )
         return all(limit is None or projected <= limit for limit, projected in checks)
 
+    @classmethod
+    def _fits_retry_budget(cls, policy: BudgetPolicy, usage: BudgetUsage, estimate: BudgetEstimate) -> bool:
+        # Scientific units already belong to the reservation; only provider work
+        # is incremental. Unknown token/price estimates cannot reopen a spent cap.
+        reached = any(limit is not None and actual >= limit for limit, actual in (
+            (policy.max_model_calls, usage.model_calls), (policy.max_input_tokens, usage.input_tokens),
+            (policy.max_output_tokens, usage.output_tokens), (policy.max_usd, usage.cost_usd),
+        ))
+        return not reached and cls._fits_budget(policy, usage, estimate)
+
     @staticmethod
     def _reservation_id(run_id: str, idempotency_key: str) -> str:
         digest = hashlib.sha256(f"{run_id}\0{idempotency_key}".encode()).hexdigest()
@@ -993,6 +1003,11 @@ class SqliteUnitOfWork:
         if diagnostic is not None:
             raise ValueError(diagnostic)
         return cast(dict[str, Any], manifest)
+
+    @staticmethod
+    def _requires_explicit_output_retry(manifest: Mapping[str, Any]) -> bool:
+        profile = manifest.get("profile")
+        return isinstance(profile, Mapping) and profile.get("scientific_context") is True
 
     def claim_next_task(
         self,
@@ -1081,11 +1096,17 @@ class SqliteUnitOfWork:
             if existing_reservation is not None:
                 self._assert_exact_reservation(task, existing_reservation)
                 reservation = existing_reservation
+                prior = (session.get(ExternalCallRow, reservation.external_call_id)
+                         if reservation.external_call_id is not None else None)
+                if (prior is not None and prior.state == ExternalCallState.VALIDATION_FAILED.value
+                        and self._requires_explicit_output_retry(manifest)
+                        and not self._output_retry_authorized(session, task, prior, task.attempt + 1)):
+                    raise ValueError("invalid output requires an explicit retry authorization")
                 paid_usage = self._provider_usage_for_task(
                     session, run_id=run_id, task_id=task.task_id
                 )
                 policy = BudgetPolicy.model_validate(manifest.get("budget", {}))
-                retry_exceeds_budget = paid_usage.model_calls > 0 and not self._fits_budget(
+                retry_exceeds_budget = paid_usage.model_calls > 0 and not self._fits_retry_budget(
                     policy,
                     self._budget_usage(session, run_id),
                     self._retry_provider_estimate(estimate),
@@ -1443,6 +1464,135 @@ class SqliteUnitOfWork:
             row.state = validate_task_transition(TaskState(row.state), target).value
             session.flush()
 
+    @staticmethod
+    def _output_retry_authorized(
+        session: Session, task: TaskRow, call: ExternalCallRow, next_attempt: int,
+    ) -> bool:
+        authorizations = [json.loads(row.payload_json) for row in session.scalars(
+            select(EventRow).where(EventRow.run_id == task.run_id,
+                                   EventRow.event_type == "TaskOutputRetryRequested")
+        ).all()]
+        matches = [payload for payload in authorizations
+                   if payload.get("task_id") == task.task_id
+                   and payload.get("external_call_id") == call.external_call_id]
+        if len(matches) != 1 or call.raw_artifact_ref_json is None:
+            return False
+        payload = matches[0]
+        return (
+            payload.get("retry_policy_version") == "explicit-output-retry-v1"
+            and payload.get("authorized_by") == "scientist"
+            and payload.get("failed_attempt") == call.attempt
+            and payload.get("authorized_attempt") == next_attempt == call.attempt + 1
+            and next_attempt <= task.max_attempts
+            and payload.get("raw_artifact_ref") == json.loads(call.raw_artifact_ref_json)
+            and payload.get("request_fingerprint") == call.request_fingerprint
+        )
+
+    def requeue_invalid_output(
+        self, *, run_id: str, external_call_id: str, expected_sequence: int,
+    ) -> CommitResult:
+        """Atomic Supervisor command: evidence, budget, lease revocation and resume.
+
+        One task-scoped reservation accumulates every paid attempt. This command
+        neither refunds the failed response nor consumes a second call/cost row.
+        The claim path checks budget again before granting a new lease.
+        """
+        with self.session_factory.begin() as session:
+            self._begin_immediate(session)
+            self._require_run(session, run_id)
+            self._assert_sequence(session, run_id, expected_sequence)
+            run = session.get(RunRow, run_id)
+            assert run is not None
+            manifest = self._require_execution_contract(run)
+            if RunState(run.state) is not RunState.NEEDS_ATTENTION:
+                raise ValueError("output retry requires needs_attention")
+            if not self._requires_explicit_output_retry(manifest):
+                raise ValueError("output retry requires a scientific-context Run")
+            attention = session.scalar(select(EventRow).where(
+                EventRow.run_id == run_id, EventRow.event_type == "RunNeedsAttention",
+            ).order_by(EventRow.sequence.desc()).limit(1))
+            reason = json.loads(attention.payload_json) if attention else {}
+            call = self._external_call(session, external_call_id)
+            task = session.get(TaskRow, call.task_id)
+            if (call.run_id != run_id or task is None or task.run_id != run_id
+                    or reason.get("reason") != "provider_output_invalid"
+                    or reason.get("external_call_id") != external_call_id
+                    or reason.get("task_id") != call.task_id
+                    or task.state != TaskState.RUNNING.value
+                    or call.state != ExternalCallState.VALIDATION_FAILED.value
+                    or call.attempt != task.attempt or call.raw_artifact_ref_json is None
+                    or call.validated_artifact_ref_json is not None
+                    or call.agent_result_id is not None or call.agent_result_json is not None
+                    or call.applied_domain_sequence is not None):
+                raise ValueError("retry target is not the current unapplied invalid output")
+            if task.attempt >= task.max_attempts:
+                raise ValueError("task max_attempts exhausted; no additional attempt authorized")
+            raw_ref = ArtifactRef.model_validate_json(call.raw_artifact_ref_json)
+            context = json.loads(call.execution_context_json or "{}")
+            task_payload = json.loads(task.payload_json)
+            if (not task.lease_token or call.provider != task_payload.get("provider_id")
+                    or call.model_or_tool != task_payload.get("model_or_tool")
+                    or hashlib.sha256(_json(task_payload.get("inputs")).encode("utf-8")).hexdigest()
+                    != task_payload.get("input_snapshot_hash")
+                    or any(context.get(field) != task_payload.get(field) for field in (
+                        "input_snapshot_hash", "prompt_hash", "skill_id", "skill_version",
+                        "research_plan_version", "output_schema_id", "output_schema_version",
+                    ))):
+                raise ValueError("retry must preserve the frozen task contract")
+            fence = TaskLeaseFence(run_id=run_id, task_id=task.task_id,
+                                  attempt=task.attempt, lease_token=task.lease_token)
+            reservation = self._task_reservation(session, fence)
+            self._assert_exact_reservation(task, reservation)
+            if (reservation.external_call_id != external_call_id
+                    or context.get("run_id") != run_id or context.get("task_id") != task.task_id
+                    or context.get("attempt") != task.attempt
+                    or context.get("idempotency_key") != task.idempotency_key
+                    or context.get("reservation_id") != reservation.reservation_id
+                    or context.get("lease_fence_fingerprint") != lease_fence_fingerprint(fence)):
+                raise ValueError("retry requires the current reservation and lease binding")
+            cost = session.scalar(select(CostEntryRow).where(CostEntryRow.external_call_id == external_call_id))
+            expected_cost = self._call_cost_entry(call)
+            if (cost is None or cost.run_id != run_id
+                    or cost.input_tokens != expected_cost.input_tokens
+                    or cost.output_tokens != expected_cost.output_tokens
+                    or Decimal(cost.cost_usd) != expected_cost.cost_usd
+                    or cost.pricing_version != expected_cost.pricing_version):
+                raise ValueError("failed response usage must already be accounted for")
+            policy = BudgetPolicy.model_validate(manifest.get("budget", {}))
+            estimate = self._retry_provider_estimate(self._task_budget_estimate(task))
+            usage = self._budget_usage(session, run_id)
+            if policy.max_model_calls is None or not self._fits_retry_budget(policy, usage, estimate):
+                raise ValueError("retry requires a finite call budget with sufficient remaining capacity")
+            authorization = NewEvent(event_type="TaskOutputRetryRequested", payload={
+                "retry_policy_version": "explicit-output-retry-v1", "authorized_by": "scientist",
+                "task_id": task.task_id, "external_call_id": external_call_id,
+                "failed_attempt": call.attempt, "authorized_attempt": call.attempt + 1,
+                "max_attempts": task.max_attempts, "reservation_id": reservation.reservation_id,
+                "raw_artifact_ref": raw_ref.model_dump(mode="json"),
+                "request_fingerprint": call.request_fingerprint,
+                "lease_fence_fingerprint": lease_fence_fingerprint(fence),
+                "budget_policy_version": self._budget_policy_version(policy),
+                "budget_usage_at_authorization": usage.model_dump(mode="json"),
+                "additional_estimate": estimate.model_dump(mode="json"),
+            })
+            task.state = validate_task_transition(TaskState(task.state), TaskState.PENDING).value
+            task.lease_owner = task.lease_token = None
+            task.heartbeat_at = task.lease_expires_at = None
+            self._apply_run_transition(session, run_id, RunState.RUNNING)
+            events = self._insert_events(session, run_id, expected_sequence, (
+                authorization,
+                NewEvent(event_type="TaskRequeued", payload={
+                    "task_id": task.task_id, "failed_attempt": call.attempt,
+                    "external_call_id": external_call_id, "reason": "explicit_output_retry",
+                }),
+                NewEvent(event_type="RunResumed", payload={
+                    "reason": "explicit_output_retry", "external_call_id": external_call_id,
+                }),
+            ))
+            self._set_run_sequence(session, run_id, events[-1].sequence, required=True)
+            session.flush()
+            return CommitResult(events=tuple(events), last_sequence=events[-1].sequence)
+
     def recover_expired_leases(
         self,
         *,
@@ -1460,6 +1610,8 @@ class SqliteUnitOfWork:
                 raise KeyError(f"unknown run: {run_id}")
             self._require_execution_contract(run)
             run_state = RunState(run.state)
+            if run_state is RunState.NEEDS_ATTENTION:
+                return ()
             if run_state in {
                 RunState.COMPLETED,
                 RunState.COMPLETED_PARTIAL,
@@ -1755,6 +1907,21 @@ class SqliteUnitOfWork:
                 prior = session.get(ExternalCallRow, reservation.external_call_id)
                 if prior is None or prior.attempt >= resolved_attempt:
                     raise ValueError("reservation is already bound to an external call")
+                run = session.get(RunRow, run_id)
+                assert run is not None
+                if (prior.state == ExternalCallState.VALIDATION_FAILED.value
+                        and self._requires_explicit_output_retry(json.loads(run.manifest_json))):
+                    prior_context = json.loads(prior.execution_context_json or "{}")
+                    if (not self._output_retry_authorized(session, task, prior, resolved_attempt)
+                            or prior.request_fingerprint != request_fingerprint
+                            or any(prior_context.get(key) != context.get(key) for key in (
+                                "run_id", "task_id", "idempotency_key", "reservation_id",
+                                "provider", "model_or_tool", "input_snapshot_hash", "prompt_hash",
+                                "skill_id", "skill_version", "output_schema_id",
+                                "output_schema_version", "research_plan_version",
+                            )) or parent_call_id not in (None, prior.external_call_id)):
+                        raise ValueError("output retry must match its authorized frozen request")
+                    parent_call_id = prior.external_call_id
             reservation.external_call_id = call_id
             reservation.version += 1
             reservation.updated_at = datetime.now(UTC)
@@ -2638,6 +2805,66 @@ class SqliteUnitOfWork:
                 task_intent=source_task_intent,
             )
 
+    def _validate_scientist_resolution(
+        self, session: Session, run_id: str, events: Sequence[NewEvent], tasks: Sequence[NewTask],
+    ) -> None:
+        """Closed resolution bundle; ordinary resume must never clear scientific attention."""
+        from co_scientist.domain.research_protocol import protocol_hash
+
+        if ([e.event_type for e in events] != ["ScientistFeedbackRecorded", "RunResumed", "TaskEnqueued"]
+                or len(tasks) != 1):
+            raise ValueError("needs_attention requires a dedicated resolution command")
+        record, resumed, enqueued = (thaw_json(e.payload) for e in events)
+        task = tasks[0]
+        inputs = thaw_json(task.payload).get("inputs", {})
+        prior = session.scalars(select(EventRow).where(EventRow.run_id == run_id).order_by(EventRow.sequence)).all()
+        feedback: dict[str, Any] = next((json.loads(e.payload_json) for e in reversed(prior)
+                         if e.event_type == "ResearchFeedbackRecorded"), {})
+        attention: dict[str, Any] = next((json.loads(e.payload_json) for e in reversed(prior)
+                          if e.event_type == "RunNeedsAttention"), {})
+        run = session.get(RunRow, run_id)
+        assert run is not None
+        manifest = self._require_execution_contract(run)
+        meta = manifest.get("profile", {}).get("meta_review", {})
+        rounds = sum(e.event_type == "TaskEnqueued"
+                     and bool(json.loads(e.payload_json).get("payload", {}).get("inputs", {}).get("meta_review_round"))
+                     for e in prior)
+        pending = session.scalar(select(TaskRow).where(TaskRow.run_id == run_id,
+            TaskRow.state.in_(["pending", "running", "result_received"])))
+        unsigned = {k: v for k, v in record.items() if k != "feedback_hash"}
+        if (pending is not None or record.get("feedback_hash") != protocol_hash(unsigned)
+                or not isinstance(record.get("note"), str) or not record["note"].strip()
+                or len(record["note"]) > 12000 or not isinstance(record.get("actor"), str)
+                or not record["actor"].strip() or len(record["actor"]) > 200
+                or record.get("handling_policy") != "scientist-reassessment-v1"
+                or attention.get("reason") != "meta_review_requires_scientist_input"
+                or feedback.get("safety_direction_check") not in {"concern", "insufficient_evidence"}
+                or record.get("source_feedback_id") != feedback.get("feedback_id")
+                or attention.get("feedback_id") != feedback.get("feedback_id")
+                or record.get("source_feedback_hash") != feedback.get("feedback_hash")
+                or any(record.get(k) != feedback.get(k) for k in ("epoch_id", "research_plan_version", "source_content_hashes"))
+                or record.get("epoch_id") != manifest["tournament_contract"]["epoch_id"]
+                or record.get("research_plan_version") != manifest["tournament_contract"]["research_plan_version"]
+                or rounds >= meta.get("max_rounds", 0) or inputs.get("meta_review_round") != rounds + 1
+                or task.run_id != run_id or task.intent_type != "run_meta_review"
+                or task.payload.get("provider_id") != manifest["provider_configuration"]["provider"]
+                or task.payload.get("model_or_tool") != manifest["provider_configuration"]["model"]
+                or task.payload.get("skill_id") != "meta_review" or inputs.get("scientist_feedback") != record
+                or inputs.get("source_content_hashes") != feedback.get("source_content_hashes")
+                or inputs.get("research_feedback") != feedback
+                or inputs.get("task_goal") != manifest["feedback_contract"]["meta_review_instruction"]
+                or resumed.get("reason") != "scientist_reassessment_queued"
+                or resumed.get("scientist_feedback_id") != record.get("scientist_feedback_id")
+                or resumed.get("task_id") != task.task_id or enqueued.get("task_id") != task.task_id
+                or enqueued.get("payload") != thaw_json(task.payload)):
+            raise ValueError("invalid scientist reassessment evidence or task binding")
+        snapshot = self._load_budget_snapshot(session, run_id)
+        policy = BudgetPolicy.model_validate(manifest.get("budget", {}))
+        estimate = BudgetEstimate.model_validate(task.payload.get("budget_estimate", {}))
+        if (policy.max_model_calls is None or snapshot.hard_limit_reached or estimate.model_calls != 1
+                or not self._fits_budget(policy, snapshot.total_usage, estimate)):
+            raise ValueError("scientist reassessment exceeds frozen budget")
+
     def _validate_lifecycle_batch(
         self,
         session: Session,
@@ -2645,6 +2872,7 @@ class SqliteUnitOfWork:
         run_id: str,
         events: Sequence[NewEvent],
         target_run_state: RunState | None,
+        followup_tasks: Sequence[NewTask] = (),
     ) -> None:
         lifecycle_events = [
             event.event_type for event in events if event.event_type in _LIFECYCLE_EVENT_TARGETS
@@ -2657,6 +2885,8 @@ class SqliteUnitOfWork:
             return
 
         state = self._run_state_in_transaction(session, run_id)
+        if state is RunState.NEEDS_ATTENTION and target_run_state is RunState.RUNNING:
+            self._validate_scientist_resolution(session, run_id, events, followup_tasks)
         validate_run_transition(state, target_run_state)
         for event_type in lifecycle_events:
             required = _LIFECYCLE_EVENT_TARGETS[event_type]
@@ -2750,6 +2980,7 @@ class SqliteUnitOfWork:
                 run_id=run_id,
                 events=events,
                 target_run_state=run_target,
+                followup_tasks=followup_tasks,
             )
             self._validate_domain_batch_mutations(
                 session,

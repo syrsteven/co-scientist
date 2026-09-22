@@ -1,0 +1,60 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Co-Scientist 研究运行、证据和成本可视化驾驶舱" />
+  <title>Co-Scientist · Research Cockpit</title>
+  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="settings.css" />
+</head>
+<body>
+  <div class="app-shell">
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-mark" aria-hidden="true">C<span>Σ</span></div>
+        <div><strong>Co-Scientist</strong><small>Research Cockpit</small></div>
+      </div>
+      <button class="run-switcher" id="runSwitcher" aria-haspopup="listbox">
+        <span><small>当前运行</small><strong id="runName">读取中…</strong></span><span aria-hidden="true">⌄</span>
+      </button>
+      <div class="run-menu hidden" id="runMenu" role="listbox"></div>
+      <nav aria-label="运行视图">
+        <button class="nav-item active" data-view="overview"><span>◫</span>运行总览</button>
+        <button class="nav-item" data-view="hypotheses"><span>⌁</span>假设空间</button>
+        <button class="nav-item" data-view="evidence"><span>▤</span>证据与评审</button>
+        <button class="nav-item" data-view="tournament"><span>⇄</span>竞技场</button>
+        <button class="nav-item" data-view="events"><span>≋</span>事件流</button>
+      </nav>
+      <div class="sidebar-footer">
+        <label class="folder-button" for="folderInput"><span>＋</span>载入导出目录</label>
+        <input id="folderInput" type="file" webkitdirectory multiple hidden />
+        <div class="connection"><span class="status-dot"></span><span id="sourceLabel">本地导出数据</span></div>
+      </div>
+    </aside>
+
+    <main>
+      <header class="topbar">
+        <div>
+          <div class="eyebrow"><span id="runState" class="state-pill">—</span><span id="sequence">SEQ —</span></div>
+          <h1 id="goalTitle">研究运行</h1>
+        </div>
+        <div class="header-actions">
+          <button class="icon-button" id="refreshButton" title="重新载入当前运行" aria-label="重新载入">↻</button>
+          <button class="quiet-button" id="openFolderButton">选择导出目录</button>
+        </div>
+      </header>
+
+      <section class="metrics" id="metrics"></section>
+      <section class="view" id="viewRoot" aria-live="polite"></section>
+    </main>
+
+    <aside class="inspector closed" id="inspector" aria-label="详细信息">
+      <div class="inspector-head"><div><small>INSPECTOR</small><h2 id="inspectorTitle">运行说明</h2></div><button class="icon-button" id="closeInspector" aria-label="关闭详情">×</button></div>
+      <div id="inspectorBody" class="inspector-body"></div>
+    </aside>
+  </div>
+  <div class="toast hidden" id="toast" role="status"></div>
+  <script type="module" src="app.js"></script>
+</body>
+</html>

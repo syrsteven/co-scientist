@@ -1,0 +1,11 @@
+{
+  "name": "co-scientist-research-cockpit",
+  "private": true,
+  "version": "0.1.0-dev",
+  "type": "module",
+  "scripts": {
+    "dev": "node server.mjs",
+    "check": "node --check server.mjs && node --check public/app.js && node --check public/settings.js && node --check public/settings-model.js && node --check public/retry.js",
+    "test": "node --test tests/*.test.mjs"
+  }
+}

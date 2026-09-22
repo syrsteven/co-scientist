@@ -1,0 +1,55 @@
+profile_id: core_preview_deepseek_full_test
+admission_policy_version: admission-v1
+review_policy:
+  profile_id: core_preview_online
+  required_before_admission: [initial_review, full_review]
+  trigger_rules:
+    deep_verification: [critical_assumption_low_confidence]
+    observation_review: [scientist_request]
+    simulation_review: [high_rank_low_testability]
+    recurrent_review: [needs_tiebreaker]
+literature_novelty_required: true
+scientific_context: true
+research_protocol_version: research-v1
+evolution:
+  max_rounds: 1
+  max_children_per_round: 2
+literature_content: abstracts
+literature_sort: relevance
+literature_search_queries:
+  - '("lens regeneration"[Title/Abstract] OR ("lens epithelial"[Title/Abstract] AND (fibros*[Title/Abstract] OR regenerat*[Title/Abstract])))'
+  - 'lens[Title/Abstract] AND epithelial[Title/Abstract] AND (regenerat*[Title/Abstract] OR fibros*[Title/Abstract])'
+  - 'lens[Title/Abstract] AND (regeneration[Title/Abstract] OR "posterior capsule opacification"[Title/Abstract])'
+duplicate_likelihood_threshold: 0.5
+tournament:
+  rating_policy_version: elo-32-v1
+  evaluation_rules_id: core-preview-rules-v1
+  judge_profile_id: core-preview-judge-v1
+  match_mode: research
+  anchor_count: 2
+stop:
+  minimum_matches: 6
+  minimum_hypotheses: 2
+  minimum_model_calls: 13
+  top_k: 2
+  top_k_stability_window: 3
+  cluster_diversity_window: 2
+  elo_plateau_window: 4
+  require_anchor_plateau: true
+  require_top_k_stability: true
+  require_cluster_diversity_plateau: true
+budget:
+  max_usd: null
+  max_model_calls: 60
+  max_input_tokens: null
+  max_output_tokens: null
+  max_hypotheses: 10
+  max_matches: 12
+providers:
+  llm: deepseek
+  literature: pubmed
+  deepseek_generation:
+    max_tokens: 32768
+    thinking: enabled
+    reasoning_effort: low
+    timeout_seconds: 300

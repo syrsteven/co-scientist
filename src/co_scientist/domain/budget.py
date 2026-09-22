@@ -1,6 +1,7 @@
 from decimal import Decimal
+from typing import Any, Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, SerializerFunctionWrapHandler, model_serializer
 
 
 class BudgetEstimate(BaseModel):
@@ -34,6 +35,7 @@ def add_budget_usage(left: BudgetEstimate, right: BudgetEstimate) -> BudgetUsage
 class BudgetPolicy(BaseModel):
     model_config = ConfigDict(frozen=True)
 
+    hypothesis_limit_policy: Literal["hard-stop-v1", "capacity-v2"] = "hard-stop-v1"
     max_usd: Decimal | None = Field(default=None, ge=0)
     max_model_calls: int | None = Field(default=None, ge=0)
     max_input_tokens: int | None = Field(default=None, ge=0)
@@ -41,16 +43,27 @@ class BudgetPolicy(BaseModel):
     max_hypotheses: int | None = Field(default=None, ge=0)
     max_matches: int | None = Field(default=None, ge=0)
 
+    @model_serializer(mode="wrap")
+    def serialize_policy(self, handler: SerializerFunctionWrapHandler) -> dict[str, Any]:
+        value = handler(self)
+        if self.hypothesis_limit_policy == "hard-stop-v1":
+            value.pop("hypothesis_limit_policy", None)
+        return value
+
     def reached(self, usage: BudgetEstimate) -> bool:
         checks = (
             (self.max_usd, usage.cost_usd),
             (self.max_model_calls, usage.model_calls),
             (self.max_input_tokens, usage.input_tokens),
             (self.max_output_tokens, usage.output_tokens),
-            (self.max_hypotheses, usage.hypotheses),
             (self.max_matches, usage.matches),
         )
-        return any(limit is not None and actual >= limit for limit, actual in checks)
+        candidate_stop = self.max_hypotheses is not None and (
+            usage.hypotheses >= self.max_hypotheses
+            if self.hypothesis_limit_policy == "hard-stop-v1"
+            else usage.hypotheses > self.max_hypotheses
+        )
+        return candidate_stop or any(limit is not None and actual >= limit for limit, actual in checks)
 
 
 class DurableBudgetSnapshot(BaseModel):

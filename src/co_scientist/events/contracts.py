@@ -12,6 +12,8 @@ EVENT_SCHEMA_VERSIONS: Mapping[str, frozenset[int]] = MappingProxyType(
         "NoveltyAssessmentRecorded": frozenset({1}),
         "ProximityAssessed": frozenset({2}),
         "MetaReviewCompleted": frozenset({2}),
+        "ResearchFeedbackRecorded": frozenset({1}),
+        "ScientistFeedbackRecorded": frozenset({1}),
         "HypothesisTournamentReady": frozenset({2}),
         "TournamentEntryCreated": frozenset({1}),
         "InitialRatingAssigned": frozenset({1}),

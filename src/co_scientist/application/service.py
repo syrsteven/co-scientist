@@ -18,10 +18,13 @@ from co_scientist.application.commands import (
     CreateRun,
     ExecuteRun,
     ExportRun,
+    RetryInvalidOutput,
     RunCommand,
     RunWorker,
+    SubmitScientistFeedback,
 )
 from co_scientist.application.config import resolve_run_config
+from co_scientist.application.output_retry import submit_output_retry
 from co_scientist.application.queries import CheckConfig, GetRunStatus, ReplayRun
 from co_scientist.domain.review import ReviewPolicy
 from co_scientist.domain.states import RunState
@@ -31,6 +34,7 @@ from co_scientist.export.run_export import SqliteRunReadModel, export_run
 from co_scientist.ports.event_store import ConcurrencyConflict
 from co_scientist.runtime.core_runner import CoreRunner
 from co_scientist.supervisor.orchestrator import Supervisor
+from co_scientist.supervisor.scientist_feedback import submit_scientist_feedback
 
 
 class CommandHandler(Protocol):
@@ -165,6 +169,8 @@ _EVENT_STATES: dict[str, RunState] = {
     "RunCompleted": RunState.COMPLETED,
     "RunCompletedPartial": RunState.COMPLETED_PARTIAL,
     "RunCancelled": RunState.CANCELLED,
+    "RunNeedsAttention": RunState.NEEDS_ATTENTION,
+    "RunFailed": RunState.FAILED,
 }
 
 
@@ -311,6 +317,12 @@ class _SupervisorCommandHandler:
             return self._create_run(command)
         if isinstance(command, RunCommand):
             return self._control_run(command)
+        if isinstance(command, RetryInvalidOutput):
+            return submit_output_retry(self._supervisor, self._runner.artifacts, command)
+        if isinstance(command, SubmitScientistFeedback):
+            return submit_scientist_feedback(self._supervisor, run_id=command.run_id,
+                feedback_id=command.feedback_id, expected_sequence=command.expected_run_sequence,
+                actor=command.actor, note=command.note, confirmed=command.confirmed)
         if isinstance(command, ExportRun):
             return self._export_run(command)
         raise TypeError(f"unsupported application command: {type(command).__name__}")

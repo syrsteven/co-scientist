@@ -6,6 +6,7 @@ from urllib.parse import quote
 
 import httpx
 
+from co_scientist.domain.ranking_output import ranking_output_spec
 from co_scientist.ports.external_provider import RawExternalResponse
 
 ENDPOINTS = {
@@ -46,8 +47,12 @@ def output_text(provider: str, envelope: dict[str, Any]) -> str:
 
 
 class NativeJSONProvider:
-    def __init__(self, client: httpx.AsyncClient, *, provider: str, api_key: str) -> None:
+    def __init__(
+        self, client: httpx.AsyncClient, *, provider: str, api_key: str,
+        generation: dict[str, Any] | None = None,
+    ) -> None:
         self.client, self.provider, self.api_key = client, provider, api_key
+        self.generation = dict(generation or {})
 
     async def invoke(self, request: dict[str, Any]) -> RawExternalResponse:
         system = (
@@ -70,6 +75,11 @@ class NativeJSONProvider:
             }
             if self.provider == "qwen":
                 body["enable_thinking"] = False
+            elif self.generation:
+                body["max_tokens"] = self.generation["max_tokens"]
+                body["thinking"] = {"type": self.generation["thinking"]}
+                if self.generation["thinking"] == "enabled":
+                    body["reasoning_effort"] = self.generation["reasoning_effort"]
         elif self.provider == "claude":
             headers = {"x-api-key": self.api_key, "anthropic-version": "2023-06-01"}
             body = {
@@ -89,6 +99,22 @@ class NativeJSONProvider:
                     "maxOutputTokens": 8192,
                 },
             }
+        output_contract = request.get("output_contract")
+        if output_contract is not None:
+            if (self.provider != "deepseek" or request.get("skill_id") != "ranking"
+                    or output_contract != ranking_output_spec(request.get("input", {}))):
+                raise ValueError("invalid strict Ranking wire contract")
+            url = output_contract["endpoint"]
+            body.pop("response_format", None)
+            body["messages"][0]["content"] = (
+                request["system_prompt"] + "\n" + output_contract["instructions"]
+            )
+            body["tools"] = [{"type": "function", "function": {
+                "name": output_contract["tool_name"], "strict": True,
+                "description": "Return this task's scientific comparison; no external action.",
+                "parameters": output_contract["parameters"],
+            }}]
+            body["tool_choice"] = output_contract["tool_choice"]
         response = await self.client.post(url, headers=headers, json=body)
         response.raise_for_status()
         # Extract accounting metadata only; scientific text is validated by SkillExecutor.

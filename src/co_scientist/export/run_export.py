@@ -88,6 +88,7 @@ _RUN_EVENT_STATES = {
     "RunStarted": "running",
     "RunPausing": "pausing",
     "RunPaused": "paused",
+    "RunNeedsAttention": "needs_attention",
     "RunResumed": "running",
     "RunStopping": "stopping",
     "RunCompleted": "completed",
@@ -191,6 +192,13 @@ class SqliteRunReadModel:
 
     def source_manifest(self, run_id: str) -> dict[str, Any]:
         return self._source_manifest(run_id)
+
+    def budget_snapshot(self, run_id: str) -> dict[str, Any]:
+        """Current ledger usage in the same read transaction as the cockpit."""
+        snapshot = (self.uow._load_budget_snapshot(self._snapshot_session, run_id)
+                    if self._snapshot_session is not None else self.uow.load_budget_snapshot(run_id))
+        return {"policy": self._source_manifest(run_id).get("budget", {}),
+                "usage": snapshot.total_usage.model_dump(mode="json")}
 
     def _anchor_ids(self, run_id: str) -> frozenset[str]:
         manifest = self._source_manifest(run_id)
@@ -448,6 +456,7 @@ class SqliteRunReadModel:
                 "TaskLeaseExpired",
                 "TaskLeaseExhausted",
                 "TaskRequeued",
+                "TaskOutputRetryRequested",
             }:
                 continue
             task_id = event.payload.get("task_id")
@@ -475,6 +484,15 @@ class SqliteRunReadModel:
                 "payload": _loads(row.payload_json),
                 "attempt": row.attempt,
                 "max_attempts": row.max_attempts,
+                "worker_id": row.lease_owner,
+                "heartbeat_at": (
+                    self.uow._stored_utc(row.heartbeat_at).isoformat()
+                    if row.heartbeat_at else None
+                ),
+                "lease_expires_at": (
+                    self.uow._stored_utc(row.lease_expires_at).isoformat()
+                    if row.lease_expires_at else None
+                ),
                 "lease_history": lease_events.get(row.task_id, []),
             }
             for row in rows
@@ -1075,6 +1093,123 @@ class CoreReleaseReport(BaseModel):
     raw_parsed_before_persist_count: int
 
 
+def _historical_retry_reservation_binding(
+    call: Mapping[str, Any],
+    reservation: Mapping[str, Any],
+    task: Mapping[str, Any] | None,
+    calls_by_id: Mapping[str, Mapping[str, Any]],
+    events: list[dict[str, Any]],
+) -> bool:
+    """Prove the exact request and ordered recovery/explicit-retry chain.
+
+    Paid invalid responses additionally require a scientist authorization bound to
+    the raw artifact and the next call's parent. No domain effects are exempted.
+    """
+    if task is None or call.get("state") not in {"failed_before_response", "validation_failed"} or any(
+        call.get(field) is not None for field in (
+            "validated_payload", "agent_result_id", "agent_result", "applied_domain_sequence",
+        )
+    ):
+        return False
+    current = calls_by_id.get(str(reservation.get("external_call_id")))
+    if current is None:
+        return False
+    context, current_context = call.get("execution_context"), current.get("execution_context")
+    if not isinstance(context, Mapping) or not isinstance(current_context, Mapping):
+        return False
+    first, last = call.get("attempt"), current.get("attempt")
+    maximum = task.get("max_attempts")
+    if not (type(first) is int and type(last) is int and type(maximum) is int
+            and 1 <= first < last <= maximum):
+        return False
+    for field in ("run_id", "task_id", "provider", "model_or_tool", "request_fingerprint"):
+        if not call.get(field) or call[field] != current.get(field):
+            return False
+    contract_fields = (
+        "run_id", "task_id", "idempotency_key", "reservation_id", "provider", "model_or_tool",
+        "input_snapshot_hash", "prompt_hash", "research_plan_version", "skill_id", "skill_version",
+        "output_schema_id", "output_schema_version",
+    )
+    if any(context.get(field) is None or context[field] != current_context.get(field)
+           for field in contract_fields):
+        return False
+    if (any(context[field] != call[field] for field in ("run_id", "task_id", "provider", "model_or_tool"))
+            or context["idempotency_key"] != reservation.get("idempotency_key")
+            or context["idempotency_key"] != task.get("idempotency_key")
+            or context["reservation_id"] != reservation.get("reservation_id")
+            or context.get("attempt") != first or current_context.get("attempt") != last):
+        return False
+    task_events = [e for e in events if e.get("run_id") == call["run_id"]
+                   and e["payload"].get("task_id") == call["task_id"]]
+
+    def unique(kind: str, field: str, attempt: int) -> dict[str, Any] | None:
+        matches = [e for e in task_events if e["event_type"] == kind
+                   and e["payload"].get(field) == attempt]
+        return matches[0] if len(matches) == 1 else None
+
+    for attempt in range(first, last):
+        claimed = unique("TaskLeaseClaimed", "attempt", attempt)
+        following = unique("TaskLeaseClaimed", "attempt", attempt + 1)
+        attempts = [c for c in calls_by_id.values() if c.get("task_id") == call["task_id"]
+                    and c.get("run_id") == call["run_id"] and c.get("attempt") == attempt]
+        if len(attempts) != 1 or claimed is None or following is None:
+            return False
+        previous = attempts[0]
+        previous_context = previous.get("execution_context")
+        if (not isinstance(previous_context, Mapping)
+                or previous.get("request_fingerprint") != call["request_fingerprint"]
+                or any(previous_context.get(field) != context[field] for field in contract_fields)
+                or any(previous.get(field) is not None for field in (
+                    "validated_payload", "agent_result_id", "agent_result", "applied_domain_sequence",
+                ))):
+            return False
+        if previous.get("state") == "failed_before_response":
+            if any(previous.get(field) is not None for field in ("raw_artifact_ref", "provider_response_id")) or previous.get("usage"):
+                return False
+            boundary = unique("TaskLeaseExpired", "attempt", attempt)
+            requeued = unique("TaskRequeued", "expired_attempt", attempt)
+        elif previous.get("state") == "validation_failed":
+            boundary = unique("TaskOutputRetryRequested", "failed_attempt", attempt)
+            requeued = unique("TaskRequeued", "failed_attempt", attempt)
+            successors = [c for c in calls_by_id.values() if c.get("task_id") == call["task_id"]
+                          and c.get("attempt") == attempt + 1]
+            if boundary is None or requeued is None or len(successors) != 1:
+                return False
+            auth = boundary["payload"]
+            raw = previous.get("raw_artifact_ref")
+            failures = [e for e in task_events if e["event_type"] == "ExternalCallAttemptFailed"
+                        and e["payload"].get("external_call_id") == previous["external_call_id"]]
+            if (not isinstance(raw, Mapping) or not _is_sha256(raw.get("sha256"))
+                    or auth.get("retry_policy_version") != "explicit-output-retry-v1"
+                    or auth.get("authorized_by") != "scientist"
+                    or auth.get("authorized_attempt") != attempt + 1
+                    or auth.get("external_call_id") != previous["external_call_id"]
+                    or auth.get("reservation_id") != reservation["reservation_id"]
+                    or auth.get("raw_artifact_ref") != raw
+                    or auth.get("request_fingerprint") != previous["request_fingerprint"]
+                    or successors[0].get("parent_call_id") != previous["external_call_id"]
+                    or requeued["payload"].get("external_call_id") != previous["external_call_id"]
+                    or requeued["payload"].get("reason") != "explicit_output_retry"
+                    or len(failures) != 1
+                    or not claimed["sequence"] < failures[0]["sequence"] < boundary["sequence"]):
+                return False
+        else:
+            return False
+        if boundary is None or requeued is None:
+            return False
+        fingerprint = claimed["payload"].get("lease_fence_fingerprint")
+        if (not _is_sha256(fingerprint)
+                or boundary["payload"].get("lease_fence_fingerprint") != fingerprint
+                or (attempt == first and context.get("lease_fence_fingerprint") != fingerprint)
+                or not claimed["sequence"] < boundary["sequence"] < requeued["sequence"] < following["sequence"]):
+            return False
+    return any(e["event_type"] in {"TaskLeaseClaimed", "TaskLeaseAdopted"}
+               and e["payload"].get("attempt") == last
+               and _is_sha256(e["payload"].get("lease_fence_fingerprint"))
+               and e["payload"]["lease_fence_fingerprint"] == current_context.get("lease_fence_fingerprint")
+               for e in task_events)
+
+
 def verify_core_release_invariants(
     run_id: str,
     read_model: RunReadModel,
@@ -1084,6 +1219,7 @@ def verify_core_release_invariants(
     events = read_model.events(run_id)
     tasks = read_model.tasks(run_id)
     calls = read_model.external_calls(run_id)
+    calls_by_id = {str(call["external_call_id"]): call for call in calls}
     reservations = read_model.budget_reservations(run_id)
     tasks_by_id = {str(task["task_id"]): task for task in tasks}
     reservations_by_id = {
@@ -1140,7 +1276,10 @@ def verify_core_release_invariants(
             reservation is None
             or reservation.get("run_id") != run_id
             or reservation.get("task_id") != call.get("task_id")
-            or reservation.get("external_call_id") != call.get("external_call_id")
+            or (reservation.get("external_call_id") != call.get("external_call_id")
+                and not _historical_retry_reservation_binding(
+                    call, reservation, task, calls_by_id, events,
+                ))
         ):
             calls_without_reservation += 1
 

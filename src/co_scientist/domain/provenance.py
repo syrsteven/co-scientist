@@ -14,6 +14,8 @@ class SourceDocument(BaseModel):
     publication_date: str | None = None
     retrieval_query: str
     raw_artifact_ref: str
+    abstract: str | None = None
+    content_level: Literal["metadata", "abstract"] = "metadata"
 
 
 class EvidenceItem(BaseModel):

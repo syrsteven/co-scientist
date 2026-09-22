@@ -6,7 +6,7 @@ import hashlib
 from collections.abc import Mapping
 from pathlib import Path
 from types import SimpleNamespace
-from typing import Any
+from typing import TYPE_CHECKING, Any
 from uuid import uuid4
 
 import httpx
@@ -25,7 +25,6 @@ from co_scientist.adapters.persistence.migrations import (
     upgrade_database,
 )
 from co_scientist.adapters.persistence.sqlite import SqliteUnitOfWork
-from co_scientist.application.config import ResolvedRunConfig
 from co_scientist.domain.identifiers import validate_run_id
 from co_scientist.domain.review import ReviewPolicy
 from co_scientist.domain.states import RunState
@@ -34,6 +33,9 @@ from co_scientist.runtime.registry import ProviderRegistry, SkillRegistry
 from co_scientist.runtime.worker import Worker
 from co_scientist.skills.loader import CORE_SKILL_CONTRACTS, core_skill_directory
 from co_scientist.supervisor.orchestrator import Supervisor
+
+if TYPE_CHECKING:
+    from co_scientist.application.config import ResolvedRunConfig
 
 
 class RunExecutionResult(BaseModel):
@@ -156,8 +158,19 @@ class CoreRunner:
             api_key = self.environment.get(key_name)
             if not api_key:
                 raise ValueError(f"{key_name} is required to resume this Run")
-            self._native_client = httpx.AsyncClient(timeout=180.0)
-            provider = NativeJSONProvider(self._native_client, provider=provider_id, api_key=api_key)
+            generation = None
+            if provider_id == "deepseek" and configured.get("generation") is not None:
+                from co_scientist.application.config import DeepSeekGenerationProfile
+
+                generation = DeepSeekGenerationProfile.model_validate(
+                    configured["generation"]
+                ).model_dump()
+            timeout = generation["timeout_seconds"] if generation else 180.0
+            self._native_client = httpx.AsyncClient(timeout=timeout)
+            provider = NativeJSONProvider(
+                self._native_client, provider=provider_id, api_key=api_key,
+                generation=generation,
+            )
         else:
             raise ValueError(f"unsupported persisted provider: {provider_id}")
         self._build_worker(ProviderRegistry({provider_id: provider, **self.literature_bridges}))
@@ -185,7 +198,7 @@ class CoreRunner:
             (
                 str(event.payload["reason"])
                 for event in reversed(events)
-                if event.event_type in {"RunStopping", "RunCancelled", "RunFailed"}
+                if event.event_type in {"RunStopping", "RunCancelled", "RunFailed", "RunNeedsAttention"}
                 and event.payload.get("reason") is not None
             ),
             None,
@@ -252,6 +265,8 @@ class CoreRunner:
             self._compose(manifest)
         assert self.worker is not None
         for _ in range(10_000):
+            if self.supervisor.pause_on_invalid_output(run_id=run_id) is not None:
+                return self._result(run_id)
             state = RunState(self.uow.run_state(run_id))
             if state in {
                 RunState.COMPLETED,
@@ -262,7 +277,12 @@ class CoreRunner:
                 return self._result(run_id)
             if state in {RunState.PAUSED, RunState.PAUSING, RunState.NEEDS_ATTENTION}:
                 return self._result(run_id)
-            step = await self.worker.run_once(run_id)
+            try:
+                step = await self.worker.run_once(run_id)
+            except Exception:
+                if self.supervisor.pause_on_invalid_output(run_id=run_id) is not None:
+                    return self._result(run_id)
+                raise
             if step.status in {"completed", "requeued"}:
                 continue
             if step.status in {"paused", "terminal", "exhausted"}:

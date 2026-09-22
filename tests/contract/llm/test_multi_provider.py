@@ -61,3 +61,35 @@ def test_provider_profile_resolution(provider):
 def test_truncated_output_rejected(provider):
     with pytest.raises(ValueError, match="finish"):
         output_text(provider, {"choices": [{"finish_reason": "length", "message": {"content": "{}"}}]})
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("thinking", ["enabled", "disabled"])
+async def test_deepseek_frozen_generation_controls_reach_wire(thinking):
+    from co_scientist.application.config import DeepSeekGenerationProfile
+
+    settings = DeepSeekGenerationProfile(thinking=thinking).model_dump()
+
+    def handle(request):
+        body = json.loads(request.content)
+        assert body["max_tokens"] == 32768
+        assert body["thinking"] == {"type": thinking}
+        assert body.get("reasoning_effort") == ("low" if thinking == "enabled" else None)
+        return httpx.Response(200, json={"id": "r1", "usage": {}})
+
+    async with httpx.AsyncClient(transport=httpx.MockTransport(handle)) as client:
+        await NativeJSONProvider(client, provider="deepseek", api_key="secret",
+                                 generation=settings).invoke(
+            {"model": "test", "system_prompt": "science", "user_prompt": "goal",
+             "json_schema": {"type": "object"}})
+
+
+def test_deepseek_settings_are_frozen_in_manifest():
+    config = resolve_run_config(
+        goal_file=Path("examples/lens_regeneration_goal.yaml"),
+        profile_file=Path("configs/profiles/core_preview_deepseek.yaml"),
+        provider="deepseek",
+        environment={"DEEPSEEK_API_KEY": "secret", "CO_SCIENTIST_DEEPSEEK_MODEL": "test"})
+    assert config.manifest["provider_configuration"]["generation"]["max_tokens"] == 32768
+    with pytest.raises(TypeError):
+        config.manifest["provider_configuration"]["generation"]["max_tokens"] = 1

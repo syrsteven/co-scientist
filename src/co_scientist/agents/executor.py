@@ -5,13 +5,14 @@ from collections.abc import Callable, Mapping
 from pathlib import Path
 from typing import Any, Literal, cast
 
-from co_scientist.adapters.literature.pubmed import parse_pubmed_records
+from co_scientist.adapters.literature.pubmed import parse_pubmed_abstracts, parse_pubmed_records
 from co_scientist.agents.payloads import (
     CoreScientificResultV1,
     MetaReviewResultV1,
     resolve_output_schema,
 )
 from co_scientist.agents.result import AgentExecutionContext, AgentResult
+from co_scientist.domain.ranking_output import decode_strict_ranking, ranking_output_spec
 from co_scientist.domain.task import TaskLeaseFence
 from co_scientist.ports.external_provider import ExternalProvider
 from co_scientist.runtime.external_calls import ExternalCallRunner, prompt_hash
@@ -74,7 +75,7 @@ def build_skill_request(
         "allowed_tools": list(manifest.allowed_tools),
         "input": inputs,
     }
-    return {
+    request: dict[str, Any] = {
         "model": model,
         "system_prompt": system_prompt,
         "user_prompt": json.dumps(
@@ -92,6 +93,11 @@ def build_skill_request(
         "allowed_tools": list(manifest.allowed_tools),
         "input": inputs,
     }
+    if inputs.get("ranking_output_contract") is not None:
+        if manifest.id != "ranking":
+            raise ValueError("strict Ranking output contract used by a different skill")
+        request["output_contract"] = ranking_output_spec(inputs)
+    return request
 
 
 class SkillExecutor:
@@ -140,14 +146,21 @@ class SkillExecutor:
 
         def validate_payload(raw: bytes) -> Mapping[str, Any]:
             validation_body = raw
-            if context.provider == "openai":
+            decoded: Mapping[str, Any]
+            strict_output = inputs.get("ranking_output_contract") is not None
+            if strict_output and context.provider != "deepseek":
+                raise ValueError("strict Ranking requires the DeepSeek provider")
+            if strict_output:
+                decoded = decode_strict_ranking(raw, inputs)
+            elif context.provider == "openai":
                 envelope = _decode_payload(raw)
                 validation_body = _openai_output_text(envelope).encode("utf-8")
             elif context.provider in {"deepseek", "qwen", "gemini", "claude"}:
                 from co_scientist.adapters.llm.multi_provider import output_text
 
                 validation_body = output_text(context.provider, dict(_decode_payload(raw))).encode("utf-8")
-            decoded = _decode_payload(validation_body)
+            if not strict_output:
+                decoded = _decode_payload(validation_body)
             validated = output_schema.model_validate(decoded)
             if (
                 getattr(validated, "research_plan_version", None)
@@ -200,11 +213,17 @@ class LiteratureToolExecutor:
         request: dict[str, Any] = {"query": query}
         if operation == "search":
             request["limit"] = int(inputs.get("limit", 10))
+            if inputs.get("sort") is not None:
+                request["sort"] = inputs["sort"]
         else:
             pmids = inputs.get("pmids")
             if not isinstance(pmids, list) or not pmids:
                 raise ValueError("literature summary task requires PMIDs")
             request["pmids"] = [str(pmid) for pmid in pmids]
+            if inputs.get("content_mode") == "abstracts":
+                if context.model_or_tool != "efetch":
+                    raise ValueError("abstract retrieval requires efetch task identity")
+                request["content_mode"] = "abstracts"
 
         def validate_payload(raw: bytes) -> Mapping[str, Any]:
             if operation == "search":
@@ -221,7 +240,8 @@ class LiteratureToolExecutor:
                 overview = {"operation": "search", "query": query, "pmids": pmids}
                 feedback = "PubMed search raw response persisted before PMID parsing."
             else:
-                documents = parse_pubmed_records(
+                parser = parse_pubmed_abstracts if request.get("content_mode") == "abstracts" else parse_pubmed_records
+                documents = parser(
                     raw,
                     query=query,
                     raw_artifact_ref=f"external-call:{call_id}",
@@ -233,7 +253,7 @@ class LiteratureToolExecutor:
                         document.model_dump(mode="json") for document in documents
                     ],
                 }
-                feedback = "PubMed summary raw response persisted before source parsing."
+                feedback = "PubMed source raw response persisted before source parsing."
             payload = {
                 "schema_version": 1,
                 "research_plan_version": context.research_plan_version,
