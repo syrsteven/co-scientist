@@ -1,0 +1,7 @@
+include README.md requirements.lock release-source-provenance.json deployment-changes.diff .env.example .gitignore
+recursive-include docs *.md *.json
+recursive-include examples *.yaml
+recursive-include tests *.py
+recursive-include scripts *.py
+recursive-include src/co_scientist/release/resources *.yaml *.json *.txt
+global-exclude __pycache__ *.py[cod]

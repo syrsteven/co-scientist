@@ -1,0 +1,18 @@
+{
+  "title": "Retinal pigment epithelium response to mitochondrial stress",
+  "goal": "Explain why retinal pigment epithelial cells diverge toward recovery or persistent inflammatory degeneration after mitochondrial stress.",
+  "required_causal_chain": [
+    "early mitochondrial perturbation",
+    "cell-state response",
+    "long-term recovery or inflammatory degeneration"
+  ],
+  "required_outputs": [
+    "mechanistic competing hypotheses",
+    "discriminating perturbation and rescue tests",
+    "Distinguish early DNA versus RNA innate sensing as a causal determinant of recovery.",
+    "early causal determinant",
+    "mechanistically explicit",
+    "testable with perturbation and rescue",
+    "distinguish competing pathways"
+  ]
+}

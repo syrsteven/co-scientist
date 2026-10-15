@@ -20,3 +20,6 @@ dist/
 /findings.md
 /progress.md
 /task_plan.md
+runs/
+mock-runs/
+tokenizer-assets/

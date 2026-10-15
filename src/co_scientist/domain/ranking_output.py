@@ -4,19 +4,71 @@ import json
 from collections.abc import Mapping
 from typing import Any
 
+from co_scientist.adapters.llm.output_errors import DomainValidationError
 from co_scientist.ports.external_provider import thaw_json
 
 STRICT_RANKING_VERSION = "deepseek-strict-tool-v1"
 FLAT_RANKING_VERSION = "deepseek-strict-tool-v2"
+EVIDENCE_RANKING_VERSION = "deepseek-strict-tool-v3"
+BOUND_RANKING_VERSION = "deepseek-strict-tool-v4"
+JSON_RANKING_VERSION = "deepseek-result-json-v5"
 STRICT_RANKING_URL = "https://api.deepseek.com/beta/chat/completions"
 IDENTITY_FIELDS = (
-    "research_plan_version", "match_id", "epoch_id", "left_id", "left_content_hash",
-    "right_id", "right_content_hash", "evaluation_rules_hash", "ranking_prompt_hash",
-    "judge_profile_hash", "rating_policy_version", "admission_policy_version",
+    "research_plan_version",
+    "match_id",
+    "epoch_id",
+    "left_id",
+    "left_content_hash",
+    "right_id",
+    "right_content_hash",
+    "evaluation_rules_hash",
+    "ranking_prompt_hash",
+    "judge_profile_hash",
+    "rating_policy_version",
+    "admission_policy_version",
 )
 
 
 def strict_ranking_contract(version: str = STRICT_RANKING_VERSION) -> dict[str, Any]:
+    if version == JSON_RANKING_VERSION:
+        base = strict_ranking_contract(BOUND_RANKING_VERSION)
+        return {
+            **base,
+            "version": version,
+            "tool_name": None,
+            "instructions": "Return one JSON object with the declared ranking fields. "
+            "This is a pure result, not an action or tool call. Preserve every task "
+            "identity, scientific rubric, decision, confidence, and unresolved "
+            "disagreement. Local validation is authoritative; do not update ratings.",
+        }
+    if version == BOUND_RANKING_VERSION:
+        base = strict_ranking_contract(EVIDENCE_RANKING_VERSION)
+        return {
+            **base,
+            "version": version,
+            "tool_name": "submit_ranking_result_v4",
+            "instructions": base["instructions"].replace(
+                "submit_ranking_result_v3", "submit_ranking_result_v4"
+            )
+            + " The function arguments MUST NOT contain schema_version. The local "
+            "codec supplies canonical result schema_version=1 after validating "
+            "every tool argument. The v4 function name is the transport version, "
+            "not the scientific result schema version. Call only this function; "
+            "leave message.content empty. Only function arguments are used as "
+            "the scientific result.",
+        }
+    if version == EVIDENCE_RANKING_VERSION:
+        base = strict_ranking_contract(FLAT_RANKING_VERSION)
+        return {
+            **base,
+            "version": version,
+            "tool_name": "submit_ranking_result_v3",
+            "instructions": base["instructions"].replace(
+                "submit_ranking_result_v2", "submit_ranking_result_v3"
+            )
+            + " Copy the frozen evidence_context_hash exactly; it binds this comparison "
+            "to the current reviewed evidence snapshot.",
+        }
     contract = {
         "version": STRICT_RANKING_VERSION,
         "provider": "deepseek",
@@ -40,11 +92,21 @@ def strict_ranking_contract(version: str = STRICT_RANKING_VERSION) -> dict[str, 
         return contract
     if version != FLAT_RANKING_VERSION:
         raise ValueError("unsupported Ranking output version")
-    return {**contract, "version": version, "tool_name": "submit_ranking_result_v2",
-        "reason_fields": {key: f"reason_{key}" for key in (
-            "goal_alignment", "causal_specificity", "evidence_grounding",
-            "literature_novelty", "discriminating_tests", "robustness_and_safety",
-        )},
+    return {
+        **contract,
+        "version": version,
+        "tool_name": "submit_ranking_result_v2",
+        "reason_fields": {
+            key: f"reason_{key}"
+            for key in (
+                "goal_alignment",
+                "causal_specificity",
+                "evidence_grounding",
+                "literature_novelty",
+                "discriminating_tests",
+                "robustness_and_safety",
+            )
+        },
         "instructions": (
             "For this Ranking task call submit_ranking_result_v2 exactly once. This is a "
             "flat output transport, not plain message.content JSON. Preserve every task "
@@ -67,14 +129,28 @@ def ranking_output_spec(inputs: Mapping[str, Any]) -> dict[str, Any] | None:
     contract = thaw_json(inputs.get("ranking_output_contract"))
     if contract is None:
         return None
-    if not isinstance(contract, dict) or contract != strict_ranking_contract(contract.get("version", "")):
+    if not isinstance(contract, dict) or contract != strict_ranking_contract(
+        contract.get("version", "")
+    ):
         raise ValueError("unsupported or altered Ranking output contract")
     rubric = inputs.get("evaluation_rubric")
     dimensions = rubric.get("dimensions") if isinstance(rubric, Mapping) else None
     if not isinstance(dimensions, Mapping) or not dimensions:
         raise ValueError("strict Ranking requires rubric dimensions")
-    properties: dict[str, Any] = {"schema_version": {"type": "integer", "enum": [1]}}
-    for field in IDENTITY_FIELDS:
+    properties: dict[str, Any] = (
+        {}
+        if contract["version"] == BOUND_RANKING_VERSION
+        else {"schema_version": {"type": "integer", "enum": [1]}}
+    )
+    identity_fields = (
+        (*IDENTITY_FIELDS, "evidence_context_hash")
+        if (
+            contract["version"]
+            in {EVIDENCE_RANKING_VERSION, BOUND_RANKING_VERSION, JSON_RANKING_VERSION}
+        )
+        else IDENTITY_FIELDS
+    )
+    for field in identity_fields:
         value = inputs.get(field)
         kind = "integer" if field == "research_plan_version" else "string"
         if (kind == "integer" and (type(value) is not int or value < 1)) or (
@@ -83,27 +159,47 @@ def ranking_output_spec(inputs: Mapping[str, Any]) -> dict[str, Any] | None:
             raise ValueError(f"strict Ranking requires binding {field}")
         properties[field] = {"type": kind, "enum": [value]}
     text = {"type": "string", "pattern": r"\S"}
-    properties.update({
-        "decision_status": {"type": "string", "enum": [
-            "decisive", "inconclusive", "invalid", "needs_tiebreaker",
-        ]},
-        "winner_slot": {"type": "integer", "enum": [0, 1, 2]},
-        "dimension_reasons": {
-            "type": "object", "properties": {key: dict(text) for key in dimensions},
-            "required": list(dimensions), "additionalProperties": False,
-        },
-        "confidence": {"type": "number", "minimum": 0, "maximum": 1},
-        "unresolved_disagreements": {"type": "array", "items": text},
-    })
-    if contract["version"] == FLAT_RANKING_VERSION:
+    properties.update(
+        {
+            "decision_status": {
+                "type": "string",
+                "enum": [
+                    "decisive",
+                    "inconclusive",
+                    "invalid",
+                    "needs_tiebreaker",
+                ],
+            },
+            "winner_slot": {"type": "integer", "enum": [0, 1, 2]},
+            "dimension_reasons": {
+                "type": "object",
+                "properties": {key: dict(text) for key in dimensions},
+                "required": list(dimensions),
+                "additionalProperties": False,
+            },
+            "confidence": {"type": "number", "minimum": 0, "maximum": 1},
+            "unresolved_disagreements": {"type": "array", "items": text},
+        }
+    )
+    if contract["version"] in {
+        FLAT_RANKING_VERSION,
+        EVIDENCE_RANKING_VERSION,
+        BOUND_RANKING_VERSION,
+        JSON_RANKING_VERSION,
+    }:
         if set(dimensions) != set(contract["reason_fields"]):
             raise ValueError("flat Ranking requires the frozen six-dimension rubric")
         properties.pop("dimension_reasons")
         properties.update({field: dict(text) for field in contract["reason_fields"].values()})
-    return {**contract, "parameters": {
-        "type": "object", "properties": properties, "required": list(properties),
-        "additionalProperties": False,
-    }}
+    return {
+        **contract,
+        "parameters": {
+            "type": "object",
+            "properties": properties,
+            "required": list(properties),
+            "additionalProperties": False,
+        },
+    }
 
 
 def _object(pairs: list[tuple[str, Any]]) -> dict[str, Any]:
@@ -132,7 +228,14 @@ def decode_strict_ranking(raw: bytes, inputs: Mapping[str, Any]) -> dict[str, An
     if not isinstance(choice, dict) or choice.get("finish_reason") != "tool_calls":
         raise ValueError("strict Ranking requires tool_calls finish; no text fallback")
     message = choice.get("message", {})
-    if not isinstance(message, dict) or message.get("content") not in (None, ""):
+    if not isinstance(message, dict):
+        raise TypeError("strict Ranking requires a message object")
+    content = message.get("content")
+    if spec["version"] == BOUND_RANKING_VERSION:
+        # Persisted as raw, but never read into the scientific result.
+        if content is not None and (not isinstance(content, str) or len(content) > 8192):
+            raise ValueError("strict Ranking auxiliary text is invalid or oversized")
+    elif content not in (None, ""):
         raise ValueError("strict Ranking rejects mixed text and tool output")
     calls = message.get("tool_calls")
     if not isinstance(calls, list) or len(calls) != 1:
@@ -147,21 +250,49 @@ def decode_strict_ranking(raw: bytes, inputs: Mapping[str, Any]) -> dict[str, An
     if not isinstance(arguments, str):
         raise TypeError("strict Ranking tool arguments must be a JSON string")
     value = json.loads(arguments, object_pairs_hook=_object, parse_constant=_constant)
+    return _validate_ranking_value(value, spec)
+
+
+def decode_provider_ranking(normalized: Any, inputs: Mapping[str, Any]) -> dict[str, Any]:
+    """Validate provider-normalized pure JSON without converting it to a fake tool call."""
+    spec = ranking_output_spec(inputs)
+    if spec is None or spec["version"] != JSON_RANKING_VERSION:
+        raise ValueError("provider JSON Ranking requires its frozen v5 contract")
+    value = getattr(normalized, "payload", None)
+    if not isinstance(value, Mapping):
+        raise DomainValidationError("Ranking provider result must be a JSON object")
+    return _validate_ranking_value(dict(value), spec)
+
+
+def _validate_ranking_value(value: Any, spec: Mapping[str, Any]) -> dict[str, Any]:
     fields = spec["parameters"]["properties"]
     if not isinstance(value, dict) or set(value) != set(fields):
-        raise ValueError("strict Ranking arguments have missing or extra fields")
-    for field in ("schema_version", *IDENTITY_FIELDS):
+        raise ValueError("Ranking result has missing or extra fields")
+    binding_fields = list(IDENTITY_FIELDS)
+    if spec["version"] != BOUND_RANKING_VERSION:
+        binding_fields.insert(0, "schema_version")
+    if spec["version"] in {EVIDENCE_RANKING_VERSION, BOUND_RANKING_VERSION, JSON_RANKING_VERSION}:
+        binding_fields.append("evidence_context_hash")
+    for field in binding_fields:
         expected = fields[field]["enum"][0]
         if type(value[field]) is not type(expected) or value[field] != expected:
             raise ValueError(f"strict Ranking binding mismatch: {field}")
-    if spec["version"] == FLAT_RANKING_VERSION:
+    if spec["version"] in {
+        FLAT_RANKING_VERSION,
+        EVIDENCE_RANKING_VERSION,
+        BOUND_RANKING_VERSION,
+        JSON_RANKING_VERSION,
+    }:
         reasons = {key: value[field] for key, field in spec["reason_fields"].items()}
         expected_dimensions = spec["reason_fields"]
     else:
         reasons = value["dimension_reasons"]
         expected_dimensions = fields["dimension_reasons"]["properties"]
-    if (not isinstance(reasons, dict) or set(reasons) != set(expected_dimensions)
-            or any(not isinstance(v, str) or not v.strip() for v in reasons.values())):
+    if (
+        not isinstance(reasons, dict)
+        or set(reasons) != set(expected_dimensions)
+        or any(not isinstance(v, str) or not v.strip() for v in reasons.values())
+    ):
         raise ValueError("strict Ranking requires exactly the rubric dimension reasons")
     slot = value["winner_slot"]
     if type(slot) is not int or slot not in (0, 1, 2):
@@ -175,6 +306,18 @@ def decode_strict_ranking(raw: bytes, inputs: Mapping[str, Any]) -> dict[str, An
     ):
         raise ValueError("strict Ranking disagreements must be an array of nonblank strings")
     # The registered canonical schema still validates decisions and winner consistency.
-    if spec["version"] == FLAT_RANKING_VERSION:
-        value = {key: item for key, item in value.items() if key not in spec["reason_fields"].values()}
-    return {**value, "dimension_reasons": reasons, "winner_slot": None if slot == 0 else slot}
+    if spec["version"] in {
+        FLAT_RANKING_VERSION,
+        EVIDENCE_RANKING_VERSION,
+        BOUND_RANKING_VERSION,
+        JSON_RANKING_VERSION,
+    }:
+        value = {
+            key: item for key, item in value.items() if key not in spec["reason_fields"].values()
+        }
+    return {
+        **value,
+        **({"schema_version": 1} if spec["version"] == BOUND_RANKING_VERSION else {}),
+        "dimension_reasons": reasons,
+        "winner_slot": None if slot == 0 else slot,
+    }

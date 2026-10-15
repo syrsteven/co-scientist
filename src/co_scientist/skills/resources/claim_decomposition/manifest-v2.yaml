@@ -1,0 +1,8 @@
+id: claim_decomposition
+agent_type: claim_decomposition
+version: 0.2.0
+prompt_path: prompts/system-v2.md
+input_schema: ClaimDecompositionInputV2
+output_schema: ClaimDecompositionResultV2
+allowed_tools: []
+allowed_capabilities: [return_agent_result]

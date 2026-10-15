@@ -72,6 +72,7 @@ def snapshot(database: Path, run_id: str) -> dict[str, Any]:
                     name: getattr(model, name)(run_id)
                     for name in (
                         "events", "hypotheses", "hypothesis_projections", "reviews",
+                        "population_evolution",
                         "novelty_assessments", "proximity", "matches", "ratings", "tasks",
                         "budget_reservations", "convergence_checkpoints", "stop_decisions",
                         "external_calls", "costs", "literature",

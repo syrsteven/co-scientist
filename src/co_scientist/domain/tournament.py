@@ -2,7 +2,13 @@ from collections.abc import Mapping
 from enum import StrEnum
 from types import MappingProxyType
 
-from pydantic import BaseModel, ConfigDict, model_validator
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    SerializerFunctionWrapHandler,
+    model_serializer,
+    model_validator,
+)
 
 from co_scientist.domain.elo import update_pair
 
@@ -12,6 +18,7 @@ class MatchDecision(StrEnum):
     INCONCLUSIVE = "inconclusive"
     INVALID = "invalid"
     NEEDS_TIEBREAKER = "needs_tiebreaker"
+    NEEDS_MORE_EVIDENCE = "needs_more_evidence"
 
 
 class RatingPolicy(BaseModel):
@@ -55,6 +62,14 @@ class TournamentEpoch(BaseModel):
     rating_policy_version: str
     admission_policy_version: str
     anchor_set_id: str | None = None
+    rating_policy_config: dict[str, object] | None = None
+
+    @model_serializer(mode="wrap")
+    def serialize_epoch(self, handler: SerializerFunctionWrapHandler) -> dict[str, object]:
+        document = handler(self)
+        if self.rating_policy_config is None:
+            document.pop("rating_policy_config", None)
+        return document
 
 
 class TournamentEntry(BaseModel):

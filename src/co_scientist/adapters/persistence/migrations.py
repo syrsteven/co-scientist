@@ -52,8 +52,9 @@ def database_at_head(database_url: str) -> bool:
 
 def execution_contract_diagnostic(run_id: str, manifest: dict[str, Any]) -> str | None:
     version = manifest.get("execution_contract_version")
-    if isinstance(version, int) and not isinstance(version, bool) and version == 3:
+    if isinstance(version, int) and not isinstance(version, bool) and version in {3, 4}:
         return None
+    # Preserve the pre-contract diagnostic for existing automation and records.
     return f"run {run_id} cannot execute: execution_contract_version 3 is required"
 
 

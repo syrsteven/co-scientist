@@ -1,0 +1,8 @@
+id: directive_ethics
+agent_type: directive_ethics
+version: 0.1.0
+prompt_path: prompts/system.md
+input_schema: DirectiveEthicsInputV1
+output_schema: DirectiveEthicsResultV1
+allowed_tools: []
+allowed_capabilities: [return_agent_result]

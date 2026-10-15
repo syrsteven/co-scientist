@@ -1,0 +1,8 @@
+id: ranking
+agent_type: ranking
+version: 0.3.0
+prompt_path: prompts/system-baseline-v1.md
+input_schema: BaselineRankingInputV1
+output_schema: BaselineRankingResultV1
+allowed_tools: []
+allowed_capabilities: [return_agent_result]

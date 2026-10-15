@@ -3,12 +3,79 @@
 from collections.abc import Mapping, Sequence
 from typing import Any
 
+from pydantic import ValidationError
+
+from co_scientist.domain.claim_verification import ClaimVerificationAppliedEventV2
 from co_scientist.domain.hypothesis import HypothesisContent
+from co_scientist.domain.ideation_core_boundary import baseline_enabled, boundary_contract
 from co_scientist.domain.ranking_output import strict_ranking_contract
 from co_scientist.domain.research_feedback import feedback_enabled, latest_research_feedback
 from co_scientist.domain.research_protocol import protocol_hash
 from co_scientist.events.models import DomainEvent, NewEvent
 from co_scientist.ports.external_provider import thaw_json
+from co_scientist.runtime.lineage_workflow_contract import validate_lineage_workflow_contract
+
+
+def baseline_critique_context(events: Sequence[DomainEvent | NewEvent], *,
+                              hypothesis_id: str, content_hash: str) -> list[dict[str, Any]]:
+    """Keep all same-stage critiques in durable order, never last-write-wins.
+
+    This is an input projection, not an admission verdict. Lineage, claims and
+    optional audit envelopes cannot contribute feedback through this reader.
+    """
+    values = []
+    identities = set()
+    for index, event in enumerate(events):
+        payload = event.payload
+        if payload.get("optional_audit") is True:
+            continue
+        if event.event_type == "BaselineReflectionRecordedV1":
+            binding = payload["binding"]
+            if (binding["hypothesis_id"], binding["content_hash"]) != (hypothesis_id, content_hash):
+                continue
+            source = str(payload["source_result_id"])
+            review_id = source
+            critiques = payload["result"]["critiques"]
+            stage = "baseline_reflection"
+        elif event.event_type == "ReviewCompleted":
+            if (payload.get("hypothesis_id"), payload.get("content_hash")) != (hypothesis_id, content_hash):
+                continue
+            source = str(payload.get("source_result_id") or event.causation_id or "")
+            review_id = str(payload.get("review_id") or "")
+            critiques = payload.get("critical_flaws", ())
+            stage = str(payload["stage"])
+        else:
+            continue
+        if not source or not review_id:
+            raise ValueError("critique missing durable result/review identity")
+        if review_id in identities:
+            raise ValueError("duplicate content-bound review identity")
+        identities.add(review_id)
+        for ordinal, critique in enumerate(critiques):
+            if not isinstance(critique, str) or not critique.strip():
+                raise ValueError("empty scientific critique")
+            values.append({"review_id": review_id, "source_result_id": source,
+                "stage": stage, "critique": critique, "ordinal": ordinal,
+                "event_order": getattr(event, "sequence", index + 1),
+                "hypothesis_id": hypothesis_id, "content_hash": content_hash})
+    return values
+
+
+def _baseline_input_view(inputs: dict[str, Any]) -> dict[str, Any]:
+    """Explicit core-input projection; audit envelopes never become model facts.
+
+    Batch 2/3 must add their frozen input contracts explicitly. No arbitrary
+    caller-owned review_context/scientific_protocol/audit data is forwarded.
+    """
+    keys = {
+        "goal_title", "research_goal", "required_causal_chain", "required_outputs",
+        "research_plan_version", "hypothesis_id", "content_hash", "stage",
+        "left_id", "right_id", "left_content_hash", "right_content_hash",
+        "source_content_hashes", "source_content_ids", "epoch_id",
+        "evaluation_rules_hash", "ranking_prompt_hash", "judge_profile_hash",
+        "rating_policy_version", "admission_policy_version", "match_id",
+    }
+    return {key: value for key, value in inputs.items() if key in keys}
 
 
 def research_inputs(
@@ -18,6 +85,11 @@ def research_inputs(
     """Read the frozen bundle, not today's prompt definition, on resume."""
 
     profile = manifest["profile"]
+    baseline = baseline_enabled(manifest)
+    if baseline:
+        inputs = _baseline_input_view(inputs)
+    if profile.get("lineage_workflow_contract") is not None:
+        validate_lineage_workflow_contract(manifest)
     protocol = thaw_json(manifest.get("research_protocol"))
     if (profile.get("scientific_context") is not True or not isinstance(protocol, dict)
             or protocol.get("version") != profile.get("research_protocol_version")
@@ -92,16 +164,40 @@ def research_inputs(
             "role_instructions": protocol["roles"][skill_id],
         },
     }
+    if baseline:
+        result["core_boundary"] = boundary_contract()
+        if skill_id == "reflection":
+            result["scientific_protocol"]["role_instructions"] = (
+                "Review the requested scientific stage; assess plausibility, prior research, "
+                "testability, originality and unjustified complexity. Preserve criticism as "
+                "scientific feedback. Do not claim unperformed observations or simulations. "
+                "Cite only supplied, authoritative source identities."
+            )
+        result["scientific_protocol"]["role_instructions"] += (
+            " Baseline boundary: scientific Reflection criticism, rejection recommendations "
+            "and critical flaws are feedback, not independent eligibility rejection. "
+            "Candidate Ethics requires a separate authoritative decision. Optional claim "
+            "verification, claim lineage and semantic Proximity are not core prerequisites."
+        )
     feedback = latest_research_feedback(manifest, events)
     if skill_id == "ranking" and output_contract is not None:
         result["ranking_output_contract"] = output_contract
-    if feedback is not None:
+    if skill_id in {"claim_decomposition", "claim_search_plan"} and profile.get(
+        "claim_output_protocol") is not None:
+        if manifest["providers"]["llm"] != "deepseek":
+            raise ValueError("frozen claim output protocol requires DeepSeek")
+        result["claim_output_protocol"] = profile["claim_output_protocol"]
+    if feedback is not None and not baseline:
         result["research_feedback"] = feedback
         result["feedback_use_instruction"] = manifest["feedback_contract"]["context_instruction"]
-    if skill_id not in {"ranking", "evolution", "meta_review"}:
+    if skill_id not in {"ranking", "evolution", "population_evolution", "meta_review"}:
         return result
     sources = {}
     for event in events:
+        if baseline:
+            # No Batch 2 grounding representation exists yet. Audit artifacts
+            # cannot masquerade as the missing authoritative grounding bundle.
+            continue
         for source in event.payload.get("source_documents", []):
             sources[source["source_id"]] = thaw_json(source)
     anchors = {member["anchor_id"]: member for group in manifest.get("anchor_sets", [])
@@ -122,7 +218,7 @@ def research_inputs(
                 # Prior numeric scores are not independent votes for the pairwise judge.
                 reviews[payload["stage"]] = {k: thaw_json(v) for k, v in payload.items()
                                              if k != "dimension_scores"}
-            elif event.event_type == "NoveltyAssessmentRecorded":
+            elif event.event_type == "NoveltyAssessmentRecorded" and not baseline:
                 novelty = thaw_json(payload)
         if skill_id == "ranking":
             required = {"initial_review", *profile["review_policy"]["required_before_admission"]}
@@ -141,7 +237,59 @@ def research_inputs(
             "unavailable_source_ids": sorted(cited - sources.keys()),
             "evidence_origin": "curated_benchmark_not_empirical_validation" if key in anchors else "run_review",
         }
+        if baseline:
+            review_context[key]["ordered_critiques"] = baseline_critique_context(
+                events, hypothesis_id=key, content_hash=content["content_hash"])
+        if not baseline and profile.get("claim_verification") is not None:
+            scoped = [event for event in events
+                      if event.payload.get("hypothesis_id") == key
+                      and event.payload.get("hypothesis_content_hash") == content["content_hash"]]
+            v2_applications = [event for event in events
+                               if event.event_type == "ClaimVerificationAppliedV2"
+                               and event.payload.get("hypothesis_id") == key]
+            if len(v2_applications) > 1:
+                raise ValueError("ranking has ambiguous V2 claim verification applications")
+            v2_application = None
+            if v2_applications:
+                try:
+                    v2_event = ClaimVerificationAppliedEventV2.model_validate(
+                        v2_applications[0].payload
+                    )
+                except ValidationError as error:
+                    raise ValueError("ranking has invalid V2 claim verification state") from error
+                if (v2_event.hypothesis_content_hash != content["content_hash"]
+                        or v2_event.research_plan_version != version):
+                    raise ValueError("ranking V2 claim verification state is stale")
+                if any(state.status != "complete"
+                       for state in v2_event.application.claim_states):
+                    raise ValueError("ranking blocked by incomplete V2 claim verification")
+                v2_application = thaw_json(v2_event.application.model_dump(mode="json"))
+            review_context[key].update({
+                "structured_claims": [thaw_json(event.payload) for event in scoped
+                                      if event.event_type == "HypothesisClaimCreated"],
+                "claim_evidence_bindings": [thaw_json(event.payload) for event in scoped
+                                            if event.event_type == "ClaimEvidenceBindingRecorded"],
+                "prior_art_assessments": [thaw_json(event.payload) for event in scoped
+                                          if event.event_type == "PriorArtAssessmentRecorded"],
+                "claim_verifications": [thaw_json(event.payload) for event in scoped
+                                        if event.event_type == "ClaimVerificationCompleted"],
+                **({"claim_verification_v2_application": v2_application}
+                   if v2_application is not None else {}),
+                "evidence_snapshots": [
+                    {"snapshot_id": event.payload["snapshot_id"],
+                     "snapshot_hash": event.payload["snapshot_hash"],
+                     "source_id": event.payload["source_id"],
+                     "content_level": event.payload["content_level"]}
+                    for event in scoped if event.event_type == "EvidenceSnapshotRecorded"
+                ],
+            })
+        if skill_id == "ranking" and profile.get("tournament", {}).get("rating_policy_version") == "trueskill_v1":
+            review_context[key]["context_hash"] = protocol_hash(review_context[key])
     result["review_context"] = review_context
+    if skill_id == "ranking" and profile.get("tournament", {}).get("rating_policy_version") == "trueskill_v1":
+        result["evidence_context_hash"] = protocol_hash({
+            key: review_context[key]["context_hash"] for key in sorted(review_context)
+        })
     if (skill_id == "meta_review"
             and manifest.get("feedback_contract", {}).get("version") == "meta-review-loop-v2"):
         result["supervisor_review_context"] = {

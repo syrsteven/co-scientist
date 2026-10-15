@@ -1,0 +1,8 @@
+id: root_literature_review
+agent_type: root_literature_review
+version: 0.2.0
+prompt_path: prompts/system-query-v2.md
+input_schema: RootQueryPlanInputV1
+output_schema: RootQueryPlanResultV1
+allowed_tools: []
+allowed_capabilities: [return_agent_result]

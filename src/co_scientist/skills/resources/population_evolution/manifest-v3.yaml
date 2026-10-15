@@ -1,0 +1,8 @@
+id: population_evolution
+agent_type: population_evolution
+version: 0.3.0
+prompt_path: prompts/system-baseline-v1.md
+input_schema: BaselineEvolutionInputV1
+output_schema: BaselineEvolutionResultV1
+allowed_tools: []
+allowed_capabilities: [return_agent_result]
