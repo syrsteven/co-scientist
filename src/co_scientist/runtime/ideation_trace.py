@@ -5,7 +5,6 @@ No scientific decisions, inferred parentage, new events or database writes.
 
 import hashlib
 import json
-import sqlite3
 from collections import Counter
 from pathlib import Path
 
@@ -23,6 +22,15 @@ from co_scientist.ports.external_provider import thaw_json
 
 
 def trace_documents(uow, artifacts, run_id, *, transport_artifacts=None):
+    from co_scientist.runtime.trace_snapshot import trace_snapshot
+
+    with trace_snapshot(uow, artifacts, transport_artifacts) as (view, ledger):
+        documents = _trace_documents(view, artifacts, run_id,
+                                     transport_artifacts=transport_artifacts, ledger=ledger)
+    return documents
+
+
+def _trace_documents(uow, artifacts, run_id, *, transport_artifacts=None, ledger=None):
     events = uow.load(run_id)
     manifest = uow.run_manifest(run_id)
     epoch = manifest["tournament_contract"]["epoch_id"]
@@ -41,10 +49,20 @@ def trace_documents(uow, artifacts, run_id, *, transport_artifacts=None):
             for row in session.scalars(select(ExternalCallFailureDiagnosticRow).where(
                 ExternalCallFailureDiagnosticRow.run_id == run_id).order_by(ExternalCallFailureDiagnosticRow.diagnostic_id))]
     calls = [uow.get_external_call(key).model_dump(mode="json") for key in call_ids]
+    if any(c["external_call_id"] not in call_ids for c in costs):
+        raise ValueError("trace cost entry references an unknown call")
     for call in calls:
         call["actual_model_observed"] = None
         call["response_terminal_observed"] = None
         capture = artifacts.discover_raw(call["external_call_id"] + ":http-v2")
+        recorded = call["usage"].get("http_capture_v2")
+        if recorded is not None and (capture is None or
+                recorded["artifact_ref"] != capture.artifact_ref.model_dump(mode="json")):
+            raise ValueError("trace durable HTTP capture/reference mismatch")
+        if call["raw_artifact_ref"] is not None:
+            from co_scientist.ports.artifact_store import ArtifactRef
+
+            artifacts.read(ArtifactRef.model_validate(call["raw_artifact_ref"]))
         call["http_status_observed"] = capture.usage.get("status") if capture else None
         call["http_capture_ref"] = capture.artifact_ref.model_dump(mode="json") if capture else None
         if capture and (capture.run_id != run_id or capture.task_id != call["task_id"]
@@ -88,13 +106,6 @@ def trace_documents(uow, artifacts, run_id, *, transport_artifacts=None):
                     raise ValueError("export request/wire identity mismatch")
                 requests.append({"permit": permit, "wire_ref": wire.artifact_ref.model_dump(mode="json"),
                     "actual_wire": json.loads(data) if data else None})
-    ledger = None
-    if transport_artifacts is not None:
-        path = transport_artifacts.root.parent / "dispatch.sqlite3"
-        with sqlite3.connect(path.as_uri() + "?mode=ro", uri=True) as db:
-            db.row_factory = sqlite3.Row
-            ledger = {"path": str(path), "policy": [dict(r) for r in db.execute("SELECT * FROM policy")],
-                      "attempts": [dict(r) for r in db.execute("SELECT * FROM attempts ORDER BY started,id")]}
     focal, participations = Counter(), Counter()
     for e in events:
         if e.event_type == "MatchPairReserved":

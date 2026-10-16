@@ -1,4 +1,9 @@
-# Co-Scientist Ideation Release 0.1.0
+# Co-Scientist Ideation Release 0.1.1 — Reliability Patch
+
+此分支基于 `baa13351`，不是原 v0.1.0 构建产物。修复范围、旧 Run 的
+code-identity 隔离及验证结果见 [可靠性补丁说明](docs/RELIABILITY_HARDENING_V0.1.1.md)。
+原 `SHA256SUMS.json`、provenance 和 `dist/*0.1.0*` 保留为历史证据，
+不用于宣称新源码与旧版本逐字节相同。新构建应使用独立输出目录。
 
 独立部署的 **Continuous R2 G0→G3 DEV** 科研假设生成、评价与演化系统。
 功能来源是已完成的真实 Run
@@ -25,8 +30,10 @@ Mock 数据全部为合成数据，不能作为科学证据。
 
 真实运行必须另行提供 API 凭据、确认价格/权限、创建新 Run 并明确授权；安装和 Mock 不会自动启动真实调用。
 完整操作见 [中文部署手册](docs/DEPLOYMENT_GUIDE_ZH.md)。
-完整Release目录可用 `python scripts/verify_release.py` 核验逐文件SHA。
-该交付目录校验不是单独sdist安装步骤。
+`python scripts/verify_release.py --manifest <新清单>` 仅校验清单内文件；
+添加 `--strict` 才会拒绝所有清单外文件（包括 `.git` 和缓存）。
+严格目录验证应针对独立发行目录，不应指向开发工作树。历史默认清单在本补丁树上
+报告 MISMATCH 是预期行为，不得重写旧哈希以掩盖修改。
 
 - [架构](docs/ARCHITECTURE.md)
 - [配置、模型和预算](docs/CONFIGURATION.md)

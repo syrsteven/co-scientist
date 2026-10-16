@@ -1,9 +1,11 @@
 """Explicit install-time asset acquisition; runtime never downloads assets."""
 
+import fcntl
 import hashlib
 import os
 from importlib.resources import files
 from pathlib import Path
+from tempfile import NamedTemporaryFile
 
 ASSETS = {
     "deepseek-v41.json": "81f64d1248a68ce3663e07ab3ee48b851e5df0e32d27cb98e4c9a268151e8d99",
@@ -49,18 +51,35 @@ def install_openai_asset(source=None):
     import urllib.request
 
     target = asset_dir() / "o200k_base.tiktoken"
-    if target.exists():
-        resource_path("resource:o200k_base.tiktoken")
-        return str(target)
-    if source is not None:
-        data = Path(source).read_bytes()
-    else:
-        with urllib.request.urlopen(OPENAI_URL, timeout=60) as response:
-            data = response.read(8_000_001)
-    if len(data) > 8_000_000 or hashlib.sha256(data).hexdigest() != ASSETS[target.name]:
-        raise ValueError("downloaded tokenizer hash/capacity mismatch")
     target.parent.mkdir(parents=True, exist_ok=True)
-    # No overwrite, and no runtime fetch; bytes are verified before placement.
-    with target.open("xb") as handle:
-        handle.write(data)
+    with (target.parent / ".o200k-install.lock").open("a+b") as lock:
+        fcntl.flock(lock, fcntl.LOCK_EX)
+        if (
+            target.is_file()
+            and hashlib.sha256(target.read_bytes()).hexdigest() == ASSETS[target.name]
+        ):
+            return str(target)
+        if source is not None:
+            data = Path(source).read_bytes()
+        else:
+            with urllib.request.urlopen(OPENAI_URL, timeout=60) as response:
+                data = response.read(8_000_001)
+        if len(data) > 8_000_000 or hashlib.sha256(data).hexdigest() != ASSETS[target.name]:
+            raise ValueError("downloaded tokenizer hash/capacity mismatch")
+        temporary = None
+        try:
+            with NamedTemporaryFile(
+                dir=target.parent, prefix=".o200k-", suffix=".tmp", delete=False
+            ) as handle:
+                temporary = Path(handle.name)
+                handle.write(data)
+                handle.flush()
+                os.fsync(handle.fileno())
+            if hashlib.sha256(temporary.read_bytes()).hexdigest() != ASSETS[target.name]:
+                raise ValueError("temporary tokenizer hash mismatch")
+            os.replace(temporary, target)
+            temporary = None
+        finally:
+            if temporary is not None:
+                temporary.unlink(missing_ok=True)
     return str(target)

@@ -1,4 +1,5 @@
 include README.md requirements.lock release-source-provenance.json deployment-changes.diff .env.example .gitignore
+include reliability-patch-manifest-v0.1.1.json
 recursive-include docs *.md *.json
 recursive-include examples *.yaml
 recursive-include tests *.py

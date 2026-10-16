@@ -1,0 +1,51 @@
+name: Offline release reliability
+on: [push, pull_request, workflow_dispatch]
+permissions:
+  contents: read
+jobs:
+  offline:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        python: ['3.11', '3.12']
+    env:
+      PYTHONDONTWRITEBYTECODE: '1'
+      CO_SCIENTIST_RESOURCE_DIR: /tmp/co-scientist-tokenizers
+      OPENAI_API_KEY: ''
+      DEEPSEEK_API_KEY: ''
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python }}
+          cache: pip
+      - name: Install frozen dependencies and local package
+        run: |
+          python -m pip install -r requirements.lock
+          python -m pip install --no-build-isolation --no-deps -e .
+      - name: Explicit public tokenizer setup (not a scientific API)
+        run: co-scientist ideation resources
+      - name: Socket-denied offline regressions
+        run: python -m pytest --import-mode=importlib -p no:cacheprovider -m 'not online' -q
+      - name: Ruff (six unchanged baseline import-order debts explicitly isolated)
+        run: >-
+          python -m ruff check src tests scripts
+          --per-file-ignores 'src/co_scientist/_migrations/env.py:I001'
+          --per-file-ignores 'src/co_scientist/_migrations/versions/*.py:I001'
+          --per-file-ignores 'src/co_scientist/adapters/persistence/migrations.py:I001'
+      - name: Targeted types and syntax
+        run: |
+          python -m mypy --follow-imports=skip src/co_scientist/release src/co_scientist/runtime/trace_snapshot.py src/co_scientist/runtime/ideation_trace.py scripts/verify_release.py src/co_scientist/application/cockpit.py
+          PYTHONPYCACHEPREFIX=/tmp/co-scientist-pyc python -m compileall -q src tests scripts
+          git diff --check
+      - name: New wheel and sdist only (never overwrite archived 0.1.0)
+        run: python -m build --no-isolation --outdir /tmp/co-scientist-artifacts
+      - name: Installed wheel CLI and mock
+        run: |
+          python -m pip uninstall -y co-scientist-replica
+          python -m pip install --no-deps /tmp/co-scientist-artifacts/*.whl
+          cd /tmp
+          co-scientist --help
+          co-scientist ideation validate --goal "$GITHUB_WORKSPACE/examples/research-goal.yaml"
+          co-scientist ideation mock --goal "$GITHUB_WORKSPACE/examples/research-goal.yaml" --data-dir /tmp/wheel-mock

@@ -75,8 +75,20 @@ def test_packaged_core_and_all_51_skill_resources_match_successful_source():
 
     root = Path(co_scientist.__file__).parent
     expected = load(package_file("source-files.json"))
+    # The original successful-source index remains immutable. Exactly these
+    # observational modules have explicit, independently versioned patch hashes.
+    overlay = load(package_file("reliability-overlay-v0.1.1.json"))
+    assert overlay["baseline_commit"] == "baa13351ec3cbea8a1e6e81cd4c1432377e315cf"
+    assert set(overlay["modified"]) == {"application/cockpit.py", "runtime/ideation_trace.py"}
+    assert set(overlay["added"]) == {"runtime/trace_snapshot.py"}
     for name, sha in expected.items():
+        if name in overlay["modified"]:
+            patch = overlay["modified"][name]
+            assert patch["baseline_sha256"] == sha
+            sha = patch["patched_sha256"]
         assert hashlib.sha256((root / name).read_bytes()).hexdigest() == sha, name
+    for name, sha in overlay["added"].items():
+        assert hashlib.sha256((root / name).read_bytes()).hexdigest() == sha
     skills = {
         str(p.relative_to(root)) for p in (root / "skills/resources").rglob("*") if p.is_file()
     }

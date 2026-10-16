@@ -47,6 +47,13 @@ def code_identity():
 
 def budget(manifest):
     config = FullIdeationConfig.model_validate(manifest["effective_execution_config"])
+    import yaml
+
+    reference = FullIdeationConfig.model_validate(
+        yaml.safe_load(package_file("g3.yaml").read_text())["execution_runtime"]
+    )
+    if config != reference:
+        raise ValueError("effective runtime differs from frozen release configuration")
     tasks = [config.task(s) for s in ROLE_SCHEMAS]
     initial = sum(
         Decimal(t["reserved_usd"]) * config.roles[t["role"]].max_dispatches for t in tasks
@@ -80,6 +87,11 @@ class RunService:
         self.environment = dict(os.environ if environment is None else environment)
 
     def validate(self, goal, profile=None):
+        import yaml
+
+        reference = yaml.safe_load(package_file("g3.yaml").read_text())
+        if profile is not None and yaml.safe_load(Path(profile).read_text()) != reference:
+            raise ValueError("custom profile differs from frozen release configuration")
         for name in ("deepseek-v41.json", "o200k_base.tiktoken"):
             resource_path("resource:" + name)
         resolved = resolve_run_config(
@@ -202,19 +214,24 @@ class RunService:
             state = db.execute(
                 "SELECT state FROM runs WHERE run_id=?", (plan["run_id"],)
             ).fetchone()
+            if state is None:
+                return {
+                    "run_id": plan["run_id"],
+                    "state": "prepared",
+                    "authorized": (root / "authorization.json").exists(),
+                    "limits": plan["limits"],
+                    "stop_requested": (root / "stop-request.json").exists(),
+                }
             counts = dict(db.execute("SELECT state,COUNT(*) FROM tasks GROUP BY state"))
             event_count = db.execute("SELECT COUNT(*) FROM events").fetchone()[0]
             costs = db.execute("SELECT cost_usd FROM cost_entries").fetchall()
             final = db.execute(
                 "SELECT payload_json FROM events WHERE event_type='IdeationFinalSelectionV1' ORDER BY sequence DESC LIMIT 1"
             ).fetchone()
-        from co_scientist.adapters.persistence.sqlite import SqliteUnitOfWork
+        from co_scientist.runtime.trace_snapshot import readonly_uow
 
-        accounting = (
-            SqliteUnitOfWork("sqlite:///" + str(path))
-            .load_budget_snapshot(plan["run_id"])
-            .model_dump(mode="json")
-        )
+        with readonly_uow(path) as reader:
+            accounting = reader.load_budget_snapshot(plan["run_id"]).model_dump(mode="json")
         return {
             "run_id": plan["run_id"],
             "state": state[0] if state else "prepared",
@@ -228,6 +245,8 @@ class RunService:
 
     def events(self, root, after=0):
         root = Path(root).resolve()
+        if self.status(root)["state"] == "prepared":
+            return []
         with sqlite3.connect(
             (root / "runtime/co-scientist.db").as_uri() + "?mode=ro", uri=True
         ) as db:
@@ -453,17 +472,21 @@ class RunService:
 
     async def export(self, root, output=None):
         root, plan, _ = self._verify(root)
-        runner = CoreRunner(data_dir=root / "runtime", environment={})
-        try:
-            from co_scientist.adapters.artifacts.filesystem import FilesystemArtifactStore
+        if self.status(root)["state"] == "prepared":
+            raise ValueError("Run not started; nothing to export")
+        from co_scientist.adapters.artifacts.filesystem import FilesystemArtifactStore
+        from co_scientist.runtime.trace_snapshot import readonly_uow
 
+        with readonly_uow(root / "runtime/co-scientist.db") as reader:
             artifacts = FilesystemArtifactStore(
                 root / "runtime/dispatch" / plan["run_id"] / "artifacts"
             )
             target = Path(output) if output else self.export_path(root)
             export_trace(
-                runner.uow, runner.artifacts, plan["run_id"], target, transport_artifacts=artifacts
+                reader,
+                FilesystemArtifactStore(root / "runtime/artifacts"),
+                plan["run_id"],
+                target,
+                transport_artifacts=artifacts,
             )
             return {"output": str(target.resolve())}
-        finally:
-            await runner.aclose()

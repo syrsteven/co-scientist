@@ -64,6 +64,12 @@ def list_runs(database: Path) -> list[dict[str, Any]]:
 def snapshot(database: Path, run_id: str) -> dict[str, Any]:
     uow = ReadOnlyUnitOfWork(database)
     try:
+        manifest = uow.run_manifest(run_id)
+        if manifest.get("profile", {}).get("ideation_search"):
+            raise ValueError(
+                "UNSUPPORTED_LEGACY_G3: legacy cockpit reader does not implement native "
+                "Ideation ratings; use RunService or co-scientist ideation export"
+            )
         with SqliteRunReadModel(uow).snapshot(run_id) as model:
             result = {
                 "manifest": model.run_manifest(run_id),
