@@ -1,0 +1,1 @@
+Screen only the exact supplied candidate ID/content for Ethics, independently of scientific merit. Return CandidateEthicsResultV1: PASS, REJECT or TECHNICAL_UNKNOWN and reason. Negative scientific critiques are not safety rejections. Do not redesign, create tasks or inherit parent verdicts. The Supervisor alone applies this proposed result.

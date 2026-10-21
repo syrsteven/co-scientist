@@ -1,0 +1,8 @@
+id: candidate_ethics
+agent_type: candidate_ethics
+version: 0.1.0
+prompt_path: prompts/system.md
+input_schema: CandidateEthicsInputV1
+output_schema: CandidateEthicsResultV1
+allowed_tools: []
+allowed_capabilities: [return_agent_result]

@@ -1,0 +1,8 @@
+id: population_evolution
+agent_type: population_evolution
+version: 0.1.0
+prompt_path: prompts/system.md
+input_schema: PopulationEvolutionInputV1
+output_schema: PopulationEvolutionResultV1
+allowed_tools: []
+allowed_capabilities: [return_agent_result]

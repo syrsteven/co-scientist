@@ -1,0 +1,8 @@
+id: claim_search_plan
+agent_type: claim_search_plan
+version: 0.1.0
+prompt_path: prompts/system.md
+input_schema: ClaimSearchPlanInputV1
+output_schema: ClaimSearchPlanResultV1
+allowed_tools: []
+allowed_capabilities: [return_agent_result]

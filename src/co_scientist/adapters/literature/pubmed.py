@@ -32,7 +32,8 @@ class PubMedProvider:
         self.tool = tool
         self.email = email
 
-    async def search(self, query: str, limit: int = 10, *, sort: str | None = None) -> RawExternalResponse:
+    async def search(self, query: str, limit: int = 10, *, sort: str | None = None,
+                     timeout_seconds: int | None = None) -> RawExternalResponse:
         if sort not in {None, "relevance", "pub_date"}:
             raise ValueError("unsupported PubMed sort order")
         response = await self.client.get(
@@ -46,22 +47,24 @@ class PubMedProvider:
                 **({"sort": sort} if sort else {}),
                 **({"email": self.email} if self.email else {}),
             },
-            timeout=20.0,
+            timeout=float(timeout_seconds) if timeout_seconds is not None else 20.0,
         )
         return self._raw_response(response)
 
-    async def fetch_abstracts(self, pmids: tuple[str, ...]) -> RawExternalResponse:
+    async def fetch_abstracts(self, pmids: tuple[str, ...], *,
+                              timeout_seconds: int | None = None) -> RawExternalResponse:
         if not pmids or len(pmids) > 50 or any(not pmid.isdigit() for pmid in pmids):
             raise ValueError("EFetch requires 1-50 numeric PMIDs")
         response = await self.client.get(
             self.FETCH_URL,
             params={"db": "pubmed", "id": ",".join(pmids), "retmode": "xml",
                     "tool": self.tool, **({"email": self.email} if self.email else {})},
-            timeout=30.0,
+            timeout=float(timeout_seconds) if timeout_seconds is not None else 30.0,
         )
         return self._raw_response(response)
 
-    async def fetch_summaries(self, pmids: tuple[str, ...]) -> RawExternalResponse:
+    async def fetch_summaries(self, pmids: tuple[str, ...], *,
+                              timeout_seconds: int | None = None) -> RawExternalResponse:
         if not pmids:
             raise ValueError("at least one PMID is required")
         response = await self.client.get(
@@ -73,7 +76,7 @@ class PubMedProvider:
                 "tool": self.tool,
                 **({"email": self.email} if self.email else {}),
             },
-            timeout=20.0,
+            timeout=float(timeout_seconds) if timeout_seconds is not None else 20.0,
         )
         return self._raw_response(response)
 
@@ -109,11 +112,16 @@ class PubMedBridge:
     async def invoke(self, request: dict[str, Any]) -> RawExternalResponse:
         if self.operation == "search":
             return await self.provider.search(
-                str(request["query"]), int(request.get("limit", 10)), sort=request.get("sort")
+                str(request["query"]), int(request.get("limit", 10)), sort=request.get("sort"),
+                timeout_seconds=request.get("timeout_seconds"),
             )
         if request.get("content_mode") == "abstracts":
-            return await self.provider.fetch_abstracts(tuple(map(str, request["pmids"])))
-        return await self.provider.fetch_summaries(tuple(map(str, request["pmids"])))
+            return await self.provider.fetch_abstracts(
+                tuple(map(str, request["pmids"])), timeout_seconds=request.get("timeout_seconds"),
+            )
+        return await self.provider.fetch_summaries(
+            tuple(map(str, request["pmids"])), timeout_seconds=request.get("timeout_seconds"),
+        )
 
 
 def parse_pubmed_records(

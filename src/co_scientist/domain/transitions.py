@@ -69,6 +69,8 @@ EXTERNAL_CALL_TRANSITIONS = {
         ExternalCallState.FAILED_BEFORE_RESPONSE,
     },
     ExternalCallState.STARTED: {
+        ExternalCallState.HTTP_CAPTURE_STARTED_V2,
+        ExternalCallState.HTTP_RESPONSE_CAPTURED_V2,
         ExternalCallState.RAW_RESPONSE_PERSISTED,
         ExternalCallState.FAILED_BEFORE_RESPONSE,
         ExternalCallState.RAW_PERSIST_FAILED,
@@ -91,6 +93,27 @@ EXTERNAL_CALL_TRANSITIONS = {
     ExternalCallState.VALIDATION_FAILED: set(),
     ExternalCallState.SUBMISSION_FAILED: set(),
     ExternalCallState.DOMAIN_APPLY_FAILED: set(),
+    ExternalCallState.HTTP_RESPONSE_CAPTURED_V2: {
+        ExternalCallState.DOMAIN_RAW_PERSIST_FAILED_V2,
+        ExternalCallState.ACCOUNTING_INCOMPLETE_V2,
+        ExternalCallState.RAW_RESPONSE_PERSISTED,
+    },
+    ExternalCallState.ACCOUNTING_INCOMPLETE_V2: {
+        ExternalCallState.DOMAIN_RAW_PERSIST_FAILED_V2,
+        ExternalCallState.HTTP_RESPONSE_CAPTURED_V2,
+        ExternalCallState.RAW_RESPONSE_PERSISTED,
+    },
+    ExternalCallState.HTTP_CAPTURE_STARTED_V2: {
+        ExternalCallState.HTTP_RESPONSE_CAPTURED_V2,
+        ExternalCallState.HTTP_CAPTURE_FAILED_V2,
+        ExternalCallState.FAILED_BEFORE_RESPONSE,
+    },
+    ExternalCallState.HTTP_CAPTURE_FAILED_V2: {
+        ExternalCallState.HTTP_RESPONSE_CAPTURED_V2,
+    },
+    ExternalCallState.DOMAIN_RAW_PERSIST_FAILED_V2: {
+        ExternalCallState.RAW_RESPONSE_PERSISTED,
+    },
 }
 
 

@@ -27,6 +27,11 @@ class TaskState(StrEnum):
 
 
 class ExternalCallState(StrEnum):
+    HTTP_CAPTURE_STARTED_V2 = "http_capture_started_v2"
+    HTTP_CAPTURE_FAILED_V2 = "http_capture_failed_v2"
+    DOMAIN_RAW_PERSIST_FAILED_V2 = "domain_raw_persist_failed_v2"
+    HTTP_RESPONSE_CAPTURED_V2 = "http_response_captured_v2"
+    ACCOUNTING_INCOMPLETE_V2 = "accounting_incomplete_v2"
     PLANNED = "planned"
     STARTED = "started"
     RAW_RESPONSE_PERSISTED = "raw_response_persisted"

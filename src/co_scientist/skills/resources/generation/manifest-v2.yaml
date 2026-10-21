@@ -1,0 +1,8 @@
+id: generation
+agent_type: generation
+version: 0.3.0
+prompt_path: prompts/system-baseline-v1.md
+input_schema: GroundedGenerationInputV1
+output_schema: GroundedGenerationResultV1
+allowed_tools: []
+allowed_capabilities: [return_agent_result]

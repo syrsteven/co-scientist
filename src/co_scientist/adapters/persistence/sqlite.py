@@ -34,6 +34,7 @@ from sqlalchemy.engine.cursor import CursorResult
 from sqlalchemy.orm import DeclarativeBase, Mapped, Session, mapped_column, sessionmaker
 
 from co_scientist.adapters.persistence.migrations import execution_contract_diagnostic
+from co_scientist.domain.bayesian_ranking import UCBPairingPolicy
 from co_scientist.domain.budget import (
     BudgetEstimate,
     BudgetPolicy,
@@ -42,6 +43,7 @@ from co_scientist.domain.budget import (
     DurableBudgetSnapshot,
     add_budget_usage,
 )
+from co_scientist.domain.probe_execution import probe_envelope_for_manifest
 from co_scientist.domain.run_mutations import RunMutationKind, validate_run_mutation
 from co_scientist.domain.states import ExternalCallState, RunState, TaskState
 from co_scientist.domain.task import (
@@ -56,7 +58,11 @@ from co_scientist.domain.task import (
 from co_scientist.domain.transitions import transition_external_call
 from co_scientist.domain.transitions import transition_run as validate_run_transition
 from co_scientist.domain.transitions import transition_task as validate_task_transition
-from co_scientist.events.contracts import EVENT_SCHEMA_VERSIONS
+from co_scientist.events.contracts import (
+    EVENT_SCHEMA_VERSIONS,
+    PROBE_OPERATIONAL_EVENT_SCHEMA_VERSIONS,
+    assert_lineage_v2_event_payload,
+)
 from co_scientist.events.models import DomainEvent, NewEvent
 from co_scientist.ports.artifact_store import ArtifactRef
 from co_scientist.ports.event_store import ConcurrencyConflict
@@ -183,6 +189,55 @@ class ExternalCallRow(Base):
     usage_json: Mapped[str] = mapped_column(Text, nullable=False, server_default="{}")
     execution_context_json: Mapped[str | None] = mapped_column(Text, nullable=True)
     agent_result_json: Mapped[str | None] = mapped_column(Text, nullable=True)
+
+
+class ExternalCallMilestoneRow(Base):
+    __tablename__ = "external_call_milestones"
+    __table_args__ = (
+        UniqueConstraint(
+            "external_call_id", "milestone_version", "milestone", "source",
+            name="uq_external_call_milestone_identity",
+        ),
+        Index(
+            "ix_external_call_milestones_call_order",
+            "external_call_id",
+            "observation_id",
+            unique=False,
+        ),
+    )
+
+    observation_id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    run_id: Mapped[str] = mapped_column(String, nullable=False)
+    task_id: Mapped[str] = mapped_column(String, nullable=False)
+    external_call_id: Mapped[str] = mapped_column(
+        ForeignKey("external_calls.external_call_id"), nullable=False
+    )
+    milestone_version: Mapped[int] = mapped_column(Integer, nullable=False)
+    milestone: Mapped[str] = mapped_column(String, nullable=False)
+    source: Mapped[str] = mapped_column(String, nullable=False)
+    recorded_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+
+
+class ExternalCallFailureDiagnosticRow(Base):
+    __tablename__ = "external_call_failure_diagnostics"
+    __table_args__ = (
+        UniqueConstraint(
+            "external_call_id", "capture_layer",
+            name="uq_external_call_failure_diagnostic_layer",
+        ),
+    )
+
+    diagnostic_id: Mapped[int] = mapped_column(Integer, primary_key=True, autoincrement=True)
+    external_call_id: Mapped[str] = mapped_column(
+        ForeignKey("external_calls.external_call_id"), nullable=False
+    )
+    run_id: Mapped[str] = mapped_column(String, nullable=False)
+    task_id: Mapped[str] = mapped_column(String, nullable=False)
+    capture_layer: Mapped[str] = mapped_column(String, nullable=False)
+    schema_id: Mapped[str] = mapped_column(String, nullable=False)
+    schema_version: Mapped[int] = mapped_column(Integer, nullable=False)
+    diagnostic_json: Mapped[str] = mapped_column(Text, nullable=False)
+    recorded_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
 
 
 class CostEntryRow(Base):
@@ -425,11 +480,13 @@ class SqliteUnitOfWork:
 
     @staticmethod
     def _assert_supported_new_event_version(event: NewEvent) -> None:
-        supported = EVENT_SCHEMA_VERSIONS.get(event.event_type)
+        supported = (EVENT_SCHEMA_VERSIONS.get(event.event_type)
+                     or PROBE_OPERATIONAL_EVENT_SCHEMA_VERSIONS.get(event.event_type))
         if supported is not None and event.schema_version not in supported:
             raise ValueError(
                 f"unsupported scientific event version: {event.event_type} v{event.schema_version}"
             )
+        assert_lineage_v2_event_payload(event)
 
     def append(
         self,
@@ -438,6 +495,12 @@ class SqliteUnitOfWork:
         events: Sequence[NewEvent],
     ) -> list[DomainEvent]:
         persisted: list[DomainEvent] = []
+        if any(event.event_type in {
+            "ClaimLineageTargetsFrozenV2", "ClaimLineageAppliedV2",
+        } for event in events):
+            raise ValueError("lineage V2 events require a fenced atomic batch")
+        if any(event.event_type == "CompatibilityProbeTerminatedV1" for event in events):
+            raise ValueError("probe terminal requires a validated atomic batch")
         with self.session_factory.begin() as session:
             self._begin_immediate(session)
             self._assert_sequence(session, run_id, expected_sequence)
@@ -550,12 +613,18 @@ class SqliteUnitOfWork:
         for task in initial_tasks:
             if task.run_id != run_id:
                 raise ValueError("initial task does not belong to started Run")
+            if task.payload.get("output_schema_id") == "ClaimDecompositionResultV3":
+                raise ValueError("V3 task requires an atomic frozen target transaction")
             validate_run_mutation(
                 RunState.RUNNING,
                 RunMutationKind.ENQUEUE_EXPLORATION_TASK,
                 task_intent=task.intent_type,
             )
         for additional in additional_events:
+            if additional.event_type in {
+                "ClaimLineageTargetsFrozenV2", "ClaimLineageAppliedV2",
+            }:
+                raise ValueError("lineage V2 events require a fenced atomic batch")
             self._assert_supported_new_event_version(additional)
         task_events = [item for item in additional_events if item.event_type == "TaskEnqueued"]
         if [_json(item.payload) for item in task_events] != [
@@ -649,6 +718,8 @@ class SqliteUnitOfWork:
         with self.session_factory.begin() as session:
             self._begin_immediate(session)
             for task in tasks:
+                if task.payload.get("output_schema_id") == "ClaimDecompositionResultV3":
+                    raise ValueError("V3 task requires an atomic frozen target transaction")
                 state = self._run_state_in_transaction(session, task.run_id)
                 validate_run_mutation(
                     state,
@@ -718,7 +789,7 @@ class SqliteUnitOfWork:
                     SqliteUnitOfWork._active_reservation_estimate(session, row),
                 )
             usage = add_budget_usage(usage, values)
-        return usage
+        return add_budget_usage(usage, SqliteUnitOfWork._continuous_retained_risk(session, run_id))
 
     @staticmethod
     def _budget_policy_version(policy: BudgetPolicy) -> str:
@@ -741,7 +812,16 @@ class SqliteUnitOfWork:
         session: Session, *, run_id: str, task_id: str
     ) -> BudgetUsage:
         """Aggregate every paid provider attempt for one logical task."""
+        run = session.get(RunRow, run_id)
+        manifest = json.loads(run.manifest_json) if run is not None else {}
+        model_only = manifest.get("budget", {}).get("call_accounting_version") == "model-only-v2"
+        from co_scientist.domain.single_root import single_root
 
+        # New diagnostic mode counts its aggregate retrieval as retrieval, not
+        # as one of the four permitted LLM calls. Historical ledgers unchanged.
+        retrieval_providers: tuple[str, ...] = ("pubmed:search", "pubmed:summary", "replay_pubmed:search", "replay_pubmed:summary")
+        if single_root(manifest) or manifest.get("effective_execution_config", {}).get("continuous_policy"):
+            retrieval_providers += ("pubmed:root",)
         rows = session.execute(
             select(CostEntryRow)
             .join(
@@ -752,6 +832,7 @@ class SqliteUnitOfWork:
                 CostEntryRow.run_id == run_id,
                 ExternalCallRow.run_id == run_id,
                 ExternalCallRow.task_id == task_id,
+                ExternalCallRow.provider.not_in(retrieval_providers) if model_only else True,
             )
             .order_by(CostEntryRow.cost_entry_id)
         ).scalars().all()
@@ -876,6 +957,7 @@ class SqliteUnitOfWork:
                         )
                     ).all()
                 )
+        reserved = add_budget_usage(reserved, cls._continuous_retained_risk(session, run_id))
         total = add_budget_usage(settled, reserved)
         return DurableBudgetSnapshot(
             run_id=run_id,
@@ -1009,6 +1091,24 @@ class SqliteUnitOfWork:
         profile = manifest.get("profile")
         return isinstance(profile, Mapping) and profile.get("scientific_context") is True
 
+    @staticmethod
+    def _validate_claimable_lineage_task(session: Session, task: TaskRow) -> None:
+        payload = json.loads(task.payload_json)
+        if payload.get("output_schema_id") != "ClaimDecompositionResultV3":
+            return
+        from co_scientist.runtime.task_payload import WorkerTaskPayload
+        from co_scientist.supervisor.lineage_event_path import (
+            validate_persisted_offspring_task_v2,
+        )
+
+        events = tuple(row.to_domain() for row in session.scalars(
+            select(EventRow).where(EventRow.run_id == task.run_id).order_by(EventRow.sequence)
+        ).all())
+        validate_persisted_offspring_task_v2(
+            events=events, task=WorkerTaskPayload.model_validate(payload),
+            task_id=task.task_id, run_id=task.run_id,
+        )
+
     def claim_next_task(
         self,
         *,
@@ -1047,6 +1147,7 @@ class SqliteUnitOfWork:
 
             replay = session.scalar(select(TaskRow).where(TaskRow.lease_token == lease_token))
             if replay is not None:
+                self._validate_claimable_lineage_task(session, replay)
                 if (
                     replay.run_id != run_id
                     or replay.lease_owner != worker_id
@@ -1085,6 +1186,8 @@ class SqliteUnitOfWork:
                 return ClaimOutcome(
                     status=("stopping_no_finalization" if state is RunState.STOPPING else "no_task")
                 )
+
+            self._validate_claimable_lineage_task(session, task)
 
             estimate = self._task_budget_estimate(task)
             existing_reservation = session.scalar(
@@ -1222,6 +1325,11 @@ class SqliteUnitOfWork:
             raise ValueError("lease_duration must be positive")
         now = self._runtime_utc(now)
         running_durable_states = (
+            ExternalCallState.DOMAIN_RAW_PERSIST_FAILED_V2.value,
+            ExternalCallState.HTTP_CAPTURE_STARTED_V2.value,
+            ExternalCallState.HTTP_CAPTURE_FAILED_V2.value,
+            ExternalCallState.HTTP_RESPONSE_CAPTURED_V2.value,
+            ExternalCallState.ACCOUNTING_INCOMPLETE_V2.value,
             ExternalCallState.STARTED.value,
             ExternalCallState.RAW_RESPONSE_PERSISTED.value,
             ExternalCallState.VALIDATED.value,
@@ -1293,8 +1401,16 @@ class SqliteUnitOfWork:
                 if state is RunState.STOPPING
                 else []
             )
+            from co_scientist.domain.continuous_execution import policy_for
+
+            continuous = policy_for(json.loads(run.manifest_json)) is not None
+            not_sent_rows = session.scalars(select(TaskRow).outerjoin(ExternalCallRow,
+                (ExternalCallRow.task_id == TaskRow.task_id) & (ExternalCallRow.attempt == TaskRow.attempt))
+                .where(TaskRow.run_id == run_id, TaskRow.intent_type != "finalize_run",
+                    TaskRow.state.in_(("leased", "running")), ExternalCallRow.external_call_id.is_(None),
+                    TaskRow.lease_expires_at <= now)).all() if continuous and state is RunState.RUNNING else []
             rows = sorted(
-                {row.task_id: row for row in (*call_rows, *finalization_rows)}.values(),
+                {row.task_id: row for row in (*call_rows, *finalization_rows, *not_sent_rows)}.values(),
                 key=lambda row: row.task_id,
             )
             task = next(
@@ -1333,6 +1449,9 @@ class SqliteUnitOfWork:
                     raise ValueError("local finalization cannot bind an external call")
                 if reservation.state != "reserved":
                     raise ValueError("finalization reservation binding is not current")
+            elif task in not_sent_rows:
+                if call is not None or reservation.state != "reserved":
+                    raise ValueError("not-sent recovery requires an original active reservation")
             elif (
                 call is None
                 or reservation.external_call_id != call.external_call_id
@@ -1468,6 +1587,16 @@ class SqliteUnitOfWork:
     def _output_retry_authorized(
         session: Session, task: TaskRow, call: ExternalCallRow, next_attempt: int,
     ) -> bool:
+        from co_scientist.domain.continuous_execution import policy_for
+
+        run = session.get(RunRow, task.run_id)
+        if run is not None and policy_for(json.loads(run.manifest_json)) is not None:
+            rows = session.scalars(select(EventRow).where(EventRow.run_id == task.run_id,
+                EventRow.event_type == "ContinuousAttemptPreparedV1")).all()
+            return any((p := json.loads(row.payload_json)).get("task_id") == task.task_id
+                and p["external_call_id"] == call.external_call_id
+                and p["authorized_attempt"] == next_attempt == call.attempt+1
+                and p["task_definition"]["payload"] == json.loads(task.payload_json) for row in rows)
         authorizations = [json.loads(row.payload_json) for row in session.scalars(
             select(EventRow).where(EventRow.run_id == task.run_id,
                                    EventRow.event_type == "TaskOutputRetryRequested")
@@ -1592,6 +1721,90 @@ class SqliteUnitOfWork:
             self._set_run_sequence(session, run_id, events[-1].sequence, required=True)
             session.flush()
             return CommitResult(events=tuple(events), last_sequence=events[-1].sequence)
+
+    def prepare_continuous_retry(self, *, fence: TaskLeaseFence, external_call_id: str,
+                                 reason: str, correction: str | None, delay_seconds: float,
+                                 unknown_cost: bool) -> bool:
+        """Atomic new-attempt authorization for the opt-in Run policy only."""
+        from co_scientist.domain.continuous_execution import policy_for
+
+        with self.session_factory.begin() as session:
+            self._begin_immediate(session)
+            task = self._fenced_task(session, fence)
+            run = session.get(RunRow, fence.run_id)
+            assert run is not None
+            manifest = json.loads(run.manifest_json)
+            policy = policy_for(manifest)
+            if policy is None:
+                raise ValueError("continuous retry is not authorized")
+            call = self._external_call(session, external_call_id)
+            retrieval_retry = reason in {"RETRIEVAL_TRANSIENT", "RETRIEVAL_UNKNOWN"} and call.provider == "pubmed:root"
+            if (call.task_id != task.task_id or call.attempt != task.attempt
+                    or call.provider not in {"deepseek", "openai", "pubmed:root"}
+                    or call.applied_domain_sequence is not None
+                    or call.agent_result_id is not None and not retrieval_retry):
+                raise ValueError("retry cannot duplicate scientific application")
+            if reason not in {"OUTPUT_LENGTH", "INVALID_JSON", "SCHEMA", "SOURCE_COVERAGE",
+                              "TRANSIENT_HTTP", "DELIVERY_UNKNOWN", "NOT_SENT", "RETRIEVAL_TRANSIENT", "RETRIEVAL_UNKNOWN"}:
+                return False
+            prior = [json.loads(row.payload_json) for row in session.scalars(select(EventRow).where(
+                EventRow.run_id == fence.run_id, EventRow.event_type == "ContinuousAttemptPreparedV1"))]
+            if (task.attempt >= min(task.max_attempts, policy.max_attempts)
+                    or len([p for p in prior if not p["reason"].startswith("RETRIEVAL_")]) >= policy.max_retry_dispatches and not retrieval_retry
+                    or len([p for p in prior if p["reason"].startswith("RETRIEVAL_")]) >= policy.max_retrieval_retry_attempts and retrieval_retry
+                    or reason in {"DELIVERY_UNKNOWN", "RETRIEVAL_UNKNOWN"} and any(p["task_id"] == task.task_id
+                        and p["reason"] == reason for p in prior)):
+                return False
+            reservation = self._task_reservation(session, fence)
+            self._assert_exact_reservation(task, reservation)
+            estimate = self._retry_provider_estimate(self._task_budget_estimate(task))
+            usage = self._budget_usage(session, fence.run_id)
+            if not self._fits_retry_budget(BudgetPolicy.model_validate(manifest["budget"]), usage, estimate):
+                return False
+            payload = json.loads(task.payload_json)
+            scientific_hash = hashlib.sha256(_json(payload["inputs"]["model_input"]).encode()).hexdigest()
+            parameters = dict(payload["inputs"].get("continuous_attempt", {}))
+            parameters.update(previous_call_id=call.external_call_id, reason=reason,
+                correction=correction, not_before=(datetime.now(UTC)+timedelta(seconds=delay_seconds)).isoformat(),
+                length_failures=parameters.get("length_failures", 0)+(reason == "OUTPUT_LENGTH"))
+            payload["inputs"]["continuous_attempt"] = parameters
+            payload["inputs"]["ideation_task_binding"]["attempt"] = task.attempt+1
+            payload["input_snapshot_hash"] = hashlib.sha256(_json(payload["inputs"]).encode()).hexdigest()
+            definition = NewTask(task_id=task.task_id, run_id=task.run_id,
+                idempotency_key=task.idempotency_key, intent_type=task.intent_type, payload=payload)
+            facts = [NewEvent(event_type="ContinuousAttemptPreparedV1", payload={
+                "policy_version": policy.version, "task_id": task.task_id,
+                "external_call_id": external_call_id, "failed_attempt": task.attempt,
+                "authorized_attempt": task.attempt+1, "reason": reason,
+                "scientific_input_hash": scientific_hash, "delay_seconds": delay_seconds,
+                "task_definition": definition.model_dump(mode="json"),
+                "duplicate_billing_risk": reason == "DELIVERY_UNKNOWN",
+                "duplicate_read_request_risk": reason == "RETRIEVAL_UNKNOWN"})]
+            if unknown_cost:
+                facts.append(NewEvent(event_type="ContinuousCostRiskRetainedV1", payload={
+                    "task_id": task.task_id, "external_call_id": external_call_id,
+                    "reservation_id": reservation.reservation_id,
+                    "estimate": estimate.model_dump(mode="json"), "actual_cost": None}))
+            task.payload_json = _json(payload)
+            task.state = validate_task_transition(TaskState(task.state), TaskState.PENDING).value
+            task.lease_owner = task.lease_token = None
+            task.heartbeat_at = task.lease_expires_at = None
+            events = self._insert_events(session, fence.run_id, self._current_sequence(session, fence.run_id), facts)
+            self._set_run_sequence(session, fence.run_id, events[-1].sequence, required=True)
+            return True
+
+    @staticmethod
+    def _continuous_retained_risk(session: Session, run_id: str) -> BudgetEstimate:
+        values = BudgetEstimate()
+        for row in session.scalars(select(EventRow).where(EventRow.run_id == run_id,
+                EventRow.event_type == "ContinuousCostRiskRetainedV1")):
+            data = json.loads(row.payload_json)
+            # A later trusted original-response recovery can remove risk only
+            # when its actual cost row exists; no guessed refund or zero cost.
+            if session.scalar(select(CostEntryRow).where(
+                    CostEntryRow.external_call_id == data["external_call_id"])) is None:
+                values = add_budget_usage(values, BudgetEstimate.model_validate(data["estimate"]))
+        return BudgetEstimate.model_validate(values.model_dump())
 
     def recover_expired_leases(
         self,
@@ -1903,13 +2116,84 @@ class SqliteUnitOfWork:
                 if duplicate_attempt.external_call_id == call_id:
                     return
                 raise ValueError("task attempt already has an external call")
+            run = session.get(RunRow, run_id)
+            assert run is not None
+            manifest = self._require_execution_contract(run)
+            probe = probe_envelope_for_manifest(manifest)
+            if probe is not None:
+                from co_scientist.runtime.lineage_workflow_contract import (
+                    validate_lineage_task_identity,
+                )
+                from co_scientist.runtime.task_payload import WorkerTaskPayload
+                from co_scientist.supervisor.lineage_event_path import (
+                    validate_persisted_offspring_task_v2,
+                )
+
+                payload = WorkerTaskPayload.model_validate(json.loads(task.payload_json))
+                if (resolved_provider != "deepseek"
+                        or resolved_model_or_tool != probe.pricing.model
+                        or payload.provider_id != resolved_provider
+                        or payload.model_or_tool != resolved_model_or_tool
+                        or context.get("output_schema_id") != payload.output_schema_id
+                        or context.get("output_schema_version") != payload.output_schema_version
+                        or context.get("prompt_hash") != payload.prompt_hash
+                        or context.get("input_snapshot_hash") != payload.input_snapshot_hash
+                        or payload.inputs.get("probe_execution_envelope_hash")
+                        != manifest["probe_execution_envelope_hash"]
+                        or resolved_attempt != 1 or parent_call_id is not None):
+                    raise ValueError("probe dispatch differs from frozen task/envelope or retries")
+                role = (payload.output_schema_id, payload.output_schema_version)
+                if role not in {
+                    ("PopulationEvolutionResultV2", 2),
+                    ("ClaimDecompositionResultV3", 3),
+                }:
+                    raise ValueError("probe envelope forbids this provider task kind")
+                prior_calls = session.scalars(select(ExternalCallRow).where(
+                    ExternalCallRow.run_id == run_id,
+                )).all()
+                terminal = session.scalar(select(EventRow).where(
+                    EventRow.run_id == run_id,
+                    EventRow.event_type == "CompatibilityProbeTerminatedV1",
+                ))
+                if terminal is not None or len(prior_calls) >= probe.max_total_model_calls:
+                    raise ValueError("probe execution is terminal or dispatch ceiling reached")
+                events = tuple(row.to_domain() for row in session.scalars(
+                    select(EventRow).where(EventRow.run_id == run_id).order_by(EventRow.sequence)
+                ).all())
+                if role == ("PopulationEvolutionResultV2", 2):
+                    if prior_calls:
+                        raise ValueError("probe permits only one Evolution V2 dispatch")
+                    validate_lineage_task_identity(manifest, payload)
+                else:
+                    source_task = (session.get(TaskRow, prior_calls[0].task_id)
+                                   if len(prior_calls) == 1 else None)
+                    if (source_task is None
+                            or prior_calls[0].state != ExternalCallState.DOMAIN_RESULT_APPLIED.value
+                            or json.loads(source_task.payload_json).get("output_schema_id")
+                            != "PopulationEvolutionResultV2"):
+                        raise ValueError("probe B requires a successfully applied A call")
+                    validate_persisted_offspring_task_v2(
+                        events=events, task=payload, task_id=task_id, run_id=run_id,
+                    )
+                    validate_lineage_task_identity(
+                        manifest, payload, durable_targets_verified=True,
+                    )
             if reservation.external_call_id is not None:
                 prior = session.get(ExternalCallRow, reservation.external_call_id)
                 if prior is None or prior.attempt >= resolved_attempt:
                     raise ValueError("reservation is already bound to an external call")
+                prior_usage = json.loads(prior.usage_json)
+                from co_scientist.domain.continuous_execution import policy_for
+
+                continuous = policy_for(manifest) is not None
+                if continuous and not self._output_retry_authorized(session, task, prior, resolved_attempt):
+                    raise ValueError("continuous attempt has no exact durable authorization")
+                if not continuous and (prior_usage.get("response_capture_contract") == "http-response-capture-v2"
+                        or "http_capture_v2" in prior_usage):
+                    raise ValueError("PREVIOUS_ATTEMPT_REPLAY_REQUIRED: capture V2 forbids resend")
                 run = session.get(RunRow, run_id)
                 assert run is not None
-                if (prior.state == ExternalCallState.VALIDATION_FAILED.value
+                if (not continuous and prior.state == ExternalCallState.VALIDATION_FAILED.value
                         and self._requires_explicit_output_retry(json.loads(run.manifest_json))):
                     prior_context = json.loads(prior.execution_context_json or "{}")
                     if (not self._output_retry_authorized(session, task, prior, resolved_attempt)
@@ -1921,6 +2205,8 @@ class SqliteUnitOfWork:
                                 "output_schema_version", "research_plan_version",
                             )) or parent_call_id not in (None, prior.external_call_id)):
                         raise ValueError("output retry must match its authorized frozen request")
+                    parent_call_id = prior.external_call_id
+                if continuous:
                     parent_call_id = prior.external_call_id
             reservation.external_call_id = call_id
             reservation.version += 1
@@ -2082,6 +2368,223 @@ class SqliteUnitOfWork:
             raise KeyError(f"unknown external call: {call_id}")
         return state
 
+    def record_external_call_milestone(
+        self,
+        call_id: str,
+        milestone: str,
+        *,
+        reservation_id: str,
+        fence: TaskLeaseFence,
+        milestone_version: int = 1,
+        source: str = "bounded_transport",
+    ) -> None:
+        """Append one truthful, idempotent transport/external-call milestone."""
+
+        from co_scientist.runtime.transport_observability import TransportMilestone
+
+        allowed: tuple[str, ...] = (
+            "request_constructed",
+            "request_serialized",
+            "bounded_transport_reserved",
+            "inner_transport_entered",
+            "response_headers_received",
+            "response_body_complete",
+            "raw_persisted",
+            "usage_parsed",
+        )
+        if milestone_version != 1 or milestone not in allowed or source not in {
+            "bounded_transport", "external_call_runner"
+        }:
+            raise ValueError("unsupported transport milestone contract")
+        _ = cast(TransportMilestone, milestone)
+        with self.session_factory.begin() as session:
+            self._begin_immediate(session)
+            call = self._fenced_external_call(session, call_id, reservation_id, fence)
+            existing = session.scalar(
+                select(ExternalCallMilestoneRow).where(
+                    ExternalCallMilestoneRow.external_call_id == call_id,
+                    ExternalCallMilestoneRow.milestone_version == milestone_version,
+                    ExternalCallMilestoneRow.milestone == milestone,
+                    ExternalCallMilestoneRow.source == source,
+                )
+            )
+            if existing is not None:
+                if existing.run_id != call.run_id or existing.task_id != call.task_id:
+                    raise ValueError("transport milestone identity conflict")
+                return
+            session.add(
+                ExternalCallMilestoneRow(
+                    run_id=call.run_id,
+                    task_id=call.task_id,
+                    external_call_id=call.external_call_id,
+                    milestone_version=milestone_version,
+                    milestone=milestone,
+                    source=source,
+                    recorded_at=datetime.now(UTC),
+                )
+            )
+
+    def record_external_call_failure_diagnostic(
+        self,
+        call_id: str,
+        diagnostic: Mapping[str, Any],
+        *,
+        reservation_id: str,
+        fence: TaskLeaseFence,
+        capture_layer: str = "worker",
+    ) -> None:
+        """Persist a safe diagnostic without changing external-call state."""
+
+        from co_scientist.runtime.transport_observability import (
+            ExternalCallFailureDiagnosticV1,
+            bounded_diagnostic_json,
+        )
+
+        document = dict(diagnostic)
+        if capture_layer not in {"external_call_runner", "worker"}:
+            raise ValueError("unsupported failure diagnostic capture layer")
+        if (
+            document.get("schema_id") != "ExternalCallFailureDiagnosticV1"
+            or document.get("schema_version") != 1
+        ):
+            raise ValueError("unsupported external-call failure diagnostic")
+        parsed_diagnostic = ExternalCallFailureDiagnosticV1.model_validate(document)
+        encoded = bounded_diagnostic_json(parsed_diagnostic)
+        with self.session_factory.begin() as session:
+            self._begin_immediate(session)
+            call = self._fenced_external_call(session, call_id, reservation_id, fence)
+            failed_states = {
+                ExternalCallState.DOMAIN_RAW_PERSIST_FAILED_V2.value,
+                ExternalCallState.ACCOUNTING_INCOMPLETE_V2.value,
+                ExternalCallState.HTTP_CAPTURE_FAILED_V2.value,
+                ExternalCallState.FAILED_BEFORE_RESPONSE.value,
+                ExternalCallState.RAW_PERSIST_FAILED.value,
+                ExternalCallState.VALIDATION_FAILED.value,
+                ExternalCallState.SUBMISSION_FAILED.value,
+                ExternalCallState.DOMAIN_APPLY_FAILED.value,
+            }
+            if (capture_layer == "worker" and call.state not in failed_states) or (
+                capture_layer == "external_call_runner"
+                and call.state not in {ExternalCallState.STARTED.value,
+                    ExternalCallState.HTTP_CAPTURE_STARTED_V2.value,
+                    ExternalCallState.HTTP_RESPONSE_CAPTURED_V2.value,
+                    ExternalCallState.ACCOUNTING_INCOMPLETE_V2.value,
+                    ExternalCallState.HTTP_CAPTURE_FAILED_V2.value}
+            ):
+                raise ValueError("failure diagnostic capture does not match call lifecycle")
+            existing = session.scalar(
+                select(ExternalCallFailureDiagnosticRow).where(
+                    ExternalCallFailureDiagnosticRow.external_call_id == call_id,
+                    ExternalCallFailureDiagnosticRow.capture_layer == capture_layer,
+                )
+            )
+            if existing is not None:
+                if existing.diagnostic_json != encoded:
+                    raise ValueError("external-call failure diagnostic is immutable")
+                return
+            session.add(
+                ExternalCallFailureDiagnosticRow(
+                    external_call_id=call.external_call_id,
+                    run_id=call.run_id,
+                    task_id=call.task_id,
+                    capture_layer=capture_layer,
+                    schema_id="ExternalCallFailureDiagnosticV1",
+                    schema_version=1,
+                    diagnostic_json=encoded,
+                    recorded_at=datetime.now(UTC),
+                )
+            )
+
+    def external_call_observability(self, call_id: str) -> dict[str, Any]:
+        """Read milestones and diagnostic for audits; never backfills history."""
+
+        with self.session_factory() as session:
+            call = self._external_call(session, call_id)
+            milestones = session.scalars(
+                select(ExternalCallMilestoneRow)
+                .where(ExternalCallMilestoneRow.external_call_id == call_id)
+                .order_by(ExternalCallMilestoneRow.observation_id)
+            ).all()
+            diagnostics = session.scalars(
+                select(ExternalCallFailureDiagnosticRow)
+                .where(ExternalCallFailureDiagnosticRow.external_call_id == call_id)
+                .order_by(ExternalCallFailureDiagnosticRow.diagnostic_id)
+            ).all()
+            return {
+                "run_id": call.run_id,
+                "task_id": call.task_id,
+                "external_call_id": call_id,
+                "milestones": [
+                    {
+                        "version": row.milestone_version,
+                        "milestone": row.milestone,
+                        "source": row.source,
+                        "recorded_at": row.recorded_at.isoformat(),
+                    }
+                    for row in milestones
+                ],
+                "failure_diagnostics": [
+                    {
+                        "capture_layer": row.capture_layer,
+                        "schema_id": row.schema_id,
+                        "schema_version": row.schema_version,
+                        "diagnostic": json.loads(row.diagnostic_json),
+                    }
+                    for row in diagnostics
+                ],
+                "failure_diagnostic": (
+                    json.loads(diagnostics[-1].diagnostic_json) if diagnostics else None
+                ),
+            }
+
+    def start_http_capture_v2(self, call_id: str, *, reservation_id: str,
+                              fence: TaskLeaseFence) -> None:
+        """Freeze the response-capture revision before any provider I/O."""
+        with self.session_factory.begin() as session:
+            self._begin_immediate(session)
+            row = self._fenced_external_call(session, call_id, reservation_id, fence)
+            self._validate_external_call_write_state(session, row)
+            row.state = transition_external_call(ExternalCallState(row.state),
+                ExternalCallState.HTTP_CAPTURE_STARTED_V2).value
+            row.usage_json = _json({"response_capture_contract": "http-response-capture-v2"})
+
+    def record_http_capture_v2(
+        self, call_id: str, capture: Mapping[str, Any], *,
+        reservation_id: str, fence: TaskLeaseFence,
+    ) -> None:
+        """Commit task-bound HTTP evidence and state, without a cost entry."""
+        with self.session_factory.begin() as session:
+            self._begin_immediate(session)
+            row = self._fenced_external_call(session, call_id, reservation_id, fence)
+            self._validate_external_call_write_state(session, row)
+            if row.execution_context_json is None:
+                raise ValueError("HTTP capture requires authoritative execution context")
+            if (capture.get("version") != 2 or capture.get("request_fingerprint")
+                    != row.request_fingerprint or capture.get("provider") != row.provider
+                    or capture.get("model") != row.model_or_tool
+                    or capture.get("attempt") != row.attempt
+                    or capture.get("run_id") != row.run_id
+                    or capture.get("task_id") != row.task_id
+                    or capture.get("reservation_id") != reservation_id
+                    or capture.get("execution_context_fingerprint") != hashlib.sha256(
+                        _json(json.loads(row.execution_context_json)).encode()).hexdigest()):
+                raise ValueError("HTTP capture identity mismatch")
+            ref = ArtifactRef.model_validate(capture["artifact_ref"])
+            if not ref.path.startswith(f"raw/{call_id}:http-v2/"):
+                raise ValueError("HTTP capture artifact belongs to another call")
+            existing = json.loads(row.usage_json).get("http_capture_v2")
+            if existing is not None:
+                if existing != dict(capture):
+                    raise ValueError("immutable HTTP capture conflict")
+                return
+            if row.state not in {ExternalCallState.HTTP_CAPTURE_STARTED_V2.value,
+                                 ExternalCallState.HTTP_CAPTURE_FAILED_V2.value}:
+                raise ValueError("HTTP capture requires V2 capture-started call")
+            row.usage_json = _json({"response_capture_contract": "http-response-capture-v2",
+                                   "http_capture_v2": dict(capture)})
+            row.state = transition_external_call(ExternalCallState(row.state),
+                ExternalCallState.HTTP_RESPONSE_CAPTURED_V2).value
+
     def record_raw_and_transition(
         self,
         call_id: str,
@@ -2098,6 +2601,21 @@ class SqliteUnitOfWork:
             self._begin_immediate(session)
             row = self._fenced_external_call(session, call_id, reservation_id, fence)
             self._validate_external_call_write_state(session, row)
+            if row.state in {ExternalCallState.HTTP_RESPONSE_CAPTURED_V2.value,
+                             ExternalCallState.DOMAIN_RAW_PERSIST_FAILED_V2.value,
+                             ExternalCallState.ACCOUNTING_INCOMPLETE_V2.value}:
+                accounting = dict(usage or {})
+                old_capture = json.loads(row.usage_json).get("http_capture_v2")
+                if (accounting.get("http_capture_v2") != old_capture
+                        or type(accounting.get("input_tokens")) is not int
+                        or type(accounting.get("output_tokens")) is not int
+                        or accounting["input_tokens"] < 0 or accounting["output_tokens"] < 0
+                        or "cost_usd" not in accounting
+                        or not str(accounting.get("pricing_version", "")).startswith("estimated:")):
+                    raise ValueError("captured response requires trustworthy accounting")
+                cost = Decimal(str(accounting["cost_usd"]))
+                if not cost.is_finite() or cost < 0:
+                    raise ValueError("invalid captured response cost")
             row.raw_artifact_ref_json = ref.model_dump_json()
             row.provider_response_id = provider_response_id
             row.usage_json = _json(thaw_json(usage or {}))
@@ -2496,6 +3014,9 @@ class SqliteUnitOfWork:
         }
         return all(
             ExternalCallState(call.state) in safe_states
+            and json.loads(call.usage_json).get("response_capture_contract")
+                != "http-response-capture-v2"
+            and "http_capture_v2" not in json.loads(call.usage_json)
             and call.raw_artifact_ref_json is None
             and call.provider_response_id is None
             for call in calls
@@ -2805,6 +3326,240 @@ class SqliteUnitOfWork:
                 task_intent=source_task_intent,
             )
 
+    def _validate_lineage_v2_atomic_batch(
+        self, session: Session, *, run_id: str,
+        events: Sequence[NewEvent], followup_tasks: Sequence[NewTask],
+        external_call_id: str | None,
+    ) -> None:
+        """Keep a V3 task invisible unless its exact frozen plan commits with it."""
+        from co_scientist.agents.payloads import (
+            ClaimDecompositionResultV3,
+            PopulationEvolutionResultV2,
+        )
+        from co_scientist.domain.claim_lineage import (
+            FrozenLineagePlanV2,
+            LineageChangeProposalV2,
+            RemovedParentProposalV2,
+            freeze_claim_lineage_v2,
+        )
+        from co_scientist.domain.claim_verification import (
+            ClaimDecompositionOutputPolicy,
+            ClaimVerificationPolicy,
+            scientific_hash,
+        )
+        from co_scientist.domain.hypothesis import HypothesisContent
+        from co_scientist.runtime.lineage_workflow_contract import (
+            validate_lineage_task_identity,
+            validate_lineage_workflow_contract,
+        )
+        from co_scientist.runtime.task_payload import WorkerTaskPayload
+        from co_scientist.supervisor.lineage_event_path import (
+            durable_parent_scope_v2,
+            frozen_targets_event_id_v2,
+            resolve_child_decomposition_events_v2,
+            validate_persisted_offspring_task_v2,
+        )
+
+        freezes = [e for e in events if e.event_type == "ClaimLineageTargetsFrozenV2"]
+        applies = [e for e in events if e.event_type == "ClaimLineageAppliedV2"]
+        v3_tasks = [task for task in followup_tasks
+                    if task.payload.get("output_schema_id") == "ClaimDecompositionResultV3"]
+        if not (freezes or applies or v3_tasks):
+            return
+        if len(freezes) > 1 or len(applies) > 1 or len(v3_tasks) > 1:
+            raise ValueError("lineage V2 batch has duplicate freeze, application or V3 task")
+        if freezes and applies:
+            raise ValueError("lineage freeze and application require separate fenced results")
+        run = session.get(RunRow, run_id)
+        if run is None:
+            raise KeyError(f"unknown run: {run_id}")
+        manifest = json.loads(run.manifest_json)
+        validate_lineage_workflow_contract(manifest)
+        prior_rows = session.scalars(select(EventRow).where(
+            EventRow.run_id == run_id).order_by(EventRow.sequence)).all()
+        prior_events = tuple(row.to_domain() for row in prior_rows)
+        if external_call_id is None and (freezes or applies):
+            raise ValueError("lineage event requires a fenced external result")
+        call = self._external_call(session, external_call_id) if external_call_id else None
+        persisted_result = (json.loads(call.agent_result_json)
+                            if call is not None and call.agent_result_json else None)
+        if (freezes or applies) and (call is None or persisted_result is None
+                                    or call.raw_artifact_ref_json is None):
+            raise ValueError("lineage event requires a raw-persisted submitted result")
+        if freezes:
+            if len(v3_tasks) != 1:
+                raise ValueError("lineage freeze requires a fenced result and atomic V3 task")
+            freeze = freezes[0]
+            data = freeze.payload
+            plan = FrozenLineagePlanV2.model_validate(data.get("frozen_lineage_plan"))
+            if data.get("frozen_lineage_plan_hash") != scientific_hash(
+                plan.model_dump(mode="json")
+            ):
+                raise ValueError("frozen lineage plan hash mismatch")
+            task = v3_tasks[0]
+            payload = WorkerTaskPayload.model_validate(task.payload)
+            validate_lineage_task_identity(manifest, payload, durable_targets_verified=True)
+            if (payload.inputs.get("frozen_lineage_plan") != plan.model_dump(mode="json")
+                    or payload.inputs.get("lineage_targets_frozen_event_id")
+                    != data.get("lineage_targets_frozen_event_id")
+                    or data.get("offspring_task_id") != task.task_id
+                    or data.get("offspring_task_snapshot_hash") != payload.input_snapshot_hash
+                    or data.get("lineage_workflow_contract_hash")
+                    != payload.inputs.get("lineage_workflow_contract_hash")):
+                raise ValueError("frozen lineage event and V3 task identity disagree")
+            assert call is not None and persisted_result is not None
+            proposal = PopulationEvolutionResultV2.model_validate(data.get("proposal_payload"))
+            if not proposal.valid or proposal.child is None:
+                raise ValueError("lineage freeze requires an accepted child proposal")
+            raw_ref_json = call.raw_artifact_ref_json
+            if raw_ref_json is None:
+                raise ValueError("lineage freeze requires persisted raw response")
+            if (PopulationEvolutionResultV2.model_validate(persisted_result.get("payload"))
+                    != proposal
+                    or persisted_result.get("result_id") != data.get("source_result_id")
+                    or persisted_result.get("task_id") != data.get("source_task_id")
+                    or persisted_result.get("raw_artifact_ref")
+                    != json.loads(raw_ref_json)
+                    or data.get("raw_artifact_ref")
+                    != json.loads(raw_ref_json)
+                    or call.task_id != data.get("source_task_id")):
+                raise ValueError("frozen lineage proposal differs from durable raw-first result")
+            if data.get("lineage_targets_frozen_event_id") != frozen_targets_event_id_v2(
+                run_id=run_id, plan=plan, source_result_id=str(data["source_result_id"]),
+            ):
+                raise ValueError("frozen lineage event identity mismatch")
+            source_task = session.get(TaskRow, call.task_id)
+            if source_task is None:
+                raise ValueError("lineage source task is missing")
+            source_payload = WorkerTaskPayload.model_validate(json.loads(source_task.payload_json))
+            validate_lineage_task_identity(manifest, source_payload)
+            source_inputs = source_payload.inputs
+            decisions = [event for event in prior_events
+                         if event.event_type == "ParentSelectionDecisionRecorded"
+                         and event.payload.get("decision_id") == proposal.selection_decision_id]
+            if (len(decisions) != 1
+                    or source_inputs.get("selection_decision_id")
+                    != proposal.selection_decision_id
+                    or tuple(source_inputs.get("parent_ids", ())) != proposal.parent_ids
+                    or source_inputs.get("generation_id") != proposal.generation_id
+                    or tuple(decisions[0].payload.get("chosen_parent_ids", ()))
+                    != proposal.parent_ids):
+                raise ValueError("frozen lineage proposal differs from durable parent selection")
+            selected_hashes = source_inputs.get("parent_content_hashes")
+            if not isinstance(selected_hashes, Mapping):
+                raise TypeError("lineage source task has no parent content hash map")
+            parents = durable_parent_scope_v2(
+                events=prior_events, selected_parent_ids=proposal.parent_ids,
+                selected_parent_hashes=selected_hashes,
+            )
+            child = HypothesisContent.model_validate(proposal.child.model_dump(mode="json"))
+            expected_plan = freeze_claim_lineage_v2(
+                proposal_id=proposal.proposal_id,
+                generation_id=proposal.generation_id,
+                child_hypothesis_id=proposal.child.hypothesis_id,
+                child_content=child, parents=parents,
+                changes=tuple(LineageChangeProposalV2.model_validate(
+                    group.model_dump(mode="json")) for group in proposal.change_groups),
+                removed_parent_proposals=tuple(RemovedParentProposalV2.model_validate(
+                    item.model_dump(mode="json")) for item in proposal.removed_parent_claims),
+            )
+            if plan != expected_plan:
+                raise ValueError("frozen lineage parent scope or targets differ from durable state")
+            kinds = [event.event_type for event in events]
+            required = ["HypothesisContentCreated", "OffspringHypothesisCreated",
+                        "OffspringValidationStarted", "ClaimLineageTargetsFrozenV2",
+                        "TaskEnqueued"]
+            if any(kinds.count(kind) != 1 for kind in required) or [
+                kinds.index(kind) for kind in required
+            ] != sorted(kinds.index(kind) for kind in required):
+                raise ValueError("child, lineage targets and V3 task must commit in order")
+            content = events[kinds.index("HypothesisContentCreated")].payload
+            offspring = events[kinds.index("OffspringHypothesisCreated")].payload
+            start = events[kinds.index("OffspringValidationStarted")].payload
+            enqueued = events[kinds.index("TaskEnqueued")].payload
+            if (content.get("hypothesis_id") != plan.child_hypothesis_id
+                    or content.get("content_hash") != plan.child_hypothesis_content_hash
+                    or HypothesisContent.model_validate(dict(content)).content_hash
+                    != plan.child_hypothesis_content_hash
+                    or offspring.get("proposal_id") != plan.proposal_id
+                    or offspring.get("hypothesis_id") != plan.child_hypothesis_id
+                    or offspring.get("content_hash") != plan.child_hypothesis_content_hash
+                    or start.get("hypothesis_id") != plan.child_hypothesis_id
+                    or start.get("content_hash") != plan.child_hypothesis_content_hash
+                    or thaw_json(enqueued) != task.model_dump(mode="json")):
+                raise ValueError("atomic lineage child identity mismatch")
+            if any(event.event_type == "ClaimLineageTargetsFrozenV2"
+                   and event.payload.get("frozen_lineage_plan", {}).get("proposal_id")
+                   == plan.proposal_id for event in prior_events):
+                raise ValueError("proposal already has a frozen lineage target set")
+        elif v3_tasks:
+            raise ValueError("V3 task cannot be enqueued without an atomic frozen target event")
+        if applies:
+            assert call is not None and persisted_result is not None
+            result = ClaimDecompositionResultV3.model_validate(persisted_result.get("payload"))
+            task_row = session.get(TaskRow, call.task_id)
+            if task_row is None:
+                raise ValueError("lineage child task is missing")
+            task_payload = WorkerTaskPayload.model_validate(json.loads(task_row.payload_json))
+            claim_policy = ClaimVerificationPolicy.model_validate(
+                task_payload.inputs.get("claim_verification_policy"))
+            output_policy = ClaimDecompositionOutputPolicy.model_validate(
+                task_payload.inputs.get("claim_decomposition_output"))
+            if (len(result.claims) > output_policy.max_total_claims
+                    or sum(item.importance == "critical" for item in result.claims)
+                    > claim_policy.max_critical_claims_per_hypothesis):
+                raise ValueError("child claim count exceeds frozen decomposition limits")
+            plan = validate_persisted_offspring_task_v2(
+                events=prior_events, task=task_payload,
+                task_id=call.task_id, run_id=run_id,
+            )
+            validate_lineage_task_identity(manifest, task_payload,
+                                           durable_targets_verified=True)
+            contents = [event for event in prior_events
+                        if event.event_type == "HypothesisContentCreated"
+                        and event.payload.get("hypothesis_id") == plan.child_hypothesis_id]
+            if len(contents) != 1:
+                raise ValueError("lineage child content event is missing or ambiguous")
+            child_content = HypothesisContent.model_validate(dict(contents[0].payload))
+            parents = durable_parent_scope_v2(
+                events=prior_events,
+                selected_parent_ids=tuple(ref.parent_hypothesis_id
+                                          for ref in plan.selected_parents),
+                selected_parent_hashes={ref.parent_hypothesis_id:
+                                        ref.parent_hypothesis_content_hash
+                                        for ref in plan.selected_parents},
+            )
+            expected_events, application = resolve_child_decomposition_events_v2(
+                run_id=run_id, result_id=str(persisted_result["result_id"]),
+                plan=plan, parents=parents,
+                child_content=child_content, result=result,
+            )
+            scientific_events = events[:len(expected_events)]
+            continuation_events = events[len(expected_events):]
+            probe_terminal = (
+                len(continuation_events) == 1
+                and continuation_events[0].event_type == "CompatibilityProbeTerminatedV1"
+                and manifest.get("probe_execution_envelope") is not None
+                and not followup_tasks
+            )
+            expected_continuation = tuple(NewEvent(
+                event_type="TaskEnqueued", payload=task.model_dump(mode="json"),
+                causation_id=str(persisted_result["result_id"]), correlation_id=run_id,
+            ) for task in followup_tasks)
+            if ([event.model_dump(mode="json") for event in expected_events]
+                    != [event.model_dump(mode="json") for event in scientific_events]
+                    or (not probe_terminal and
+                        [event.model_dump(mode="json") for event in expected_continuation]
+                        != [event.model_dump(mode="json") for event in continuation_events])
+                    or (application.state != "complete" and followup_tasks)
+                    or applies[0].payload.get("application_hash")
+                    != scientific_hash(application.model_dump(mode="json"))):
+                raise ValueError("lineage claim events or application differ from durable result")
+            if any(event.event_type == "ClaimLineageAppliedV2"
+                   and event.payload.get("source_result_id")
+                   == persisted_result["result_id"] for event in prior_events):
+                raise ValueError("child decomposition result was already applied")
+
     def _validate_scientist_resolution(
         self, session: Session, run_id: str, events: Sequence[NewEvent], tasks: Sequence[NewTask],
     ) -> None:
@@ -2903,6 +3658,176 @@ class SqliteUnitOfWork:
                 f"run transition to {target_run_state.value} requires {expected_event}"
             )
 
+    @staticmethod
+    def _validate_probe_execution_batch(
+        session: Session, *, run_id: str, events: Sequence[NewEvent],
+        followup_tasks: Sequence[NewTask], external_call_id: str | None,
+    ) -> None:
+        """A probe terminal is operational, never a scientific admission/finalization."""
+
+        run = session.get(RunRow, run_id)
+        assert run is not None
+        probe = probe_envelope_for_manifest(json.loads(run.manifest_json))
+        if probe is None:
+            if any(e.event_type == "CompatibilityProbeTerminatedV1" for e in events):
+                raise ValueError("probe terminal requires a frozen probe envelope")
+            return
+        prior_terminal = session.scalar(select(EventRow).where(
+            EventRow.run_id == run_id,
+            EventRow.event_type == "CompatibilityProbeTerminatedV1",
+        ))
+        if prior_terminal is not None:
+            raise ValueError("compatibility probe is already operationally terminal")
+        terminal = [e for e in events if e.event_type == "CompatibilityProbeTerminatedV1"]
+        if len(terminal) > 1 or (terminal and followup_tasks):
+            raise ValueError("probe terminal must be unique and have no follow-up tasks")
+        if not terminal:
+            return
+        event = terminal[0]
+        payload = event.payload
+        if (event.schema_version != 1
+                or payload.get("policy_version") != probe.version
+                or payload.get("status") not in {"passed", "failed"}
+                or payload.get("stage") not in {"A", "B"}
+                or not isinstance(payload.get("task_id"), str)
+                or not isinstance(payload.get("reason"), str)
+                or not payload["reason"]):
+            raise ValueError("invalid versioned probe terminal event")
+        task = session.get(TaskRow, payload["task_id"])
+        if task is None or task.run_id != run_id:
+            raise ValueError("probe terminal task identity mismatch")
+        task_payload = json.loads(task.payload_json)
+        expected_schema = (
+            "PopulationEvolutionResultV2" if payload["stage"] == "A"
+            else "ClaimDecompositionResultV3"
+        )
+        if task_payload.get("output_schema_id") != expected_schema:
+            raise ValueError("probe terminal stage differs from frozen task")
+        if payload["status"] == "passed":
+            applies = [e for e in events if e.event_type == "ClaimLineageAppliedV2"]
+            if (payload["stage"] != "B" or len(applies) != 1
+                    or applies[0].payload.get("application", {}).get("state") != "complete"
+                    or external_call_id is None):
+                raise ValueError("probe success requires an applied complete V3 lineage result")
+        if external_call_id is not None and payload.get("external_call_id") != external_call_id:
+            raise ValueError("probe terminal differs from source external call")
+
+    @staticmethod
+    def _validate_bayesian_pair_reservations(
+        session: Session, *, run_id: str, events: Sequence[NewEvent],
+        followup_tasks: Sequence[NewTask],
+    ) -> None:
+        run = session.get(RunRow, run_id)
+        if run is None:
+            raise KeyError(run_id)
+        manifest = json.loads(run.manifest_json)
+        profile = manifest.get("profile")
+        if not isinstance(profile, dict):
+            return
+        tournament = profile.get("tournament", {})
+        if not isinstance(tournament, dict):
+            return
+        if tournament.get("rating_policy_version") != "trueskill_v1":
+            return
+        from co_scientist.domain.ideation_core_boundary import batch34_execution_enabled
+
+        if batch34_execution_enabled(manifest):
+            from co_scientist.domain.bayesian_ranking import (
+                TrueSkillConfig,
+                replay_bayesian_rating,
+                select_baseline_pair,
+            )
+            from co_scientist.domain.research_protocol import protocol_hash
+
+            rows = session.scalars(select(EventRow).where(EventRow.run_id == run_id)
+                                   .order_by(EventRow.sequence)).all()
+            history = [DomainEvent(run_id=run_id, sequence=row.sequence, event_type=row.event_type,
+                schema_version=row.schema_version, payload=json.loads(row.payload_json)) for row in rows]
+            new = [e.payload for e in events if e.event_type == "MatchPairReserved"]
+            tasks = {t.task_id: t for t in followup_tasks if t.intent_type == "run_ranking"}
+            if len(new) != len(tasks) or len(new) > 1:
+                raise ValueError("baseline committed-match order requires at most one reserved match")
+            if new and session.scalar(select(TaskRow.task_id).where(
+                    TaskRow.run_id == run_id, TaskRow.intent_type == "run_ranking",
+                    TaskRow.state.not_in(("succeeded", "failed", "cancelled"))).limit(1)) is not None:
+                raise ValueError("baseline requires prior Ranking opportunity to terminate before enqueue")
+            for item in new:
+                task = tasks.get(str(item["task_id"]))
+                if task is None or task.payload["output_schema_id"] != "BaselineRankingResultV1":
+                    raise ValueError("baseline match requires exact versioned ranking task")
+                visible = task.payload["inputs"]["model_input"]
+                if any(thaw_json(item.get(key)) != thaw_json(visible.get(key)) for key in (
+                    "match_id", "epoch_id", "left_id", "right_id", "focal_id", "pairing")):
+                    raise ValueError("baseline reservation differs from exact frozen task")
+                prior = [e for e in history if e.event_type == "MatchPairReserved"]
+                limit = profile["budget"].get("max_matches")
+                if limit is None or len(prior) >= limit:
+                    raise ValueError("baseline reservation exceeds finite run-global match envelope")
+                if any(e.payload["match_id"] == item["match_id"] for e in prior):
+                    raise ValueError("duplicate baseline logical opportunity")
+                epoch = manifest["tournament_contract"]["epoch_id"]
+                ratings = replay_bayesian_rating(history, epoch_id=epoch, policy=TrueSkillConfig())
+                seed = protocol_hash({"run_id": run_id, "manifest_hash": protocol_hash(manifest)})
+                baseline_pair, state = select_baseline_pair(ratings, history, epoch_id=epoch, seed=seed)
+                if baseline_pair is None or state != "MATCH_REQUIRED" or baseline_pair.model_dump(mode="json") != thaw_json(item["pairing"]):
+                    raise ValueError("baseline opportunity violates focal quota/cap/pair/orientation policy")
+            return
+        policy = UCBPairingPolicy.model_validate(tournament["selection"])
+        new = [event.payload for event in events if event.event_type == "MatchPairReserved"]
+        task_by_id = {task.task_id: task for task in followup_tasks
+                      if task.intent_type == "run_ranking"}
+        if len(new) != len(task_by_id):
+            raise ValueError("each Bayesian ranking task requires one pair reservation")
+        prior_rows = session.scalars(select(EventRow).where(
+            EventRow.run_id == run_id,
+            EventRow.event_type == "MatchPairReserved",
+        ).order_by(EventRow.sequence)).all()
+        all_reservations = [json.loads(row.payload_json) for row in prior_rows]
+        match_ids = {str(item["match_id"]) for item in all_reservations}
+        from collections import Counter
+
+        candidate_counts: Counter[tuple[str, str]] = Counter()
+        pair_counts: Counter[tuple[str, str, str]] = Counter()
+        tiebreaker_counts: Counter[tuple[str, str, str]] = Counter()
+        for item in all_reservations:
+            epoch = str(item["epoch_id"])
+            left, right = str(item["left_id"]), str(item["right_id"])
+            pair = (epoch, *sorted((left, right)))
+            candidate_counts.update(((epoch, left), (epoch, right)))
+            pair_counts[pair] += 1
+            if item.get("comparison_kind") == "tiebreaker":
+                tiebreaker_counts[pair] += 1
+        for item in new:
+            task_id = str(item["task_id"])
+            task = task_by_id.pop(task_id, None)
+            if task is None:
+                raise ValueError("Bayesian reservation has no matching ranking task")
+            inputs = task.payload["inputs"]
+            if any(item.get(key) != inputs.get(key) for key in (
+                "match_id", "epoch_id", "left_id", "right_id", "evidence_context_hash",
+                "comparison_kind",
+            )):
+                raise ValueError("Bayesian pair reservation does not match frozen task")
+            match_id = str(item["match_id"])
+            if match_id in match_ids:
+                raise ValueError("duplicate Bayesian match reservation")
+            match_ids.add(match_id)
+            epoch = str(item["epoch_id"])
+            left, right = str(item["left_id"]), str(item["right_id"])
+            if left == right:
+                raise ValueError("self-comparison is not a match")
+            pair = (epoch, *sorted((left, right)))
+            if (candidate_counts[(epoch, left)] >= policy.max_matches_per_candidate
+                    or candidate_counts[(epoch, right)] >= policy.max_matches_per_candidate
+                    or pair_counts[pair] >= policy.max_matches_per_pair
+                    or (item.get("comparison_kind") == "tiebreaker"
+                        and tiebreaker_counts[pair] >= policy.max_tiebreakers_per_pair)):
+                raise ValueError("Bayesian pair exceeds frozen match caps")
+            candidate_counts.update(((epoch, left), (epoch, right)))
+            pair_counts[pair] += 1
+            if item.get("comparison_kind") == "tiebreaker":
+                tiebreaker_counts[pair] += 1
+
     def commit_domain_batch(
         self,
         *,
@@ -2975,12 +3900,19 @@ class SqliteUnitOfWork:
                 raise ValueError("task lease fence requires an external call or release")
             if not _validate_sequence_before_replay:
                 self._assert_sequence(session, run_id, expected_sequence)
+            self._validate_probe_execution_batch(
+                session, run_id=run_id, events=events,
+                followup_tasks=followup_tasks, external_call_id=external_call_id,
+            )
             self._validate_lifecycle_batch(
                 session,
                 run_id=run_id,
                 events=events,
                 target_run_state=run_target,
                 followup_tasks=followup_tasks,
+            )
+            self._validate_bayesian_pair_reservations(
+                session, run_id=run_id, events=events, followup_tasks=followup_tasks,
             )
             self._validate_domain_batch_mutations(
                 session,
@@ -2991,6 +3923,10 @@ class SqliteUnitOfWork:
                 external_call_id=external_call_id,
                 cost_entries=cost_entries,
                 target_run_state=run_target,
+            )
+            self._validate_lineage_v2_atomic_batch(
+                session, run_id=run_id, events=events,
+                followup_tasks=followup_tasks, external_call_id=external_call_id,
             )
             if settle_reservation_id is not None:
                 if external_call_id is None or settle_reservation_id != reservation_id:

@@ -13,7 +13,7 @@ class ConvergenceCheckpoint(BaseModel):
     checkpoint_id: str
     run_id: str
     source_sequence: int
-    stop_cause: Literal["scientist_stop"] | None = None
+    stop_cause: Literal["scientist_stop", "wall_clock_exhausted", "policy_exhausted"] | None = None
     policy_version: str
     epoch_id: str
     research_plan_version: int
@@ -22,7 +22,7 @@ class ConvergenceCheckpoint(BaseModel):
     judge_profile_hash: str
     rating_policy_version: str
     admission_policy_version: str
-    anchor_set_id: str
+    anchor_set_id: str | None
     anchor_member_ids: tuple[str, ...]
     anchor_member_content_hashes: tuple[str, ...]
     anchor_comparison_ids: tuple[str, ...]
@@ -108,7 +108,15 @@ def evaluate_stop(
     if scientist_action == "soft_stop":
         return StopDecision(action="stop", reason="scientist_stop")
     if snapshot.budget_snapshot.hard_limit_reached:
-        return StopDecision(action="stop", reason="hard_budget_reached")
+        return StopDecision(action="stop", reason=(
+            "budget_exhausted" if snapshot.anchor_set_id is None else "hard_budget_reached"
+        ))
+    if snapshot.stop_cause in {"wall_clock_exhausted", "policy_exhausted"}:
+        return StopDecision(action="stop", reason=snapshot.stop_cause)
+    if snapshot.anchor_set_id is None:
+        # No calibrated anchor coverage exists in Research v2. The recorded
+        # ranking/diversity signals cannot establish quality convergence.
+        return StopDecision(action="continue", reason=None)
 
     primary = snapshot.quality_converged
     return StopDecision(

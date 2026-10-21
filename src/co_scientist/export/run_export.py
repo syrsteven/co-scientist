@@ -7,7 +7,7 @@ import json
 import shutil
 from collections.abc import Iterator, Mapping
 from contextlib import AbstractContextManager, contextmanager
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 from decimal import Decimal
 from pathlib import Path
 from typing import Any, Protocol
@@ -25,6 +25,7 @@ from co_scientist.adapters.persistence.sqlite import (
     SqliteUnitOfWork,
     TaskRow,
 )
+from co_scientist.domain.bayesian_ranking import TrueSkillConfig, replay_bayesian_rating
 from co_scientist.domain.hypothesis import HypothesisContent
 from co_scientist.domain.proximity import ProximityEdge
 from co_scientist.domain.review import NoveltyAssessment, Review
@@ -54,6 +55,8 @@ class RunReadModel(Protocol):
     def hypotheses(self, run_id: str) -> list[dict[str, Any]]: ...
 
     def hypothesis_projections(self, run_id: str) -> list[dict[str, Any]]: ...
+
+    def population_evolution(self, run_id: str) -> dict[str, Any]: ...
 
     def reviews(self, run_id: str) -> list[dict[str, Any]]: ...
 
@@ -112,6 +115,20 @@ def _is_sha256(value: object) -> bool:
         and len(value) == 71
         and value.startswith("sha256:")
         and all(character in "0123456789abcdef" for character in value[7:])
+    )
+
+
+def _no_anchor_research_stop(source_manifest: Mapping[str, Any], cause: object) -> bool:
+    """Whether a frozen Research v2 policy permits an automatic stop cause."""
+    profile = source_manifest.get("profile")
+    return (
+        cause in {"policy_exhausted", "wall_clock_exhausted"}
+        and source_manifest.get("execution_contract_version") == 4
+        and isinstance(profile, Mapping)
+        and profile.get("research_protocol_version") == "research-v2"
+        and profile.get("anchor_policy") == "none"
+        and isinstance(profile.get("stop"), Mapping)
+        and profile["stop"].get("policy_version") == "research-no-anchor-v1"
     )
 
 
@@ -244,6 +261,98 @@ class SqliteRunReadModel:
             exported.append(item)
         return exported
 
+    def population_evolution(self, run_id: str) -> dict[str, Any]:
+        """Event-derived search projection; historical populations are retained."""
+
+        events = self._domain_events(run_id)
+        generations: dict[str, dict[str, Any]] = {}
+        selections: list[dict[str, Any]] = []
+        proposals: list[dict[str, Any]] = []
+        children: dict[str, dict[str, Any]] = {}
+        lineage: list[dict[str, Any]] = []
+        scheduler: list[dict[str, Any]] = []
+        for event in events:
+            kind, payload = event.event_type, event.payload
+            if kind == "EvolutionGenerationStarted":
+                generations[str(payload["generation_id"])] = {
+                    **thaw_json(payload), "started_sequence": event.sequence,
+                    "started_at": event.occurred_at.isoformat(),
+                    "completed_sequence": None, "completed_at": None,
+                    "stop_reason": None,
+                }
+            elif kind == "EvolutionGenerationCompleted":
+                current = generations[str(payload["generation_id"])]
+                current.update({"completed_sequence": event.sequence,
+                                "completed_at": event.occurred_at.isoformat(),
+                                "stop_reason": payload.get("stop_reason"),
+                                "offspring_ids": list(payload.get("offspring_ids", [])),
+                                "admitted_offspring_ids": list(payload.get("admitted_offspring_ids", []))})
+            elif kind == "ParentSelectionDecisionRecorded":
+                selections.append({**thaw_json(payload), "event_sequence": event.sequence})
+            elif kind == "EvolutionProposalSubmitted":
+                proposals.append({**thaw_json(payload), "event_sequence": event.sequence})
+            elif kind == "OffspringHypothesisCreated":
+                children[str(payload["hypothesis_id"])] = {
+                    **thaw_json(payload), "status": "validating",
+                    "created_sequence": event.sequence,
+                }
+            elif kind in {"OffspringAdmitted", "OffspringRejected", "OffspringValidationIncomplete"}:
+                key = str(payload["hypothesis_id"])
+                if key in children:
+                    status = {"OffspringAdmitted": "admitted", "OffspringRejected": "rejected",
+                              "OffspringValidationIncomplete": "incomplete"}[kind]
+                    children[key].update({"status": status,
+                                          "status_sequence": event.sequence,
+                                          "status_reason": payload.get("reason"),
+                                          "blocking_requirements": list(payload.get("blocking_requirements", [])),
+                                          "nearest_candidate": payload.get("nearest_candidate"),
+                                          "duplicate_likelihood": payload.get("duplicate_likelihood")})
+            elif kind == "ClaimLineageRecorded":
+                lineage.append({**thaw_json(payload), "event_sequence": event.sequence})
+            elif kind == "EvolutionSchedulerDecision":
+                scheduler.append({**thaw_json(payload), "event_sequence": event.sequence})
+        if self.run_state(run_id) not in {"running", "created"}:
+            for child in children.values():
+                if child["status"] == "validating":
+                    child["status"] = "incomplete"
+        proposals_by_id = {str(item["proposal_id"]): item for item in proposals}
+        children_by_proposal = {str(item["proposal_id"]): item for item in children.values()}
+        validations = {str(event.payload["proposal_id"]): event.payload
+                       for event in events if event.event_type == "EvolutionProposalValidated"}
+        outcomes: dict[str, dict[str, int]] = {}
+        for selection in selections:
+            operator = str(selection["operator"])
+            counts = outcomes.setdefault(operator, {
+                "attempted": 0, "valid_proposal": 0, "invalid_proposal": 0,
+                "child_created": 0, "child_admitted": 0, "child_rejected": 0,
+                "near_duplicate": 0, "validation_incomplete": 0,
+            })
+            counts["attempted"] += 1
+            proposal = next((item for item in proposals_by_id.values()
+                             if item["selection_decision_id"] == selection["decision_id"]), None)
+            if proposal is None:
+                continue
+            validation = validations.get(str(proposal["proposal_id"]))
+            if validation is None:
+                continue
+            counts["valid_proposal" if validation.get("accepted") else "invalid_proposal"] += 1
+            child = children_by_proposal.get(str(proposal["proposal_id"]))
+            if child is None:
+                continue
+            counts["child_created"] += 1
+            if child["status"] == "admitted":
+                counts["child_admitted"] += 1
+            elif child["status"] == "rejected":
+                counts["child_rejected"] += 1
+                if "candidate_duplicate" in child.get("blocking_requirements", []):
+                    counts["near_duplicate"] += 1
+            elif child["status"] == "incomplete":
+                counts["validation_incomplete"] += 1
+        return {"generations": list(generations.values()),
+                "selections": selections, "proposals": proposals,
+                "offspring": list(children.values()), "claim_lineage": lineage,
+                "scheduler_decisions": scheduler, "operator_outcomes": outcomes}
+
     def hypothesis_projections(self, run_id: str) -> list[dict[str, Any]]:
         events = self._domain_events(run_id)
         anchor_ids = self._anchor_ids(run_id)
@@ -332,23 +441,31 @@ class SqliteRunReadModel:
             )
         }
         ratings: dict[str, dict[str, float]] = {}
+        sigmas: dict[str, dict[str, float]] = {}
         for event in events:
             if event.event_type == "InitialRatingAssigned":
                 epoch_id = str(event.payload["epoch_id"])
                 hypothesis_id = str(event.payload["hypothesis_id"])
                 ratings.setdefault(epoch_id, {})[hypothesis_id] = float(event.payload["rating"])
+                if epochs[epoch_id].rating_policy_version == "trueskill_v1":
+                    sigmas.setdefault(epoch_id, {})[hypothesis_id] = float(
+                        event.payload["sigma"]
+                    )
 
         rating_updates: dict[str, list[dict[str, Any]]] = {}
+        bayesian_updates: dict[str, list[dict[str, Any]]] = {}
         for event in events:
-            if event.event_type != "RatingUpdated":
+            if event.event_type not in {"RatingUpdated", "BayesianRatingProjected"}:
                 continue
             match_id = event.payload.get("match_id")
             if not isinstance(match_id, str) or not match_id:
-                raise ValueError("RatingUpdated must reference a match_id")
-            rating_updates.setdefault(match_id, []).append(dict(event.payload))
+                raise ValueError(f"{event.event_type} must reference a match_id")
+            target = (rating_updates if event.event_type == "RatingUpdated"
+                      else bayesian_updates)
+            target.setdefault(match_id, []).append(dict(event.payload))
 
         matches: list[dict[str, Any]] = []
-        for event in events:
+        for event_index, event in enumerate(events):
             if event.event_type != "MatchEvaluated":
                 continue
             result = MatchResult.model_validate(event.payload)
@@ -374,7 +491,46 @@ class SqliteRunReadModel:
                     f"match {result.match_id} references an unrated TournamentEntry"
                 ) from error
             after_left, after_right = before_left, before_right
-            if result.decision.value == "decisive":
+            if epoch.rating_policy_version == "trueskill_v1":
+                if rating_updates.pop(result.match_id, []):
+                    raise ValueError("Bayesian match cannot have legacy Elo rating events")
+                epoch_sigmas = sigmas.setdefault(result.epoch_id, {})
+                before_sigmas = {
+                    result.left_id: epoch_sigmas[result.left_id],
+                    result.right_id: epoch_sigmas[result.right_id],
+                }
+                updates = bayesian_updates.pop(result.match_id, [])
+                if result.decision.value == "decisive":
+                    if len(updates) != 2:
+                        raise ValueError(
+                            f"decisive match {result.match_id} requires two Bayesian projections"
+                        )
+                    by_candidate = {str(update["hypothesis_id"]): update for update in updates}
+                    if len(by_candidate) != 2 or set(by_candidate) != {
+                        result.left_id, result.right_id,
+                    }:
+                        raise ValueError("Bayesian projection participants mismatch")
+                    prefix = events[:event_index + 1]
+                    computed = replay_bayesian_rating(
+                        prefix, epoch_id=result.epoch_id,
+                        policy=TrueSkillConfig.model_validate(epoch.rating_policy_config),
+                    )
+                    for candidate_id in (result.left_id, result.right_id):
+                        update = by_candidate[candidate_id]
+                        if (update.get("epoch_id") != result.epoch_id
+                                or update.get("rating_policy_version") != "trueskill_v1"
+                                or float(update["before_mu"]) != epoch_ratings[candidate_id]
+                                or float(update["before_sigma"]) != epoch_sigmas[candidate_id]
+                                or float(update["mu"]) != computed[candidate_id].mu
+                                or float(update["sigma"]) != computed[candidate_id].sigma):
+                            raise ValueError("Bayesian rating projection does not match ledger")
+                        epoch_ratings[candidate_id] = computed[candidate_id].mu
+                        epoch_sigmas[candidate_id] = computed[candidate_id].sigma
+                    after_left = epoch_ratings[result.left_id]
+                    after_right = epoch_ratings[result.right_id]
+                elif updates:
+                    raise ValueError("non-decisive match cannot have Bayesian projections")
+            elif result.decision.value == "decisive":
                 updates = rating_updates.pop(result.match_id, [])
                 if len(updates) != 2:
                     raise ValueError(
@@ -426,9 +582,20 @@ class SqliteRunReadModel:
                     != (before_left, before_right),
                 }
             )
+            if epoch.rating_policy_version == "trueskill_v1":
+                item.update({
+                    "rating_kind": "trueskill_v1",
+                    "sigmas_before": before_sigmas,
+                    "sigmas_after": {
+                        result.left_id: sigmas[result.epoch_id][result.left_id],
+                        result.right_id: sigmas[result.epoch_id][result.right_id],
+                    },
+                })
             matches.append(item)
         if rating_updates:
             raise ValueError("orphan RatingUpdated events reference unknown matches")
+        if bayesian_updates:
+            raise ValueError("orphan Bayesian projections reference unknown matches")
         ordered_ratings = {
             epoch_id: dict(sorted(values.items()))
             for epoch_id, values in sorted(ratings.items())
@@ -726,17 +893,40 @@ class SqliteRunReadModel:
                     dict(item) if isinstance(item, Mapping) else {"message": str(item)}
                     for item in payload_issues
                 )
-        unique_sources = _deduplicate(sources, "source_id") if sources else []
+        by_source: dict[str, dict[str, Any]] = {}
+        retrieval_instances: list[dict[str, Any]] = []
+        for source in sources:
+            source_id = source.get("source_id")
+            if not isinstance(source_id, str) or not source_id:
+                raise ValueError("exported source_id must be a non-empty string")
+            previous = by_source.get(source_id)
+            if previous is not None and previous != source:
+                # Same PubMed record may be retrieved under several claim-directed
+                # queries. Preserve each raw provenance; never collapse conflicting
+                # scientific metadata into a single source ID.
+                scientific_keys = set(previous) | set(source)
+                scientific_keys.difference_update({"raw_artifact_ref", "retrieval_query"})
+                if any(previous.get(key) != source.get(key) for key in scientific_keys):
+                    raise ValueError(f"conflicting durable values for source_id={source_id}")
+                retrieval_instances.append({"source_id": source_id,
+                                            "raw_artifact_ref": source.get("raw_artifact_ref"),
+                                            "retrieval_query": source.get("retrieval_query")})
+            else:
+                by_source[source_id] = source
+        unique_sources = [by_source[key] for key in sorted(by_source)]
         unique_issues = {
             _canonical(issue): issue
             for issue in access_issues
         }
-        return {
+        result = {
             "pubmed_queries": sorted(queries),
             "pubmed_query_cutoffs": sorted(cutoffs),
             "source_documents": unique_sources,
             "access_issues": [unique_issues[key] for key in sorted(unique_issues)],
         }
+        if retrieval_instances:
+            result["additional_retrieval_instances"] = retrieval_instances
+        return result
 
     def run_manifest(self, run_id: str) -> dict[str, Any]:
         row = self._run_row(run_id)
@@ -1029,6 +1219,9 @@ def export_run(
                 staging / "hypothesis_projections.json",
                 snapshot.hypothesis_projections(run_id),
             )
+            if snapshot.source_manifest(run_id).get("profile", {}).get("population_evolution"):
+                _write_json(staging / "population_evolution.json",
+                            snapshot.population_evolution(run_id))
             _write_json(staging / "reviews.json", snapshot.reviews(run_id))
             _write_json(
                 staging / "novelty_assessments.json",
@@ -1368,7 +1561,7 @@ def verify_core_release_invariants(
         and event["payload"].get("decision") != "decisive"
     }
     persisted_non_decisive_updates = sum(
-        event["event_type"] == "RatingUpdated"
+        event["event_type"] in {"RatingUpdated", "BayesianRatingProjected"}
         and str(event["payload"].get("match_id")) in non_decisive_ids
         for event in events
     )
@@ -1490,7 +1683,26 @@ def verify_core_release_invariants(
                 continue
             valid_soft_signal_sequences.add(signals[0]["sequence"])
         elif checkpoint["payload"].get("stop_cause") is not None:
-            continue
+            cause = checkpoint["payload"].get("stop_cause")
+            source_sequence = checkpoint["payload"].get("source_sequence")
+            source_event = next(
+                (item for item in events if item["sequence"] == source_sequence), None
+            )
+            if signals or not _no_anchor_research_stop(source_manifest, cause):
+                continue
+            if cause == "policy_exhausted":
+                if source_event is None or source_event["event_type"] != "PolicyExhaustionRecorded":
+                    continue
+            elif cause == "wall_clock_exhausted":
+                wall_seconds = source_manifest["profile"]["stop"].get("max_wall_seconds")
+                if (not isinstance(wall_seconds, int) or isinstance(wall_seconds, bool)
+                        or not events or events[0]["event_type"] != "RunStarted"
+                        or datetime.fromisoformat(checkpoint["occurred_at"])
+                        < datetime.fromisoformat(events[0]["occurred_at"])
+                        + timedelta(seconds=wall_seconds)):
+                    continue
+            else:
+                continue
         valid_finalization_control_sequences.update(control_sequences[1:])
 
     signals = [
@@ -1584,6 +1796,18 @@ def verify_core_release_invariants(
     raw_anchor_sets = source_manifest.get("anchor_sets")
     anchor_members: list[Mapping[str, Any]] = []
     anchor_manifest_valid = False
+    profile = source_manifest.get("profile")
+    no_anchors = (
+        source_manifest.get("execution_contract_version") == 4
+        and isinstance(profile, Mapping)
+        and profile.get("research_protocol_version") == "research-v2"
+        and profile.get("anchor_policy") == "none"
+        and isinstance(profile.get("stop"), Mapping)
+        and profile["stop"].get("policy_version") == "research-no-anchor-v1"
+        and source_manifest.get("tournament_contract", {}).get("anchor_set_id") is None
+    )
+    if no_anchors and raw_anchor_sets == []:
+        anchor_manifest_valid = True
     if (
         isinstance(raw_anchor_sets, list)
         and len(raw_anchor_sets) == 1

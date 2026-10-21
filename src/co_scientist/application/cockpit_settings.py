@@ -25,6 +25,10 @@ PROFILE_FILES = {
     "qwen": "core_preview_qwen.yaml", "gemini": "core_preview_gemini.yaml",
     "claude": "core_preview_claude.yaml", "replay": "core_preview.yaml",
 }
+RESEARCH_V2_TEMPLATES = (
+    ("research-v2-deepseek", "research_v2_deepseek.yaml", "rpe_amd_goal.yaml"),
+    ("research-v2-lens-benchmark", "research_v2_lens_benchmark.yaml", "lens_regeneration_goal.yaml"),
+)
 
 
 class SettingsDraft(BaseModel):
@@ -55,6 +59,14 @@ def settings_catalog(root: Path, environment: Mapping[str, str]) -> dict[str, An
             yaml.safe_load((root / "configs/profiles" / filename).read_text())
         ).model_dump(mode="json")
         templates.append({"id": provider, "goal": goal, "profile": profile})
+    for template_id, filename, goal_name in RESEARCH_V2_TEMPLATES:
+        profile = CoreProfile.model_validate(
+            yaml.safe_load((root / "configs/profiles" / filename).read_text())
+        ).model_dump(mode="json")
+        template_goal = ResearchGoal.model_validate(
+            yaml.safe_load((root / "examples" / goal_name).read_text())
+        ).model_dump(mode="json")
+        templates.append({"id": template_id, "goal": template_goal, "profile": profile})
     return {
         "templates": templates,
         "providers": [
@@ -135,15 +147,19 @@ def validate_settings(payload: Any) -> dict[str, Any]:
         fail("profile.literature_novelty_required", "当前新颖性产物由完整评审生成；启用新颖性准入时需保留完整评审。")
     if not p.literature_novelty_required:
         warnings.append("已关闭文献新颖性准入门槛；这会降低研究证据要求。")
-    if p.tournament.anchor_count != 2:
-        fail("profile.tournament.anchor_count", "当前内置 anchor 集固定为两个成员。")
+    if p.research_protocol_version == "research-v2" and p.anchor_policy == "none":
+        if p.tournament.anchor_count != 0:
+            fail("profile.tournament.anchor_count", "Research v2 无 anchor 模式要求数量为零。")
+    elif p.tournament.anchor_count != 2:
+        fail("profile.tournament.anchor_count", "晶状体 benchmark anchor 集固定为两个成员。")
     if p.tournament.rating_policy_version != "elo-32-v1":
         fail("profile.tournament.rating_policy_version", "当前仅实现 elo-32-v1，不能通过改名创建新算法。")
     if p.tournament.match_mode != "research":
         fail("profile.tournament.match_mode", "当前运行器未完整实现 binary benchmark 行为，设置页仅开放 research 模式。")
-    for key in ("require_anchor_plateau", "require_top_k_stability", "require_cluster_diversity_plateau"):
-        if not getattr(p.stop, key):
-            fail(f"profile.stop.{key}", "当前停止内核始终联合检查此信号，设置页不能关闭它。")
+    if p.anchor_policy != "none":
+        for key in ("require_anchor_plateau", "require_top_k_stability", "require_cluster_diversity_plateau"):
+            if not getattr(p.stop, key):
+                fail(f"profile.stop.{key}", "Anchor 收敛模式始终联合检查此信号。")
     for maximum, minimum in (("max_matches", "minimum_matches"), ("max_hypotheses", "minimum_hypotheses"), ("max_model_calls", "minimum_model_calls")):
         limit = getattr(p.budget, maximum)
         if limit is not None and limit < getattr(p.stop, minimum):
@@ -162,7 +178,10 @@ def validate_settings(payload: Any) -> dict[str, Any]:
         fail("goal.required_outputs", "Research v1 需要非空因果链与产出要求。")
     if p.providers.llm == "replay" and p.research_protocol_version:
         fail("profile.research_protocol_version", "内置 Replay trace 只支持 Legacy；Research v1 需专用回放数据。")
-    warnings.append("当前内置 anchors 面向晶状体再生；换研究领域时须另行实现匹配的 anchor 集。")
+    if p.anchor_policy == "none":
+        warnings.append("Research v2 无 anchor 模式按预算、时钟、研究者或策略无可执行动作收尾；不会宣称质量收敛。")
+    else:
+        warnings.append("当前内置 anchors 面向晶状体再生；非 lens 研究应选择 Research v2 无 anchor 模式。")
     # Nested legacy models ignore extras: fail closed at this editor boundary.
     for key, allowed in (("budget", set(type(p.budget).model_fields)),
                          ("stop", set(type(p.stop).model_fields)),

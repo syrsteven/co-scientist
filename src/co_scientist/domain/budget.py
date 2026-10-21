@@ -36,6 +36,7 @@ class BudgetPolicy(BaseModel):
     model_config = ConfigDict(frozen=True)
 
     hypothesis_limit_policy: Literal["hard-stop-v1", "capacity-v2"] = "hard-stop-v1"
+    call_accounting_version: Literal["all-cost-entries-v1", "model-only-v2"] = "all-cost-entries-v1"
     max_usd: Decimal | None = Field(default=None, ge=0)
     max_model_calls: int | None = Field(default=None, ge=0)
     max_input_tokens: int | None = Field(default=None, ge=0)
@@ -48,6 +49,8 @@ class BudgetPolicy(BaseModel):
         value = handler(self)
         if self.hypothesis_limit_policy == "hard-stop-v1":
             value.pop("hypothesis_limit_policy", None)
+        if self.call_accounting_version == "all-cost-entries-v1":
+            value.pop("call_accounting_version", None)
         return value
 
     def reached(self, usage: BudgetEstimate) -> bool:

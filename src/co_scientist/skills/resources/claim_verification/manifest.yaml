@@ -1,0 +1,8 @@
+id: claim_verification
+agent_type: claim_verification
+version: 0.1.0
+prompt_path: prompts/system.md
+input_schema: ClaimVerificationInputV1
+output_schema: ClaimVerificationResultV1
+allowed_tools: []
+allowed_capabilities: [return_agent_result]

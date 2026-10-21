@@ -5,11 +5,13 @@ from __future__ import annotations
 import hashlib
 import json
 from collections.abc import Mapping, Sequence
+from datetime import UTC, datetime, timedelta
 from typing import Any, Literal
 
 from pydantic import BaseModel, ConfigDict
 
 from co_scientist.adapters.persistence.sqlite import CommitResult, SqliteUnitOfWork
+from co_scientist.domain.bayesian_ranking import TrueSkillConfig, replay_bayesian_rating
 from co_scientist.domain.convergence import ConvergenceCheckpoint
 from co_scientist.domain.research_feedback import feedback_enabled
 from co_scientist.domain.tournament import (
@@ -125,6 +127,30 @@ class ConvergenceCheckpointBuilder:
         top_k: int,
         candidate_ids: frozenset[str],
     ) -> tuple[tuple[int, str, tuple[str, ...]], ...]:
+        if epoch.rating_policy_version == "trueskill_v1":
+            policy = TrueSkillConfig.model_validate(epoch.rating_policy_config)
+            snapshots = []
+            for index, event in enumerate(events):
+                if (event.event_type != "MatchEvaluated"
+                        or event.payload.get("epoch_id") != epoch.epoch_id
+                        or event.payload.get("decision") != "decisive"):
+                    continue
+                match_id = str(event.payload["match_id"])
+                projected = [item for item in events[index + 1:index + 3]
+                             if item.event_type == "BayesianRatingProjected"
+                             and item.payload.get("match_id") == match_id]
+                if len(projected) != 2 or not event.payload.get("evidence_context_hash"):
+                    raise ValueError("Bayesian match lacks context or contiguous rating projection")
+                ratings = replay_bayesian_rating(events[:index + 1],
+                                                 epoch_id=epoch.epoch_id, policy=policy)
+                if any(item.payload.get("mu") != ratings[str(item.payload["hypothesis_id"])].mu
+                       or item.payload.get("sigma") != ratings[str(item.payload["hypothesis_id"])].sigma
+                       for item in projected):
+                    raise ValueError("Bayesian projection disagrees with immutable match ledger")
+                ranked = tuple(sorted(candidate_ids.intersection(ratings),
+                                      key=lambda key: (-ratings[key].mu, key))[:top_k])
+                snapshots.append((projected[-1].sequence, match_id, ranked))
+            return tuple(snapshots)
         matches = tuple(
             event
             for event in events
@@ -261,9 +287,9 @@ class ConvergenceCheckpointBuilder:
         *,
         run_id: str,
         source_sequence: int,
-        stop_cause: Literal["scientist_stop"] | None = None,
+        stop_cause: Literal["scientist_stop", "wall_clock_exhausted", "policy_exhausted"] | None = None,
     ) -> ConvergenceCheckpoint:
-        allow_incomplete = stop_cause == "scientist_stop"
+        allow_incomplete = stop_cause is not None
         events = tuple(
             event for event in self.uow.load(run_id) if event.sequence <= source_sequence
         )
@@ -282,7 +308,25 @@ class ConvergenceCheckpointBuilder:
         # A growing candidate pool can legitimately lack convergence coverage.
         # Keep validating provenance; missing coverage remains a false stop signal,
         # not a malformed run. Legacy checkpoint behavior is unchanged.
-        allow_incomplete = allow_incomplete or feedback_enabled(manifest)
+        profile = manifest.get("profile")
+        no_anchors = (
+            isinstance(profile, Mapping)
+            and profile.get("research_protocol_version") == "research-v2"
+            and profile.get("anchor_policy") == "none"
+            and isinstance(profile.get("stop"), Mapping)
+            and profile["stop"].get("policy_version") == "research-no-anchor-v1"
+        )
+        if stop_cause in {"wall_clock_exhausted", "policy_exhausted"} and not no_anchors:
+            raise ValueError("automatic M0 stop cause requires a no-anchor Research v2 Run")
+        if stop_cause == "wall_clock_exhausted":
+            wall_seconds = profile["stop"].get("max_wall_seconds")
+            if (not isinstance(wall_seconds, int) or isinstance(wall_seconds, bool)
+                    or wall_seconds < 0 or events[0].event_type != "RunStarted"
+                    or datetime.now(UTC) < events[0].occurred_at + timedelta(seconds=wall_seconds)):
+                raise ValueError("wall-clock stop lacks elapsed frozen deadline")
+        if stop_cause == "policy_exhausted" and events[-1].event_type != "PolicyExhaustionRecorded":
+            raise ValueError("policy-exhausted stop lacks a Supervisor decision event")
+        allow_incomplete = allow_incomplete or feedback_enabled(manifest) or no_anchors
         stop = self._stop_policy(manifest)
         minimum_matches = _required_non_negative(stop, "minimum_matches")
         minimum_hypotheses = _required_non_negative(stop, "minimum_hypotheses")
@@ -292,9 +336,13 @@ class ConvergenceCheckpointBuilder:
         cluster_window = _required_positive(stop, "cluster_diversity_window")
         elo_window = _required_positive(stop, "elo_plateau_window")
         epoch, epoch_sequence = self._active_epoch(events)
-        if epoch.anchor_set_id is None:
+        if epoch.anchor_set_id is None and not no_anchors:
             raise ValueError("active epoch has no frozen anchor set")
-        frozen_anchor_members = self._anchor_members(manifest, epoch.anchor_set_id)
+        if no_anchors and (epoch.anchor_set_id is not None or manifest.get("anchor_sets") != []):
+            raise ValueError("no-anchor epoch contains frozen anchor membership")
+        frozen_anchor_members = (
+            () if no_anchors else self._anchor_members(manifest, epoch.anchor_set_id)
+        )
         anchor_members = tuple(anchor_id for anchor_id, _ in frozen_anchor_members)
         anchor_hash_by_id = dict(frozen_anchor_members)
 
@@ -564,9 +612,12 @@ class ConvergenceCheckpointBuilder:
         return ConvergenceCheckpoint(checkpoint_id=checkpoint_id, **data)
 
     def build_and_record(
-        self, *, run_id: str, expected_sequence: int
+        self, *, run_id: str, expected_sequence: int,
+        stop_cause: Literal["wall_clock_exhausted", "policy_exhausted"] | None = None,
     ) -> RecordedCheckpoint:
-        checkpoint = self._build(run_id=run_id, source_sequence=expected_sequence)
+        checkpoint = self._build(
+            run_id=run_id, source_sequence=expected_sequence, stop_cause=stop_cause,
+        )
         commit = self.uow.commit_domain_batch(
             run_id=run_id,
             expected_sequence=expected_sequence,

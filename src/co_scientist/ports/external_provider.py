@@ -1,6 +1,8 @@
 """Port for providers that return complete, uninterpreted response bytes."""
 
-from collections.abc import Mapping
+from collections.abc import Callable, Iterator, Mapping
+from contextlib import contextmanager
+from contextvars import ContextVar
 from math import isfinite
 from types import MappingProxyType
 from typing import Any, Protocol
@@ -69,3 +71,49 @@ class ExternalProvider(Protocol):
     """External provider capable of returning a complete raw response."""
 
     async def invoke(self, request: dict[str, Any]) -> RawExternalResponse: ...
+
+
+class CapturedHTTPResponseV2(BaseModel):
+    """Transport evidence only: no scientific or accounting authority."""
+
+    model_config = ConfigDict(frozen=True, extra="forbid")
+    version: int = Field(default=2, ge=2, le=2)
+    body: bytes
+    status: int = Field(ge=100, le=599)
+    headers: Mapping[str, str] = Field(default_factory=dict)
+
+    @field_validator("headers")
+    @classmethod
+    def safe_headers(cls, value: Mapping[str, str]) -> Mapping[str, str]:
+        allowed = {"content-type", "content-length", "x-request-id", "request-id", "retry-after"}
+        return MappingProxyType({k.lower(): v[:256] for k, v in value.items()
+                                 if k.lower() in allowed})
+
+
+_http_capture: ContextVar[Callable[[CapturedHTTPResponseV2], None] | None] = ContextVar(
+    "task_bound_http_capture_v2", default=None)
+
+
+class HTTPResponseCaptureError(RuntimeError):
+    """A complete response existed, but durable capture was not confirmed."""
+
+
+@contextmanager
+def controlled_http_capture(callback: Callable[[CapturedHTTPResponseV2], None]
+                            ) -> Iterator[None]:
+    token = _http_capture.set(callback)
+    try:
+        yield
+    finally:
+        _http_capture.reset(token)
+
+
+def capture_http_response(body: bytes, status: int, headers: Mapping[str, str]) -> bool:
+    callback = _http_capture.get()
+    if callback is None:
+        return False  # Preserve standalone/legacy transport behavior.
+    try:
+        callback(CapturedHTTPResponseV2(body=body, status=status, headers=headers))
+    except Exception as error:
+        raise HTTPResponseCaptureError("durable HTTP capture was not confirmed") from error
+    return True

@@ -14,7 +14,7 @@ class SkillRegistry:
     def __init__(self, skills: Mapping[tuple[str, str], Path]) -> None:
         resolved: dict[tuple[str, str], Path] = {}
         for identity, directory in skills.items():
-            manifest = load_skill(directory)
+            manifest = load_skill(directory, skill_version=identity[1])
             if identity != (manifest.id, manifest.version):
                 raise ValueError("skill registry identity does not match manifest")
             resolved[identity] = directory

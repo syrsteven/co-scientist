@@ -172,7 +172,7 @@ def _validate_hypothesis_replay_contracts(events: list[DomainEvent]) -> None:
                 right_id,
                 _required_str(payload, "decision"),
             )
-        elif event.event_type == "RatingUpdated":
+        elif event.event_type in {"RatingUpdated", "BayesianRatingProjected"}:
             match_id = _required_str(payload, "match_id")
             hypothesis_id = _required_str(payload, "hypothesis_id")
             match = matches.get(match_id)
@@ -188,6 +188,10 @@ def _validate_hypothesis_replay_contracts(events: list[DomainEvent]) -> None:
             expected_policy = readiness[(hypothesis_id, match[0])][2]
             if _required_str(payload, "rating_policy_version") != expected_policy:
                 raise ValueError("rating policy does not match tournament entry epoch")
+            if (event.event_type == "BayesianRatingProjected") != (
+                expected_policy == "trueskill_v1"
+            ):
+                raise ValueError("rating projection event does not match epoch policy")
             rating_updates.add(key)
 
 
@@ -336,6 +340,11 @@ def reduce_hypothesis(
 ) -> HypothesisProjection | None:
     """Apply one event to a hypothesis projection without mutating either input."""
     assert_supported_event_version(event)
+    if event.event_type in {
+        "ClaimVerificationAppliedV2",
+        "ClaimVerificationBindingRejectedV2",
+    }:
+        raise ValueError("V2 event cannot be reduced by V1 hypothesis projection")
     payload = event.payload
     if event.event_type == "HypothesisContentCreated":
         if payload.get("hypothesis_id") != hypothesis_id:
@@ -684,7 +693,7 @@ def reduce_hypothesis(
                 "updated_sequence": event.sequence,
             }
         )
-    elif event.event_type == "RatingUpdated":
+    elif event.event_type in {"RatingUpdated", "BayesianRatingProjected"}:
         epoch_id = _required_str(payload, "epoch_id")
         entry = next(
             (
@@ -707,7 +716,8 @@ def reduce_hypothesis(
         )
         if match is None or match.decision != "decisive":
             raise ValueError("rating update requires a decisive match")
-        before = _required_float(payload, "before_rating")
+        bayesian = event.event_type == "BayesianRatingProjected"
+        before = _required_float(payload, "before_mu" if bayesian else "before_rating")
         prior_rating = next(
             (
                 item.rating
@@ -720,7 +730,7 @@ def reduce_hypothesis(
         )
         if prior_rating != before:
             raise ValueError("rating update before_rating does not match projection")
-        rating = _required_float(payload, "rating")
+        rating = _required_float(payload, "mu" if bayesian else "rating")
         rating_policy = _required_str(payload, "rating_policy_version")
         if rating_policy != entry.rating_policy_version:
             raise ValueError("rating policy does not match tournament entry epoch")
@@ -786,6 +796,14 @@ def replay_hypothesis(
     _validate_hypothesis_replay_contracts(events)
     projection: HypothesisProjection | None = None
     for event in events:
+        if event.event_type in {
+            "ClaimVerificationAppliedV2",
+            "ClaimVerificationBindingRejectedV2",
+        }:
+            # These versioned application events belong to the V2 replay path.
+            # They are explicitly rejected by reduce_hypothesis when called
+            # directly, and are omitted from this frozen V1 projection fold.
+            continue
         projection = reduce_hypothesis(projection, event, hypothesis_id)
     if projection is None:
         raise KeyError(hypothesis_id)
@@ -807,14 +825,17 @@ def replay_tournament(events: list[DomainEvent]) -> TournamentProjection:
             versions = dict(projection.epoch_plan_versions)
             versions[event.payload["epoch_id"]] = event.payload["research_plan_version"]
             projection = projection.model_copy(update={"epoch_plan_versions": versions})
-        elif event.event_type in {"TournamentEntryCreated", "RatingUpdated"}:
+        elif event.event_type in {
+            "TournamentEntryCreated", "RatingUpdated", "BayesianRatingProjected",
+        }:
             ratings = {
                 epoch_id: dict(values)
                 for epoch_id, values in projection.ratings.items()
             }
             epoch_id = event.payload["epoch_id"]
+            rating_key = "mu" if event.event_type == "BayesianRatingProjected" else "rating"
             ratings.setdefault(epoch_id, {})[event.payload["hypothesis_id"]] = event.payload[
-                "rating"
+                rating_key
             ]
             projection = projection.model_copy(update={"ratings": ratings})
     return projection

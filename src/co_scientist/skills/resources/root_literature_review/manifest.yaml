@@ -1,0 +1,21 @@
+id: root_literature_review
+version: 0.1.0
+phases:
+  QUERY_PLAN_V1:
+    id: root_literature_review
+    agent_type: root_literature_review
+    version: 0.1.0
+    prompt_path: prompts/system.md
+    input_schema: RootQueryPlanInputV1
+    output_schema: RootQueryPlanResultV1
+    allowed_tools: []
+    allowed_capabilities: [return_agent_result]
+  SOURCE_REVIEW_V1:
+    id: root_literature_review
+    agent_type: root_literature_review
+    version: 0.1.0
+    prompt_path: prompts/system.md
+    input_schema: RootLiteratureReviewInputV1
+    output_schema: RootLiteratureReviewResultV1
+    allowed_tools: []
+    allowed_capabilities: [return_agent_result]
