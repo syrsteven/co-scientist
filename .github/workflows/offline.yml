@@ -22,12 +22,17 @@ jobs:
           cache: pip
       - name: Install frozen dependencies and local package
         run: |
-          python -m pip install -r requirements.lock
+          python -m pip install -r requirements-web.lock
           python -m pip install --no-build-isolation --no-deps -e .
       - name: Explicit public tokenizer setup (not a scientific API)
         run: co-scientist ideation resources
       - name: Socket-denied offline regressions
         run: python -m pytest --import-mode=importlib -p no:cacheprovider -m 'not online' -q
+      - name: Workbench local-only browser G3 and HTTP-service restart
+        if: matrix.python == '3.12'
+        run: |
+          python -m playwright install --with-deps chromium
+          python tests/web_browser.py /tmp/workbench-browser-acceptance
       - name: Ruff (six unchanged baseline import-order debts explicitly isolated)
         run: >-
           python -m ruff check src tests scripts
@@ -36,7 +41,7 @@ jobs:
           --per-file-ignores 'src/co_scientist/adapters/persistence/migrations.py:I001'
       - name: Targeted types and syntax
         run: |
-          python -m mypy --follow-imports=skip src/co_scientist/release src/co_scientist/runtime/trace_snapshot.py src/co_scientist/runtime/ideation_trace.py scripts/verify_release.py src/co_scientist/application/cockpit.py
+          python -m mypy --follow-imports=skip src/co_scientist/release src/co_scientist/runtime/trace_snapshot.py src/co_scientist/runtime/ideation_trace.py scripts/verify_release.py src/co_scientist/application/cockpit.py src/co_scientist_web
           PYTHONPYCACHEPREFIX=/tmp/co-scientist-pyc python -m compileall -q src tests scripts
           git diff --check
       - name: New wheel and sdist only (never overwrite archived 0.1.0)

@@ -1,0 +1,27 @@
+{
+  "version": "workbench-integration-provenance-v1",
+  "base_commit": "21213ed0d7863547aff5c081e75bfb0c4f875ec6",
+  "branch": "codex/workbench-v0.4-backend",
+  "handoff_zip_sha256": "85f5756cbb1d7bb1073cd264013482f7d42cb647d256be18e100bb1439188de4",
+  "handoff_internal_hashes_verified": true,
+  "native_code_identity": "sha256:ff8ce5866dee4235a025dae7794acbabea79a1a29086d760b8d727ba8d62243f",
+  "native_source_changed": false,
+  "web_files": {
+    "src/co_scientist_web/__init__.py": "424c8ed29a53f86eaa187aba64ea2e87edd34e05ddd40159a52ffd3b05dc4c10",
+    "src/co_scientist_web/__main__.py": "853034257e3298210dfbf614723924a93bf3d6eab48a9266541450ac1be720f4",
+    "src/co_scientist_web/app.py": "43235925fd3ecd81a5c868963cf13745fdb8069bb4124e32bae77b3bb9fccd15",
+    "src/co_scientist_web/configuration.py": "30efde434f71b9022ef18914d691d83b5414b21b3c867d489aa86f5a642e17b4",
+    "src/co_scientist_web/driver.py": "3f8790aeee216e4ec7ee40a2ca2c2031c0e8af843656b06b335a8b28d7546155",
+    "src/co_scientist_web/frontend/app.js": "38f5f89ecbff2ebdeec28a14ea4d98194f9193b560e8e503a717d38e4b940565",
+    "src/co_scientist_web/frontend/backend.js": "25d638bb21b633debd466e3611dfcddb5cc59edfd3aa8909742b61d3314536ba",
+    "src/co_scientist_web/frontend/fixture.js": "31fa29f6892d8f9026df632c4bbd09c7b3d55b8977af7758a124b80ef1f3764f",
+    "src/co_scientist_web/frontend/index.html": "a0b49c6160a25628dd727ef0b5d96abf682b79c278e3eccc59d99973be448d68",
+    "src/co_scientist_web/frontend/styles.css": "39f88ed4cdaec1078a9a736aa0a45cbf2883a83483f3ffb053f73d24d76f4ea7",
+    "src/co_scientist_web/frontend/workbench.js": "71bbd464935c57be6450faa1ea06356fcf1985646c61ef7a55707ca3f36f869d",
+    "src/co_scientist_web/jobs.py": "08e524973c17f144f3c10acc2f62fb2c0cd1e91c39d3096cb2b6c602000f6e3b",
+    "src/co_scientist_web/store.py": "2900317d555754af8537e3712c1422cbfd1fc8ea2fadcaad4c06cba0a8065fd4",
+    "src/co_scientist_web/views.py": "cc9c1220feac0dee556123ae298f6bab67aee834e5846cebefb10ad9338697f3"
+  },
+  "live_scientific_dispatches": 0,
+  "m3_custom_execution": "NOT_IMPLEMENTED_BLOCKED"
+}

@@ -1,0 +1,326 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="color-scheme" content="light">
+  <title>Co-Scientist / Research Workbench 0.4</title>
+  <link rel="stylesheet" href="/assets/styles.css">
+</head>
+<body>
+<div class="layout">
+  <aside class="sidebar" aria-label="工作区导航">
+    <div class="brand">
+      <div class="brandmark"><span>C</span><span class="brandmark-dot"></span></div>
+      <div><strong>Co-Scientist</strong><small>RESEARCH WORKBENCH</small></div>
+    </div>
+    <div class="side-section-label">WORKSPACE</div>
+    <nav class="nav">
+      <button type="button" class="nav-item active" data-nav="projects"><span class="nav-ico">▦</span>研究项目</button>
+      <button type="button" class="nav-item" data-nav="create"><span class="nav-ico">⊞</span>创建任务</button>
+      <button type="button" class="nav-item" data-nav="monitor"><span class="nav-ico">◉</span>运行监控</button>
+      <button type="button" class="nav-item" data-nav="results"><span class="nav-ico">▤</span>结果中心</button>
+      <button type="button" class="nav-item" data-nav="settings"><span class="nav-ico">⚙</span>设置</button>
+    </nav>
+    <div class="side-section-label side-run-label">CURRENT RESEARCH</div>
+    <div class="studycard">
+      <div class="mini-status"><span class="pulsedot"></span> <span id="side-mode">演示回放 · 离线</span></div>
+      <strong id="side-study">RPE mitochondrial stress</strong>
+      <p id="side-runid">synthetic-demo-g3</p>
+      <div class="studycard-sep"></div>
+      <div class="studycard-line"><span>研究范围</span><b id="side-scope">G0 → G3</b></div>
+      <div class="studycard-line"><span>执行模式</span><b id="side-runtime">MOCK / DEMO</b></div>
+    </div>
+    <div class="sidebar-bottom">
+      <div class="origin"><span class="origin-dot"></span><span id="origin-label">未连接真实 Runner</span></div>
+      <p>本地后端连接 v0.1.1 RunService。Mock 无需凭据；LIVE 默认关闭，须逐 Run 明确授权。</p>
+      <span class="version">BASE MAIN · 21213ed0 · WORKBENCH 0.4 + BACKEND</span>
+    </div>
+  </aside>
+
+  <div class="shell">
+    <header class="topbar">
+      <div class="breadcrumbs"><span>WORKSPACE</span><span class="crumb-slash">/</span><strong id="wb-crumb">研究项目</strong></div>
+      <div class="top-actions">
+        <button type="button" class="btn compact wb-settings-shortcut" data-go="settings" aria-label="打开用户设置">⚙ 设置</button>
+        <span class="connection"><span></span>本地交互原型 · 未连接后端</span>
+        <button class="btn secondary compact" id="btn-import" type="button"><svg class="svg-icon" viewBox="0 0 24 24"><path d="M12 15V3m0 0L7.5 7.5M12 3l4.5 4.5M4 17v3h16v-3"/></svg>导入真实 Trace</button>
+        <button class="btn secondary compact" id="btn-export" type="button"><svg class="svg-icon" viewBox="0 0 24 24"><path d="M12 3v12m0 0 4.5-4.5M12 15l-4.5-4.5M4 17v3h16v-3"/></svg>导出视图</button>
+      </div>
+    </header>
+
+    <main class="main">
+      <section class="wb-page" id="page-projects" data-page="projects">
+        <div class="wb-page-head">
+          <div><div class="eyebrow">WORKSPACE / RESEARCH LIBRARY</div><h1>研究项目</h1><p class="subtitle">集中管理研究目标、任务草稿和已导入的历史研究结果。</p></div>
+          <div class="wb-page-actions"><button class="btn secondary" type="button" id="wb-project-import">导入历史 Run</button><button class="btn primary" type="button" data-go="create">＋ 新建科研任务</button></div>
+        </div>
+        <div class="wb-info wb-info-muted"><strong>服务器项目管理</strong><span>项目、草稿和新 Run 记录保存在本地后端。DEMO 单独标记，不混入真实 Run 列表。</span></div>
+        <section class="wb-overview">
+          <div class="wb-summary"><span>本地研究项目</span><strong id="wb-total-projects">1</strong><small>包含演示项目</small></div>
+          <div class="wb-summary"><span>未启动草稿</span><strong id="wb-drafts-count">0</strong><small>可继续编辑</small></div>
+          <div class="wb-summary"><span>导入的原生 Run</span><strong id="wb-imports-count">0</strong><small>本次页面会话内</small></div>
+        </section>
+        <section class="panel wb-block">
+          <div class="wb-block-head"><div><h2>研究列表</h2><p>选择项目，继续编辑草稿或查看对应科研结果</p></div><input class="wb-search" id="wb-project-search" placeholder="搜索研究标题或目标…" aria-label="搜索研究项目"></div>
+          <div id="wb-project-list" class="wb-project-list"></div>
+        </section>
+        <section class="wb-getting-started panel"><div><h2>从哪里开始？</h2><p>填写一个科研问题，默认采用已验证的 G0→G3 配置；也可编辑模型、代数和预算并保存配置草稿。</p></div><button class="btn primary" type="button" data-go="create">开始创建 <span>→</span></button></section>
+      </section>
+
+
+      <section class="wb-page hidden" id="page-settings" data-page="settings">
+        <div class="wb-page-head"><div><div class="eyebrow">WORKSPACE / SETTINGS</div><h1>设置</h1><p class="subtitle">配置模型服务访问凭据与 PubMed 联系邮箱。此原型只在当前页面会话内使用。</p></div><span class="tag tag-demo">离线原型 · 无网络验证</span></div>
+        <div class="wb-info"><strong>凭据安全</strong><span>当前仅用于交互演示，建议先用非真实测试值。网页没有后端加密存储能力。点击“保存本次会话”只会将 API Key 留在当前标签页的 JavaScript 内存中；刷新、关闭页面后丢失。不会写入 localStorage、任务草稿、导出文件，也不会发起任何 API 请求。</span></div>
+        <section class="panel wb-settings-panel">
+          <div class="wb-block-head"><div><h2>模型服务与 PubMed</h2><p>将 API Key 用于未来接入真实后端时的账户鉴权；目前仅做本地填写状态提示</p></div><span class="tag tag-native">SESSION ONLY</span></div>
+          <form id="wb-settings-form" autocomplete="off" novalidate>
+            <div class="wb-settings-fields">
+              <div class="wb-settings-field"><div class="wb-settings-label"><label for="wb-secret-openai">OpenAI API Key</label><span class="wb-service-state" id="wb-openai-state">未填写</span></div><div class="wb-secret-row"><input id="wb-secret-openai" type="password" name="new-openai-secret" autocomplete="new-password" spellcheck="false" placeholder="输入 OpenAI API Key · 保存后不显示原值" aria-describedby="wb-openai-note"><button class="btn secondary compact" type="button" data-toggle-secret="wb-secret-openai" aria-label="显示 OpenAI API Key">显示</button></div><p id="wb-openai-note">用于 Generation / OpenAI Responses。不会从输入内容推断模型账户权限。</p></div>
+              <div class="wb-settings-field"><div class="wb-settings-label"><label for="wb-secret-deepseek">DeepSeek API Key</label><span class="wb-service-state" id="wb-deepseek-state">未填写</span></div><div class="wb-secret-row"><input id="wb-secret-deepseek" type="password" name="new-deepseek-secret" autocomplete="new-password" spellcheck="false" placeholder="输入 DeepSeek API Key · 保存后不显示原值" aria-describedby="wb-deepseek-note"><button class="btn secondary compact" type="button" data-toggle-secret="wb-secret-deepseek" aria-label="显示 DeepSeek API Key">显示</button></div><p id="wb-deepseek-note">用于 Ethics、Source Review、Reflection、Ranking 与 Evolution 等角色。</p></div>
+              <div class="wb-settings-field"><div class="wb-settings-label"><label for="wb-pubmed-email">PubMed 联系邮箱</label><span class="wb-service-state" id="wb-pubmed-state">未填写</span></div><input id="wb-pubmed-email" type="email" name="pubmed-contact-email" autocomplete="off" spellcheck="false" inputmode="email" maxlength="254" placeholder="researcher@example.edu" aria-describedby="wb-email-note"><p id="wb-email-note">映射到未来后端的 <code>CO_SCIENTIST_PUBMED_EMAIL</code>。用于文献检索服务联系，不等于 OpenAI 账户邮箱。</p></div>
+              <div class="wb-settings-field"><div class="wb-settings-label"><label for="wb-researcher-name">研究者显示名（可选）</label></div><input id="wb-researcher-name" type="text" name="researcher-display-name" autocomplete="off" maxlength="120" placeholder="仅用于当前工作台的本地标识"><p>纯界面偏好，不改变科研任务的认证身份或科学结果。</p></div>
+            </div>
+            <div class="wb-settings-footer"><div class="wb-settings-tip"><strong id="wb-settings-summary">尚未填写会话凭据</strong><span>已有的密钥不会在页面中回显；输入新密钥并保存可覆盖当前会话的旧值。</span></div><div class="wb-settings-buttons"><button type="button" id="wb-settings-clear" class="btn secondary">清除会话信息</button><button type="submit" id="wb-settings-save" class="btn primary">保存本次会话</button></div></div>
+          </form>
+        </section>
+        <section class="panel wb-settings-explain"><div class="wb-block-head"><div><h2>连接状态与操作边界</h2><p>本地填写不是账户验证，也不代表当前模型一定可用</p></div></div><div class="wb-settings-facts"><div><strong>当前连接</strong><span>离线网页 · 未连接 Python 服务</span></div><div><strong>模型目录</strong><span>来自 main@21213ed0 的配置与 2026-09-17 参考目录，非实时查询</span></div><div><strong>后续安全接入</strong><span>仅在具有认证和安全传输的本地/受控后端处理凭据；后端绝不回显 API Key</span></div><div><strong>运行前检查</strong><span>需要服务端验证 API 权限、PubMed 配置、Tokenizer、模型上下文及价格</span></div></div></section>
+      </section>
+
+      <section class="wb-page hidden" id="page-create" data-page="create">
+        <div class="wb-page-head"><div><div class="eyebrow">IDEATION / SETUP</div><h1>创建科研任务</h1><p class="subtitle">研究目标 → 运行配置 → 检查 → 授权。当前提供完整前端配置与草稿保存。</p></div><span class="tag tag-demo">尚未连接 Runner</span></div>
+        <div class="wb-info"><strong>重要说明</strong><span>可以从下拉框选择仓库中的模型目录候选，或使用 G3 默认组合。模型兼容性、实际账户权限和定价需要后端验证，当前仍不可启动真实任务。</span></div>
+        <div class="wb-wizard-tabs" id="wb-stepper">
+          <button type="button" data-step="0" class="on"><b>01</b><span>研究目标</span></button>
+          <button type="button" data-step="1"><b>02</b><span>运行配置</span></button>
+          <button type="button" data-step="2"><b>03</b><span>运行前检查</span></button>
+          <button type="button" data-step="3"><b>04</b><span>确认授权</span></button>
+        </div>
+        <form id="wb-run-form" autocomplete="off" novalidate>
+          <div class="wb-wizard-stage panel" data-wizard="0">
+            <div class="wb-block-head"><div><h2>研究问题</h2><p>明确科学问题与需要检验的因果关系</p></div><span class="tag tag-native">Step 1 of 4</span></div>
+            <div class="wb-formgrid">
+              <label class="wb-field wb-wide">研究标题 <span>*</span><input name="title" id="wb-title" maxlength="150" placeholder="例如：RPE 线粒体应激后的恢复与退变机制" required></label>
+              <label class="wb-field wb-wide">研究目标 / Research Goal <span>*</span><textarea name="goal" id="wb-goal" rows="5" placeholder="描述要研究的问题、关键机制以及希望解释的现象……" required></textarea></label>
+              <label class="wb-field">必要因果链 <small>每行一项</small><textarea id="wb-chain" rows="4" placeholder="线粒体应激
+受损细胞器清除
+恢复或持续退变"></textarea></label>
+              <label class="wb-field">期望研究输出 <small>每行一项</small><textarea id="wb-outputs" rows="4" placeholder="可证伪的机制假设
+可区分的预测
+实验验证方案"></textarea></label>
+              <label class="wb-field wb-wide">研究约束与背景 <small>可选，先作为草稿说明；正式接入前需映射到后端协议</small><textarea id="wb-constraints" rows="3" placeholder="细胞类型、数据来源、排除条件、重点竞争机制……"></textarea></label>
+            </div>
+          </div>
+          <div class="wb-wizard-stage panel hidden" data-wizard="1">
+            <div class="wb-block-head"><div><h2>运行参数</h2><p>优先使用默认 G3；自定义配置需通过后端验证后才能真实启动</p></div><span class="tag tag-native">Step 2 of 4</span></div>
+            <div class="wb-config-mode"><label><input type="radio" name="wb-config-mode" value="default" checked> 使用已验证默认配置</label><label><input type="radio" name="wb-config-mode" value="custom"> 自定义配置草稿</label></div>
+            <div class="wb-formgrid" id="wb-config-fields">
+              <label class="wb-field">Generation 模型（OpenAI）
+                <select id="wb-model-generation" data-config aria-label="选择 Generation 模型">
+                  <optgroup label="当前 G3 默认组合">
+                    <option value="gpt-6.1-sol">GPT-6.1 Sol · gpt-6.1-sol（已验证配置）</option>
+                  </optgroup>
+                  <optgroup label="项目模型目录 · 待兼容性验证">
+                    <option value="gpt-6-astra">GPT-6 Astra · gpt-6-astra</option>
+                    <option value="gpt-5.6-sol">GPT-5.6 Sol · gpt-5.6-sol</option>
+                    <option value="gpt-5.6-terra">GPT-5.6 Terra · gpt-5.6-terra</option>
+                    <option value="gpt-5.6-luna">GPT-5.6 Luna · gpt-5.6-luna</option>
+                    <option value="gpt-5.5">GPT-5.5 · gpt-5.5</option>
+                  </optgroup>
+                </select>
+                <small>下拉选项来自 main 版本配置与模型目录，并非实时账户可用列表。</small>
+              </label>
+              <label class="wb-field">评审 / 演化模型（DeepSeek）
+                <select id="wb-model-review" data-config aria-label="选择评审与演化模型">
+                  <optgroup label="当前 G3 默认组合">
+                    <option value="deepseek-flash">DeepSeek V4.1 Flash · deepseek-flash（已验证配置）</option>
+                  </optgroup>
+                  <optgroup label="项目模型目录 · 待兼容性验证">
+                    <option value="deepseek-v4-pro">DeepSeek V4 Pro · deepseek-v4-pro</option>
+                  </optgroup>
+                </select>
+                <small>非默认模型需要验证 JSON 输出、上下文容量和费用。</small>
+              </label>
+              <label class="wb-field">目标演化代数 <small>G0 → Gn</small><input id="wb-generations" type="number" min="0" max="10" step="1" value="3" data-config></label>
+              <label class="wb-field">初始候选槽位 <small>不是保证成功数量</small><input id="wb-roots" type="number" min="1" max="20" step="1" value="4" data-config></label>
+              <label class="wb-field">每代新增槽位<input id="wb-offspring" type="number" min="1" max="10" step="1" value="2" data-config></label>
+              <label class="wb-field">费用风险上限（USD）<input id="wb-budget" type="number" min="0.01" max="10000" step="0.01" value="60" data-config></label>
+              <label class="wb-field">最长运行时间（分钟）<input id="wb-time" type="number" min="1" max="1440" step="1" value="120" data-config></label>
+              <label class="wb-field">运行数据类型<select id="wb-type"><option value="MOCK_ONLY">Mock（合成测试）</option><option value="LIVE_SINGLE_DISPATCH">真实模型 / PubMed</option></select></label>
+            </div>
+            <div class="wb-credentials-inline"><div><strong>运行服务设置</strong><p id="wb-config-credential-status">OpenAI / DeepSeek / PubMed：未设置；Mock 不要求凭据</p></div><button class="btn secondary compact" type="button" data-go="settings">⚙ 管理 API 与邮箱</button></div>
+            <div class="wb-config-preview" id="wb-config-preview"></div>
+          </div>
+          <div class="wb-wizard-stage panel hidden" data-wizard="2">
+            <div class="wb-block-head"><div><h2>运行前检查</h2><p>区分本地输入校验与尚未接通的真实系统验证</p></div><span class="tag tag-native">Step 3 of 4</span></div>
+            <div id="wb-preflight-list" class="wb-checklist"></div>
+            <div class="wb-hint">本地输入校验不代表模型兼容、Tokenizer、账户权限、预算计划与科研执行链已经通过验证。正式接入时需等待服务端返回完整的 preflight 结果。</div>
+            <button class="btn secondary" id="wb-run-check" type="button">重新检查输入</button>
+          </div>
+          <div class="wb-wizard-stage panel hidden" data-wizard="3">
+            <div class="wb-block-head"><div><h2>确认配置与执行风险</h2><p>只有后端检查通过后，真实运行与付费授权才会开放</p></div><span class="tag tag-native">Step 4 of 4</span></div>
+            <div id="wb-confirm-summary" class="wb-confirm-grid"></div>
+            <div class="wb-info"><strong>尚未获得执行授权</strong><span>API Key 可在“设置”中临时填写，但不会写入任务草稿或浏览器持久存储，也不会发送到服务端。真实执行需等后端安全接入与授权完成。</span></div>
+            <div class="wb-final-actions"><button type="button" class="btn secondary" id="wb-download-plan">下载任务草稿 JSON</button><button type="button" class="btn secondary" data-go="monitor">查看监控</button><button type="button" class="btn primary" id="backend-create">冻结 Run 并确认授权</button></div>
+          </div>
+          <div class="wb-wizard-footer"><button type="button" class="btn secondary" id="wb-step-back">上一步</button><span id="wb-form-status" class="wb-form-status">草稿未保存</span><button type="button" class="btn secondary" id="wb-save-draft">保存本地草稿</button><button type="button" class="btn primary" id="wb-step-next">下一步 →</button></div>
+        </form>
+      </section>
+
+      <section class="wb-page hidden" id="page-results" data-page="results">
+        <div class="wb-page-head"><div><div class="eyebrow">IDEATION / SCIENTIFIC RESULTS</div><h1>结果中心</h1><p class="subtitle">阅读全部候选、比较科学机制、追溯排名与演化，并导出结果。</p></div><div class="wb-page-actions"><button type="button" class="btn secondary" id="wb-jump-last">查看最终回放位置</button><button type="button" class="btn secondary" data-go="monitor">← 返回运行监控</button></div></div>
+        <div class="wb-info" id="wb-results-source"><strong>演示回放</strong><span>当前显示合成数据。请导入自己的 Native Trace 查看真实科研输出。</span></div>
+        <section class="wb-results-metrics" id="wb-results-metrics"></section>
+        <section class="wb-results-summary panel" id="wb-results-summary"></section>
+        <section class="wb-results-grid">
+          <div class="panel wb-results-list"><div class="wb-block-head"><div><h2>全部候选</h2><p>选择候选阅读详细科学内容；最多选两条进行比较</p></div><input id="wb-results-search" class="wb-search" placeholder="搜索候选…" aria-label="搜索结果候选"></div><div id="wb-results-rows" class="wb-results-rows"></div></div>
+          <div class="panel wb-results-inspector"><div class="wb-block-head"><div><h2>科学内容</h2><p>不省略机制、预测、假设或证伪条件</p></div><span class="tag tag-native" id="wb-results-detail-badge">DETAILS</span></div><div class="wb-detail-tabs" id="wb-results-tabs"></div><div id="wb-results-detail" class="wb-results-detail"></div></div>
+        </section>
+        <section class="panel wb-compare-panel hidden" id="wb-compare-panel"><div class="wb-block-head"><div><h2>候选对比</h2><p>对照机制、前提假设、预测、评分与代际</p></div><button type="button" class="btn secondary compact" id="wb-clear-compare">清除选择</button></div><div id="wb-compare-content" class="wb-compare-content"></div></section>
+        <section class="panel wb-export-panel"><div class="wb-block-head"><div><h2>导出研究结果</h2><p>本地导出阅读报告与当前候选快照；正式五项 Trace 需要后端生成或从已有文件导入</p></div></div><div class="wb-export-actions"><button type="button" class="btn secondary" id="wb-export-md">下载阅读报告 Markdown</button><button type="button" class="btn secondary" id="wb-export-json">下载候选快照 JSON</button><div class="wb-native-export"><select id="wb-native-file" aria-label="选择原生导入文件"><option value="">尚未导入原生文件</option></select><button type="button" class="btn secondary" id="wb-save-native-file" disabled>保存原始导入文件</button></div></div></section>
+      </section>
+
+      <section class="wb-page hidden" id="page-monitor" data-page="monitor">
+
+      <section class="page-intro">
+        <div>
+          <div class="eyebrow">IDEATION / LIVE RESEARCH MONITOR</div>
+          <div class="title-row">
+            <h1>研究运行监控</h1>
+            <span class="tag tag-demo" id="mode-badge">SIMULATED REPLAY</span>
+          </div>
+          <p class="subtitle" id="subtitle">了解科研进度、实时排名与假设演化。点击候选查看完整科学内容。</p>
+        </div>
+        <div class="intro-right">
+          <button type="button" class="btn secondary" id="backend-open-approval" disabled>授权此 Run / 启动已授权 Run</button>
+          <button type="button" class="btn secondary" id="backend-stop">终止 Run（非暂停）</button>
+          <button type="button" class="btn secondary" id="backend-resume">原生恢复 / 重新监控</button>
+          <button type="button" class="btn secondary" id="backend-export">导出五项 Native Trace</button>
+          <button type="button" class="btn linklike" id="btn-back-demo">↺ 重置演示</button>
+          <span class="run-state" id="run-state"><span class="run-state-dot"></span>演示运行中</span>
+        </div>
+      </section>
+
+      <div class="safety-note" id="source-notice">
+        <strong>演示数据</strong><span>所有候选内容、分数与事件均为合成示例，不是实际科研结果。可在右上角导入当前代码的原生 JSON Trace。</span>
+      </div>
+
+      <section class="stats" aria-label="运行摘要">
+        <div class="stat"><span>当前代际</span><strong id="stat-generation">G2 <em>/ G3</em></strong><small id="stat-stage">Ranking · 进行中</small></div>
+        <div class="stat"><span>已创建候选</span><strong id="stat-candidates">8 <em>/ 10</em></strong><small id="stat-eligible">6 个达到比较要求</small></div>
+        <div class="stat"><span>有效 Ranking</span><strong id="stat-matches">8</strong><small id="stat-updates">TrueSkill 实时更新</small></div>
+        <div class="stat"><span>费用估算</span><strong id="stat-cost">$0.58</strong><small id="stat-cost-note">模拟金额 · 非真实账单</small></div>
+      </section>
+
+      <section class="phase-panel panel">
+        <div class="phase-heading">
+          <div class="phase-title"><span>科研进度</span><small id="phase-hint">通过事件记录还原已完成的科研阶段</small></div>
+          <div class="phase-actions">
+            <span class="phase-time" id="phase-time">00:00 / 15:50</span>
+            <button class="icon-button" id="btn-prev" type="button" aria-label="上一步" title="上一步"><svg class="svg-icon" viewBox="0 0 24 24"><path d="M14 6L8 12l6 6"/></svg></button>
+            <button class="icon-button play-button" id="btn-play" type="button" aria-label="播放回放" title="播放回放"><span id="play-icon">▶</span></button>
+            <button class="icon-button" id="btn-next" type="button" aria-label="下一步" title="下一步"><svg class="svg-icon" viewBox="0 0 24 24"><path d="m10 6 6 6-6 6"/></svg></button>
+            <select id="play-speed" class="mini-select" aria-label="回放速度"><option value="2200">1×</option><option value="1100">2×</option><option value="500">4×</option></select>
+          </div>
+        </div>
+        <div class="phase-rail" id="phase-rail"></div>
+        <div class="scrubber">
+          <input type="range" id="frame-slider" min="0" max="13" value="10" aria-label="研究历史进度">
+          <span class="scrub-label" id="scrub-label">10 / 13 · G2 评价完成</span>
+        </div>
+      </section>
+
+      <section class="workspace-grid">
+        <div class="leaderboard panel">
+          <div class="panel-heading board-head">
+            <div>
+              <h2>候选实时榜单 <span class="heading-beta">RANKING</span></h2>
+              <p>按当前后验 μ 排序 · 仅已达到最低有效比较次数的候选进入榜单</p>
+            </div>
+            <div class="board-head-action" id="board-refresh-label">历史回放</div>
+          </div>
+
+          <div class="board-controls">
+            <div class="segmented" role="group" aria-label="候选状态筛选">
+              <button type="button" data-filter="ranked" class="selected">已排名 <span id="n-ranked">0</span></button>
+              <button type="button" data-filter="pending">评估中 <span id="n-pending">0</span></button>
+              <button type="button" data-filter="all">全部 <span id="n-all">0</span></button>
+            </div>
+            <div class="search-box">
+              <svg class="svg-icon" viewBox="0 0 24 24"><circle cx="10.8" cy="10.8" r="6.8"/><path d="m16 16 5 5"/></svg>
+              <input id="search-input" aria-label="搜索候选" placeholder="搜索名称或机制…">
+            </div>
+            <select class="generation-filter" id="gen-filter" aria-label="按代数筛选">
+              <option value="all">全部代际</option>
+              <option value="0">G0</option><option value="1">G1</option><option value="2">G2</option><option value="3">G3</option>
+            </select>
+          </div>
+          <div class="board-header">
+            <span>排名 / 假设概要</span>
+            <span class="board-numhead">μ / σ</span>
+            <span class="board-matchhead">比较</span>
+          </div>
+          <div class="candidate-list" id="candidate-list" aria-live="polite"></div>
+          <div class="board-footer">
+            <div><span class="legend-dot ready"></span>已排名 <span class="legend-dot pending"></span>评估中</div>
+            <span id="board-footnote">排名是模型评估，非科学真实性证据</span>
+          </div>
+        </div>
+
+        <aside class="inspector panel" aria-label="候选详情">
+          <div class="panel-heading inspector-heading">
+            <div><h2>候选详情</h2><p>从榜单选择候选查看完整内容</p></div>
+            <button class="icon-button" id="btn-expand" type="button" aria-label="放大详情" title="放大详情">⛶</button>
+          </div>
+          <div id="inspector-content" class="inspector-content"></div>
+        </aside>
+      </section>
+
+      <section class="secondary-grid">
+        <div class="panel lineage-panel">
+          <div class="panel-heading">
+            <div><h2>演化关系 <span class="heading-beta">LINEAGE</span></h2><p>父代 → 子代；点击节点同步查看候选详情</p></div>
+            <div class="legend-inline"><span class="legend-line"></span>Crossover <span class="legend-line purple"></span>Mutation</div>
+          </div>
+          <div class="lineage-scroll"><svg id="lineage" viewBox="0 0 920 270" preserveAspectRatio="xMidYMid meet" aria-label="演化谱系树" role="img"></svg></div>
+        </div>
+        <div class="panel activity-panel">
+          <div class="panel-heading">
+            <div><h2>当前进展与异常</h2><p>默认显示科研事件摘要</p></div>
+            <button class="text-button" id="toggle-raw" type="button">显示原始事件</button>
+          </div>
+          <div id="activity-feed" class="activity-feed"></div>
+          <div id="raw-feed" class="raw-feed hidden"></div>
+        </div>
+      </section>
+
+      <footer class="footer">
+        <span>Co-Scientist Workbench · 离线监控原型 · 科学假设需独立验证</span>
+        <span id="footer-source">数据源：SYNTHETIC</span>
+      </footer>
+      </section>
+    </main>
+  </div>
+</div>
+
+<input id="trace-files" type="file" accept=".json,.md" multiple hidden aria-label="导入原生 Trace 文件">
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+<div id="modal-backdrop" class="modal-backdrop hidden">
+  <div class="modal" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+    <div class="modal-head"><h2 id="modal-title">候选完整信息</h2><button id="close-modal" type="button" class="icon-button" aria-label="关闭">×</button></div>
+    <div id="modal-content" class="modal-body"></div>
+  </div>
+</div>
+<dialog id="backend-approval"><h2>逐 Run 费用与执行授权</h2><pre id="backend-approval-info"></pre>
+  <label><input type="checkbox" id="backend-confirm">我明确授权此 Run，接受显示的费用风险上限（不是已发生费用）</label><br>
+  <label><input type="checkbox" id="backend-pricing">LIVE：我已确认当前价格、模型权限和服务能力</label><br>
+  <label><input type="checkbox" id="backend-unknown">LIVE：我接受未知投递下可能重复计费的风险</label><br>
+  <button type="button" class="btn primary" id="backend-approve">授权并后台启动</button>
+  <button type="button" class="btn secondary" id="backend-cancel">取消，保留 prepared Run</button>
+</dialog>
+<script src="/assets/fixture.js"></script>
+<script src="/assets/app.js"></script>
+<script src="/assets/workbench.js"></script>
+<script src="/assets/backend.js"></script>
+</body>
+</html>

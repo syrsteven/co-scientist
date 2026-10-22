@@ -1,5 +1,9 @@
 # Co-Scientist Ideation Release 0.1.1 — Reliability Patch
 
+新增 opt-in [Workbench v0.4 本地后端](docs/WORKBENCH_ZH.md)：
+`python -m co_scientist_web --data-dir ./.co-scientist-workbench --port 8765`。
+先安装 Web 依赖并显式准备 tokenizer。默认仅 Mock；真实派发默认关闭；自定义执行尚未开放。
+
 此分支基于 `baa13351`，不是原 v0.1.0 构建产物。修复范围、旧 Run 的
 code-identity 隔离及验证结果见 [可靠性补丁说明](docs/RELIABILITY_HARDENING_V0.1.1.md)。
 原 `SHA256SUMS.json`、provenance 和 `dist/*0.1.0*` 保留为历史证据，

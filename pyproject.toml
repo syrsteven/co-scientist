@@ -21,6 +21,8 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+web = ["fastapi==0.159.1", "starlette==1.9.0", "uvicorn==0.54.0"]
+web-test = ["playwright==1.64.0", "pyee==13.0.1"]
 dev = [
   "pytest>=8.2,<9",
   "pytest-asyncio>=0.23,<1",
@@ -32,11 +34,13 @@ dev = [
 
 [project.scripts]
 co-scientist = "co_scientist.release.cli:main"
+co-scientist-web = "co_scientist_web.__main__:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
 
 [tool.setuptools.package-data]
+"co_scientist_web" = ["frontend/*.html", "frontend/*.css", "frontend/*.js"]
 "co_scientist.release" = ["resources/*.yaml", "resources/*.json", "resources/*.txt"]
 "co_scientist" = [
   "_migrations/env.py",

@@ -1,0 +1,15 @@
+{
+  "ACCEPTANCE.md": "4ac7aea5049bd79d1f500885207641b473b4fc46cc08525da20ab4aa36d0aa7f",
+  "API_CONTRACT.md": "e94a16bb90fe36204b66b94b63452f9c02ef128a91e3ff3300a8a073530b176d",
+  "CODEX_START_PROMPT.md": "8124674323af452c7bca5ba4a56961cab72c4e831e9385331a48c2033565bbf1",
+  "CODEX_TASK.md": "9134b0eac66cb12b2125b6c37aaebb974bc98f4c66ff9c3715add38e72e407d1",
+  "FRONTEND_QA.md": "b3a7ad410d90d9d51c29c55a3a287b66f19128859b3f7c2c3f5e42978ff57c4a",
+  "FRONTEND_README.md": "79c9a15037de1377f7b34987cba2fc1a542318a8a5e936bc54ee55a1b0ea0736",
+  "README_HANDOFF.md": "df9eff00c5d1e0bfaffc4a4e91912e6792571cba9e51146303ebcd41de6bdec5",
+  "frontend/app.js": "47fc1a2ea11fe530e318eb03baaf0af4d3f8268211c9dde2eede04b890cd9209",
+  "frontend/fixture.js": "31fa29f6892d8f9026df632c4bbd09c7b3d55b8977af7758a124b80ef1f3764f",
+  "frontend/index.html": "a3fe1b7833cd6ffdc7c69f5e9002a22e0b528258ccb5a3a0bc13ca21fcc86a21",
+  "frontend/styles.css": "b2aebaa5d6ea4e58b7cf951c1445b43e6feb3af59433b351329ddb3634587541",
+  "frontend/workbench.html": "d70d7371c4b960de306a262bcd3f6b8bb1798f51c0e47a5856afb8d3750e5085",
+  "frontend/workbench.js": "ace6bc1a03b24618d9d2e243313ccc3eeb3bb6485bfcb81ac30df273c70a73c7"
+}
