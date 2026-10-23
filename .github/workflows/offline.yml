@@ -32,7 +32,9 @@ jobs:
         if: matrix.python == '3.12'
         run: |
           python -m playwright install --with-deps chromium
+          CO_SCIENTIST_BROWSER_TESTS=1 python -m pytest tests/test_web_replay.py --import-mode=importlib -p no:cacheprovider -q
           python tests/web_browser.py /tmp/workbench-browser-acceptance
+          python tests/web_reliability_browser.py /tmp/workbench-browser-boundaries
       - name: Ruff (six unchanged baseline import-order debts explicitly isolated)
         run: >-
           python -m ruff check src tests scripts

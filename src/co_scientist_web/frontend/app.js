@@ -6,7 +6,7 @@
   const $ = (s,root=document) => root.querySelector(s);
   const $$ = (s,root=document) => Array.from(root.querySelectorAll(s));
   const escapeHtml = v => String(v ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-  const num = v => Number.isFinite(Number(v)) ? Number(v) : null;
+  const num = v => v!==null&&v!==undefined&&v!==""&&Number.isFinite(Number(v)) ? Number(v) : null;
   const two = n => Number.isFinite(Number(n)) ? Number(n).toFixed(2) : "—";
   const short = (s,n=98) => {const t=String(s??"").trim();return t.length>n?t.slice(0,n).trimEnd()+"…":t};
   const cleanSentence = t => {
@@ -49,6 +49,7 @@
     const events=Array.isArray(timeline?.events)?timeline.events.slice().sort((a,b)=>Number(a.sequence)-Number(b.sequence)):[];
     const nativeCandidates=cs.map(makeNativeCandidate).filter(c=>c.id);
     for(const c of nativeCandidates){
+      if(c.created_sequence===null)c.created_sequence=num(events.find(e=>e.event_type==='HypothesisContentCreated'&&e.payload.hypothesis_id===c.id)?.sequence);
       const plan=tree?.reproduction?.find(p=>(p.children??[]).includes(c.id));
       c.operator=plan?.decision?.operator??(c.raw.generation_index===0&&c.raw.generation_source_sequence!=null?"root":"unrecorded");
     }
@@ -129,32 +130,42 @@
     const N=state.native,info=N.frames[state.frame],seq=info.seq;
     const cut=N.events.filter(e=>e.sequence<=seq);
     const hasTimeline=N.events.length>0;
-    const ratingMap=new Map(),matchMap=new Map();
+    const ratingMap=new Map(),ratingSequence=new Map(),matchMap=new Map(),lastDecisive=new Map(),seen=new Set();
     for(const e of cut){
       const p=e.payload??{};
       if(e.event_type==="InitialRatingAssigned"||e.event_type==="BayesianRatingProjected"){
-        if(p.hypothesis_id&&num(p.mu)!==null&&num(p.sigma)!==null)ratingMap.set(p.hypothesis_id,{mu:num(p.mu),sigma:num(p.sigma)});
+        if(p.hypothesis_id&&num(p.mu)!==null&&num(p.sigma)!==null){ratingMap.set(p.hypothesis_id,{mu:num(p.mu),sigma:num(p.sigma)});ratingSequence.set(p.hypothesis_id,e.sequence);}
       }
-      if(e.event_type==="MatchEvaluated"&&p.left_id&&p.right_id){
+      if(e.event_type==="MatchEvaluated"&&p.decision==="decisive"&&p.left_id&&p.right_id&&p.left_id!==p.right_id&&[p.left_id,p.right_id].includes(p.winner_id)&&!seen.has(p.match_id)){
+        seen.add(p.match_id);
         matchMap.set(p.left_id,(matchMap.get(p.left_id)??0)+1);
         matchMap.set(p.right_id,(matchMap.get(p.right_id)??0)+1);
+        lastDecisive.set(p.left_id,e.sequence);lastDecisive.set(p.right_id,e.sequence);
       }
     }
-    const candidates=N.candidates.filter(c=>!hasTimeline||c.created_sequence==null||c.created_sequence<=seq).map(c=>{
-      const latest=state.frame===N.frames.length-1;
-      const score=latest&&c.rating?{mu:num(c.rating.mu),sigma:num(c.rating.sigma)}:hasTimeline?(ratingMap.get(c.id)??null):null;
-      const matches=latest?(num(c.rating?.decisive_matches)??0):(matchMap.get(c.id)??0);
-      return {...c,score,matches,ranked:score!==null&&matches>=2};
+    const candidates=N.candidates.filter(c=>!hasTimeline||(c.created_sequence!==null&&c.created_sequence<=seq)).map(c=>{
+      const score=hasTimeline?((ratingSequence.get(c.id)??-1)>=(lastDecisive.get(c.id)??0)?ratingMap.get(c.id)??null:null):c.rating?{mu:num(c.rating.mu),sigma:num(c.rating.sigma)}:null;
+      const matches=hasTimeline?(matchMap.get(c.id)??0):(num(c.rating?.decisive_matches)??0);
+      const review=kind=>hasTimeline?cut.filter(e=>e.event_type===kind&&e.payload?.binding?.hypothesis_id===c.id&&(!e.payload.binding.content_hash||e.payload.binding.content_hash===c.raw.content_hash)):c[kind==='CandidateEthicsRecordedV1'?'ethics':'reflection'];
+      const ethics=review('CandidateEthicsRecordedV1'),reflection=review('BaselineReflectionRecordedV1');
+      const created=cut.find(e=>e.event_type==='HypothesisContentCreated'&&e.payload.hypothesis_id===c.id);
+      const raw=hasTimeline?{...(created?.payload??{}),ethics,reflection,source_and_generation_records:sourceFacts(c,N,cut)}:c.raw;
+      return {...c,raw,ethics,reflection,score,matches,ranked:score!==null&&matches>=2};
     });
-    const matched=cut.filter(e=>e.event_type==="MatchEvaluated").length;
+    const matched=seen.size;
     const isLast=state.frame===N.frames.length-1;
-    const final=N.final&&isLast?N.final:(cut.findLast(e=>e.event_type==="IdeationFinalSelectionV1")?.payload??null);
+    const final=hasTimeline?(cut.findLast(e=>e.event_type==="IdeationFinalSelectionV1")?.payload??null):N.final;
     const complete=final?.execution_result==="COMPLETE"&&final?.selection_result==="FINAL_WINNER"&&final?.terminal_barrier_complete===true;
     const explicitState=isLast?(N.timeline?.execution_state??"Snapshot"):"Historical";
     let costs=0;let hasCost=false;
     for(const x of N.timeline?.cost_entries??[]){const c=num(x.cost_usd);if(c!==null){costs+=c;hasCost=true}}
-    const calls=(N.timeline?.calls??[]).length;
-    const failures=(N.timeline?.failure_diagnostics??[]).length;
+    const calls=isLast?(N.timeline?.calls??[]).length:null;
+    const failures=isLast?(N.timeline?.failure_diagnostics??[]).length:null;
+    const ranking=hasTimeline?cut.filter(e=>e.event_type==='MatchPairReserved').map(e=>{
+      const result=cut.findLast(r=>r.event_type==='MatchEvaluated'&&r.payload.match_id===e.payload.match_id);
+      return {...e.payload,reserved_sequence:e.sequence,result:result?.payload??null,
+        status:result?.payload?.decision??'PENDING',winner_id:result?.payload?.winner_id??null};
+    }):N.ranking;
     const idx=candidates.reduce((s,c)=>Math.max(s,c.g),0);
     const activity=cut.filter(e=>e.event_type!=="TaskEnqueued"&&e.event_type!=="TaskCompleted"&&e.event_type!=="TaskLeased").slice(-9).reverse().map(e=>{
       const candidate=N.cById[e.payload?.hypothesis_id];
@@ -168,13 +179,24 @@
     return {kind:"native",runId:N.runId,study:N.study,maxGenerations:N.maxGenerations,totalSlots:N.totalSlots,
       g:info.g??idx,state:explicitState,gLabel:info.label,subtitle:info.summary,
       elapsed,span:N.timeline?.event_span_seconds??null,
-      spent:hasCost?costs:null,spentNote:"导出记录总额 · 非账单或当前时间点费用",
+      spent:hasCost&&isLast?costs:null,spentNote:isLast?"导出记录总额 · 非账单":"历史边界费用未知，不显示未来账务",
       candidateTotal:candidates.length,eligible:candidates.filter(c=>c.ranked).length,
       matches:matched,calls,retries:failures,
-      candidates,ranking:N.ranking,final:complete?final:(final??null),isFormal:complete,activity,
+      candidates,ranking,final:complete?final:(final??null),isFormal:complete,activity,
       timeText:elapsed===null?"event "+info.seq:minClock(elapsed)+(N.timeline?.event_span_seconds?(" / "+minClock(N.timeline.event_span_seconds)):"")};
   }
 
+  function sourceFacts(c,N,events){
+    const ids=new Set(),slots=new Set(),results=new Set();
+    function visit(id){if(ids.has(id))return;ids.add(id);const x=N.cById[id];if(!x)return;
+      if(x.raw.slot_id)slots.add(x.raw.slot_id);if(x.raw.source_result_id)results.add(x.raw.source_result_id);
+      for(const parent of x.parents)visit(parent);}
+    visit(c.id);
+    for(const e of events)if(e.event_type==='GroundedGenerationRecordedV1'&&results.has(e.payload.source_result_id)){
+      const b=e.payload.binding;if(b?.root_slot_id)slots.add(b.root_slot_id);}
+    const types=new Set(['RootReviewPlannedV1','RootRetrievalOutcomeRecordedV2','RootRetrievalReusedV2','RootSourceReviewRecordedV1','RootGroundingFrozenV1','GroundedGenerationRecordedV1']);
+    return events.filter(e=>types.has(e.event_type)&&(results.has(e.payload.source_result_id)||slots.has(e.payload.binding?.root_slot_id??e.payload.binding?.slot_id??e.payload.slot_id)));
+  }
   function currentView(){return state.mode==="fixture"?fixtureView():nativeView()}
   function sortedRows(view){
     const ranked=view.candidates.filter(c=>c.ranked).sort((a,b)=>{
@@ -315,8 +337,8 @@
     }
     if(state.tab==="evidence"){
       return c.source==="synthetic-fixture"?`<div class="detail-muted">演示数据不包含真实文献引用，不伪造 PMID、支持度或证据覆盖。</div>`:
-        `<div class="detail-muted">以下为此 Run 的原生检索、Source Review、冻结 Grounding 和 Generation 事实，保留各 root/binding 身份；不代表所有来源支持当前候选的每条主张。请按 source_set_hash、父代及原始 Artifact 核对，不推断证据支持。</div>`+
-        rawSection("Run 级来源与冻结输入（原生事实）",c.raw?.source_and_generation_records??[])+
+        `<div class="detail-muted">仅显示此事件边界内，与当前候选及科学父代绑定的原生来源；不推断逐主张文献支持。没有绑定的数据保持未知。</div>`+
+        rawSection("候选绑定来源与冻结输入（原生事实）",c.raw?.source_and_generation_records??[])+
         rawSection("候选 Ethics 审查记录",c.ethics??[]);
     }
     if(state.tab==="reflection"){
@@ -506,13 +528,27 @@
   $("#modal-backdrop").addEventListener("click",e=>{if(e.target.id==="modal-backdrop"){$("#close-modal").click()}});
   document.addEventListener("keydown",e=>{if(e.key==="Escape"&&state.modal)$("#close-modal").click()});
   window.CoScientistMonitor = {
+    loadEvents:(packet,status)=>{
+      const historical=state.mode==='native'&&state.native.runId===packet.run_id&&state.frame<state.native.frames.length-1;
+      const historicalSequence=historical?frame().seq:null;
+      const prior=nativePayloads?.['run-timeline.json'];
+      const combined=new Map((prior?.run_id===packet.run_id?prior.events:[]).map(e=>[e.sequence,e]));
+      for(const e of packet.events)combined.set(e.sequence,e);
+      const events=[...combined.values()].sort((a,b)=>a.sequence-b.sequence);
+      const roots=new Set(events.filter(e=>e.event_type==='GroundedGenerationRecordedV1'&&e.payload.binding?.root_slot_id).map(e=>e.payload.source_result_id));
+      const candidates=events.filter(e=>e.event_type==='HypothesisContentCreated').map(e=>({...e.payload,
+        created_sequence:e.sequence,generation_index:roots.has(e.payload.source_result_id)?0:e.payload.generation_index,
+        generation_source_sequence:roots.has(e.payload.source_result_id)?e.sequence:null}));
+      const reproduction=events.filter(e=>e.event_type==='BaselineReproductionPlannedV1').map(e=>({...e.payload,children:candidates.filter(c=>c.slot_id===e.payload.slot_id).map(c=>c.hypothesis_id)}));
+      window.CoScientistMonitor.loadBackend({'candidates.json':candidates,'ranking-history.json':[],
+        'evolution-tree.json':{run_id:packet.run_id,reproduction},'run-timeline.json':{run_id:packet.run_id,
+          manifest:packet.manifest??(prior?.run_id===packet.run_id?prior.manifest:{}),events,execution_state:status.state}},status);
+      if(historical){state.frame=Math.max(0,state.native.frames.findLastIndex(f=>f.seq<=historicalSequence));render();}
+    },
     loadBackend:(payloads,status)=>{
       backendStatus=status;nativePayloads=payloads;
       nativeRawTexts=Object.fromEntries(Object.entries(payloads).map(([k,v])=>[k,typeof v==="string"?v:JSON.stringify(v,null,2)]));
       state.native=importNative(payloads);
-      const types=new Set(["RootReviewPlannedV1","RootRetrievalOutcomeRecordedV2","RootRetrievalReusedV2","RootSourceReviewRecordedV1","RootGroundingFrozenV1","GroundedGenerationRecordedV1"]);
-      const related=state.native.events.filter(e=>types.has(e.event_type));
-      for(const c of state.native.candidates)c.raw={...c.raw,source_and_generation_records:related};
       state.mode="native";stopPlayback();state.frame=state.native.frames.length-1;render();
     },
     snapshot:()=>cachedView,

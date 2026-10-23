@@ -446,7 +446,8 @@ class CoreRunner:
             return self._result(run_id)
         events = self.uow.load(run_id)
         if any(e.event_type == "IdeationFinalSelectionV1" for e in events):
-            self.supervisor._resume_baseline_finalization(run_id=run_id, expected_sequence=events[-1].sequence)
+            if self.uow.run_state(run_id) == "running":
+                self.supervisor._resume_baseline_finalization(run_id=run_id, expected_sequence=events[-1].sequence)
         else:
             generation = max((e.payload["generation"] for e in events if e.event_type in {
                 "BaselineGenerationCompletedV1", "BaselineReproductionPlannedV1"}), default=0)

@@ -1,7 +1,9 @@
 # Workbench v0.4 本地后端
 
 基于 `origin/main@21213ed0d7863547aff5c081e75bfb0c4f875ec6` / Release v0.1.1。
-Web 包独立于 `src/co_scientist/`；科研包、Profile、Prompt、事件 schema、预算与授权逻辑未改动。
+首版 Web 包独立于 `src/co_scientist/`。后续可靠性修复基于 `main@a9a6934`，
+仅改变原生 PARTIAL 停止、终局恢复和原子文件写入代码；Profile、Prompt、评分与科研事件契约不变。
+新代码身份与旧 Run 不兼容，旧 Run 仍须使用原版本环境。详见 [修复报告](WORKBENCH_RELIABILITY_V1.md)。
 本版仅 Autonomous、G3 DEV，不是完整 G10 复现，不包含 Human-in-the-loop。
 
 ## 安装和启动
@@ -36,7 +38,9 @@ python -m co_scientist_web --data-dir ./.co-scientist-workbench --port 8765
 - “终止 Run”请求原生 stop：当前有界调用完成后以 PARTIAL 关闭，不是暂停。
 - 终态 resume 返回 `terminal_no_dispatch`，不重新派发，不重开失败槽位。
 - 非终态驱动中断后，Web 状态显示 `interrupted_needs_review`，原生 checkpoint 不被篡改；
-  检查原生事件后可调用恢复，仍经过相同 code identity、授权、锁、预算和 fencing。
+  检查原生事件后可点击独立的“恢复原 Run 执行（可能产生费用）”，明确确认后才能写入执行请求。
+  “重新连接监控（只读）”、页面刷新和打开项目不会恢复执行。
+  恢复仍经过 code identity、授权、锁、预算和 fencing，未启动 prepared Run 不能 stop/resume。
 - job PID/状态持久保存在独立 Web SQLite；驱动存活以 OS 文件锁为准，不仅信任 PID。
 - 不要移动 Run 目录或改写 manifest/plan/auth。旧版本不符时使用创建它的原 Release 环境。
 - 导出遇到 `SNAPSHOT_BUSY` 时稍后重试；这不是科研失败，不会为了导出停止驱动。
@@ -80,6 +84,13 @@ drafts GET/POST、drafts/{id} PATCH；config/defaults、config/models、config/p
 settings/status、settings/credentials/{provider} PUT/DELETE、settings/pubmed PUT/DELETE、settings/validation POST；
 runs GET/POST、runs/{id}/authorize/start/stop/resume POST、status/events/stream GET；
 leaderboard、candidates/{id}、lineage、rankings GET；trace GET；exports POST、exports/{id} GET（ZIP）。
+
+可靠性修复新增 `runs/{id}/monitor?after=<sequence>`：最多返回 1000 个已提交事件，无 Artifact 扫描。
+`POST runs/{id}/resume` 现在要求 `{"confirm_execution":true}`；终态仅返回零派发状态。
+默认实时监控不生成完整 Trace；详情和导出才调用原生一致性快照，忙时返回可重试状态。
+历史回放评分仅来自当前序列边界的原生 μ/σ 投影，不显示未来的审查、配对或终局。
+
+“导入历史 Trace”只读，不等于管理旧 CLI Run；不接受任意历史目录，不移动或修改原生 Run。
 
 相对交接建议增加 session/bootstrap、draft PATCH、run list 和 trace 只读视图，便于鉴权、刷新和复用原 UI。
 账户验证接口只做本地状态说明，不自动网络探测。原生来源按 Run/root/binding 显示，不伪造逐 Claim 文献支持。

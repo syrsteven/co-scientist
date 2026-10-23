@@ -171,8 +171,10 @@ async def test_full_web_mock_background_restart_export_and_sse(tmp_path):
         assert (await c.get(f"/api/v1/runs/{run}/status")).json()["job"][
             "state"
         ] == "interrupted_needs_review"
-        first = (await c.post(f"/api/v1/runs/{run}/start")).json()
-        second = (await c.post(f"/api/v1/runs/{run}/start")).json()
+        assert (await c.post(f"/api/v1/runs/{run}/start")).status_code == 409
+        assert (await c.post(f"/api/v1/runs/{run}/resume")).status_code == 403
+        first = (await c.post(f"/api/v1/runs/{run}/resume", json={"confirm_execution": True})).json()
+        second = (await c.post(f"/api/v1/runs/{run}/resume", json={"confirm_execution": True})).json()
         assert first["pid"] == second["pid"]
     # New HTTP app/session, same durable detached driver; no credentials needed.
     _app, c = await client(tmp_path)

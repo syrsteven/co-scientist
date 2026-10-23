@@ -103,7 +103,8 @@
   });
   capture("#backend-demo","click",()=>{currentRun=null;source?.close();history.replaceState(null,"",location.pathname+"#monitor");$("#btn-back-demo").click();location.hash="#monitor";});
   capture("#backend-stop","click",async()=>{if(!currentRun)throw new Error("请选择服务器 Run");if(!confirm("终止后为 PARTIAL，不是暂停，不能继续原科学流程。确认？"))return;await api(`/runs/${currentRun}/stop`,"POST");notify("已请求原生终止，当前有界调用完成后关闭");});
-  capture("#backend-resume","click",async()=>{if(!currentRun)throw new Error("请选择服务器 Run");await api(`/runs/${currentRun}/resume`,"POST");connect();await update();});
+  capture("#backend-reconnect","click",async()=>{if(!currentRun)throw new Error("请选择服务器 Run");await update();connect();});
+  capture("#backend-resume","click",async()=>{if(!currentRun)throw new Error("请选择服务器 Run");if(!confirm("恢复将继续原 Run 执行，可能发出付费 API 请求。确认已检查故障、原始响应及授权？"))return;await api(`/runs/${currentRun}/resume`,"POST",{confirm_execution:true});connect();await update();});
   capture("#backend-export","click",async()=>{if(!currentRun)throw new Error("请选择服务器 Run");const x=await api(`/runs/${currentRun}/exports`,"POST");const a=document.createElement("a");a.href=`/api/v1/runs/${currentRun}/exports/${x.export_id}`;a.download="native-trace.zip";a.click();notify("原生五项 Trace，非前端阅读报告");});
   function connect(){source?.close();source=new EventSource(`/api/v1/runs/${currentRun}/stream?after=${Math.max(0,lastSequence)}`);
     source.addEventListener("run.event",()=>update());source.addEventListener("boundary",()=>{source.close();update();});}
@@ -113,15 +114,14 @@
     try{
       const id=currentRun;latest=await api(`/runs/${id}/status`);
       if((latest.events??0)!==lastSequence){
-        let docs;
-        if(latest.state==="prepared")docs={"candidates.json":[],"ranking-history.json":[],"evolution-tree.json":{},"run-timeline.json":{run_id:id,events:[],execution_state:"prepared",manifest:{goal:{title:catalog.runs.find(x=>x.id===id)?.title||id}}}};
-        else docs=await api(`/runs/${id}/trace`);
+        const packet=await api(`/runs/${id}/monitor?after=${Math.max(0,lastSequence)}`);
         if(id!==currentRun)return;
-        M.loadBackend(docs,latest);lastSequence=latest.events??0;
+        M.loadEvents(packet,latest);lastSequence=packet.source_sequence;
       }
       $("#board-refresh-label").textContent=`${latest.state} · ${latest.job.state} · ${latest.events??0} events`;
       $("#backend-open-approval").disabled=latest.state!=="prepared";
-      $("#backend-stop").disabled=["completed","completed_partial","failed","cancelled"].includes(latest.state);
+      $("#backend-stop").disabled=["prepared","initializing","completed","completed_partial","failed","cancelled"].includes(latest.state);
+      $("#backend-resume").disabled=["prepared","initializing","completed","completed_partial","failed","cancelled"].includes(latest.state)||latest.job.alive;
       const accounting=latest.accounting??{};
       $("#phase-hint").textContent=`估算 $${accounting.settled?.cost_usd??"0"} · 活动预留 $${accounting.actively_reserved?.cost_usd??"0"} · 风险上限 $${latest.limits.risk_ceiling_usd}；完整账务见原生 Trace`;
       if(document.body.dataset.activePage==="results"){

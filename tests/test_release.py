@@ -81,14 +81,25 @@ def test_packaged_core_and_all_51_skill_resources_match_successful_source():
     assert overlay["baseline_commit"] == "baa13351ec3cbea8a1e6e81cd4c1432377e315cf"
     assert set(overlay["modified"]) == {"application/cockpit.py", "runtime/ideation_trace.py"}
     assert set(overlay["added"]) == {"runtime/trace_snapshot.py"}
+    # This branch explicitly patches stop finalization and crash-safe operator
+    # files. Keep both historical manifests immutable; add an auditable overlay.
+    workbench = load(package_file("workbench-reliability-v1.json"))
+    assert workbench["baseline_commit"] == "a9a6934ce2c579d7302efe40a25c041c77a86d68"
+    assert set(workbench["modified"]) == {"supervisor/orchestrator.py", "runtime/core_runner.py", "release/service.py"}
     for name, sha in expected.items():
         if name in overlay["modified"]:
             patch = overlay["modified"][name]
             assert patch["baseline_sha256"] == sha
             sha = patch["patched_sha256"]
+        if name in workbench["modified"]:
+            patch = workbench["modified"][name]
+            assert patch["baseline_sha256"] == sha
+            sha = patch["patched_sha256"]
         assert hashlib.sha256((root / name).read_bytes()).hexdigest() == sha, name
     for name, sha in overlay["added"].items():
         assert hashlib.sha256((root / name).read_bytes()).hexdigest() == sha
+    for name, patch in workbench["modified"].items():
+        assert hashlib.sha256((root / name).read_bytes()).hexdigest() == patch["patched_sha256"]
     skills = {
         str(p.relative_to(root)) for p in (root / "skills/resources").rglob("*") if p.is_file()
     }

@@ -1,5 +1,10 @@
 # Co-Scientist Ideation Release 0.1.1 — Reliability Patch
 
+Workbench 修复开发分支基于 `main@a9a6934`，见
+[Workbench 可靠性修复与离线验证](docs/WORKBENCH_RELIABILITY_V1.md)。
+本次改变了原生停止/原子文件代码身份；旧 Run 必须使用原环境，不可直接在此版本恢复。
+尚未发布新正式版本，也未覆盖历史发行校验清单。
+
 新增 opt-in [Workbench v0.4 本地后端](docs/WORKBENCH_ZH.md)：
 `python -m co_scientist_web --data-dir ./.co-scientist-workbench --port 8765`。
 先安装 Web 依赖并显式准备 tokenizer。默认仅 Mock；真实派发默认关闭；自定义执行尚未开放。

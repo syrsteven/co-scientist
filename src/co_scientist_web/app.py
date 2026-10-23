@@ -9,12 +9,14 @@ import secrets
 import sqlite3
 import tempfile
 import zipfile
+from decimal import Decimal
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.exceptions import RequestValidationError
 from fastapi.responses import FileResponse, JSONResponse, Response, StreamingResponse
 from pydantic import Field, SecretStr, StrictBool
+from starlette.concurrency import run_in_threadpool
 
 from co_scientist.adapters.artifacts.filesystem import FilesystemArtifactStore
 from co_scientist.domain.research_protocol import protocol_hash
@@ -25,8 +27,9 @@ from co_scientist.runtime.trace_snapshot import readonly_uow
 
 from .configuration import Draft, Runtime, Strict, diagnostics
 from .jobs import TERMINAL, driver_alive, launch
+from .monitor import event_page, monitor_page
 from .store import Store, identifier
-from .views import candidates
+from .views import candidates, source_records
 
 FRONTEND = Path(__file__).parent / "frontend"
 TRACE_FILES = {
@@ -60,6 +63,10 @@ class Credential(Strict):
 
 class Contact(Strict):
     email: str = Field(max_length=254)
+
+
+class Resume(Strict):
+    confirm_execution: StrictBool = False
 
 
 def create_app(data_root, *, allow_live=False):
@@ -202,7 +209,7 @@ def create_app(data_root, *, allow_live=False):
         return {"csrf_token": csrf}
 
     @app.get("/api/v1/health")
-    async def health():
+    def health():
         checks = {}
         for name in ("deepseek-v41.json", "o200k_base.tiktoken"):
             try:
@@ -219,41 +226,41 @@ def create_app(data_root, *, allow_live=False):
         }
 
     @app.get("/api/v1/projects")
-    async def projects():
+    def projects():
         return store.list("project")
 
     @app.post("/api/v1/projects")
-    async def add_project(body: Project):
+    def add_project(body: Project):
         return store.save("project", body.model_dump())
 
     @app.get("/api/v1/projects/{key}")
-    async def project(key: str):
+    def project(key: str):
         return store.get("project", key)
 
     @app.patch("/api/v1/projects/{key}")
-    async def edit_project(key: str, body: Project):
+    def edit_project(key: str, body: Project):
         store.get("project", key)
         return store.save("project", body.model_dump(), key)
 
     @app.get("/api/v1/drafts")
-    async def drafts():
+    def drafts():
         return store.list("draft")
 
     @app.post("/api/v1/drafts")
-    async def save_draft(body: Draft):
+    def save_draft(body: Draft):
         if body.project_id:
             store.get("project", body.project_id)
         return store.save("draft", body.model_dump())
 
     @app.patch("/api/v1/drafts/{key}")
-    async def update_draft(key: str, body: Draft):
+    def update_draft(key: str, body: Draft):
         store.get("draft", key)
         if body.project_id:
             store.get("project", body.project_id)
         return store.save("draft", body.model_dump(), key)
 
     @app.get("/api/v1/config/defaults")
-    async def defaults():
+    def defaults():
         return {
             "version": "web-config-builder-v1",
             "run_config": Runtime().model_dump(),
@@ -262,7 +269,7 @@ def create_app(data_root, *, allow_live=False):
         }
 
     @app.get("/api/v1/config/models")
-    async def models():
+    def models():
         return {
             "account_access": "UNVERIFIED_NO_NETWORK",
             "models": [
@@ -283,7 +290,7 @@ def create_app(data_root, *, allow_live=False):
         }
 
     @app.post("/api/v1/config/preflight")
-    async def preflight(body: Draft):
+    def preflight(body: Draft):
         errors = diagnostics(body)
         if body.project_id:
             store.get("project", body.project_id)
@@ -379,11 +386,11 @@ def create_app(data_root, *, allow_live=False):
         }
 
     @app.get("/api/v1/runs")
-    async def runs():
+    def runs():
         return store.list("run")
 
     @app.post("/api/v1/runs")
-    async def create_run(body: Create):
+    def create_run(body: Create):
         pf = store.get("preflight", body.preflight_id)
         if pf["code_identity"] != code_identity():
             raise ValueError("old code identity")
@@ -414,18 +421,35 @@ def create_app(data_root, *, allow_live=False):
         return record
 
     @app.post("/api/v1/runs/{key}/authorize")
-    async def authorize(key: str, body: Approve):
+    def authorize(key: str, body: Approve):
         record, root = info(key)
         return service(record["mode"]).authorize(root, **body.model_dump())
 
     @app.post("/api/v1/runs/{key}/start")
-    @app.post("/api/v1/runs/{key}/resume")
     async def start(key: str):
+        return await run_in_threadpool(start_native, key)
+
+    @app.post("/api/v1/runs/{key}/resume")
+    async def resume(key: str, body: Resume | None = None):
+        _, root = info(key)
+        service()._verify(root)
+        state = await run_in_threadpool(observe, root)
+        if state["state"] in TERMINAL:
+            return {"state": "terminal_no_dispatch", "status": state}
+        if state["state"] == "prepared":
+            raise HTTPException(409, "prepared Run requires explicit start, not resume")
+        if body is None or not body.confirm_execution:
+            raise HTTPException(403, "resume can dispatch paid requests; explicit intent required")
+        return await run_in_threadpool(start_native, key, True)
+
+    def start_native(key, resuming=False):
         record, root = info(key)
         native = service(record["mode"])
         native._verify(root)
         if observe(root)["state"] in TERMINAL:
             return {"state": "terminal_no_dispatch", "status": native.status(root)}
+        if not resuming and observe(root)["state"] != "prepared" and not driver_alive(root):
+            raise HTTPException(409, "interrupted Run requires explicit resume intent")
         if record["mode"] == "LIVE_SINGLE_DISPATCH" and not allow_live:
             raise HTTPException(
                 403,
@@ -435,8 +459,15 @@ def create_app(data_root, *, allow_live=False):
             raise HTTPException(403, "per-Run authorization required")
         auth = load(root / "authorization.json")
         plan = load(root / "plan.json")
-        if auth.get("plan_hash") != protocol_hash(plan) or auth.get("run_id") != key:
+        if (auth.get("plan_hash") != protocol_hash(plan) or auth.get("run_id") != key
+                or auth.get("version") != "release-authorization-v1"
+                or auth.get("mode") != plan["mode"] or auth.get("limits") != plan["limits"]
+                or Decimal(str(auth.get("accepted_risk_usd"))) != Decimal(plan["limits"]["risk_ceiling_usd"])):
             raise ValueError("authorization identity mismatch")
+        if record["mode"] == "LIVE_SINGLE_DISPATCH" and not (
+            auth.get("operator_confirmed_pricing_capability") and auth.get("accepted_unknown_delivery_risk")
+        ):
+            raise HTTPException(403, "LIVE pricing and risk confirmation required")
         if record["mode"] == "LIVE_SINGLE_DISPATCH" and not all(
             (credentials.get("openai"), credentials.get("deepseek"), contact["email"])
         ):
@@ -444,13 +475,13 @@ def create_app(data_root, *, allow_live=False):
         return app.state.launch(store, key, native.environment)
 
     @app.post("/api/v1/runs/{key}/stop")
-    async def stop(key: str):
+    def stop(key: str):
         _, root = info(key)
         service()._verify(root)
         return service().stop(root)
 
     @app.get("/api/v1/runs/{key}/status")
-    async def status(key: str):
+    def status(key: str):
         record, root = info(key)
         result = observe(root)
         job = store.job(key)
@@ -458,9 +489,15 @@ def create_app(data_root, *, allow_live=False):
         if (
             not alive
             and result["state"] not in TERMINAL
-            and job["state"] in {"starting", "running"}
+            and job["state"] in {"starting", "running", "finished"}
         ):
-            job = store.job(key, pid=job["pid"], state="interrupted_needs_review")
+            job = store.job(key, pid=job["pid"], state="interrupted_needs_review",
+                            diagnostic=job.get("diagnostic") or {
+                                "code": "DRIVER_LOST", "phase": "observation",
+                                "last_event_sequence": result.get("events"),
+                                "native_state": result["state"]})
+        if result["state"] in TERMINAL:
+            job = {**job, "observed_driver_state": job["state"], "state": "terminal"}
         result.update(
             {
                 "mode": record["mode"],
@@ -472,11 +509,21 @@ def create_app(data_root, *, allow_live=False):
         return result
 
     @app.get("/api/v1/runs/{key}/events")
-    async def events(key: str, after: int = 0):
+    def events(key: str, after: int = 0):
         if after < 0:
             raise HTTPException(422)
         _, root = info(key)
         return observed_events(root, after)
+
+    @app.get("/api/v1/runs/{key}/monitor")
+    def monitor(key: str, after: int = 0):
+        if after < 0:
+            raise HTTPException(422)
+        _, root = info(key)
+        try:
+            return monitor_page(root, key, after)
+        except sqlite3.OperationalError:
+            raise HTTPException(503, "MONITOR_BUSY: retry read only") from None
 
     @app.get("/api/v1/runs/{key}/stream")
     async def stream(key: str, request: Request, after: int = 0):
@@ -491,11 +538,24 @@ def create_app(data_root, *, allow_live=False):
         async def generate():
             nonlocal cursor
             while not await request.is_disconnected():
-                for row in observed_events(root, cursor):
+                try:
+                    rows = await run_in_threadpool(event_page, root, cursor)
+                except sqlite3.OperationalError:
+                    yield "event: read.busy\ndata: {}\n\n"
+                    await asyncio.sleep(1)
+                    continue
+                for row in rows:
                     cursor = row["sequence"]
                     yield f"id: {cursor}\nevent: run.event\ndata: {json.dumps(row, ensure_ascii=False)}\n\n"
-                current = observe(root)
-                if current["state"] in TERMINAL or not driver_alive(root):
+                if len(rows) == 1000:
+                    continue
+                try:
+                    current = await run_in_threadpool(observe, root)
+                except sqlite3.OperationalError:
+                    yield "event: read.busy\ndata: {}\n\n"
+                    await asyncio.sleep(1)
+                    continue
+                if current["state"] in TERMINAL or not await run_in_threadpool(driver_alive, root):
                     yield "event: boundary\ndata: {}\n\n"
                     return
                 yield ": heartbeat\n\n"
@@ -504,12 +564,12 @@ def create_app(data_root, *, allow_live=False):
         return StreamingResponse(generate(), media_type="text/event-stream")
 
     @app.get("/api/v1/runs/{key}/leaderboard")
-    async def leaderboard(key: str):
+    def leaderboard(key: str):
         _, root = info(key)
         return candidates(root, key)
 
     @app.get("/api/v1/runs/{key}/candidates/{candidate_id}")
-    async def candidate(key: str, candidate_id: str):
+    def candidate(key: str, candidate_id: str):
         identifier(candidate_id)
         docs = native_documents(key)
         value = next(
@@ -519,34 +579,23 @@ def create_app(data_root, *, allow_live=False):
             raise HTTPException(404)
         # Full frozen ancestry/source facts remain inspectable, without claiming
         # every source supports this candidate or fabricating claim-level bindings.
-        value["source_and_generation_records"] = [
-            r
-            for r in docs["run-timeline.json"]["events"]
-            if r["event_type"]
-            in {
-                "RootReviewPlannedV1",
-                "RootRetrievalOutcomeRecordedV2",
-                "RootRetrievalReusedV2",
-                "RootSourceReviewRecordedV1",
-                "RootGroundingFrozenV1",
-                "GroundedGenerationRecordedV1",
-            }
-        ]
+        value["source_and_generation_records"] = source_records(
+            docs["candidates.json"], docs["run-timeline.json"]["events"], candidate_id)
         value["matches"] = [
             r for r in docs["ranking-history.json"] if candidate_id in (r["left_id"], r["right_id"])
         ]
         return value
 
     @app.get("/api/v1/runs/{key}/lineage")
-    async def lineage(key: str):
+    def lineage(key: str):
         return native_documents(key)["evolution-tree.json"]
 
     @app.get("/api/v1/runs/{key}/rankings")
-    async def rankings(key: str):
+    def rankings(key: str):
         return native_documents(key)["ranking-history.json"]
 
     @app.get("/api/v1/runs/{key}/trace")
-    async def trace(key: str):
+    def trace(key: str):
         return native_documents(key)
 
     @app.post("/api/v1/runs/{key}/exports")
@@ -554,12 +603,12 @@ def create_app(data_root, *, allow_live=False):
         _, root = info(key)
         export_id = "export-" + secrets.token_hex(16)
         destination = store.path("exports", key, export_id)
-        await service().export(root, destination)
+        await run_in_threadpool(lambda: asyncio.run(service().export(root, destination)))
         store.save("export", {"run_id": key, "files": sorted(TRACE_FILES)}, export_id)
         return {"export_id": export_id, "files": sorted(TRACE_FILES)}
 
     @app.get("/api/v1/runs/{key}/exports/{export_id}")
-    async def download_export(key: str, export_id: str):
+    def download_export(key: str, export_id: str):
         info(key)
         record = store.get("export", export_id)
         if record["run_id"] != key:

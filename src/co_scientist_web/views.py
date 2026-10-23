@@ -5,6 +5,33 @@ from co_scientist.ports.external_provider import thaw_json
 from co_scientist.runtime.trace_snapshot import readonly_uow
 
 
+def source_records(contents, events, candidate_id):
+    """Only explicit content/ancestor/root-slot bindings; no support inference."""
+    by_id = {c["hypothesis_id"]: c for c in contents}
+    seen, slots, results = set(), set(), set()
+    def visit(key):
+        if key in seen:
+            return
+        seen.add(key)
+        content = by_id.get(key, {})
+        if content.get("slot_id"):
+            slots.add(content["slot_id"])
+        if content.get("source_result_id"):
+            results.add(content["source_result_id"])
+        for parent in content.get("scientific_parent_ids", []):
+            visit(parent)
+    visit(candidate_id)
+    for row in events:
+        if row["event_type"] == "GroundedGenerationRecordedV1" and row["payload"].get("source_result_id") in results:
+            slots.add(row["payload"]["binding"].get("root_slot_id"))
+    kinds = {"RootReviewPlannedV1", "RootRetrievalOutcomeRecordedV2", "RootRetrievalReusedV2",
+             "RootSourceReviewRecordedV1", "RootGroundingFrozenV1", "GroundedGenerationRecordedV1"}
+    return [r for r in events if r["event_type"] in kinds and (
+        r["payload"].get("source_result_id") in results or
+        (r["payload"].get("binding", {}).get("root_slot_id") or
+         r["payload"].get("binding", {}).get("slot_id") or r["payload"].get("slot_id")) in slots - {None})]
+
+
 def candidates(root, run_id):
     path = root / "runtime/co-scientist.db"
     if not path.exists():

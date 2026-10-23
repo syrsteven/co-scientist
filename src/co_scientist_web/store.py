@@ -30,6 +30,8 @@ class Store:
                     id TEXT PRIMARY KEY, kind TEXT NOT NULL, value TEXT NOT NULL);
                 CREATE TABLE IF NOT EXISTS jobs (
                     run_id TEXT PRIMARY KEY, pid INTEGER, state TEXT NOT NULL);
+                CREATE TABLE IF NOT EXISTS job_diagnostics (
+                    run_id TEXT PRIMARY KEY, value TEXT NOT NULL);
             """)
 
     @contextmanager
@@ -77,7 +79,7 @@ class Store:
         self.get("run", key)
         return self.path("runs", identifier(key))
 
-    def job(self, key, *, pid=None, state=None):
+    def job(self, key, *, pid=None, state=None, diagnostic=None):
         identifier(key)
         with self.db() as db:
             if state is not None:
@@ -86,4 +88,10 @@ class Store:
                     (key, pid, state),
                 )
             row = db.execute("SELECT * FROM jobs WHERE run_id=?", (key,)).fetchone()
-        return dict(row) if row else {"run_id": key, "pid": None, "state": "not_started"}
+            if diagnostic is not None:
+                db.execute("INSERT INTO job_diagnostics VALUES (?,?) ON CONFLICT(run_id) "
+                           "DO UPDATE SET value=excluded.value", (key, json.dumps(diagnostic)))
+            detail = db.execute("SELECT value FROM job_diagnostics WHERE run_id=?", (key,)).fetchone()
+        result = dict(row) if row else {"run_id": key, "pid": None, "state": "not_started"}
+        result["diagnostic"] = json.loads(detail[0]) if detail else None
+        return result

@@ -573,8 +573,16 @@ class Supervisor:
         epoch = str(manifest["tournament_contract"]["epoch_id"])
         ready = self._baseline_ready_candidates(run_id)
         ratings = replay_bayesian_rating(events, epoch_id=epoch, policy=TrueSkillConfig())
-        if set(ready) != set(ratings):
+        # A stop can fall after reviews commit but before entry into R. Never
+        # invent ratings for that suffix. COMPLETE still requires all of R;
+        # PARTIAL may use only already admitted, identity-valid entries.
+        if not set(ratings) <= set(ready) or (complete and set(ready) != set(ratings)):
             raise ValueError("final pool differs from authoritative R ledger")
+        for event in events:
+            if event.event_type == "TournamentEntryCreated" and event.payload.get("epoch_id") == epoch:
+                key = str(event.payload["hypothesis_id"])
+                if event.payload.get("content_hash") != ready[key].content_hash:
+                    raise ValueError("final R ledger content identity mismatch")
         plans = [e for e in events if e.event_type == "BaselineReproductionPlannedV1"
                  and not e.payload.get("redesign_of")]
         terminal_barrier = (generation == target_generation and len(plans) == 2 * target_generation and any(

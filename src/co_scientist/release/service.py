@@ -9,6 +9,7 @@ import sqlite3
 from datetime import UTC, datetime
 from decimal import Decimal
 from pathlib import Path
+from tempfile import NamedTemporaryFile
 from uuid import uuid4
 
 import httpx
@@ -29,8 +30,30 @@ def load(path):
 
 
 def save_new(path, value):
-    with Path(path).open("x", encoding="utf-8") as handle:
-        json.dump(value, handle, ensure_ascii=False, indent=2)
+    """Publish complete durable JSON without ever replacing an existing identity.
+
+    Same-filesystem link is atomic and exclusive (unlike rename/replace).
+    A crash before publication leaves only an unreferenced temporary file;
+    a crash after publication leaves a complete fsynced document.
+    """
+    path = Path(path)
+    temporary = None
+    try:
+        with NamedTemporaryFile(mode="w", encoding="utf-8", dir=path.parent,
+                                prefix=".pending-", delete=False) as handle:
+            temporary = Path(handle.name)
+            json.dump(value, handle, ensure_ascii=False, indent=2)
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.link(temporary, path)
+        directory = os.open(path.parent, os.O_RDONLY)
+        try:
+            os.fsync(directory)
+        finally:
+            os.close(directory)
+    finally:
+        if temporary is not None:
+            temporary.unlink(missing_ok=True)
 
 
 def code_identity():
@@ -266,15 +289,20 @@ class RunService:
         return root / "snapshots" / ("events-" + str(state.get("events", 0)))
 
     def stop(self, root):
-        root = Path(root).resolve()
+        root, _, _ = self._verify(root)
+        state = self.status(root)["state"]
+        if state == "prepared":
+            raise ValueError("prepared Run has no active execution to stop")
+        if state in {"completed", "completed_partial", "failed", "cancelled"}:
+            return {"stop_requested": False, "state": "terminal_no_dispatch"}
         if not (root / "stop-request.json").exists():
-            save_new(
-                root / "stop-request.json",
-                {
+            try:
+                save_new(root / "stop-request.json", {
                     "version": "release-stop-request-v1",
                     "requested_at": datetime.now(UTC).isoformat(),
-                },
-            )
+                })
+            except FileExistsError:
+                pass  # Another operator published the same stop intent.
         return {
             "stop_requested": True,
             "behavior": "finish active bounded call, then native PARTIAL; no new scientific dispatch",
