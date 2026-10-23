@@ -1,4 +1,4 @@
-"""Authenticated, loopback-only opt-in HTTP boundary over Release v0.1.1."""
+"""Authenticated, loopback-only HTTP boundary over the native DEV runtime."""
 
 import asyncio
 import hashlib
@@ -18,6 +18,7 @@ from fastapi.responses import FileResponse, JSONResponse, Response, StreamingRes
 from pydantic import Field, SecretStr, StrictBool
 from starlette.concurrency import run_in_threadpool
 
+from co_scientist import __version__
 from co_scientist.adapters.artifacts.filesystem import FilesystemArtifactStore
 from co_scientist.domain.research_protocol import protocol_hash
 from co_scientist.release.resources import package_file, resource_path
@@ -219,7 +220,7 @@ def create_app(data_root, *, allow_live=False):
                 checks[name] = "missing_or_invalid: explicit resources install required"
         return {
             "backend_connected": True,
-            "release": "0.1.1",
+            "release": __version__,
             "resources": checks,
             "live_enabled": allow_live,
             "code_identity": code_identity(),

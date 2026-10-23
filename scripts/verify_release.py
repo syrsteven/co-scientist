@@ -33,7 +33,7 @@ def main():
     parser.add_argument(
         "--strict", action="store_true", help="reject ALL unlisted files, including .git/cache"
     )
-    parser.add_argument("--manifest", default="SHA256SUMS.json")
+    parser.add_argument("--manifest", required=True, help="Explicit external build inventory")
     args = parser.parse_args()
     try:
         count = verify(

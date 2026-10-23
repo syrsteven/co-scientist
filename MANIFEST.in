@@ -1,10 +1,8 @@
-include README.md requirements.lock release-source-provenance.json deployment-changes.diff .env.example .gitignore
-include reliability-patch-manifest-v0.1.1.json
-include requirements-web.lock
+include README.md constraints.lock .env.example .gitignore
 recursive-include src/co_scientist_web/frontend *.html *.css *.js
 recursive-include docs *.md *.json
 recursive-include examples *.yaml
 recursive-include tests *.py
-recursive-include scripts *.py
+recursive-include scripts *.py *.sh
 recursive-include src/co_scientist/release/resources *.yaml *.json *.txt
 global-exclude __pycache__ *.py[cod]

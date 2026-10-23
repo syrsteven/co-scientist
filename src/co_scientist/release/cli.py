@@ -7,10 +7,12 @@ from typing import Annotated
 
 import typer
 
+from co_scientist import __version__
+
 from .resources import install_openai_asset
 from .service import RunService, budget
 
-app = typer.Typer(no_args_is_help=True, help="Co-Scientist Continuous R2 G3 DEV release")
+app = typer.Typer(no_args_is_help=True, help=f"Co-Scientist G3 DEV {__version__}")
 ideation = typer.Typer(no_args_is_help=True)
 app.add_typer(ideation, name="ideation")
 

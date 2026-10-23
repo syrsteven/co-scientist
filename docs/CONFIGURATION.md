@@ -35,5 +35,7 @@ Sol24/Flash135共享总数，PubMed48、HTTP191。未知费用保留 reservation
 冻结 pricing 是历史适用 snapshot，不声称永远有效；真实授权前须核对最新账户/价格。
 若不再适用，应发布新 opt-in profile/版本并重新创建 Run，不重写历史费用。
 
-源码包 `requirements.lock` 锁定实测依赖版本；资源清单 `tokenizers.json` 锁定 SHA。
+源码包 `constraints.lock` 统一约束普通/开发依赖版本；安装来源与依赖分组在 `pyproject.toml`，
+普通 Web 安装为 `pip install -c constraints.lock '.[web]'`，开发增加 `dev,web-test` extras。
+资源清单 `tokenizers.json` 锁定 SHA。
 code identity 包括包内源码、profile、prompt 和 schema。恢复要求原 identity 不变。

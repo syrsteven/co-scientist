@@ -3,11 +3,13 @@ from pathlib import Path
 
 import uvicorn
 
+from co_scientist import __version__
+
 from .app import create_app
 
 
 def main():
-    parser = argparse.ArgumentParser(description="Local Co-Scientist Workbench, Release v0.1.1")
+    parser = argparse.ArgumentParser(description=f"Local Co-Scientist DEV Workbench {__version__}")
     parser.add_argument("--data-dir", type=Path, default=Path(".co-scientist-workbench"))
     parser.add_argument("--port", type=int, default=8765)
     parser.add_argument(

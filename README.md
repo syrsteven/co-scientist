@@ -1,58 +1,48 @@
-# Co-Scientist Ideation Release 0.1.1 — Reliability Patch
+# Co-Scientist — Ideation DEV Workbench
 
-Workbench 修复开发分支基于 `main@a9a6934`，见
-[Workbench 可靠性修复与离线验证](docs/WORKBENCH_RELIABILITY_V1.md)。
-本次改变了原生停止/原子文件代码身份；旧 Run 必须使用原环境，不可直接在此版本恢复。
-尚未发布新正式版本，也未覆盖历史发行校验清单。
+本地科研假设生成与演化工作台：从研究目标、PubMed 文献和来源审查出发，经过
+Generation、Ethics、Reflection、Ranking/TrueSkill 与 Mutation/Crossover，完成 G0→G3。
+可查看完整候选、评分、父代谱系和原生过程记录，并安全停止、恢复和导出。
 
-新增 opt-in [Workbench v0.4 本地后端](docs/WORKBENCH_ZH.md)：
-`python -m co_scientist_web --data-dir ./.co-scientist-workbench --port 8765`。
-先安装 Web 依赖并显式准备 tokenizer。默认仅 Mock；真实派发默认关闭；自定义执行尚未开放。
+这是性能增强的 **G3 DEV** 软件，不是论文完整 G10 复现，也不执行实验或撰写论文。
+模型审查、排名或 Mock 成功都不代表科学结论成立。
 
-此分支基于 `baa13351`，不是原 v0.1.0 构建产物。修复范围、旧 Run 的
-code-identity 隔离及验证结果见 [可靠性补丁说明](docs/RELIABILITY_HARDENING_V0.1.1.md)。
-原 `SHA256SUMS.json`、provenance 和 `dist/*0.1.0*` 保留为历史证据，
-不用于宣称新源码与旧版本逐字节相同。新构建应使用独立输出目录。
+## 安装与打开 Workbench
 
-独立部署的 **Continuous R2 G0→G3 DEV** 科研假设生成、评价与演化系统。
-功能来源是已完成的真实 Run
-`ideation-dev-g3-continuous-r2-20261014-836f244e5f7b4f0082c2381c85996d94`。
-这是性能增强短周期 DEV 配置，不是原论文完整 G10 复现。
-
-Python 3.11 / 3.12；本轮在 macOS、Python 3.12 独立虚拟环境验证。
-Linux 使用相同本地 Python/SQLite 接口，但本轮没有 Linux 实机验证。Windows 暂不支持。
+需要 **Python 3.11/3.12、macOS 或 Linux**。无需 Node、Codex 或 API Key 即可运行 Mock。
 
 ```bash
-python3.12 -m venv .venv
-source .venv/bin/activate
-python -m pip install -r requirements.lock
-python -m pip install --no-build-isolation --no-deps .
-co-scientist --help
-co-scientist ideation resources
-co-scientist ideation validate --goal examples/research-goal.yaml
-co-scientist ideation mock --goal examples/research-goal.yaml --data-dir ./mock-runs --long-context
+git clone https://github.com/syrsteven/co-scientist.git
+cd co-scientist
+sh scripts/setup.sh
+.venv/bin/co-scientist-web
 ```
 
-`resources` 是明确的安装阶段下载，不调用模型或 PubMed；完全离线安装可用
-`resources --from-file /path/to/o200k_base.tiktoken`。模型执行不会下载 tokenizer。
-Mock 数据全部为合成数据，不能作为科学证据。
+浏览器打开 <http://127.0.0.1:8765>，进入“创建任务”，填写目标并选择默认 **Mock**，
+预检后创建、确认模拟预算并启动。后台独立驱动会完成 G3；结果中心可查看候选与导出。
+设置页无需填写真实密钥。Mock 请求被强制限制在本地合成 HTTP，不访问模型或 PubMed。
 
-真实运行必须另行提供 API 凭据、确认价格/权限、创建新 Run 并明确授权；安装和 Mock 不会自动启动真实调用。
-完整操作见 [中文部署手册](docs/DEPLOYMENT_GUIDE_ZH.md)。
-`python scripts/verify_release.py --manifest <新清单>` 仅校验清单内文件；
-添加 `--strict` 才会拒绝所有清单外文件（包括 `.git` 和缓存）。
-严格目录验证应针对独立发行目录，不应指向开发工作树。历史默认清单在本补丁树上
-报告 MISMATCH 是预期行为，不得重写旧哈希以掩盖修改。
+安装脚本创建 `.venv`，按唯一的 `constraints.lock` 安装 Web 运行依赖，并准备 SHA 校验的 tokenizer。
+首次安装需要包索引及公开 tokenizer 下载；运行期间不自动下载。已有文件可用
+`sh scripts/setup.sh --tokenizer-file /absolute/path/o200k_base.tiktoken`。
+用 `PYTHON=python3.12` 选择解释器；开发依赖使用 `sh scripts/setup.sh --dev`。
 
-- [架构](docs/ARCHITECTURE.md)
-- [配置、模型和预算](docs/CONFIGURATION.md)
-- [前端接入边界](docs/FRONTEND_INTEGRATION.md)
-- [源码与资源来源](docs/RELEASE_PROVENANCE.md)
-- [离线验证报告](docs/RELEASE_VALIDATION.md)
+## 使用与开发
 
-尚未包含生产 Web UI、远程多用户鉴权或机构伦理审批。
-系统的 Directive/Candidate Ethics 是模型辅助安全审查，不等于机构伦理批准。
-保留科学输出验证；技术 PASS 或最终排名不能证明科学正确性。
+- [中文使用手册](docs/DEPLOYMENT_GUIDE_ZH.md)：Mock、设置、授权、监控、停止恢复、导出和故障处理。
+- [配置与预算](docs/CONFIGURATION.md)：冻结 G3、角色模型、容量、费用和身份边界。
+- [架构与开发](docs/ARCHITECTURE.md)：模块、测试、构建与维护。
+- [Web 接口](docs/FRONTEND_INTEGRATION.md)：真实后端和前端接入边界。
+- [冻结科学规范](docs/2608_IDEATION_CORE_SPEC_V1.md)：方法约束；DEV G3 不冒称完整复现。
 
-项目源码未发现独立许可证声明，本交付不擅自赋予开源许可证。
-第三方 tokenizer 的许可和分发策略见资源清单与来源文档。
+CLI 为高级入口：`.venv/bin/co-scientist ideation --help`。
+Workbench 默认仅 Mock；LIVE 必须显式 `--allow-live`、配置凭据并逐 Run 授权。
+真实运行前需自行核对模型权限和冻结价格是否仍适用，不会自动在线探测账户。
+自定义模型/代数等可保存草稿，但未经完整验证的组合会拒绝启动。
+
+仅支持本地单用户，监听 loopback；不要直接暴露公网。密钥不进入日志、Run 或导出。
+本版为全新 DEV 基线，不提供旧 Release 数据迁移；新建 Run 仍要求冻结代码/资源身份不变。
+历史构建和审查记录不放在当前源码目录；Git 历史保留，未重写。
+
+项目尚未选定源码许可证；不能将公开仓库等同于已获开源再分发许可。
+第三方 tokenizer 许可随资源提供，OpenAI BPE 仅在安装阶段从固定 URL 获取并校验。

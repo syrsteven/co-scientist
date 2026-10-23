@@ -1,4 +1,4 @@
-name: Offline release reliability
+name: Offline DEV checks
 on: [push, pull_request, workflow_dispatch]
 permissions:
   contents: read
@@ -20,10 +20,11 @@ jobs:
         with:
           python-version: ${{ matrix.python }}
           cache: pip
-      - name: Install frozen dependencies and local package
+      - name: Install from single dependency constraints
         run: |
-          python -m pip install -r requirements-web.lock
-          python -m pip install --no-build-isolation --no-deps -e .
+          python -m pip install -c constraints.lock setuptools wheel
+          python -m pip install --no-build-isolation -c constraints.lock '.[web,dev,web-test]'
+          python -m pip check
       - name: Explicit public tokenizer setup (not a scientific API)
         run: co-scientist ideation resources
       - name: Socket-denied offline regressions
@@ -46,7 +47,7 @@ jobs:
           python -m mypy --follow-imports=skip src/co_scientist/release src/co_scientist/runtime/trace_snapshot.py src/co_scientist/runtime/ideation_trace.py scripts/verify_release.py src/co_scientist/application/cockpit.py src/co_scientist_web
           PYTHONPYCACHEPREFIX=/tmp/co-scientist-pyc python -m compileall -q src tests scripts
           git diff --check
-      - name: New wheel and sdist only (never overwrite archived 0.1.0)
+      - name: Build wheel and sdist outside source tree
         run: python -m build --no-isolation --outdir /tmp/co-scientist-artifacts
       - name: Installed wheel CLI and mock
         run: |
@@ -54,5 +55,6 @@ jobs:
           python -m pip install --no-deps /tmp/co-scientist-artifacts/*.whl
           cd /tmp
           co-scientist --help
+          co-scientist-web --help
           co-scientist ideation validate --goal "$GITHUB_WORKSPACE/examples/research-goal.yaml"
           co-scientist ideation mock --goal "$GITHUB_WORKSPACE/examples/research-goal.yaml" --data-dir /tmp/wheel-mock

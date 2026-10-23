@@ -4,7 +4,9 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "co-scientist-replica"
-version = "0.1.1"
+dynamic = ["version"]
+description = "Local Co-Scientist G3 DEV Workbench with durable scientific execution"
+readme = "README.md"
 requires-python = ">=3.11,<3.13"
 dependencies = [
   "pydantic>=2.7,<3",
@@ -24,6 +26,7 @@ dependencies = [
 web = ["fastapi==0.159.1", "starlette==1.9.0", "uvicorn==0.54.0"]
 web-test = ["playwright==1.64.0", "pyee==13.0.1"]
 dev = [
+  "build>=1.6,<2",
   "pytest>=8.2,<9",
   "pytest-asyncio>=0.23,<1",
   "respx>=0.21,<1",
@@ -38,6 +41,9 @@ co-scientist-web = "co_scientist_web.__main__:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]
+
+[tool.setuptools.dynamic]
+version = {attr = "co_scientist.__version__"}
 
 [tool.setuptools.package-data]
 "co_scientist_web" = ["frontend/*.html", "frontend/*.css", "frontend/*.js"]

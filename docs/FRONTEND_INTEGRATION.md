@@ -1,31 +1,35 @@
-# 前端接入边界
+# Workbench 与本地 API
 
-**本版没有已上线 HTTP 管理 API 或生产网页。** 未打包静态 Workbench，更未宣称其接通后端。
-当前可复用服务层为 `co_scientist.release.service.RunService`，CLI 是其真实调用方。
-后续 Web 服务应薄封装此接口，不重新实现科学算法。
+正式入口是 `co-scientist-web`（FastAPI + 随包静态前端），不是未接线的静态演示。
+只监听 127.0.0.1，默认禁止 LIVE；无跨域、多用户鉴权或公网部署支持。
+前端使用同源 session Cookie、CSRF 和 Host/Origin 校验，不接受任意磁盘路径/命令。
+密钥经本地后端内存处理，不回显或写入日志；后台驱动通过私有 stdin 接收。
 
-开发树已有 Node Cockpit 与 Python `application/cockpit.py` 原型，不能笼统称为纯静态页面。
-但实测旧 `snapshot()` → `SqliteRunReadModel._ratings_and_matches()` 读取本版G3时，
-因旧reader要求 `evaluation_rules_hash` 而抛出KeyError；它不是可直接部署的G3管理API。
-旧control桥还返回旧`worker run`命令，不能代替本版的独立授权/恢复入口。
-Python兼容源码保留，但这些原型不是受支持的Release操作接口；Node/Web资源不纳入。
-没有修改旧reader或科研事件来掩盖不兼容；新前端应接下面已验证的服务/Native trace。
+## 已实现的 `/api/v1` 接口
 
-| 用户操作 | 已实现接口 |
+| 功能 | 接口 |
 | --- | --- |
-| 校验 / 创建 | `validate(goal, profile)` / `create(goal, data_dir, ...)` |
-| 明确授权 | `authorize(root, confirm, accept_usd, accept_unknown_risk, confirm_pricing)` |
-| 启动 / 恢复 | `await execute(root)`，原生 CoreRunner.drive/Worker.run_once |
-| 状态 / 费用 | `status(root)`，SQLite 只读查询和 native budget snapshot |
-| 增量事件 | `events(root, after=sequence)` |
-| 安全停止 | `stop(root)`，durable请求，下一执行边界原生PARTIAL |
-| 候选 / rating / 谱系 / 结果 | `await export(root, output)`，原生export_trace五项文件 |
+| 会话与健康 | session、health |
+| 项目/草稿 | projects GET/POST、projects/{id} GET/PATCH；drafts GET/POST、drafts/{id} PATCH |
+| 配置 | config/defaults、config/models、config/preflight |
+| 设置 | settings/status、settings/credentials/{provider} PUT/DELETE、settings/pubmed PUT/DELETE、settings/validation POST |
+| 创建/授权/执行 | runs GET/POST、runs/{id}/authorize/start/stop/resume POST |
+| 只读监控 | runs/{id}/status、events、stream、monitor GET |
+| 科研详情 | leaderboard、candidates/{id}、lineage、rankings GET（Run 路径下） |
+| 导出 | runs/{id}/trace GET、exports POST、exports/{id} GET（ZIP） |
 
-接口参数和 CLI help 已由离线测试实际调用，不是已部署 REST endpoint。
-Web 接入需另行增加认证/授权、路径隔离、后台作业生命周期、TLS 和审计。
-不能将请求线程阻塞7200秒或允许浏览器任意指定文件路径。
-一个 Run 仅一个驱动进程，POSIX lock 阻止重复驱动；event sequence 用于增量监控。
-凭据应来自服务器安全环境，不能从浏览器回显或进入 exports。
+见 `src/co_scientist_web/app.py` 中实际路由及类型校验；`tests/test_web.py` 和可靠性测试提供调用示例。
+账户 validation 只检查本地配置状态，不做在线权限探测。自定义组合未验证时明确拒绝，不隐式回退。
 
-Human-in-the-loop 属于后续增强，当前没有人为更改候选准入、排序或终局选择的入口。
-本版不支持远程多用户安全边界、取消已发送 HTTP 或用 stop 重开终止 slot。
+`monitor?after=<sequence>` 分页返回最多 1000 条已提交原生事件；SSE 支持 sequence 续传。
+默认实时监控不生成完整 Trace，不扫描全部 artifacts；详情/导出使用原生固定快照，阻塞工作放入线程。
+SNAPSHOT_BUSY 返回可重试状态，不停止科学驱动。导出保留五项原生格式与不可覆盖规则。
+
+监控重连是只读行为；`POST resume` 是可能付费的执行操作，非终态必须提交
+`{"confirm_execution":true}`，再次通过原生身份/授权/锁/预算检查。终态不派发。
+prepared 禁止 stop/resume。浏览器刷新、打开项目、重连 SSE 不能恢复科研执行。
+后台 job 的 finished/interrupted/terminal 只是观察信息，不代替 Native Run 状态。
+
+历史 Trace 可只读导入，不等于接管任意历史 CLI 目录。旧 Cockpit 仅作兼容源码保留，
+不能用于本版 G3 运行管理；不为 UI 改写原生 rating 事件。未来接入网页请复用本 API/RunService，
+不要在前端计算 μ/σ、推断来源或用未来事件补齐历史回放。Human-in-the-loop 不在当前范围。

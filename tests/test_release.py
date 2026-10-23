@@ -68,43 +68,30 @@ def test_portable_profile_all_skill_schema_and_tokenizers():
     assert "/Users/" not in package_file("g3.yaml").read_text()
 
 
-def test_packaged_core_and_all_51_skill_resources_match_successful_source():
-    import hashlib
+def test_packaged_skill_contracts_and_prompts_are_complete():
+    import yaml
 
     import co_scientist
+    from co_scientist.agents.payloads import output_schema_version, resolve_output_schema
+    from co_scientist.skills.loader import SkillManifest
 
     root = Path(co_scientist.__file__).parent
-    expected = load(package_file("source-files.json"))
-    # The original successful-source index remains immutable. Exactly these
-    # observational modules have explicit, independently versioned patch hashes.
-    overlay = load(package_file("reliability-overlay-v0.1.1.json"))
-    assert overlay["baseline_commit"] == "baa13351ec3cbea8a1e6e81cd4c1432377e315cf"
-    assert set(overlay["modified"]) == {"application/cockpit.py", "runtime/ideation_trace.py"}
-    assert set(overlay["added"]) == {"runtime/trace_snapshot.py"}
-    # This branch explicitly patches stop finalization and crash-safe operator
-    # files. Keep both historical manifests immutable; add an auditable overlay.
-    workbench = load(package_file("workbench-reliability-v1.json"))
-    assert workbench["baseline_commit"] == "a9a6934ce2c579d7302efe40a25c041c77a86d68"
-    assert set(workbench["modified"]) == {"supervisor/orchestrator.py", "runtime/core_runner.py", "release/service.py"}
-    for name, sha in expected.items():
-        if name in overlay["modified"]:
-            patch = overlay["modified"][name]
-            assert patch["baseline_sha256"] == sha
-            sha = patch["patched_sha256"]
-        if name in workbench["modified"]:
-            patch = workbench["modified"][name]
-            assert patch["baseline_sha256"] == sha
-            sha = patch["patched_sha256"]
-        assert hashlib.sha256((root / name).read_bytes()).hexdigest() == sha, name
-    for name, sha in overlay["added"].items():
-        assert hashlib.sha256((root / name).read_bytes()).hexdigest() == sha
-    for name, patch in workbench["modified"].items():
-        assert hashlib.sha256((root / name).read_bytes()).hexdigest() == patch["patched_sha256"]
-    skills = {
-        str(p.relative_to(root)) for p in (root / "skills/resources").rglob("*") if p.is_file()
-    }
+    folder = root / "skills/resources"
+    skills = {p for p in folder.rglob("*") if p.is_file()}
     assert len(skills) == 51
-    assert skills == {name for name in expected if name.startswith("skills/resources/")}
+    referenced_prompts = set()
+    for path in folder.glob("*/manifest*.yaml"):
+        data = yaml.safe_load(path.read_text())
+        phases = data.get("phases", {"default": data})
+        for values in phases.values():
+            contract = SkillManifest.model_validate(values)
+            assert contract.id == path.parent.name
+            assert resolve_output_schema(contract.output_schema, output_schema_version(contract.output_schema))
+            prompt = (path.parent / contract.prompt_path).resolve()
+            assert prompt.is_relative_to(path.parent.resolve())
+            assert prompt.is_file() and prompt.read_text().strip()
+            referenced_prompts.add(prompt)
+    assert referenced_prompts == {p.resolve() for p in folder.glob("*/prompts/*.md")}
 
 
 def test_missing_authorization_and_credentials_zero_dispatch(tmp_path):
