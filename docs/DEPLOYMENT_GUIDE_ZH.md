@@ -13,10 +13,38 @@
 ```bash
 git clone https://github.com/syrsteven/co-scientist.git
 cd co-scientist
-PYTHON=python3.12 sh scripts/setup.sh
-.venv/bin/co-scientist-web --help
-.venv/bin/co-scientist-web
 ```
+
+自行选择一种方式管理环境；已经激活 Python 3.11/3.12 环境时无需重新创建。
+
+Conda 示例：
+
+```bash
+conda create -n co-scientist python=3.12 pip
+conda activate co-scientist
+```
+
+venv 示例：
+
+```bash
+python3.12 -m venv .venv
+source .venv/bin/activate
+```
+
+激活后，两者使用完全相同的安装和启动命令：
+
+```bash
+python --version
+sh scripts/setup.sh
+co-scientist-web --help
+co-scientist-web
+```
+
+脚本不创建、激活或切换环境，也不要求特定环境管理器。默认使用 PATH 中的 `python`，
+每一步均由同一解释器执行。可用 `PYTHON=/absolute/path/to/python sh scripts/setup.sh`
+明确选择解释器；之后启动时仍须激活对应环境，避免误用其他环境的命令。
+环境缺 pip 或版本不符时会明确失败；无权限或 externally-managed 错误应由用户调整环境，
+脚本不会调用 sudo、绕过系统保护或回退到用户级安装。
 
 打开 <http://127.0.0.1:8765>。可用 `--port 8767 --data-dir /absolute/path/workbench-data`
 设置端口和本地数据目录。默认 `.co-scientist-workbench`，不要在运行后移动目录。
@@ -24,16 +52,17 @@ PYTHON=python3.12 sh scripts/setup.sh
 
 ### 依赖和 tokenizer
 
-唯一版本约束是根目录 `constraints.lock`。普通用户只安装 Web 与运行依赖：
+唯一版本约束是根目录 `constraints.lock`。激活环境后，普通安装只需 `sh scripts/setup.sh`，
+开发安装使用 `sh scripts/setup.sh --dev`。二者共用同一安装流程和约束文件。
+脚本使用选定解释器的 `python -m pip` 安装，再执行 `pip check`。
+
+已有本地 tokenizer 时：
 
 ```bash
-python3.12 -m venv .venv
-.venv/bin/python -m pip install -c constraints.lock setuptools wheel
-.venv/bin/python -m pip install --no-build-isolation -c constraints.lock '.[web]'
-.venv/bin/co-scientist ideation resources
+sh scripts/setup.sh --tokenizer-file /absolute/path/o200k_base.tiktoken
 ```
 
-这与安装脚本等价。首次安装访问 Python 包索引及固定公开 BPE 文件，不访问科研 API。
+首次安装访问 Python 包索引及固定公开 BPE 文件，不访问科研 API。
 DeepSeek tokenizer 随包提供；OpenAI BPE 安装时固定 URL/SHA 校验，运行时离线加载。
 管理员准备好数据后可用 `resources --from-file /absolute/path/o200k_base.tiktoken`；
 对应安装脚本参数为 `--tokenizer-file`。完全离线安装还需预先准备兼容平台的依赖 wheel
@@ -55,8 +84,8 @@ Mock 使用真实 Supervisor/Worker/CoreRunner 和 SQLite，但 provider/PubMed 
 也可运行高级 CLI 的长上下文检查：
 
 ```bash
-.venv/bin/co-scientist ideation validate --goal examples/research-goal.yaml
-.venv/bin/co-scientist ideation mock --goal examples/research-goal.yaml --data-dir ./mock-runs --long-context
+co-scientist ideation validate --goal examples/research-goal.yaml
+co-scientist ideation mock --goal examples/research-goal.yaml --data-dir ./mock-runs --long-context
 ```
 
 ## 3. Research Goal 与配置
@@ -74,7 +103,7 @@ Mock 使用真实 Supervisor/Worker/CoreRunner 和 SQLite，但 provider/PubMed 
 默认服务不允许 LIVE start。确需付费研究时，由操作员显式启动：
 
 ```bash
-.venv/bin/co-scientist-web --allow-live
+co-scientist-web --allow-live
 ```
 
 在设置页输入 OpenAI/DeepSeek Key、PubMed 邮箱；密钥提交后清空输入，后端不回显，
@@ -102,11 +131,11 @@ unknown-delivery 可能重复计费的风险；单次全 Run 风险上限 $60，
 高级 CLI（将 `RUN` 替换为实际创建输出路径）：
 
 ```bash
-.venv/bin/co-scientist ideation status "$RUN"
-.venv/bin/co-scientist ideation events "$RUN" --after 0
-.venv/bin/co-scientist ideation stop "$RUN"
-.venv/bin/co-scientist ideation resume "$RUN"
-.venv/bin/co-scientist ideation export "$RUN"
+co-scientist ideation status "$RUN"
+co-scientist ideation events "$RUN" --after 0
+co-scientist ideation stop "$RUN"
+co-scientist ideation resume "$RUN"
+co-scientist ideation export "$RUN"
 ```
 
 CLI `resume` 是执行写操作，不是只读监控。不要同时启动多个驱动或移动 Run 根目录。

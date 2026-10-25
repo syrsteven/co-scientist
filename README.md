@@ -14,18 +14,39 @@ Generation、Ethics、Reflection、Ranking/TrueSkill 与 Mutation/Crossover，�
 ```bash
 git clone https://github.com/syrsteven/co-scientist.git
 cd co-scientist
+```
+
+先自行选择并激活 Python 环境。例如 Conda：
+
+```bash
+conda create -n co-scientist python=3.12 pip
+conda activate co-scientist
+```
+
+或使用 venv：
+
+```bash
+python3.12 -m venv .venv
+source .venv/bin/activate
+```
+
+已激活兼容环境可跳过创建步骤。之后统一安装和启动：
+
+```bash
 sh scripts/setup.sh
-.venv/bin/co-scientist-web
+co-scientist-web
 ```
 
 浏览器打开 <http://127.0.0.1:8765>，进入“创建任务”，填写目标并选择默认 **Mock**，
 预检后创建、确认模拟预算并启动。后台独立驱动会完成 G3；结果中心可查看候选与导出。
 设置页无需填写真实密钥。Mock 请求被强制限制在本地合成 HTTP，不访问模型或 PubMed。
 
-安装脚本创建 `.venv`，按唯一的 `constraints.lock` 安装 Web 运行依赖，并准备 SHA 校验的 tokenizer。
+安装脚本不创建或激活任何环境，只使用当前 PATH 的 `python`，按唯一的 `constraints.lock`
+安装 Web 运行依赖、检查依赖，并准备 SHA 校验的 tokenizer。
 首次安装需要包索引及公开 tokenizer 下载；运行期间不自动下载。已有文件可用
 `sh scripts/setup.sh --tokenizer-file /absolute/path/o200k_base.tiktoken`。
-用 `PYTHON=python3.12` 选择解释器；开发依赖使用 `sh scripts/setup.sh --dev`。
+需要时可用 `PYTHON=/path/to/python` 显式选择解释器；请确保启动命令来自同一环境。
+开发依赖使用 `sh scripts/setup.sh --dev`。
 
 ## 使用与开发
 
@@ -35,7 +56,7 @@ sh scripts/setup.sh
 - [Web 接口](docs/FRONTEND_INTEGRATION.md)：真实后端和前端接入边界。
 - [冻结科学规范](docs/2608_IDEATION_CORE_SPEC_V1.md)：方法约束；DEV G3 不冒称完整复现。
 
-CLI 为高级入口：`.venv/bin/co-scientist ideation --help`。
+CLI 为高级入口：`co-scientist ideation --help`。
 Workbench 默认仅 Mock；LIVE 必须显式 `--allow-live`、配置凭据并逐 Run 授权。
 真实运行前需自行核对模型权限和冻结价格是否仍适用，不会自动在线探测账户。
 自定义模型/代数等可保存草稿，但未经完整验证的组合会拒绝启动。

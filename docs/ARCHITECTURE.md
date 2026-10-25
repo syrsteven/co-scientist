@@ -32,14 +32,16 @@ G1–G3 各最多两 offspring，累计 P、UCB=μ+σ、0.7 crossover/0.3 mutati
 
 ## 开发、测试和构建
 
+先按中文使用手册激活所选 Python 环境；以下命令均使用该环境，不自动创建环境。
+
 ```bash
 sh scripts/setup.sh --dev
-.venv/bin/python -m playwright install chromium
-PYTHONDONTWRITEBYTECODE=1 .venv/bin/python -m pytest --import-mode=importlib -p no:cacheprovider -m 'not online' -q
-CO_SCIENTIST_BROWSER_TESTS=1 .venv/bin/python -m pytest tests/test_web_replay.py -q
-.venv/bin/python tests/web_browser.py /tmp/co-scientist-browser-new
-.venv/bin/python tests/web_reliability_browser.py /tmp/co-scientist-boundaries-new
-.venv/bin/python -m build --no-isolation
+python -m playwright install chromium
+PYTHONDONTWRITEBYTECODE=1 python -m pytest --import-mode=importlib -p no:cacheprovider -m 'not online' -q
+CO_SCIENTIST_BROWSER_TESTS=1 python -m pytest tests/test_web_replay.py -q
+python tests/web_browser.py /tmp/co-scientist-browser-new
+python tests/web_reliability_browser.py /tmp/co-scientist-boundaries-new
+python -m build --no-isolation
 ```
 
 浏览器输出路径必须全新。Playwright 安装只下载测试工具；Mock 运行硬拒绝科研网络，浏览器仅允许 loopback。

@@ -1,7 +1,6 @@
 #!/bin/sh
 # Install dependencies + verified tokenizer at setup time, never at Run time.
 set -eu
-cd "$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)"
 mode=web
 asset=
 while [ "$#" -gt 0 ]; do
@@ -12,24 +11,42 @@ while [ "$#" -gt 0 ]; do
             asset=$2; shift 2 ;;
         --help)
             echo 'Usage: sh scripts/setup.sh [--dev] [--tokenizer-file /absolute/path/o200k_base.tiktoken]'
-            echo 'PYTHON selects Python 3.11/3.12; VENV selects the virtual environment directory.'
+            echo 'Installs into the current Python environment (Python 3.11/3.12).'
+            echo 'Activate your environment first; PYTHON optionally selects an interpreter.'
             exit 0 ;;
         *) echo "Unknown option: $1" >&2; exit 2 ;;
     esac
 done
-bootstrap_python=${PYTHON:-python3}
-venv=${VENV:-.venv}
-"$bootstrap_python" -c 'import sys; assert (3,11) <= sys.version_info[:2] < (3,13), "Python 3.11/3.12 required"'
-if [ ! -e "$venv" ]; then
-    "$bootstrap_python" -m venv "$venv"
-fi
-"$venv/bin/python" -c 'import sys; assert sys.prefix != sys.base_prefix; assert (3,11) <= sys.version_info[:2] < (3,13)'
-"$venv/bin/python" -m pip install -c constraints.lock setuptools wheel
-"$venv/bin/python" -m pip install --no-build-isolation -c constraints.lock ".[${mode}]"
-"$venv/bin/python" -m pip check
+install_python=$(command -v "${PYTHON:-python}") || {
+    echo 'Python not found. Activate a Python 3.11/3.12 environment or set PYTHON.' >&2
+    exit 2
+}
+case "$install_python" in
+    /*) ;;
+    *) install_python="$(pwd)/$install_python" ;;
+esac
+"$install_python" -c 'import sys; (3,11) <= sys.version_info[:2] < (3,13) or sys.exit("Python 3.11/3.12 required"); print("Installing into:", sys.executable)'
+"$install_python" -m pip --version >/dev/null || {
+    echo 'pip is required in the selected Python environment.' >&2
+    exit 2
+}
 if [ -n "$asset" ]; then
-    "$venv/bin/co-scientist" ideation resources --from-file "$asset"
-else
-    "$venv/bin/co-scientist" ideation resources
+    case "$asset" in
+        /*) ;;
+        *) asset="$(pwd)/$asset" ;;
+    esac
+    [ -f "$asset" ] && [ -r "$asset" ] || {
+        echo 'Tokenizer file must exist and be readable.' >&2
+        exit 2
+    }
 fi
-echo "Ready. Start: $venv/bin/co-scientist-web"
+cd "$(CDPATH= cd -- "$(dirname -- "$0")/.." && pwd)"
+"$install_python" -m pip install --no-user -c constraints.lock setuptools wheel
+"$install_python" -m pip install --no-user --no-build-isolation -c constraints.lock ".[${mode}]"
+"$install_python" -m pip check
+if [ -n "$asset" ]; then
+    "$install_python" -c 'from co_scientist.release.cli import main; main()' ideation resources --from-file "$asset"
+else
+    "$install_python" -c 'from co_scientist.release.cli import main; main()' ideation resources
+fi
+echo 'Ready. Start: co-scientist-web'
