@@ -9,7 +9,12 @@
   async function api(path,method="GET",data){
     const response=await fetch("/api/v1"+path,{method,credentials:"same-origin",headers:{"Content-Type":"application/json","X-CSRF-Token":csrf},body:data===undefined?undefined:JSON.stringify(data)});
     const value=await response.json();
-    if(!response.ok)throw new Error(JSON.stringify(value));
+    if(!response.ok){
+      const tracking=value.error_id??response.headers.get("X-Request-ID");
+      const message=`${JSON.stringify(value)}${tracking?` · 追踪编号 ${tracking}`:""}`;
+      if(path==="/config/preflight")$("#wb-preflight-list").textContent=message;
+      throw new Error(message);
+    }
     return value;
   }
   const safely=fn=>async event=>{event?.preventDefault();try{await fn(event);}catch(error){notify(error.message);}};
@@ -119,6 +124,9 @@
         M.loadEvents(packet,latest);lastSequence=packet.source_sequence;
       }
       $("#board-refresh-label").textContent=`${latest.state} · ${latest.job.state} · ${latest.events??0} events`;
+      const diagnostic=latest.job.diagnostic;
+      $("#backend-diagnostic").textContent=diagnostic?.error_id
+        ? `后台诊断 ${diagnostic.code} · 阶段 ${diagnostic.phase} · 追踪编号 ${diagnostic.error_id}（详见本地日志）`:"";
       $("#backend-open-approval").disabled=latest.state!=="prepared";
       $("#backend-stop").disabled=["prepared","initializing","completed","completed_partial","failed","cancelled"].includes(latest.state);
       $("#backend-resume").disabled=["prepared","initializing","completed","completed_partial","failed","cancelled"].includes(latest.state)||latest.job.alive;

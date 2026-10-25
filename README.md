@@ -57,6 +57,10 @@ co-scientist-web
 - [冻结科学规范](docs/2608_IDEATION_CORE_SPEC_V1.md)：方法约束；DEV G3 不冒称完整复现。
 
 CLI 为高级入口：`co-scientist ideation --help`。
+默认 INFO 日志实时输出到终端和数据目录的 `logs/workbench.jsonl`；
+用 `co-scientist-web --log-level DEBUG` 查看更详细的只读 API 活动。
+每个 Run 的独立 Driver 日志保存在 `runs/<run-id>/logs/driver.jsonl`，
+前端错误编号可在这些本地日志中检索，详见[故障处理](docs/DEPLOYMENT_GUIDE_ZH.md#日志与错误定位)。
 Workbench 默认仅 Mock；LIVE 必须显式 `--allow-live`、配置凭据并逐 Run 授权。
 真实运行前需自行核对模型权限和冻结价格是否仍适用，不会自动在线探测账户。
 自定义模型/代数等可保存草稿，但未经完整验证的组合会拒绝启动。

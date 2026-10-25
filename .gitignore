@@ -23,3 +23,5 @@ dist/
 runs/
 mock-runs/
 tokenizer-assets/
+*.log
+**/logs/

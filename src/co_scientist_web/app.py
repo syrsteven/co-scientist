@@ -8,7 +8,9 @@ import re
 import secrets
 import sqlite3
 import tempfile
+import time
 import zipfile
+from contextlib import asynccontextmanager
 from decimal import Decimal
 from pathlib import Path
 
@@ -27,6 +29,7 @@ from co_scientist.runtime.ideation_trace import trace_documents
 from co_scientist.runtime.trace_snapshot import readonly_uow
 
 from .configuration import Draft, Runtime, Strict, diagnostics
+from .diagnostics import Diagnostics, exception_detail, request_id, tail
 from .jobs import TERMINAL, driver_alive, launch
 from .monitor import event_page, monitor_page
 from .store import Store, identifier
@@ -70,14 +73,39 @@ class Resume(Strict):
     confirm_execution: StrictBool = False
 
 
-def create_app(data_root, *, allow_live=False):
-    app = FastAPI(docs_url=None, redoc_url=None, openapi_url=None)
+def create_app(data_root, *, allow_live=False, log_level="INFO", observer=None):
     store = Store(data_root)
+    log = observer or Diagnostics(store.path("logs", "workbench.jsonl"), level=log_level)
+
+    @asynccontextmanager
+    async def lifespan(app):
+        log.emit("web.application_ready", phase="startup", live_enabled=allow_live)
+        try:
+            yield
+        finally:
+            log.emit("web.application_stopping", phase="shutdown")
+
+    app = FastAPI(docs_url=None, redoc_url=None, openapi_url=None, lifespan=lifespan)
     session, csrf = secrets.token_urlsafe(32), secrets.token_urlsafe(32)
     credentials = {}  # Only in this server process; never persisted.
     contact = {"email": ""}
     app.state.store = store
     app.state.launch = launch
+    app.state.diagnostics = log
+    app.state.log_level = log_level
+    store.diagnostics = log
+    store.log_level = log_level
+    log.emit("web.configured", phase="startup", live_enabled=allow_live)
+
+    def failed(request, error, code, status, **content):
+        error_id = log.error(error, phase=request.scope.get("route").name
+                             if request.scope.get("route") else "http",
+                             run_id=observed_run(request), code=code)
+        return JSONResponse({"error": code, "error_id": error_id, **content}, status)
+
+    def observed_run(request):
+        key = request.path_params.get("key", "")
+        return key if re.fullmatch(r"ideation-g3-[0-9]{8}-[a-f0-9]{32}", key) else None
 
     def service(mode="MOCK_ONLY"):
         env = (
@@ -159,18 +187,35 @@ def create_app(data_root, *, allow_live=False):
         )
         return response
 
+    @app.middleware("http")
+    async def observation(request, call_next):
+        # Never trust incoming correlation IDs or log raw paths/query/headers.
+        rid = "req-" + secrets.token_hex(16)
+        request.state.request_id = rid
+        context = request_id.set(rid)
+        started = time.monotonic()
+        try:
+            try:
+                response = await call_next(request)
+            except Exception as error:  # noqa: BLE001 -- safe metadata, no automatic retry
+                response = failed(request, error, "BACKEND_OPERATION_FAILED", 500)
+            response.headers["X-Request-ID"] = rid
+            route = request.scope.get("route")
+            level = "WARNING" if response.status_code >= 400 else (
+                "DEBUG" if request.method == "GET" else "INFO")
+            log.emit("http.completed", level=level,
+                     route=route.path if route else "unmatched", method=request.method,
+                     run_id=observed_run(request), status=response.status_code,
+                     duration_ms=round((time.monotonic() - started) * 1000))
+            return response
+        finally:
+            request_id.reset(context)
+
     @app.exception_handler(RequestValidationError)
     async def validation(request, error):
-        return JSONResponse(
-            {
-                "error": "invalid request",
-                "diagnostics": [
-                    {"field": ".".join(map(str, e["loc"])), "code": e["type"]}
-                    for e in error.errors()
-                ],
-            },
-            422,
-        )
+        # Error locations may contain arbitrary JSON keys; do not echo them.
+        return failed(request, error, "invalid request", 422,
+                      diagnostics=[{"code": e["type"]} for e in error.errors()])
 
     @app.exception_handler(ValueError)
     async def conflict(request, error):
@@ -181,17 +226,20 @@ def create_app(data_root, *, allow_live=False):
             if "snapshot" in text or "overwrite" in text
             else "IDENTITY_OR_CONFIG_CONFLICT"
         )
-        return JSONResponse(
-            {"error": code, "message": "快照忙请稍后重试；身份不符的旧 Run 请使用原版本环境。"}, 409
-        )
+        return failed(request, error, code, 409,
+                      message="快照忙请稍后重试；身份不符的旧 Run 请使用原版本环境。")
 
     @app.exception_handler(KeyError)
     async def missing(request, error):
-        return JSONResponse({"error": "unknown logical identifier"}, 404)
+        return failed(request, error, "unknown logical identifier", 404)
 
     @app.exception_handler(Exception)
     async def failure(request, error):
-        return JSONResponse({"error": "local backend operation failed; no automatic retry"}, 500)
+        return failed(request, error, "local backend operation failed; no automatic retry", 500)
+
+    @app.exception_handler(HTTPException)
+    async def http_failure(request, error):
+        return failed(request, error, "HTTP_OPERATION_REJECTED", error.status_code)
 
     @app.get("/")
     async def index():
@@ -292,6 +340,8 @@ def create_app(data_root, *, allow_live=False):
 
     @app.post("/api/v1/config/preflight")
     def preflight(body: Draft):
+        log.emit("preflight.started", phase="preflight")
+        error_id = None
         errors = diagnostics(body)
         if body.project_id:
             store.get("project", body.project_id)
@@ -306,16 +356,24 @@ def create_app(data_root, *, allow_live=False):
                 goal.write_text(body.goal.model_dump_json(), encoding="utf-8")
                 try:
                     manifest = service(body.mode).validate(goal)
-                except (ValueError, FileNotFoundError):
+                except (ValueError, FileNotFoundError) as error:
+                    error_id = log.error(error, phase="preflight", code="NATIVE_PREFLIGHT_REJECTED")
+                    hint = exception_detail(error).get("hint")
                     errors.append(
                         {
                             "field": "resources_or_goal",
                             "code": "NATIVE_PREFLIGHT_REJECTED",
                             "message": "请检查研究目标和 tokenizer；显式安装资源，不会自动下载。",
+                            "hint": hint,
                         }
                     )
         if errors:
-            return JSONResponse({"runner_compatible": False, "diagnostics": errors}, 422)
+            if error_id is None:
+                error_id = "err-" + secrets.token_hex(16)
+                log.emit("preflight.rejected", level="WARNING", phase="preflight",
+                         error_id=error_id, code="CONFIGURATION_REJECTED")
+            return JSONResponse({"runner_compatible": False, "diagnostics": errors,
+                                 "error_id": error_id}, 422)
         limits = budget(manifest)
         digest = protocol_hash(
             {
@@ -329,6 +387,7 @@ def create_app(data_root, *, allow_live=False):
             "preflight",
             {"draft": body.model_dump(), "hash": digest, "code_identity": code_identity()},
         )
+        log.emit("preflight.passed", phase="preflight")
         return {
             "preflight_id": saved["id"],
             "configuration_id": "continuous-g3-r2-default",
@@ -419,12 +478,15 @@ def create_app(data_root, *, allow_live=False):
             },
             value["run_id"],
         )
+        log.emit("run.created", run_id=value["run_id"], phase="prepared")
         return record
 
     @app.post("/api/v1/runs/{key}/authorize")
     def authorize(key: str, body: Approve):
         record, root = info(key)
-        return service(record["mode"]).authorize(root, **body.model_dump())
+        result = service(record["mode"]).authorize(root, **body.model_dump())
+        log.emit("run.authorized", run_id=key, phase="authorize")
+        return result
 
     @app.post("/api/v1/runs/{key}/start")
     async def start(key: str):
@@ -473,13 +535,17 @@ def create_app(data_root, *, allow_live=False):
             (credentials.get("openai"), credentials.get("deepseek"), contact["email"])
         ):
             raise HTTPException(403, "re-enter process-memory credentials after server restart")
+        log.emit("run.resume_requested" if resuming else "run.start_requested",
+                 run_id=key, phase="resume" if resuming else "start")
         return app.state.launch(store, key, native.environment)
 
     @app.post("/api/v1/runs/{key}/stop")
     def stop(key: str):
         _, root = info(key)
         service()._verify(root)
-        return service().stop(root)
+        result = service().stop(root)
+        log.emit("run.stop_requested", run_id=key, phase="stop")
+        return result
 
     @app.get("/api/v1/runs/{key}/status")
     def status(key: str):
@@ -495,8 +561,12 @@ def create_app(data_root, *, allow_live=False):
             job = store.job(key, pid=job["pid"], state="interrupted_needs_review",
                             diagnostic=job.get("diagnostic") or {
                                 "code": "DRIVER_LOST", "phase": "observation",
+                                "error_id": "err-" + secrets.token_hex(16),
                                 "last_event_sequence": result.get("events"),
                                 "native_state": result["state"]})
+            log.emit("driver.lost", level="WARNING", run_id=key, phase="observation",
+                     native_state=result["state"], sequence=result.get("events"),
+                     error_id=(job.get("diagnostic") or {}).get("error_id"))
         if result["state"] in TERMINAL:
             job = {**job, "observed_driver_state": job["state"], "state": "terminal"}
         result.update(
@@ -508,6 +578,14 @@ def create_app(data_root, *, allow_live=False):
             }
         )
         return result
+
+    @app.get("/api/v1/runs/{key}/logs")
+    def run_logs(key: str, limit: int = 100):
+        _, root = info(key)
+        if not 1 <= limit <= 500:
+            raise HTTPException(422)
+        return {"run_id": key, "records": tail(root / "logs/driver.jsonl", limit),
+                "note": "Local diagnostics only; native events remain authoritative."}
 
     @app.get("/api/v1/runs/{key}/events")
     def events(key: str, after: int = 0):
@@ -606,6 +684,7 @@ def create_app(data_root, *, allow_live=False):
         destination = store.path("exports", key, export_id)
         await run_in_threadpool(lambda: asyncio.run(service().export(root, destination)))
         store.save("export", {"run_id": key, "files": sorted(TRACE_FILES)}, export_id)
+        log.emit("run.exported", run_id=key, phase="export")
         return {"export_id": export_id, "files": sorted(TRACE_FILES)}
 
     @app.get("/api/v1/runs/{key}/exports/{export_id}")

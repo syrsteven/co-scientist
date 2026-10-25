@@ -95,3 +95,15 @@ class Store:
         result = dict(row) if row else {"run_id": key, "pid": None, "state": "not_started"}
         result["diagnostic"] = json.loads(detail[0]) if detail else None
         return result
+
+    def observed_exit(self, key, pid, diagnostic):
+        """An old reaper must not overwrite a newer explicitly resumed driver."""
+        identifier(key)
+        with self.db() as db:
+            changed = db.execute(
+                "UPDATE jobs SET state='interrupted_needs_review' WHERE run_id=? AND pid=?",
+                (key, pid),
+            ).rowcount
+            if changed:
+                db.execute("INSERT INTO job_diagnostics VALUES (?,?) ON CONFLICT(run_id) "
+                           "DO UPDATE SET value=excluded.value", (key, json.dumps(diagnostic)))

@@ -50,6 +50,44 @@ co-scientist-web
 设置端口和本地数据目录。默认 `.co-scientist-workbench`，不要在运行后移动目录。
 主进程退出不等于独立科研驱动停止；请先在界面请求停止并确认状态。
 
+### 日志与错误定位
+
+默认 INFO 显示启动、写入 API、预检、授权/启动/停止/导出、Driver 和已提交科研事件。
+高频 GET（状态、SSE、监控等）在 DEBUG 下记录；SSE 的 HTTP 行表示连接建立，
+不是整个 Run 已完成。日志是观察信息，原生状态、事件、raw、账务仍是权威记录。
+
+```bash
+co-scientist-web --data-dir .co-scientist-workbench --log-level DEBUG
+tail -f .co-scientist-workbench/logs/workbench.jsonl
+```
+
+Run 页面和服务器列表中的真实 Run ID 可用于以下命令；将 `RUN_ID` 替换为它：
+
+```bash
+tail -f .co-scientist-workbench/runs/RUN_ID/logs/driver.jsonl
+grep -F 'err-错误编号' .co-scientist-workbench/logs/workbench.jsonl*
+```
+
+日志为逐行 JSON，包含时间（UTC）、级别、阶段、Run、事件序号、请求/错误编号。
+异常保留类型、模块及文件/函数/行号，**不包含异常正文、源码行、局部变量**。
+例如 `TOKENIZER_MISSING_RUN_EXPLICIT_RESOURCE_INSTALL` 表示需显式准备资源，
+`TOKENIZER_SHA_MISMATCH` 表示资源完整性不符；不要跳过 SHA 检查。
+前端预检失败会保留编号；后台错误在监控页显示编号。使用相同编号检索本地文件。
+
+后台 Driver 独立写入自己的文件，即使 Web 服务退出仍继续保留日志；Web 在线时
+专用日志管道把它实时转发到终端和 `workbench.jsonl`。重启 Web 不会回灌旧日志，
+请查看 Run 文件。`/api/v1/runs/<run-id>/logs?limit=100` 提供同源认证的只读日志尾部
+（最多 500 条、读取最多 256KB；不会启动或恢复任务）。
+
+stdout/stderr 不再直接丢弃：持续排空并记录来源/字节数，启动前 Python 错误另保留
+可解析的调用栈位置和异常类型；**任意原始文本不落盘、不转发**，以防第三方打印
+密钥或模型响应。DEBUG 同样不会解锁这些内容；完整科学输出应从原生结果查看。
+第三方 logging 的消息也被替换为来源/位置等元数据，而非依赖不可靠的正则掩码。
+
+文件权限为 0600，日志目录位于私有数据目录；每份日志 5MB，保留 4 个轮转备份。
+日志属于运行数据，不提交 Git。SIGKILL/断电无法保证最后一条日志；退出码或重启后
+丢失驱动锁会被记录为需审查，不会据此自动重发、恢复或伪造科研终态。
+
 ### 依赖和 tokenizer
 
 唯一版本约束是根目录 `constraints.lock`。激活环境后，普通安装只需 `sh scripts/setup.sh`，
