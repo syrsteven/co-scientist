@@ -5,12 +5,11 @@ import json
 import os
 import socket
 import sys
-from contextlib import redirect_stderr, redirect_stdout
 from uuid import uuid4
 
 from co_scientist.release.service import RunService, load
 
-from .diagnostics import Diagnostics, OutputSummary, configure_libraries, exception_detail
+from .diagnostics import Diagnostics, capture_output, configure_libraries, exception_detail
 from .jobs import TERMINAL
 from .progress import Progress
 from .store import Store
@@ -68,7 +67,9 @@ def main():
     environment = {}
     # A dedicated diagnostics pipe is distinct from untrusted stdout/stderr.
     log_fd = os.environ.get("CO_SCIENTIST_DIAGNOSTIC_FD")
-    stream = os.fdopen(int(log_fd), "w", buffering=1) if log_fd else None
+    # Keep diagnostics outside the fd 1/2 capture pipes, including direct driver
+    # invocation. Otherwise a summary of stderr could recursively log itself.
+    stream = os.fdopen(int(log_fd) if log_fd else os.dup(2), "w", buffering=1)
     log = Diagnostics(root / "logs/driver.jsonl",
                       level=os.environ.get("CO_SCIENTIST_LOG_LEVEL", "INFO"), stream=stream)
     configure_libraries(log)
@@ -83,14 +84,8 @@ def main():
 
             socket.socket.connect = deny
             socket.socket.connect_ex = deny
-        stdout = OutputSummary(log, run_id, "stdout")
-        stderr = OutputSummary(log, run_id, "stderr")
-        try:
-            with redirect_stdout(stdout), redirect_stderr(stderr):
-                run_driver(store, run_id, environment, log)
-        finally:
-            stdout.flush()
-            stderr.flush()
+        with capture_output(log, run_id):
+            run_driver(store, run_id, environment, log)
     except Exception as error:  # noqa: BLE001 -- isolate driver faults, preserve native recoverable history
         # Do not expose provider exception/body or mutate native history. A
         # nonterminal native Run is explicitly interrupted and needs native resume.

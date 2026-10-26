@@ -4,12 +4,14 @@ These records are observations, not scientific events or recovery authority.
 Only this module's structured fields reach the sinks, even in DEBUG mode.
 """
 
-import io
 import json
 import logging
 import os
 import re
+import select
 import sys
+import threading
+from contextlib import contextmanager
 from contextvars import ContextVar
 from datetime import UTC, datetime
 from logging.handlers import RotatingFileHandler
@@ -17,6 +19,10 @@ from pathlib import Path
 from uuid import uuid4
 
 request_id = ContextVar("workbench_request_id", default=None)
+# Object identity is registered only during our synchronous handler call. No
+# LogRecord attribute (including extra.safe_record or a logger name) grants trust.
+_INTERNAL_RECORDS: dict[int, tuple[logging.LogRecord, dict]] = {}
+_RECORD_LOCK = threading.RLock()
 FIELDS = {
     "request_id", "error_id", "run_id", "phase", "code", "exception_type",
     "exception_module", "frames", "causes", "route", "method", "status",
@@ -77,7 +83,9 @@ class SafeFormatter(logging.Formatter):
     def format(self, record):
         # Never call getMessage/formatException: even third-party messages may
         # contain Authorization, HTTP query parameters or an entire model body.
-        data = getattr(record, "safe_record", None)
+        with _RECORD_LOCK:
+            registered = _INTERNAL_RECORDS.get(id(record))
+            data = registered[1] if registered is not None and registered[0] is record else None
         if data is None:
             data = {"event": "library.log_omitted", "source": token(record.name),
                     "frames": [{"file": token(Path(record.pathname).name),
@@ -95,28 +103,62 @@ class QuietStream(logging.StreamHandler):
         pass
 
 
-class OutputSummary(io.TextIOBase):
-    """Untrusted print output becomes metadata; survives parent pipe closure."""
+@contextmanager
+def capture_output(log, run_id):
+    """Driver-process only: keep real Python streams, drain local POSIX pipes.
 
-    def __init__(self, log, run_id, name):
-        self.log, self.run_id, self.name = log, run_id, name
-        self.pending = 0
+    TextIOWrapper/fileno/buffer/reconfigure and fd-level or subprocess writes retain
+    their interfaces. Neither the Web parent's lifetime nor a secret-redaction regex
+    is involved: only byte counts leave these driver-local readers.
+    """
+    stopped = threading.Event()
+    captures = []
 
-    @property
-    def encoding(self):
-        return "utf-8"
+    def drain(fd, name):
+        try:
+            while True:
+                if select.select([fd], [], [], .2)[0]:
+                    data = os.read(fd, 8192)
+                    if not data:
+                        break
+                    log.emit("driver.output_omitted", level="WARNING", run_id=run_id,
+                             phase="driver_output", stream=name, bytes=len(data))
+                elif stopped.is_set():
+                    break
+        finally:
+            os.close(fd)
 
-    def write(self, text):
-        self.pending += len(text.encode("utf-8", errors="replace"))
-        if "\n" in text or self.pending >= 4096:
-            self.flush()
-        return len(text)
-
-    def flush(self):
-        if self.pending:
-            count, self.pending = self.pending, 0
-            self.log.emit("driver.output_omitted", level="WARNING", run_id=self.run_id,
-                          phase="driver_output", stream=self.name, bytes=count)
+    sys.stdout.flush()
+    sys.stderr.flush()
+    try:
+        for number, name in ((1, "stdout"), (2, "stderr")):
+            saved = os.dup(number)
+            try:
+                reader, writer = os.pipe()
+                try:
+                    os.dup2(writer, number)
+                finally:
+                    os.close(writer)
+            except OSError:
+                os.close(saved)
+                raise
+            thread = threading.Thread(target=drain, args=(reader, name), daemon=True)
+            captures.append((number, saved, thread))
+            thread.start()
+        yield
+    finally:
+        # Flush while driver-local readers still exist, before restoring fds.
+        for stream in (sys.stdout, sys.stderr):
+            try:
+                stream.flush()
+            except (OSError, ValueError):
+                pass  # A library may have closed its own output stream.
+        for number, saved, _ in captures:
+            os.dup2(saved, number)
+            os.close(saved)
+        stopped.set()
+        for _, _, thread in captures:
+            thread.join(timeout=2)
 
 
 class Diagnostics:
@@ -139,7 +181,17 @@ class Diagnostics:
         if request_id.get():
             data["request_id"] = request_id.get()
         data.update({k: v for k, v in fields.items() if k in FIELDS and v is not None})
-        self.logger.log(getattr(logging, level), "", extra={"safe_record": data})
+        number = getattr(logging, level)
+        if not self.logger.isEnabledFor(number):
+            return
+        record = logging.LogRecord(self.logger.name, number, __file__, 0, "", (), None)
+        with _RECORD_LOCK:
+            _INTERNAL_RECORDS[id(record)] = (record, data)
+        try:
+            self.logger.handle(record)
+        finally:
+            with _RECORD_LOCK:
+                del _INTERNAL_RECORDS[id(record)]
 
     def error(self, error, *, phase, run_id=None, code="OPERATION_FAILED"):
         error_id = "err-" + uuid4().hex

@@ -11,7 +11,7 @@ from types import SimpleNamespace
 import pytest
 
 from co_scientist.release.service import RunService
-from co_scientist_web.diagnostics import Diagnostics, OutputSummary, SafeFormatter, tail
+from co_scientist_web.diagnostics import Diagnostics, SafeFormatter, tail
 from co_scientist_web.driver import run_driver
 from co_scientist_web.jobs import reap, start_readers
 from co_scientist_web.progress import Progress
@@ -103,6 +103,131 @@ def test_foreign_logs_never_format_message_or_exception(tmp_path):
     assert "RuntimeError" in text and "response-body-canary" not in text
 
 
+@pytest.mark.parametrize("name", ["third.party", "workbench.observation"])
+def test_extra_safe_record_does_not_grant_trust(tmp_path, name):
+    log = Diagnostics(tmp_path / "driver.jsonl", console=False)
+    forged = {"event": "forged", "body": "sk-forged-canary", "run_id": "private-run-canary"}
+    foreign = logging.Logger(name)  # noqa: LOG001 -- isolated untrusted logger, no global state
+    foreign.handlers[:] = log.logger.handlers
+    foreign.warning("ignored", extra={"safe_record": forged})
+    log.emit("internal.progress", run_id="r", phase="generation")
+    records = tail(log.path)
+    assert records[0]["event"] == "library.log_omitted"
+    assert "sk-forged-canary" not in json.dumps(records)
+    assert "private-run-canary" not in json.dumps(records)
+    assert records[1]["event"] == "internal.progress"
+    log.close()
+
+
+def test_custom_unhashable_foreign_record_is_safely_downgraded():
+    class ForeignRecord(logging.LogRecord):
+        __hash__ = None
+
+    record = ForeignRecord("third.party", logging.WARNING, __file__, 1,
+                           "sk-message-canary", (), None)
+    record.safe_record = {"event": "forged", "body": "sk-extra-canary"}
+    result = SafeFormatter().format(record)
+    assert json.loads(result)["event"] == "library.log_omitted"
+    assert "sk-message-canary" not in result and "sk-extra-canary" not in result
+
+
+@pytest.mark.asyncio
+async def test_status_lost_observation_cannot_overwrite_concurrent_resume(tmp_path, monkeypatch):
+    from tests.test_web import prepare
+
+    app, c = await client(tmp_path)
+    async with c:
+        run = await prepare(c)
+        store = app.state.store
+        store.job(run, pid=111, state="running")
+        monkeypatch.setattr(RunService, "status", lambda *a: {"state": "running", "events": 230})
+        calls = []
+
+        def raced_lock_observation(root):
+            if not calls:
+                calls.append(True)
+                store.job(run, pid=222, state="running", diagnostic={"code": "NEW_DRIVER"})
+                return False  # Lock observation predates the concurrent resume.
+            return True
+
+        monkeypatch.setattr("co_scientist_web.app.driver_alive", raced_lock_observation)
+        response = await c.get(f"/api/v1/runs/{run}/status")
+    assert response.status_code == 200
+    assert store.job(run)["pid"] == 222
+    assert store.job(run)["state"] == "running"
+    assert store.job(run)["diagnostic"] == {"code": "NEW_DRIVER"}
+    assert response.json()["job"]["pid"] == 222
+    assert response.json()["job"]["alive"]
+
+
+@pytest.mark.parametrize("operation", ["fileno", "buffer", "closed_parent"])
+def test_driver_preserves_standard_streams(tmp_path, operation):
+    script = r'''
+import json, os, subprocess, sys
+from pathlib import Path
+from co_scientist_web import driver
+from co_scientist_web.store import Store
+store = Store(sys.argv[1])
+store.save("run", {}, "r")
+root = store.run_root("r")
+root.mkdir(parents=True)
+(root / "plan.json").write_text('{"mode":"MOCK_ONLY"}')
+operation = sys.argv[2]
+original_stdout, original_stderr = sys.stdout, sys.stderr
+class Native:
+    done = False
+    async def execute(self, root):
+        if operation == "fileno":
+            assert sys.stdout.fileno() == 1 and sys.stderr.fileno() == 2
+        else:
+            sys.stdout.buffer.write(b"private-binary-canary\n")
+            sys.stderr.buffer.write(b"private-stderr-canary\n")
+        # Native TextIOWrapper APIs must remain available, not just text write().
+        sys.stdout.reconfigure(write_through=True)
+        os.write(sys.stdout.fileno(), b"private-fd-canary\n")
+        subprocess.run([sys.executable, "-c", "print('private-child-canary')"], check=True)
+        self.done = True
+    def status(self, root):
+        return {"state":"completed" if self.done else "running", "events":0}
+driver.RunService = lambda **kwargs: Native()
+fd = os.open(root / "web-job.lock", os.O_CREAT | os.O_WRONLY, 0o600)
+sys.argv = ["driver", str(store.root), "r", str(fd)]
+driver.main()
+assert sys.stdout is original_stdout and sys.stderr is original_stderr
+if operation != "closed_parent":
+    print("DRIVER_INTERFACES_OK")
+'''
+    command = [sys.executable, "-c", script, str(tmp_path), operation]
+    if operation == "closed_parent":
+        process = subprocess.Popen(command, stdin=subprocess.PIPE, stdout=subprocess.PIPE,
+                                   stderr=subprocess.PIPE)
+        # Close parent-side readers *before* allowing driver.main's stdin read to
+        # complete. Binary/fd/subprocess output must still work after Web exits.
+        process.stdout.close()
+        process.stderr.close()
+        process.stdin.write(b"{}")
+        process.stdin.close()
+        result = SimpleNamespace(returncode=process.wait(timeout=20), stdout=b"", stderr=b"")
+    else:
+        result = subprocess.run(command, input=b"{}", capture_output=True, timeout=20, check=False)
+    assert result.returncode == 0
+    assert Store(tmp_path).job("r")["state"] == "finished"
+    evidence = result.stdout + result.stderr + (tmp_path / "runs/r/logs/driver.jsonl").read_bytes()
+    for secret in (b"private-binary-canary", b"private-stderr-canary", b"private-fd-canary",
+                   b"private-child-canary"):
+        assert secret not in evidence
+
+
+def test_lost_observation_cannot_overwrite_advanced_state_for_same_pid(tmp_path):
+    store = Store(tmp_path)
+    store.save("run", {}, "r")
+    store.job("r", pid=111, state="finished", diagnostic={"code": "NATIVE_TERMINAL"})
+    assert not store.observed_exit("r", 111, {"code": "STALE_OBSERVATION"},
+                                   expected_state="running")
+    assert store.job("r")["state"] == "finished"
+    assert store.job("r")["diagnostic"] == {"code": "NATIVE_TERMINAL"}
+
+
 def test_progress_reads_only_committed_metadata_and_does_not_write(tmp_path):
     runtime = tmp_path / "runtime"
     runtime.mkdir()
@@ -146,8 +271,6 @@ def test_disconnected_web_pipe_cannot_stop_driver_file_logging(tmp_path):
     stream = os.fdopen(write_fd, "w")
     try:
         log = Diagnostics(tmp_path / "driver.jsonl", stream=stream)
-        output = OutputSummary(log, "r", "stderr")
-        assert output.write("sk-private-output\n") == 18
         log.emit("driver.still_running", run_id="r", phase="execute")
         records = tail(log.path)
         assert records[-1]["event"] == "driver.still_running"

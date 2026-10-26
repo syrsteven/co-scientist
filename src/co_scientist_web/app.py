@@ -558,15 +558,17 @@ def create_app(data_root, *, allow_live=False, log_level="INFO", observer=None):
             and result["state"] not in TERMINAL
             and job["state"] in {"starting", "running", "finished"}
         ):
-            job = store.job(key, pid=job["pid"], state="interrupted_needs_review",
-                            diagnostic=job.get("diagnostic") or {
-                                "code": "DRIVER_LOST", "phase": "observation",
-                                "error_id": "err-" + secrets.token_hex(16),
-                                "last_event_sequence": result.get("events"),
-                                "native_state": result["state"]})
-            log.emit("driver.lost", level="WARNING", run_id=key, phase="observation",
-                     native_state=result["state"], sequence=result.get("events"),
-                     error_id=(job.get("diagnostic") or {}).get("error_id"))
+            detail = job.get("diagnostic") or {
+                "code": "DRIVER_LOST", "phase": "observation",
+                "error_id": "err-" + secrets.token_hex(16),
+                "last_event_sequence": result.get("events"),
+                "native_state": result["state"]}
+            if store.observed_exit(key, job["pid"], detail, expected_state=job["state"]):
+                log.emit("driver.lost", level="WARNING", run_id=key, phase="observation",
+                         native_state=result["state"], sequence=result.get("events"),
+                         error_id=detail.get("error_id"))
+            job = store.job(key)
+            alive = driver_alive(root)
         if result["state"] in TERMINAL:
             job = {**job, "observed_driver_state": job["state"], "state": "terminal"}
         result.update(
