@@ -17,3 +17,11 @@ literature acquisition representations with structural counterexamples (W0-T2). 
 remain authoritative. Other W0 interfaces are future inputs.
 
 See [current delivery status](../STATUS.md) and [runtime usage](../W0_RUNTIME.md).
+
+
+W0-T3 preserves the two original files from `CoScientist_W0_Real_Cases_v0.1_PROPOSED.zip`
+in `w0-real-cases-proposed-v0.1/`; integrity is recorded in
+`w0-real-cases-source-integrity.json`. Original claims such as source verification
+complete and independent primary study are preserved as attachment history, not
+adopted as verified conclusions. See `../W0_REAL_CASES.md` for fresh checks and
+review-only adoption corrections. This package and the M01/M02 proposal stay Proposed.

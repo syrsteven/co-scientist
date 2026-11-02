@@ -1,0 +1,122 @@
+{
+  "status": "proposed",
+  "checked_on": "2026-11-02",
+  "scope": "First-use locations only; not complete scientific verification or expert gold.",
+  "sources": [
+    {
+      "id": "P-01",
+      "url": "https://arxiv.org/abs/2502.18864v1",
+      "identifier": "arXiv:2502.18864v1",
+      "access_obtained": "metadata_and_abstract",
+      "read_extent": "title and submission history; v1 2025-02-26, unversioned URL now v2",
+      "limitations": [
+        "Did not verify all v1 figures or first-disclosure dates of every result."
+      ]
+    },
+    {
+      "id": "P-02",
+      "url": "https://www.nature.com/articles/s41586-026-10644-y",
+      "identifier": "10.1038/s41586-026-10644-y",
+      "access_obtained": "full_text_html",
+      "read_extent": "AML text/Fig.3 caption; liver section; Methods ALS disclaimer; reference 1 and author list",
+      "limitations": [
+        "Selected sections, not a full methods/data audit. Figure pixels were not independently digitized.",
+        "Main text supports reported IC50 values; neither causal target attribution nor clinical efficacy is established by this check."
+      ]
+    },
+    {
+      "id": "P-03",
+      "url": "https://static-content.springer.com/esm/art%3A10.1038%2Fs41586-026-10644-y/MediaObjects/41586_2026_10644_MOESM1_ESM.pdf",
+      "identifier": "Supplement to 10.1038/s41586-026-10644-y",
+      "access_obtained": "full_text_pdf",
+      "read_extent": "120-page PDF text: Note10.1 physical p70; Note10.2 pp70-72; Note10.5 pp74-75; Note10.6 p76 onward; Note5.2 pp26-27; Note6 pp39-50, safety p44, novelty pp49-50",
+      "limitations": [
+        "Only specified passages checked; example generation/review text is author model output, not biological fact.",
+        "Some page screenshots cache-missed; locators were checked in PDF text.",
+        "Note6 safety statements are historical model output, not a current regulatory database search."
+      ]
+    },
+    {
+      "id": "P-04",
+      "url": "https://www.nature.com/articles/s41419-019-1523-3",
+      "identifier": "10.1038/s41419-019-1523-3",
+      "access_obtained": "abstract",
+      "read_extent": "Europe PMC MED 30931942 core record/abstract; supplementary PMC indexed excerpts only",
+      "verified_access_url": "https://www.ebi.ac.uk/europepmc/webservices/rest/search?query=EXT_ID%3A30931942+AND+SRC%3AMED&format=json&resultType=core",
+      "retrieved_payload_sha256": "372b68557eff600fba82443b29fdd1b32fddeb49a4a3d1f44da59ea092ea8f48",
+      "limitations": [
+        "Publisher redirect blocked; PMC direct page CAPTCHA. No full methods/figures verified.",
+        "KIT-dependent mast-cell leukemia is not the AML experiment in P-02."
+      ]
+    },
+    {
+      "id": "P-05",
+      "url": "https://pubmed.ncbi.nlm.nih.gov/33290055/",
+      "identifier": "10.1021/acschembio.0c00802",
+      "access_obtained": "abstract",
+      "read_extent": "PubMed Abstract and Europe PMC MED 33290055 identity/abstract",
+      "verified_access_url": "https://www.ebi.ac.uk/europepmc/webservices/rest/search?query=EXT_ID%3A33290055+AND+SRC%3AMED&format=json&resultType=core",
+      "retrieved_payload_sha256": "0b79313e8039f9ef6d6abe64767fa4e25b95051bfdcd59b1e351fb42efa1e58d",
+      "supplied_url": "https://www.sciencedirect.com/science/article/pii/S1554893720000734",
+      "limitations": [
+        "Supplied ScienceDirect URL returned 403; its identity remains unverified, not asserted correct or replaced inside original attachment.",
+        "ACS publisher URL also returned 403; no full methods or target list verified."
+      ]
+    },
+    {
+      "id": "P-06",
+      "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC8738768/",
+      "identifier": "10.1038/s41418-021-00853-5",
+      "access_obtained": "abstract",
+      "read_extent": "Europe PMC MED 34453119 core record/abstract",
+      "verified_access_url": "https://www.ebi.ac.uk/europepmc/webservices/rest/search?query=EXT_ID%3A34453119+AND+SRC%3AMED&format=json&resultType=core",
+      "retrieved_payload_sha256": "0614580b7c24c8f75bc08edbf7840bf461f6c07e69718881833e0d49a78e6232",
+      "limitations": [
+        "Direct PMC/PubMed pages initially CAPTCHA; publisher redirected. Full methods not verified.",
+        "Off-target inflammatory effects in the reported systems do not determine AML drug-viability causality."
+      ]
+    },
+    {
+      "id": "P-07",
+      "url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC12667525/",
+      "identifier": "10.1002/advs.202508751",
+      "access_obtained": "full_text_html",
+      "read_extent": "Abstract; Results 2.1/2.2; author list/contributions; Data Availability",
+      "limitations": [
+        "No raw images, scRNA/ATAC data or supplementary experiment batches reanalyzed.",
+        "Not assumed independent replication of P-02; exact sample/batch overlap unresolved."
+      ]
+    }
+  ],
+  "not_used_or_verified": [
+    "P-08",
+    "P-09"
+  ],
+  "relationships": [
+    {
+      "sources": [
+        "P-02",
+        "P-07"
+      ],
+      "classification": "related_companion_reports_not_independent_replication",
+      "evidence": [
+        "P-02 reference 1 cites P-07 and shares Guan/Peltz/Co-Scientist authors.",
+        "P-07 Results 2.2 explicitly describes Co-Scientist-recommended targets and reports the experimental follow-up.",
+        "P-07 data availability lists GSE228214, GSE306096 and Zenodo 14996331; datasets not downloaded or compared here."
+      ],
+      "unresolved": "Exact sample/batch overlap between reports is not established; do not double-count as independent efficacy confirmations.",
+      "denominators": "P-02 summarizes 2 of 3 nominated epigenetic directions. P-07 describes 25-drug profiling and five inhibitors covering three AI-selected targets (including three BRD4 inhibitors). These are different counting units."
+    },
+    {
+      "sources": [
+        "P-05",
+        "P-06"
+      ],
+      "classification": "distinct_papers_not_assumed_independent_evidence_units",
+      "evidence": [
+        "PubMed author lists include overlapping Rufo/Agostinis/Verhelst investigators."
+      ],
+      "unresolved": "Potential probe/data lineage overlap was not audited; separate DOI is not a proof of independent experimental replication."
+    }
+  ]
+}

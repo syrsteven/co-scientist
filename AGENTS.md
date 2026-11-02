@@ -5,6 +5,12 @@
   `reference/` directory is historical. W0 in `docs/design/w0-proposed-v0.1/`
   remains Proposed. W0-T0/T1 adopts M14a/M12/M15a engineering semantics;
   W0-T2 adds only M09a/M11a/LiteraturePort representations and structural tests.
+  W0-T3 adopts the supplied real-case package as public development data and a
+  Proposed M01/M02 plan; it does not authorize production scientific logic.
+- For W0 real cases read `docs/W0_REAL_CASES.md`. Raw casebooks and reviewer
+  expected/critical_failures/assessment must never be sent to tested models. Use
+  the explicit data export; source paraphrases, original facts and author model
+  outputs are distinct. Scientific expectations remain provisional without experts.
 - Read `docs/STATUS.md` for actual implementation and validation. Design
   acceptance, engineering tests and scientific validation are separate facts.
 - New system lives in `src/co_scientist_next/`, independent of old
