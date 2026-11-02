@@ -1,103 +1,109 @@
-# 项目状态 — W0-T2
+# 项目状态 — W0-T3
 
-更新：2026-11-02，Asia/Shanghai。当前为独立功能分支上的工程/契约交付，W0 整包保持 Proposed。
+更新：2026-11-02，Asia/Shanghai。本轮为公开真实开发案例采用、来源核对和 M01/M02 实施提案，
+**没有实施 M01/M02 生产科学逻辑，没有执行科学模型评测或付费候选生成。**
 
-## 起点、合并与工作区保护
+## 起点、分支与设计状态
 
-- PR #2 的工程验收由项目总控通过，审查固定 head：
-  `eb10f6d3ff6e9a7e3564d72c037643ef950455ce`。
-- 合并前实际查询：head 未变化、mergeable=true、mergeable_state=clean，
-  4 个 Python 3.11/3.12 check runs 均 completed/success，无 commit status 阻断或分支规则，
-  无新增 PR review。使用固定预期 SHA 合并，未沿用变化后的 head。
-- PR #2 merge commit / 本轮实际起始 main：
-  `83d88686ae853d4f634cf68bf68e7065d38e4d71`。
-- 本地 main 已更新到该 merge commit，并跟踪 origin/main。
-- 原工作区 `/Users/lemintea/Documents/co-scientist` 的旧本地 main 在
-  `c2ddbda03f84d5a52f46b47d942b2cce710c919b`，与远端分叉（6 个本地、11 个远端独有提交）。
-  先创建 `codex/preserve-local-before-w0-t2` 保留全部旧提交与未提交文件，
-  再更新未检出的 main 引用；未 reset/stash/rebase 或覆盖工作文件。
-  切换前后 232 个已改/未跟踪文件的内容、Git 差异、暂存区与 status 指纹一致。
-- W0-T2 分支：`codex/w0-t2-contracts`；隔离目录 `/private/tmp/co-scientist-w0-t2`。
-  本轮独立 PR 不直接合并，最终 head 以该 PR 和 `git rev-parse HEAD` 为准。
+- 实际 fetch 后最新 main / 起始 commit：`e98404cda9ec35a82a1c363c14e315f54e240d96`。
+  PR #3 已合并；W0-T0/T1、W0-T2 的代码及验收历史保留。
+- 分支 `codex/w0-t3-real-cases`，工作目录 `/private/tmp/co-scientist-w0-t3`；独立 PR，本轮不合并。
+  最终 head 以 PR head 和该分支 `git rev-parse HEAD` 为准。
+- 原工作区仍在 `codex/preserve-local-before-w0-t2`，旧 HEAD 为
+  `c2ddbda03f84d5a52f46b47d942b2cce710c919b`；未 reset/stash/覆盖用户文件。
+- M00 仍是 Accepted；W0 最小设计、真实案例包、本轮采用说明和 M01/M02 提案均保持 Proposed。
+  `reference/` 仍为历史材料；旧 G3 固定参考 `7313ca032e4f5f0c84578523e0f5639ad038e7af` 未删除。
 
-## 设计与模块状态
+## 附件与采用材料
 
-原设计文件位于 `docs/design/m00-accepted-v1.0/` 和 `w0-proposed-v0.1/`。
-M00 仍为 design_accepted；reference/ 仍是历史材料；两包 31 个原文件未改。
-旧 G3 参考固定为 `7313ca032e4f5f0c84578523e0f5639ad038e7af`，代码未删除、未成为新链依赖。
-W0-T0/T1 的工程验收不等于 W0 整包设计验收或科学能力验收。
+用户给定 Downloads ZIP 路径已不存在；在项目文档目录找到唯一同名副本：
+`/Users/lemintea/project/project/co-scientist/M0-M20开发文档/CoScientist_W0_Real_Cases_v0.1_PROPOSED.zip`。
+实际 ZIP SHA-256 为 `8c4f695826657e45ed7b6feb8fba2a76862c73f2995d8cc8b5b421e2b47b6075`。
 
-| 范围 | 当前真实状态 |
-|---|---|
-| W0-T0、M14a/M12/M15a | PR #2 已合并且总控工程验收通过；输入快照、最小调度、SQLite 事实与恢复保留 |
-| M09a | 本轮新增固定 Admission 引用、决定状态及独立 parent/final 资格表示与结构检查 |
-| M11a | 本轮新增 M11 意图提案、M03 Inventory 后 Delta 关系、未解析表示及来源一致性检查 |
-| LiteraturePort | 本轮新增 search/fetch Protocol 和空结果/失败/不完整/访问层级表示，无真实适配器 |
-| M20a / S01–S14 | 新增逐项证据映射，明确已有工程、本轮契约和科学模块待验证部分；未宣称 14 项完整通过 |
-| M01–M11 生产科学、真实检索策略、Ranking/Evolution/R3 | 未实施、未科学验收 |
-| 独立服务、完整模块 Schema、前端 | 未新增 |
+两个原文件原样保存至 `docs/design/w0-real-cases-proposed-v0.1/`。
+其中“来源核对完成”和 R06 “独立研究”的原有文字保留，但不作为本轮已验证结论。
+采用已有 ALS、AML/KIRA6 和 R01–R06，未新建另一套完整疾病案例。
 
-本轮文件范围：
+`evaluation/w0_real_cases/` 的审计、材料短转述和输入选择是采用层，不改原包：
+区分报告观察、作者模型输出、作者解释、开发重建和项目路由预期。
+ALS 原始 Goal 的来源定位/转述、加入 iPSC 情境的开发 Brief、公开示例 Hypothesis 分开。
+R01 的机制覆盖只评价给定假说拆解，不要求自由生成复述同一分子机制。
 
-- 新增 `src/co_scientist_next/admission.py`、`delta.py`、`literature.py`、`_validation.py`。
-- 新增 `examples/w0-t2-contracts.json`，全部材料显式 synthetic，不含真实论文或专家真值。
-- 新增 `tests/next/test_shared_contracts.py`、`test_literature_contract.py`。
-- 新增 `docs/W0_CONTRACTS.md`、`W0_SCENARIO_MAP.md`、`verification/w0-t2.txt`。
-- 更新本 `STATUS.md`、`AGENTS.md` 与 `docs/design/README.md` 的本轮范围说明。
-- 未修改已有调度、持久化、调用执行或旧 G3 生产代码、原设计包文件、打包配置。
+## 实际核对来源及限制
 
-契约说明见 [W0_CONTRACTS.md](W0_CONTRACTS.md)，每个科学情境的具体证据与未验证部分见
-[W0_SCENARIO_MAP.md](W0_SCENARIO_MAP.md)。未发现需要总控重新裁决的跨模块科学语义冲突。
+| 来源 | 本轮实际取得/核对 | 未验证部分 |
+|---|---|---|
+| P-01 arXiv 2502.18864v1 | 版本、标题、摘要、2025-02-26提交历史 | 各具体结果首次公开位置、预训练泄漏均未独立审计 |
+| P-02 Nature DOI 10.1038/s41586-026-10644-y | 主文 HTML 的 AML/Fig.3图注与数值正文、肝纤维化段、ALS警告、引用/作者关系 | 原图独立数字化、全方法与原始数据重分析未做 |
+| P-03 120页补充PDF | 所列 Note10.1/10.2/10.5/10.6、5.2、6 的具体段落与实体页码 | 部分截图cache miss；非整份内容或模型Trace的完整复核 |
+| P-04 KIT研究 | Europe PMC MED30931942 官方身份/摘要；另有索引片段 | publisher重定向及PMC CAPTCHA；未核对全文方法/图 |
+| P-05 选择性研究 | PubMed/Europe PMC MED33290055摘要与 DOI 10.1021/acschembio.0c00802 | 原包ScienceDirect URL 403且身份待核，ACS页面403；全文未核对 |
+| P-06 HSP60研究 | Europe PMC MED34453119 官方身份/摘要与 DOI | 直接页面访问受限；全文方法及AML情境适用性未核验 |
+| P-07 肝纤维化配套论文 | PMC全文HTML选定段落、作者/贡献、数据声明与计数口径 | 原始图像、样本/批次及GEO/Zenodo数据未下载对齐 |
 
-## 环境与执行命令
+位置、URL、访问限制、官方摘要响应哈希和研究关系详见
+[来源/案例说明](W0_REAL_CASES.md)及 `evaluation/w0_real_cases/source_audit.json`。
+P-08/P-09 本轮未使用、未核对。未进行当前FDA批准或临床注册库的全面搜索；
+Note6有关药物安全/新颖性的模型输出不能作为当前监管或全球新颖性事实。
 
-本地 macOS / Python 3.11.4，沿用现有
-`/Users/lemintea/Documents/co-scientist/.venv/bin/python` 运行测试与开发工具。
-无新生产依赖、无新环境安装、无需真实 API 密钥，不强制 .venv；可选兼容 conda/Python 环境。
-从本轮功能分支 checkout 执行，python 替换为所选解释器：
+R06 配套论文与主文存在引用、作者及项目关联，不能默认计为独立复现；
+精确样本/批次重叠仍待核实。三类推荐靶点、五种抑制剂与25药物池不混为同一分母。
+
+## 交付范围与未实施能力
+
+- 新增原附件两文件及完整性记录。
+- 新增 `evaluation/w0_real_cases/{source_audit,materials,adoption}.json`。
+- 新增 `src/co_scientist_next/development_cases.py`：仅固定数据读取、白名单导出、引用/访问一致性检查。
+  `expected`、`critical_failures`、评审及评分记录有独立审阅路径，不进入导出的被测输入。
+- 新增 `tests/next/test_development_cases.py` 和 `docs/verification/w0-t3.txt`。
+- 新增 [W0_REAL_CASES.md](W0_REAL_CASES.md) 与 [M01_M02_PROPOSAL.md](M01_M02_PROPOSAL.md)。
+  更新本STATUS、AGENTS和设计目录说明；既有 M12/M15生产实现与全部原基线未改。
+- 固定模式实际可见材料是短转述，非全文。R03当前视图仅读作者评议，R05当前视图仅解释给定数值，
+  不能声称已实现原任务的独立新颖性检索或原图提取。
+- 开放模式只导出题目与搜索起点，不执行检索。两模式分开记录，所有材料均为公开开发集，非盲测/独立发现。
+- 没有 M01/M02科学函数、完整科学Schema、M03–M09实现、检索策略、通用评测平台或新服务。
+
+## 实际执行检查
+
+本地 macOS / Python3.11.4，使用现有 `/Users/lemintea/Documents/co-scientist/.venv/bin/python`
+运行 pytest/Ruff/build；导出也用系统 python3 成功。无新生产依赖或环境安装，不强制 .venv，允许兼容 conda。
 
 ```sh
-PYTHONPATH=src python -m pytest -q tests/next/test_shared_contracts.py tests/next/test_literature_contract.py
-PYTHONPATH=src python -m pytest -q -s tests/next
+PYTHONPATH=src python -m co_scientist_next.development_cases --case ALS-GOAL --mode fixed_materials
+PYTHONPATH=src python -m co_scientist_next.development_cases --case R04 --mode fixed_materials
+PYTHONPATH=src python -m co_scientist_next.development_cases --case R04 --mode open_retrieval
+PYTHONPATH=src python -m pytest -q tests/next/test_development_cases.py
+PYTHONPATH=src python -m pytest -q tests/next
 python -m ruff check src/co_scientist_next tests/next
 python -m ruff format --check src/co_scientist_next tests/next
-python -m build --wheel --no-isolation
-PYTHONPATH=src python -m co_scientist_next --db /tmp/w0-t2-demo.sqlite
 ```
-
-源码与 wheel 仅需标准库运行；测试需 pytest，lint/build 需现有对应开发工具。
-T0/T1 示例仍是“长度 16 → 加倍 32”的工程样例；本轮 JSON 是结构反例，无科学推理入口。
-
-## 验证结果
 
 | 检查 | 实际结果 |
 |---|---|
-| 新增契约测试 | 37 passed，0 failed，0 skipped |
-| 全部新系统测试 tests/next | 52 passed，0 failed，0 skipped；含原 15 项恢复/幂等/快照回归 |
-| 真实子进程恢复回归 | 步骤间恢复、成功落库后硬退出回放、发送中硬退出不确定状态均通过 |
-| Ruff check / format | 通过；15 个 Python 文件格式检查通过 |
-| 31 个原设计文件完整性 | tests/next 原始内容哈希与文件集合检查通过，原文状态未变 |
-| Wheel 构建与隔离运行 | 构建通过；python -I 仅从 wheel 导入并检查新增契约，原工程 CLI 完成结果 32 |
-| Git diff --check | 全部 staged 文件检查通过 |
-| 原用户工作区保护 | 实施前后均核对，232 文件及 index/status/diff 指纹一致 |
+| 新增数据读取/隔离/引用检查 | 28 passed，0 failed，0 skipped |
+| 全部新系统工程/契约回归 | 80 passed，0 failed，0 skipped（原52 + 新28）；不是80项科学评测 |
+| Ruff check/format | 通过；17个Python文件格式检查通过 |
+| 实际附件ZIP比对 | ZIP哈希匹配，两个文件逐字节一致 |
+| 原M00/W0文件完整性 | 既有完整性检查通过，原文状态未改 |
+| 模型可见视图 | 8个输入视图×2种模式检查；无评审字段，固定/开放模式明确分离 |
+| Wheel构建与隔离运行 | 构建通过；python -I仅从wheel导入数据CLI，显式--root指向案例checkout，成功导出R05 |
+| Git空白检查 | 新编文件 staged检查通过；全量检查仅报告原附件Markdown四处行尾空格，按原样保留 |
+| 原工作区保护 | 232个相关文件、差异、暂存区和status指纹与此前保护记录一致 |
 
-实际输出见 [verification/w0-t2.txt](verification/w0-t2.txt)。初次 lint 提示已修复。
-GitHub 连接器合并返回集成权限 403，使用同一仓库已配置 Git 凭据的 REST API 成功完成 SHA 约束合并；
-凭据未输出或写入文件。初次本地 fast-forward 因分叉被拒，保留全部旧历史后再更新 main。
+输出见 [verification/w0-t3.txt](verification/w0-t3.txt)。外部来源访问是本轮人工核对行为，
+不是应用已通过 LiteraturePort/M15 完成真实来源摄入的证明。
 
-**未运行：** 本轮旧 G3 全套本地测试、Python 3.12 本地验证、真实 Literature/API 集成、
-浏览器、完整 14 个科学情境、真实研究 Run、专家评测和 G3 科学对照。
-合并前观察到 PR #2 的远端 Python 3.11/3.12 检查成功，不能据此声称本轮本地已运行这些检查。
+**未运行：** 真实M01/M02输出、付费模型、科学评分/通过率、真实开放检索评测、专家盲评、湿实验、
+当前药物监管库核验、完整科学S01–S14/R01–R06执行、旧G3全套本地测试、浏览器、Python3.12本地测试。
 
-## 限制与后续
+## 待审阅及下一项编码任务
 
-- 所有契约仅验证结构与引用一致性，不能证明科学资格、实际 Inventory 完整性、材料内容真实性或偏差消除。
-  Python 类型与文档表达模块所有权，未建立权限认证或独立身份服务。
-- 冻结记录不替代后续 M09 的持久 Admission/Epoch 注册；外部同 ID 重新绑定仍须对象所有者防止。
-- Delta 由固定样例声明，无真实语义解析、证据复用或自动回退执行器；M04/M05/M07/M10 科学责任保留。
-- LiteraturePort 无真实数据库/适配器/分页执行器/检索策略。时间、范围、访问层级与文本由适配器如实提供，
-  单靠结构检查不能判断“摘要谎称全文”。未来外部发送必须通过 M15 保存实际调用和用量。
-- A/B 顺序、核心文本和反证输入落库不代表 M10 已实现科学对称性、跨 Match 核心冻结或位置偏差检测。
-- 既有 M15 的单进程 POSIX/SQLite、模块稳定调用 key、未知费用保留未知、不确定调用显式恢复等限制仍适用。
-  外部重试可能重复效果，不声称 provider exactly-once。
-- 后续需科学模块自身的设计批准、固定专家案例、真实执行与验证；W0 整包仍保持 Proposed。
+全部科学预期仍为 provisional，未有专家签名、独立共识或统计阈值。
+待审阅：来源转述准确性与条件归属、给定假说Coverage、KIRA6靶点因果及新颖性边界、
+材料访问限制、R06计数/数据关系、Goal/Candidate Ethics与R0的边界及适用安全政策。
+
+提案已给出方法/Prompt草案、最小I/O、真实来源/模型接入M15所需记录及M12合法顺序。
+现有固定序列 Scheduler 尚无 Ethics条件门，不能仅注册函数就宣称拒绝时不会生成候选。
+建议下一项为 W0-T4：固定材料下 prepare_goal + Goal Ethics + 最小M12条件推进切片；
+先保证 pass/reject/incomplete/技术失败和日志/恢复语义，Generation先保留未实施的显式后继边界，
+不以替身候选冒充科学能力。具体验收条件见提案；仍需单独审查与授权，不在本轮自动启动。

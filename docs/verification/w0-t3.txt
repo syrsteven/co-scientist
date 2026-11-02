@@ -1,0 +1,16 @@
+......................................{"scenario": "boundary_restart", "creator_pid": 23891, "resumer_pid": 23892, "run_id": "2c9279439590443e8a538cdc9f0edeb3", "result": 32, "attempts": 2}
+.{"scenario": "crash_after_saved_success", "creator_pid": 23893, "resumer_pid": 23895, "external_sends": 1, "attempts": 1, "status": "completed"}
+.{"scenario": "crash_during_send", "creator_pid": 23896, "blocked_pid": 23897, "resumer_pid": 23898, "sends_before_authorization": 1, "sends_after_authorization": 2, "attempt_states": ["uncertain", "succeeded"]}
+........................................
+80 passed in 1.29s
+
+New data checks: 28 passed; prior engineering/contract checks: 52 passed; total 80, no science-model evaluation.
+Ruff check/format: passed, 17 Python files.
+Input ZIP SHA-256 verified, both original file byte sequences identical.
+Wheel --no-isolation built. Python -I wheel data CLI exported R05 with explicit repository --root, no source imports or model API calls.
+Primary sources: Nature main/120-page supplement/liver PMC selected passages, arXiv v1 metadata/abstract; Europe PMC MED 30931942/33290055/34453119 identities and abstracts.
+Access limits: redirects/CAPTCHA/403, some PDF screenshot cache misses; no full-text off-target methods or raw data verification. No expert or scientific-model evaluation executed.
+
+Full staged whitespace check: four original Markdown hard-break spaces flagged and preserved for byte fidelity.
+Authored-file staged whitespace check excluding the two archived originals: passed.
+Original user workspace: 232 changed/untracked files and Git diff/index/status fingerprint unchanged.

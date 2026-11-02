@@ -1,0 +1,9 @@
+{
+  "status": "proposed",
+  "archive_name": "CoScientist_W0_Real_Cases_v0.1_PROPOSED.zip",
+  "archive_sha256": "8c4f695826657e45ed7b6feb8fba2a76862c73f2995d8cc8b5b421e2b47b6075",
+  "files": {
+    "W0_MIN_REAL_EVAL_v0.1.jsonl": "4301565c02617f9fb68d301c4b5155f233a86959a9923471554a9a966440ff21",
+    "W0_REAL_CASEBOOK_v0.1_PROPOSED.md": "9ccc6027d366d5d95d069bfe8c475baa7d2ec2900377aa98063aedb15ad60865"
+  }
+}

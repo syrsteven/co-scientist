@@ -1,0 +1,92 @@
+[
+  {
+    "id": "ALS-HYP",
+    "source_id": "P-03",
+    "locator": "Note10.2, physical PDF p71, Hypothesis; experiment starts p71",
+    "claim_kind": "author_model_output",
+    "text": "公开示例假说（开发者转述，尚未实验证实）：细胞应激改变 Nup98/Nup62 等 FG-Nup 的修饰，进而改变它们与 TDP-43 的接触与核孔停留，可能影响核质运输。",
+    "representation": "developer_paraphrase_of_source_not_full_source_text",
+    "source_access_obtained": "full_text_pdf"
+  },
+  {
+    "id": "AML-HYP",
+    "source_id": "P-03",
+    "locator": "Note6, physical PDF pp42-46, proposed mechanism and hypothesis",
+    "claim_kind": "author_model_output",
+    "text": "作者模型提案（开发者转述）：研究 KIRA6 作用于 IRE1α/UPR 后对 AML 蛋白稳态和存活的影响，并探索组合治疗；这是待检验机制，不是靶点归因已完成的实验结果。",
+    "representation": "developer_paraphrase_of_source_not_full_source_text",
+    "source_access_obtained": "full_text_pdf"
+  },
+  {
+    "id": "AML-NOVELTY",
+    "source_id": "P-03",
+    "locator": "Note6, physical PDF pp49-50, Novelty review",
+    "claim_kind": "author_model_output",
+    "text": "作者模型评议（开发者转述）把 IRE1α 的 AML 既有研究与 KIRA6 的具体应用和组合情境分开讨论，并给出相对新颖性判断；该判断受其所读资料范围限制。",
+    "representation": "developer_paraphrase_of_source_not_full_source_text",
+    "source_access_obtained": "full_text_pdf"
+  },
+  {
+    "id": "AML-DOSE",
+    "source_id": "P-02",
+    "locator": "Fig.3d-h and following AML paragraph",
+    "claim_kind": "reported_observation",
+    "text": "原文剂量反应报告（开发者转述，IC50，nM）：KG-1a 10；NOMO-1 144；TK6 180；HL-60 870；MOLM-13 1750。TK6 为非 AML 淋巴母细胞系对照。",
+    "representation": "developer_paraphrase_of_source_not_full_source_text",
+    "source_access_obtained": "full_text_html"
+  },
+  {
+    "id": "AML-CONTEXT",
+    "source_id": "P-03",
+    "locator": "Note5.2, physical PDF pp26-27",
+    "claim_kind": "author_interpretation",
+    "text": "补充材料讨论细胞系背景差异，并把 KG-1a/TK6 的剂量反应差异作为待后续原代样本及体内研究检验的线索；此为作者解释，非临床结果。",
+    "representation": "developer_paraphrase_of_source_not_full_source_text",
+    "source_access_obtained": "full_text_pdf"
+  },
+  {
+    "id": "KIT-ABSTRACT",
+    "source_id": "P-04",
+    "locator": "Europe PMC MED 30931942, abstract",
+    "claim_kind": "reported_observation",
+    "text": "摘要报告 KIRA6 可抑制 KIT 信号，并在依赖 KIT 信号的肥大细胞白血病细胞体系中观察到活力影响。此处提供摘要转述，未核对全文方法。",
+    "representation": "developer_paraphrase_of_source_not_full_source_text",
+    "source_access_obtained": "abstract"
+  },
+  {
+    "id": "SELECTIVITY-ABSTRACT",
+    "source_id": "P-05",
+    "locator": "PubMed 33290055, Abstract; Europe PMC MED 33290055",
+    "claim_kind": "reported_observation",
+    "text": "摘要报告光亲和探针研究发现 KIRA6 具有广泛结合谱，许多识别出的靶点不是蛋白激酶，而是核苷酸结合蛋白；这里未提供完整靶点清单。",
+    "representation": "developer_paraphrase_of_source_not_full_source_text",
+    "source_access_obtained": "abstract"
+  },
+  {
+    "id": "HSP60-ABSTRACT",
+    "source_id": "P-06",
+    "locator": "Europe PMC MED 34453119, abstract",
+    "claim_kind": "reported_observation",
+    "text": "摘要报告在其免疫原性处理炎症研究中，IRE1α 缺失时仍观察到 KIRA6 作用，并提出 HSP60 相关解释；不是对本 AML 活力实验的直接归因试验。",
+    "representation": "developer_paraphrase_of_source_not_full_source_text",
+    "source_access_obtained": "abstract"
+  },
+  {
+    "id": "LIVER-SUMMARY",
+    "source_id": "P-02",
+    "locator": "Identifying therapeutic targets for liver fibrosis; reference 1",
+    "claim_kind": "reported_observation",
+    "text": "主文概述三个推荐表观遗传方向中两个在人肝类器官中出现抗纤维化活性，并报告其中 vorinostat 已用于另一癌症适应证。",
+    "representation": "developer_paraphrase_of_source_not_full_source_text",
+    "source_access_obtained": "full_text_html"
+  },
+  {
+    "id": "LIVER-COMPANION",
+    "source_id": "P-07",
+    "locator": "Abstract; Results 2.1/2.2",
+    "claim_kind": "reported_observation",
+    "text": "配套论文在 microHO 中描述 25 药物分析。其 AI 推荐实验涉及 DNMT1、HDAC、BRD4 三类靶点及五种抑制剂；DNMT1 项未减轻纤维化且有毒性，HDAC/BRD4 项报告活性。",
+    "representation": "developer_paraphrase_of_source_not_full_source_text",
+    "source_access_obtained": "full_text_html"
+  }
+]

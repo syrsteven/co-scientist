@@ -1,0 +1,177 @@
+{
+  "status": "proposed",
+  "evaluation_tier": "public_development_not_blind_not_independent_discovery",
+  "raw_case_ids": [
+    "R01",
+    "R02",
+    "R03",
+    "R04",
+    "R05",
+    "R06"
+  ],
+  "cases": [
+    {
+      "id": "R01",
+      "raw_case_id": "R01",
+      "task_kind": "given_hypothesis_analysis",
+      "visible_input_keys": [
+        "brief_cn",
+        "hypothesis_summary_cn"
+      ],
+      "material_ids": [
+        "ALS-HYP"
+      ],
+      "input_provenance": "developer_reconstruction_from_casebook; not an original full trace",
+      "review_only": {
+        "scientific_status": "provisional_requires_expert_review",
+        "route_expectations": "project_M00_policy_not_paper_observation",
+        "adoption_note": "Original R01 coverage expectations apply only to this supplied hypothesis, never free generation."
+      },
+      "task_override": "仅拆解给定公开示例假说的必要前提与可检验预测，不把它当实验事实；本项不是自由生成机制命中测试。"
+    },
+    {
+      "id": "R02",
+      "raw_case_id": "R02",
+      "task_kind": "injected_gap_routing",
+      "visible_input_keys": [
+        "hypothesis",
+        "injected_gap",
+        "gap_provenance"
+      ],
+      "material_ids": [
+        "ALS-HYP"
+      ],
+      "input_provenance": "developer_reconstruction_from_casebook; not an original full trace",
+      "review_only": {
+        "scientific_status": "provisional_requires_expert_review",
+        "route_expectations": "project_M00_policy_not_paper_observation",
+        "adoption_note": "Gap injected by developers; R1/R3 routing is a project expectation, not an original paper failure."
+      },
+      "input_overrides": {
+        "hypothesis": "细胞应激可能经Nup98/Nup62翻译后修饰影响TDP-43与核孔相互作用及核质运输。"
+      },
+      "task_override": "给定公开示例假说与人为注入的 Inventory 遗漏，说明尚未完成之处及后续工作，不改写原假说。"
+    },
+    {
+      "id": "R03",
+      "raw_case_id": "R03",
+      "task_kind": "source_reading_novelty",
+      "visible_input_keys": [
+        "question_cn"
+      ],
+      "material_ids": [
+        "AML-NOVELTY"
+      ],
+      "input_provenance": "developer_reconstruction_from_casebook; not an original full trace",
+      "review_only": {
+        "scientific_status": "provisional_requires_expert_review",
+        "route_expectations": "project_M00_policy_not_paper_observation",
+        "adoption_note": "Note6 novelty and safety statements are author model outputs. Current worldwide novelty, approval and trial status not independently established."
+      },
+      "task_override": "阅读给定作者模型评议，区分其新颖性判断与已核实事实；本视图不等于全球首创检索或当前监管状态核实。"
+    },
+    {
+      "id": "R04",
+      "raw_case_id": "R04",
+      "task_kind": "source_reading_attribution",
+      "visible_input_keys": [
+        "question_cn"
+      ],
+      "material_ids": [
+        "AML-HYP",
+        "AML-DOSE",
+        "KIT-ABSTRACT",
+        "SELECTIVITY-ABSTRACT",
+        "HSP60-ABSTRACT"
+      ],
+      "input_provenance": "developer_reconstruction_from_casebook; not an original full trace",
+      "review_only": {
+        "scientific_status": "provisional_requires_expert_review",
+        "route_expectations": "project_M00_policy_not_paper_observation",
+        "adoption_note": ""
+      }
+    },
+    {
+      "id": "R05",
+      "raw_case_id": "R05",
+      "task_kind": "source_reading_dose",
+      "visible_input_keys": [
+        "question_cn"
+      ],
+      "material_ids": [
+        "AML-DOSE",
+        "AML-CONTEXT"
+      ],
+      "input_provenance": "developer_reconstruction_from_casebook; not an original full trace",
+      "review_only": {
+        "scientific_status": "provisional_requires_expert_review",
+        "route_expectations": "project_M00_policy_not_paper_observation",
+        "adoption_note": ""
+      },
+      "task_override": "根据给定的原文数值转述解释细胞敏感性差异和证据边界；本固定视图不测试从原始图像提取数值。"
+    },
+    {
+      "id": "R06",
+      "raw_case_id": "R06",
+      "task_kind": "source_reading_scope",
+      "visible_input_keys": [
+        "question_cn"
+      ],
+      "material_ids": [
+        "LIVER-SUMMARY",
+        "LIVER-COMPANION"
+      ],
+      "input_provenance": "developer_reconstruction_from_casebook; not an original full trace",
+      "review_only": {
+        "scientific_status": "provisional_requires_expert_review",
+        "route_expectations": "project_M00_policy_not_paper_observation",
+        "adoption_note": "Override original independent_primary_study role: related companion reporting, independence not established; distinguish directions, compounds and total profiling pool."
+      }
+    }
+  ],
+  "als_input_variants": [
+    {
+      "id": "ALS-GOAL",
+      "task_kind": "free_generation_source_goal",
+      "task": "依据给定研究目标提出一个新候选及可检验预测；不要求复述任何公开示例机制。",
+      "inputs": {
+        "goal": "针对核孔复合体中某核孔蛋白的磷酸化，提出解释导致 ALS 的关键因素或过程的新假说；详细说明作用机制，并给出可行的检验实验。"
+      },
+      "provenance": {
+        "kind": "developer_paraphrase_of_original_goal",
+        "source_id": "P-03",
+        "locator": "Note10.1 Scientist research goal, physical PDF p70",
+        "short_original_anchor": "phosphorylation of a Nuclear Pore Complex (NPC) nucleoporin",
+        "not_original_goal_conditions": [
+          "iPSC motor-neuron model is not specified in Note10.1"
+        ]
+      },
+      "material_ids": [],
+      "review_only": {
+        "mechanism_match_not_required": true,
+        "scientific_status": "provisional_requires_expert_review"
+      }
+    },
+    {
+      "id": "ALS-BRIEF",
+      "task_kind": "free_generation_reconstructed_brief",
+      "task": "依据开发重建 Brief 提出可检验候选，保留明确实验条件；不要求命中公开示例机制。",
+      "inputs": {
+        "brief": "研究核孔蛋白磷酸化与 ALS 的可能机制；提出新颖、可检验的因果假说，并在 iPSC 来源运动神经元情境下提出验证原则。"
+      },
+      "provenance": {
+        "kind": "developer_reconstruction",
+        "source_id": "P-03",
+        "locator": "casebook DEV-01 Brief plus Note10.2 experimental example, physical PDF p71",
+        "added_conditions": [
+          "iPSC-derived motor neurons are an explicit reconstructed Brief constraint, not Note10.1 verbatim Goal"
+        ]
+      },
+      "material_ids": [],
+      "review_only": {
+        "mechanism_match_not_required": true,
+        "scientific_status": "provisional_requires_expert_review"
+      }
+    }
+  ]
+}
