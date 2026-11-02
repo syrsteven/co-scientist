@@ -1,0 +1,13 @@
+{"scenario": "boundary_restart", "creator_pid": 78144, "resumer_pid": 78145, "run_id": "964af9f23f0e4a278e927209661f42bc", "result": 32, "attempts": 2}
+.{"scenario": "crash_after_saved_success", "creator_pid": 78146, "resumer_pid": 78147, "external_sends": 1, "attempts": 1, "status": "completed"}
+.{"scenario": "crash_during_send", "creator_pid": 78148, "blocked_pid": 78149, "resumer_pid": 78150, "sends_before_authorization": 1, "sends_after_authorization": 2, "attempt_states": ["uncertain", "succeeded"]}
+.............
+15 passed in 1.04s
+
+Ruff check: passed. Ruff format --check: 9 files already formatted.
+Input ZIP comparison: 31 files byte-identical; both ZIP SHA-256 values verified.
+Wheel build --no-isolation: passed. Isolated Python wheel smoke: completed, result=32.
+Python: 3.11.5 (main, Sep 11 2023, 08:19:27) [Clang 14.0.6 ]
+
+Full Git whitespace check: flags original archived Markdown trailing spaces (preserved original bytes).
+Authored-file Git whitespace check excluding original design package directories: passed.

@@ -1,0 +1,51 @@
+flowchart LR
+    M00["M00 接口设计基线"] --> M09A["M09a 固定参赛引用"]
+    M00 --> M11A["M11a Delta语义"]
+    M00 --> M14A["M14a Project/Brief/Run"]
+    M00 --> M15A["M15a 执行基础"]
+    M00 --> M20A["M20a 科学案例"]
+    M14A --> M01["M01 Goal/Generation"]
+    M15A --> M01
+    M20A --> M01
+    M01 --> M02["M02 Ethics/R0"]
+    M02 --> M03["M03 Inventory/Delta解析"]
+    M11A --> M03
+    M03 --> M04["M04 Retrieval"]
+    M15A --> M04
+    M04 --> M05["M05 Appraisal"]
+    M20A --> M05
+    M05 --> M06["M06 Dossier/Prior-art"]
+    M06 --> M07["M07 R2"]
+    M07 -.->|普通R1补核查：按缺口执行，运行时| M03
+    M07 --> M08["M08 R3（有Issue时）"]
+    M08 -.->|结果归R2汇总| M07
+    M07 --> M09["M09 Admission/Epoch"]
+    M09A --> M09
+    M09 --> M10["M10 Pairwise/TrueSkill/UCB"]
+    M10 --> M11["M11 Evolution"]
+    M11A --> M11
+    M11 -.->|新候选重新Ethics/R0| M02
+    M01 --> M12["M12 单一Supervisor/终局"]
+    M09 --> M12
+    M10 --> M12
+    M11 --> M12
+    M15A --> M12
+    M03 --> M13["M13 可选科研主题反馈"]
+    M06 --> M13
+    M07 --> M13
+    M10 --> M13
+    M11 --> M13
+    M12 --> M14["M14 完整工作区对象"]
+    M12 --> M15["M15 长任务工作台"]
+    M14A --> M14
+    M15A --> M15
+    M12 --> M16["M16 决策阅读"]
+    M14 --> M16
+    M16 --> M17["M17 导出安装"]
+    M12 --> M18["M18 独立实验前核验"]
+    M18 --> M19["M19 实验规划"]
+    M20A --> M20["M20 全程科学验收"]
+    M05 --> M20
+    M10 --> M20
+    M11 --> M20
+    M12 --> M20

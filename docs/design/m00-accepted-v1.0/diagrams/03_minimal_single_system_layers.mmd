@@ -1,0 +1,37 @@
+flowchart TB
+    subgraph L5["L5 Research Workspace (内部科研人员)"]
+        W["M14 Project / BriefRevision / Run / Import"]
+        UI["M16 候选证据阅读 · M17 报告导出"]
+        P2["独立后续 M18 实验前核验 → M19 实验规划"]
+    end
+    subgraph L3["L3 Orchestration & Runtime"]
+        S["M12 单一科学Supervisor/终局"]
+        EX["M15 Model/Tool执行、恢复、用量记录"]
+    end
+    subgraph L2["L2 Scientific Workflow"]
+        SCI["M01–M11 Generation / Ethics / R0–R3 / Ranking / Evolution"]
+        OPT["M13 可选机制主题与Meta-review"]
+    end
+    subgraph L1["L1 Scientific Domain"]
+        DOM["Hypothesis · Inventory · Dossier · FinalReflection"]
+        EVAL["Admission · Match/Rating · Delta · Terminal"]
+    end
+    subgraph L4["L4 Minimal Persistence"]
+        STORE["来源快照 · 科学结果 · 调用输入输出 · 必要运行事件"]
+    end
+    Q["M20 科学质量评测 + 工程验收"]
+    W --> S
+    S --> EX
+    EX --> SCI
+    SCI --> DOM
+    DOM --> EVAL
+    DOM --> STORE
+    EVAL --> STORE
+    EX --> STORE
+    EVAL --> S
+    STORE -->|只读投影| UI
+    EVAL -->|固定选定候选| P2
+    DOM -.-> OPT
+    OPT -.->|非阻断演化建议| SCI
+    Q -.-> SCI
+    Q -.-> S

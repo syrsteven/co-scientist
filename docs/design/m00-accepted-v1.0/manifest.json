@@ -1,0 +1,160 @@
+{
+  "package": "M00_Phase3_Accepted_v1.0",
+  "architecture_version": "M00-ARCH-v1.0",
+  "acceptance_status": "design_accepted",
+  "acceptance_date": "2026-11-01",
+  "source_packages": [
+    {
+      "name": "M00_Phase3_Architecture_Baseline_v1.0_RC1.zip",
+      "sha256": "569332e4e488f1b93b10638bf81e02c13fa3d0c7fb3695eac22dc4512106257e"
+    },
+    {
+      "name": "M00_Phase3_RC2_Four_Revised_Files.zip",
+      "sha256": "65e0ec659400aa163f8c99c2dc586697fdb2a43e258e5766b958be31b44a839c"
+    }
+  ],
+  "file_count_without_manifest": 28,
+  "files": [
+    {
+      "path": "00_EXECUTIVE_SUMMARY.md",
+      "size_bytes": 4889,
+      "sha256": "5e23511e6d447385c3b6b20bc3eaaa870bcb04198fb1b81821a157d2194b0bb1"
+    },
+    {
+      "path": "01_ARCHITECTURE_BASELINE.md",
+      "size_bytes": 15912,
+      "sha256": "9baf94f69e36f0a6207259bc46f654c4d42e821cb47c23580811e9cf01b85277"
+    },
+    {
+      "path": "02_GLOBAL_DECISION_LOG.md",
+      "size_bytes": 13390,
+      "sha256": "f22379341e87bec565bc445beb82306c86d3ad540a59c83d49dd78fd9a5af4a0"
+    },
+    {
+      "path": "03_INTERFACE_OWNERSHIP_MAP.md",
+      "size_bytes": 17820,
+      "sha256": "e6b5503cf13accd970f29ca947db9bad30893b90425c08afc57cf1378dced8b2"
+    },
+    {
+      "path": "04_MODULE_DEPENDENCY_MAP.md",
+      "size_bytes": 20061,
+      "sha256": "36b4d33a5bbfd93cbe69aff511784a6c0707ce10a2671fb65007b1e8a3724e5f"
+    },
+    {
+      "path": "05_G3_REFERENCE_PRESERVATION.md",
+      "size_bytes": 9005,
+      "sha256": "3ab51342efb8181818632d51fc2f3cc094519deac4329eadd014f3792aa19c77"
+    },
+    {
+      "path": "06_M00_HANDOFF.md",
+      "size_bytes": 9475,
+      "sha256": "55034862fdb8a31ca99516ce3aeea6e7d93067ab1fedde1db68eef5c70e2d785"
+    },
+    {
+      "path": "07_ACCEPTANCE_AND_OPEN_ISSUES.md",
+      "size_bytes": 9119,
+      "sha256": "953c4df9320c3c0ecfafb4389df697208818d2869895a6b0463e6fe0a62e4cea"
+    },
+    {
+      "path": "08_SOURCE_TRACEABILITY.md",
+      "size_bytes": 9400,
+      "sha256": "5246f66746596d906a3380e67bec0477055c77eb3b57679c945a8a768b6d90fe"
+    },
+    {
+      "path": "09_ACCEPTANCE_RECORD.md",
+      "size_bytes": 2428,
+      "sha256": "b99e6bb317975da5f327bd8b9472d77080c9045b1d880a8ebb5637a8ae8e8db8"
+    },
+    {
+      "path": "README.md",
+      "size_bytes": 4486,
+      "sha256": "31b9e30919345763a2c147d7f478848b22de6e31799a9c07ff75538981865a86"
+    },
+    {
+      "path": "VALIDATION_REPORT.md",
+      "size_bytes": 1354,
+      "sha256": "42bef5aaad18d51bab276d7fc101671fa1dbf67c1ec32964a67c455b21895192"
+    },
+    {
+      "path": "diagrams/01_scientific_workflow.mmd",
+      "size_bytes": 1483,
+      "sha256": "4a74617e83a7fd11980394ef21a3b9715243e575fa4bdb1774072cde64265a5b"
+    },
+    {
+      "path": "diagrams/02_reflection_issue_closure.mmd",
+      "size_bytes": 1619,
+      "sha256": "b9c24f84c064f2fc6e5706eac0a7b67e93f90887c8065ab8986811e4da8fe59a"
+    },
+    {
+      "path": "diagrams/03_minimal_single_system_layers.mmd",
+      "size_bytes": 1264,
+      "sha256": "deb2f5917321ae5e8edbb4ef0137b7c37e4386590b525a7f2b74e959a957c721"
+    },
+    {
+      "path": "diagrams/04_module_dependencies.mmd",
+      "size_bytes": 1536,
+      "sha256": "110fd3ff14af1546388dd6f989237184023b33c46923888005f32fbb80601e1b"
+    },
+    {
+      "path": "diagrams/05_scientific_identity_and_provenance.mmd",
+      "size_bytes": 753,
+      "sha256": "afcceae6a18c415f6ea2aa9232ce95035458c76448079e7bed37a651b1e07ecb"
+    },
+    {
+      "path": "diagrams/README.md",
+      "size_bytes": 863,
+      "sha256": "10d129b184973b7a411d0148e08b9ac74e233a6d4bbfe9bcfe0af55d708ee7fa"
+    },
+    {
+      "path": "reference/00_COMMON_CONTEXT_legacy.md",
+      "size_bytes": 4481,
+      "sha256": "4a66d1b73ef89c4a0e6c0099ff726ffb5b3e86b2682838979da342826ac34cd3"
+    },
+    {
+      "path": "reference/01_HANDOFF_TEMPLATE_legacy.md",
+      "size_bytes": 1327,
+      "sha256": "1f12945d7b5d146d78dc365d742ac10b2996898625b0d258d8f8933f9c6dd4a6"
+    },
+    {
+      "path": "reference/02_PROJECT_STATE_legacy.md",
+      "size_bytes": 2773,
+      "sha256": "24bbcd7493b2aa3a6f7695d79c9ddedeff94e848a967e3e3e60777ae2c2713c0"
+    },
+    {
+      "path": "reference/03_WORKFLOW_PROTOCOL_legacy.md",
+      "size_bytes": 1412,
+      "sha256": "79b27928a9b6055f2d7a332bd4e89d82584d831ff7eb34ba77d44b53afb093dc"
+    },
+    {
+      "path": "reference/06_DECISION_LOG_legacy.md",
+      "size_bytes": 4152,
+      "sha256": "2942b3feae8e22976295eb2eb48a3ac4286133fbed98aebd350850ed1b0e32bd"
+    },
+    {
+      "path": "reference/Evidence_Dossier_Contract_V1_legacy.md",
+      "size_bytes": 17237,
+      "sha256": "98429a36bcd0a6aec1a99ce0529bbdb57880ab84fa80756508a5253fcef12ecc"
+    },
+    {
+      "path": "reference/M00_PHASE1_REVIEW.md",
+      "size_bytes": 92619,
+      "sha256": "98054c4457a5de52914e3ddc674100e1362e4e6f76ef5e0674212dc5de9e2b1f"
+    },
+    {
+      "path": "reference/M00_PHASE2_REVISION_PROPOSED.md",
+      "size_bytes": 60328,
+      "sha256": "22c5ab6c83580e720af0b14c70624d790c74fb80823e47aae43d6992ca04cb5b"
+    },
+    {
+      "path": "reference/README.md",
+      "size_bytes": 753,
+      "sha256": "580b466f0f48e16a94bf9540e269bda73b8722a660eee9f8e39e4238aa9e9b2a"
+    },
+    {
+      "path": "reference/Reflection_Pipeline_Contract_V1_legacy.md",
+      "size_bytes": 21405,
+      "sha256": "b6d75a9e199cf97c227d7e414c8d8eb7f58bfd25791b8f8b2d8db0df1c826d38"
+    }
+  ],
+  "notes": "Document acceptance, not implementation or science test acceptance. Manifest excludes itself."
+}
