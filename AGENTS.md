@@ -3,12 +3,17 @@
 - Current architecture: `docs/design/m00-accepted-v1.0/01_ARCHITECTURE_BASELINE.md`
   and its accepted decision, ownership, dependency and handoff files. Its
   `reference/` directory is historical. W0 in `docs/design/w0-proposed-v0.1/`
-  remains Proposed; this task adopts only M14a/M12/M15a engineering semantics.
+  remains Proposed. W0-T0/T1 adopts M14a/M12/M15a engineering semantics;
+  W0-T2 adds only M09a/M11a/LiteraturePort representations and structural tests.
 - Read `docs/STATUS.md` for actual implementation and validation. Design
   acceptance, engineering tests and scientific validation are separate facts.
 - New system lives in `src/co_scientist_next/`, independent of old
   `co_scientist` Orchestrator, profiles, events and Run recovery. Preserve G3 at
   `7313ca032e4f5f0c84578523e0f5639ad038e7af`; do not delete historical code.
+- M09a records fixed Admission references; M10 separately owns parent and final
+  qualification. M11 proposes Delta intent, M03 resolves it after child Inventory;
+  M04/M05 independently decide material/appraisal reuse. Contract checks cannot
+  prove scientific decisions, real Inventory completion or source access truth.
 - M14 owns immutable Brief revisions; M01 owns scientific Goal preparation;
   M02 owns ethics. M12 schedules and does not judge scientific quality.
 - Future scientific workflow: Goal preparation → Goal Ethics → Generation;

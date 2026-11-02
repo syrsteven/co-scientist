@@ -1,0 +1,90 @@
+{
+  "synthetic": true,
+  "scope": "Fixed structural counterexamples only; no papers, expert labels or scientific conclusions.",
+  "admission_cases": [
+    {
+      "candidate": "A",
+      "decision": "admitted",
+      "parent": "eligible",
+      "final": "ineligible",
+      "reason": "Fixture parent coverage met, final coverage not met"
+    },
+    {
+      "candidate": "B",
+      "decision": "blocked",
+      "parent": "ineligible",
+      "final": "ineligible",
+      "reason": "Strong revision suggestion does not grant admission or parent eligibility"
+    },
+    {
+      "candidate": "C",
+      "decision": "admitted",
+      "parent": "ineligible",
+      "final": "not_assessed",
+      "reason": "Admission does not grant parent or final eligibility"
+    },
+    {
+      "candidate": "D",
+      "decision": "incomplete",
+      "parent": "not_assessed",
+      "final": "not_assessed",
+      "reason": "Required review not completed; not a scientific negative result"
+    },
+    {
+      "candidate": "E",
+      "decision": "admitted",
+      "parent": "not_assessed",
+      "final": "eligible",
+      "reason": "Final and parent eligibility are independent M10 records"
+    },
+    {
+      "candidate": "NOVEL",
+      "decision": "admitted",
+      "parent": "not_assessed",
+      "final": "not_assessed",
+      "reason": "No direct support in synthetic scope is not by itself an admission rejection"
+    }
+  ],
+  "context_change": {
+    "parent_hypothesis": "H-parent-A",
+    "parent_inventory": "I-parent-A-v1",
+    "parent_context": "synthetic cell system A / stimulus S1",
+    "child_hypothesis": "H-child-B",
+    "child_inventory": "I-child-B-v1",
+    "child_context": "synthetic cell system B / stimulus S2",
+    "shared_wording": "X affects Y",
+    "intent": "Change experimental context and add bridge Z; no claim of inherited evidence applicability",
+    "parent_claim": "claim-XY",
+    "modified_child_claim": "claim-XY-in-B",
+    "new_child_claim": "claim-Z"
+  },
+  "unresolved_mapping_reason": "Inventories cannot safely establish a parent-child claim mapping; arrange full evidence checking",
+  "literature": {
+    "source": "synthetic-database-v1",
+    "query": "synthetic X Y counterevidence",
+    "scope": "synthetic index, all fixture records at 2026-11-02",
+    "executed_at": "2026-11-02T02:00:00+00:00",
+    "source_ref": "fixture:paper-1",
+    "citation": "Synthetic record 1, not a real paper",
+    "title": "Synthetic material access fixture",
+    "abstract": "SYNTHETIC ABSTRACT: methods unavailable; cannot claim full-text appraisal.",
+    "full_text": "SYNTHETIC FULL TEXT: illustrative methods and results, not scientific evidence.",
+    "full_text_unavailable": "Fixture source supplies metadata/abstract only; full text not obtained",
+    "technical_failure": "Fixture transport error: search/fetch did not complete"
+  },
+  "presentation": {
+    "candidate_A_core": {
+      "support": [
+        "SYNTHETIC E1"
+      ],
+      "counterevidence": [
+        "SYNTHETIC E2"
+      ],
+      "gaps": [
+        "SYNTHETIC G1"
+      ],
+      "final_reflection": "SYNTHETIC final R2"
+    },
+    "note": "Only tests actual I/O retention and fixed refs. Does not implement M10 core preparation or bias detection."
+  }
+}

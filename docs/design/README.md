@@ -11,7 +11,9 @@
 The current user request authorizes W0-T0/T1 engineering implementation, beyond
 those documents' historical design-only delivery statements. Its adoption is
 limited to Project/BriefRevision/Run snapshots, scheduling, Task/Attempt/result
-facts, actual I/O, errors, consumption, retries and recovery. M00 science rules
+facts, actual I/O, errors, consumption, retries and recovery (W0-T0/T1), plus
+fixed Admission references, separate qualifications, two-stage Delta and narrow
+literature acquisition representations with structural counterexamples (W0-T2). M00 science rules
 remain authoritative. Other W0 interfaces are future inputs.
 
 See [current delivery status](../STATUS.md) and [runtime usage](../W0_RUNTIME.md).

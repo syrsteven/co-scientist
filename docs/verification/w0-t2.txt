@@ -1,0 +1,18 @@
+..........{"scenario": "boundary_restart", "creator_pid": 91210, "resumer_pid": 91211, "run_id": "8d05d7f808094cb3a0840cae6cd98d5e", "result": 32, "attempts": 2}
+.{"scenario": "crash_after_saved_success", "creator_pid": 91219, "resumer_pid": 91225, "external_sends": 1, "attempts": 1, "status": "completed"}
+.{"scenario": "crash_during_send", "creator_pid": 91231, "blocked_pid": 91236, "resumer_pid": 91237, "sends_before_authorization": 1, "sends_after_authorization": 2, "attempt_states": ["uncertain", "succeeded"]}
+........................................
+52 passed in 1.47s
+
+New contracts: 37 passed; existing engineering/recovery regressions: 15 passed; total 52.
+Ruff check: passed. Ruff format --check: 15 files already formatted.
+Wheel --no-isolation: built. Python -I wheel-only contract smoke and engineering demo: passed, result=32.
+No new runtime dependency or API key. Python: 3.11.5 (main, Sep 11 2023, 08:19:27) [Clang 14.0.6 ]
+
+PR #2 reverified merged: 83d88686ae853d4f634cf68bf68e7065d38e4d71, reviewed head unchanged.
+Pre-merge: clean, all 4 check runs succeeded, no commit-status blockers or branch rules.
+Original dirty workspace/index/status/diff fingerprint: 232 files unchanged before/after implementation.
+Local main: 83d88686ae853d4f634cf68bf68e7065d38e4d71; old local history retained on codex/preserve-local-before-w0-t2.
+
+Final review: empty continuation page with known nonzero total is preserved and never classified as a completed empty search; regression passed.
+Final staged whitespace check: passed.
