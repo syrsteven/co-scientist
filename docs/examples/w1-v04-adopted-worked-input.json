@@ -1,0 +1,792 @@
+{
+  "metadata": {
+    "version": "v0.4-PROPOSED",
+    "date": "2026-11-03",
+    "status": "DOCUMENTATION_ONLY_NOT_SCIENTIFIC_VALIDATION",
+    "built_from": "v0.3 Pro methods and v0.3 source-reading records; selected source identities cross-checked with public primary records",
+    "no_external_model_call": true,
+    "no_new_retrieval_execution_claimed": true,
+    "no_blind_independence_claim": true,
+    "not_full_original_source_text": true,
+    "not_complete_R1_M05_M06": true
+  },
+  "GoalContext": {
+    "brief_revision_id": "DEMO-BRIEF-ALS-GOAL",
+    "original_question": "Propose a novel, testable mechanism by which phosphorylation of a nuclear pore complex nucleoporin may contribute to amyotrophic lateral sclerosis. Explain the molecular mechanism and suggest feasible validation experiments.",
+    "hard_requirements": [
+      {
+        "requirement": "Investigate nucleoporin phosphorylation in relation to ALS",
+        "input_locator": "original_question"
+      },
+      {
+        "requirement": "Propose a mechanistic and testable hypothesis",
+        "input_locator": "original_question"
+      },
+      {
+        "requirement": "Explain mechanism and feasible validation approach",
+        "input_locator": "original_question"
+      }
+    ],
+    "unspecified": [
+      "Nucleoporin identity",
+      "kinase identity",
+      "ALS subtype",
+      "experimental model",
+      "phosphosite"
+    ],
+    "not_user_constraints": [
+      "iPSC-derived motor-neuron model"
+    ],
+    "clarification_required": false,
+    "status": "DEMONSTRATION_PREPARED_NOT_MODEL_EXECUTED"
+  },
+  "GoalEthics": {
+    "decision": "pass",
+    "policy": "POLICY-W1-DEMO-PROPOSED",
+    "policy_approved": false,
+    "status": "SIMULATED_NONCLINICAL_ONLY"
+  },
+  "OrientationSearchPlanProposedNotExecuted": [
+    {
+      "question": "disease / NPC association",
+      "query": "(ALS[tiab] OR \"amyotrophic lateral sclerosis\"[tiab]) AND (nucleoporin*[tiab] OR \"nuclear pore\"[tiab])"
+    },
+    {
+      "question": "phosphorylation function without required ALS keyword",
+      "query": "(nucleoporin*[tiab] OR \"nuclear pore\"[tiab]) AND (phosphorylat*[tiab] OR kinase*[tiab])"
+    },
+    {
+      "question": "competing disease transport/structural mechanisms",
+      "query": "(ALS[tiab] OR C9orf72[tiab]) AND (\"nucleocytoplasmic transport\"[tiab] OR \"nuclear pore\"[tiab])"
+    }
+  ],
+  "TransportSeedBackgroundPacket": {
+    "packet_id": "BP-T-v0.4-DEMO",
+    "status": "COMPLETE_DOCUMENTATION_EXAMPLE_NOT_EXECUTED_PRODUCTION_PACKET",
+    "goal_context": {
+      "brief_revision_id": "DEMO-BRIEF-ALS-GOAL",
+      "original_question": "Propose a novel, testable mechanism by which phosphorylation of a nuclear pore complex nucleoporin may contribute to amyotrophic lateral sclerosis. Explain the molecular mechanism and suggest feasible validation experiments.",
+      "hard_requirements": [
+        {
+          "requirement": "Investigate nucleoporin phosphorylation in relation to ALS",
+          "input_locator": "original_question"
+        },
+        {
+          "requirement": "Propose a mechanistic and testable hypothesis",
+          "input_locator": "original_question"
+        },
+        {
+          "requirement": "Explain mechanism and feasible validation approach",
+          "input_locator": "original_question"
+        }
+      ],
+      "unspecified": [
+        "Nucleoporin identity",
+        "kinase identity",
+        "ALS subtype",
+        "experimental model",
+        "phosphosite"
+      ],
+      "not_user_constraints": [
+        "iPSC-derived motor-neuron model"
+      ],
+      "clarification_required": false,
+      "status": "DEMONSTRATION_PREPARED_NOT_MODEL_EXECUTED"
+    },
+    "seed_brief": {
+      "seed_id": "DIRECTED-TRANSPORT-01",
+      "mode": "directed",
+      "scientific_question": "Could the effect of NUP50 phosphorylation on nuclear-transport recovery depend on NUP50 abundance in ALS-relevant neurons?",
+      "causal_bottleneck": "Interaction between nucleoporin abundance and modification state",
+      "starting_anchors": [
+        "VIEW-F01",
+        "VIEW-F03"
+      ],
+      "source_negatives_and_alternatives": [
+        "VIEW-F03",
+        "VIEW-F04",
+        "VIEW-F05",
+        "VIEW-F09"
+      ],
+      "unknown_bridge": "Interaction of abundance and phosphorylation in target neuronal context",
+      "not_an_answer": "This question is not an assertion of direction, novelty, or evidence support for the new bridge."
+    },
+    "executed_search_history_from_v03": [
+      {
+        "id": "Q02",
+        "actual_query": "ALS NUP50 phosphorylation nuclear pore transport",
+        "backend": "web_search",
+        "scope_complete": false,
+        "actual_record_status": "v0.3_public_web_study_lead_not_exhaustive_database_search",
+        "selected_sources": [
+          "S02"
+        ]
+      },
+      {
+        "id": "Q03",
+        "actual_query": "C9orf72 ALS nucleocytoplasmic transport RanGAP1 Zhang 2015 Nature",
+        "backend": "web_search",
+        "scope_complete": false,
+        "actual_record_status": "v0.3_public_web_study_lead_not_exhaustive_database_search",
+        "selected_sources": [
+          "S03"
+        ]
+      },
+      {
+        "id": "Q04",
+        "actual_query": "ALS CHMP7 POM121 nuclear pore loss 2021 2023",
+        "backend": "web_search",
+        "scope_complete": false,
+        "actual_record_status": "v0.3_public_web_study_lead_not_exhaustive_database_search",
+        "selected_sources": [
+          "S04"
+        ]
+      },
+      {
+        "id": "Q10",
+        "actual_query": "\"NUP50\" \"phosphorylation\" \"ALS\" \"ERK\"",
+        "backend": "web_search",
+        "scope_complete": false,
+        "actual_record_status": "v0.3_public_web_study_lead_not_exhaustive_database_search",
+        "selected_sources": [
+          "S01",
+          "S02"
+        ]
+      },
+      {
+        "id": "Q12",
+        "actual_query": "NUP50 ALS ERK Ser221 Ser315 phosphorylation motor neurons recovery",
+        "backend": "web_search",
+        "scope_complete": false,
+        "actual_record_status": "v0.3_public_web_study_lead_not_exhaustive_database_search",
+        "selected_sources": [
+          "S01"
+        ]
+      },
+      {
+        "id": "Q16",
+        "actual_query": "\"NUP50\" \"ERK\" \"ALS\" phosphorylation",
+        "backend": "web_search",
+        "scope_complete": false,
+        "actual_record_status": "v0.3_public_web_study_lead_not_exhaustive_database_search",
+        "selected_sources": [
+          "S01",
+          "S08"
+        ]
+      },
+      {
+        "id": "Q19",
+        "actual_query": "\"NUP50\" \"phosphorylation\" \"amyotrophic\"",
+        "backend": "web_search",
+        "scope_complete": false,
+        "actual_record_status": "v0.3_public_web_study_lead_not_exhaustive_database_search",
+        "selected_sources": [
+          "S06",
+          "S08"
+        ]
+      }
+    ],
+    "source_views": [
+      {
+        "source_view_id": "VIEW-F01",
+        "source_id": "S01",
+        "source_title": "Phosphoproteomics reveals new ERK MAP kinase targets and links ERK to nucleoporin-mediated nuclear transport",
+        "source_url": "https://pubmed.ncbi.nlm.nih.gov/19767751/",
+        "source_doi": "10.1038/nsmb.1656",
+        "study_family_id": "Kosako2009",
+        "source_locator": "Original abstract",
+        "access_description": "Original abstract plus selected original supplementary text; supplementary Figure 5 visually inspected. Main article full text unavailable.",
+        "representation": "METHOD_STUDY_V03_ASSISTANT_PARAPHRASE_NOT_RAW_SOURCE_TEXT",
+        "visible_text": "Phosphorylation reduced Nup50 affinity for importin-beta and transportin; receptor nuclear migration was impaired.",
+        "negative_observation_visible": null,
+        "not_established": "ALS causality, intact motor-neuron cargo kinetics, or TDP-43 pathology.",
+        "biological_system": "Non-neuronal experimental cells, including digitonin-permeabilized transport assay",
+        "intervention": "ERK activation / Nup50 phosphorylation",
+        "actual_measured_endpoint": "Receptor binding and nuclear migration"
+      },
+      {
+        "source_view_id": "VIEW-F02",
+        "source_id": "S01",
+        "source_title": "Phosphoproteomics reveals new ERK MAP kinase targets and links ERK to nucleoporin-mediated nuclear transport",
+        "source_url": "https://pubmed.ncbi.nlm.nih.gov/19767751/",
+        "source_doi": "10.1038/nsmb.1656",
+        "study_family_id": "Kosako2009",
+        "source_locator": "Supplementary Figure 5, physical p9",
+        "access_description": "Original abstract plus selected original supplementary text; supplementary Figure 5 visually inspected. Main article full text unavailable.",
+        "representation": "METHOD_STUDY_V03_ASSISTANT_PARAPHRASE_NOT_RAW_SOURCE_TEXT",
+        "visible_text": "The same S221/S315 sites can also be phosphorylated by CDK1/cyclin B in vitro.",
+        "negative_observation_visible": null,
+        "not_established": "An S221/S315 signal alone identifies ERK as its cellular cause.",
+        "biological_system": "Purified in-vitro assay",
+        "intervention": "CDK1/cyclin B",
+        "actual_measured_endpoint": "Nup50 phosphosite signals"
+      },
+      {
+        "source_view_id": "VIEW-F03",
+        "source_id": "S02",
+        "source_title": "Integrative genetic analysis illuminates ALS heritability and identifies risk genes",
+        "source_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC9860017/",
+        "source_doi": "10.1038/s41467-022-35724-1",
+        "study_family_id": "Megat2023",
+        "source_locator": "Results: Consequences of NUP50 depletion in cultured neurons",
+        "access_description": "Full HTML available; selected NUP50 Results and figure legends read, not independent image or raw-data reanalysis.",
+        "representation": "METHOD_STUDY_V03_ASSISTANT_PARAPHRASE_NOT_RAW_SOURCE_TEXT",
+        "visible_text": "Export and survival were impaired; endogenous TDP-43 localization and two assessed splicing readouts did not change in the reported setting.",
+        "negative_observation_visible": "endogenous TDP-43 localization and two assessed splicing readouts did not change in the reported setting.",
+        "not_established": "Depletion equals phosphorylation, export equals import, or absence of a TDP-43 effect in every context.",
+        "biological_system": "HT22 mouse hippocampal cells; survival also assessed in primary cortical neurons",
+        "intervention": "Nup50 depletion",
+        "actual_measured_endpoint": "Reporter export, endogenous TDP-43, neuronal survival"
+      },
+      {
+        "source_view_id": "VIEW-F04",
+        "source_id": "S03",
+        "source_title": "The C9ORF72 repeat expansion disrupts nucleocytoplasmic transport",
+        "source_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC4800742/",
+        "source_doi": "10.1038/nature14973",
+        "study_family_id": "Zhang2015",
+        "source_locator": "Selected Results on RanGAP",
+        "access_description": "Full HTML available; selected RanGAP Results read.",
+        "representation": "METHOD_STUDY_V03_ASSISTANT_PARAPHRASE_NOT_RAW_SOURCE_TEXT",
+        "visible_text": "RanGAP-related dysfunction provides a competing transport mechanism.",
+        "negative_observation_visible": null,
+        "not_established": "A NUP50-specific phosphorylation mechanism.",
+        "biological_system": "C9ORF72 repeat models",
+        "intervention": "Repeat expression and transport-regulator perturbation",
+        "actual_measured_endpoint": "Transport and disease-related phenotypes"
+      },
+      {
+        "source_view_id": "VIEW-F05",
+        "source_id": "S04",
+        "source_title": "Nuclear accumulation of CHMP7 initiates nuclear pore complex injury and subsequent TDP-43 dysfunction in sporadic and familial ALS",
+        "source_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC9022198/",
+        "source_doi": "10.1126/scitranslmed.abe1923",
+        "study_family_id": "Coyne2021",
+        "source_locator": "Results: impaired nuclear export of CHMP7",
+        "access_description": "Full HTML available; selected Results and figure legends read.",
+        "representation": "METHOD_STUDY_V03_ASSISTANT_PARAPHRASE_NOT_RAW_SOURCE_TEXT",
+        "visible_text": "CHMP7-linked NPC injury supplies a structural alternative.",
+        "negative_observation_visible": null,
+        "not_established": "A phosphorylation mechanism caused this cascade.",
+        "biological_system": "Human induced neurons",
+        "intervention": "CHMP7 nuclear accumulation",
+        "actual_measured_endpoint": "Nup abundance and later TDP-43 readouts"
+      },
+      {
+        "source_view_id": "VIEW-F09",
+        "source_id": "S08",
+        "source_title": "TDP-43 pathology disrupts nuclear pore complexes and nucleocytoplasmic transport in ALS/FTD",
+        "source_url": "https://pmc.ncbi.nlm.nih.gov/articles/PMC5800968/",
+        "source_doi": "10.1038/s41593-017-0047-3",
+        "study_family_id": "Chou2018",
+        "source_locator": "Results/Discussion on TDP-43 pathology and genetic modifiers",
+        "access_description": "Full HTML; selected Results and Discussion read.",
+        "representation": "METHOD_STUDY_V03_ASSISTANT_PARAPHRASE_NOT_RAW_SOURCE_TEXT",
+        "visible_text": "Reverse causation and context-dependent Nup genetic effects must remain alternatives.",
+        "negative_observation_visible": null,
+        "not_established": "Every reduction of every Nup is harmful, or NUP50 phosphorylation is upstream of TDP-43 in ALS.",
+        "biological_system": "TDP-43 models including Drosophila",
+        "intervention": "TDP-43 expression and Nup gene perturbations",
+        "actual_measured_endpoint": "Pore pathology and toxicity"
+      }
+    ],
+    "context_contrasts": [
+      {
+        "view_ref": "VIEW-F01",
+        "known_in_actual_context": "ERK phosphorylation of NUP50 changes importin-beta/transportin interactions and their migration in a permeabilized assay.",
+        "source_context": "non-neuronal experimental cells/permeabilized transport assay",
+        "actual_intervention": "ERK pathway manipulation / NUP50 phosphorylation",
+        "actual_endpoint": "receptor association and migration, not motor-neuron cargo flux",
+        "negative_or_boundary": "No direct ALS phenotype measured in this source material.",
+        "prohibited_transfer": "Do not treat receptor migration as a direct measurement of cargo import in intact motor neurons.",
+        "required_transfer_assumption": "Comparable NUP50 phosphorylation affects relevant cargo transport in the proposed disease-relevant cells."
+      },
+      {
+        "view_ref": "VIEW-F02",
+        "known_in_actual_context": "CDK1/cyclin B can phosphorylate the indicated NUP50 sites in a separate in-vitro assay.",
+        "source_context": "purified in-vitro assay",
+        "actual_intervention": "CDK1/cyclin B",
+        "actual_endpoint": "site-specific phosphorylation signal",
+        "negative_or_boundary": "Site detection cannot uniquely assign ERK as the physiological kinase.",
+        "prohibited_transfer": "Do not infer exclusive ERK causation from S221/S315 signal alone.",
+        "required_transfer_assumption": "Kinase identity must be independently established in the selected cells."
+      },
+      {
+        "view_ref": "VIEW-F03",
+        "known_in_actual_context": "NUP50 depletion in HT22 cells impaired a reporter export phenotype and increased neuronal death in reported systems.",
+        "source_context": "HT22 mouse hippocampal cells; other survival assays in primary cortical neurons",
+        "actual_intervention": "NUP50 abundance knockdown, not phosphorylation",
+        "actual_endpoint": "NLS-mCherry-NES reporter export, endogenous TDP-43 localization/splicing measures, survival",
+        "negative_or_boundary": "Endogenous TDP-43 localization and two splicing measures did not change in this reported setting.",
+        "prohibited_transfer": "Do not equate depletion with phosphorylation or use these results as proof of ALS-specific phosphorylation pathology.",
+        "required_transfer_assumption": "If relevant, the abundance phenotype and modification phenotype can be experimentally disentangled."
+      },
+      {
+        "view_ref": "VIEW-F04",
+        "known_in_actual_context": "Ran-related dysfunction offers a distinct ALS-related transport mechanism.",
+        "source_context": "C9ORF72-related model; selected original Results",
+        "actual_intervention": "repeat-associated manipulations",
+        "actual_endpoint": "transport and related cellular phenotypes",
+        "negative_or_boundary": "Does not establish a NUP50 modification mechanism.",
+        "prohibited_transfer": "Do not assume all transport impairment arises upstream from NUP50 phosphorylation.",
+        "required_transfer_assumption": "A candidate needs a discriminator against Ran-driven impairment."
+      },
+      {
+        "view_ref": "VIEW-F05",
+        "known_in_actual_context": "CHMP7-linked NPC injury provides an alternative route to NPC/transport damage.",
+        "source_context": "ALS-linked models; selected original Results",
+        "actual_intervention": "NPC-injury related manipulations",
+        "actual_endpoint": "NPC injury and disease-associated molecular dysfunction",
+        "negative_or_boundary": "Does not establish a phosphorylation-mediated initiating mechanism.",
+        "prohibited_transfer": "Do not attribute pore-structure damage uniquely to phosphorylation.",
+        "required_transfer_assumption": "A modification mechanism should distinguish early functional effects from general structural injury."
+      },
+      {
+        "view_ref": "VIEW-F09",
+        "known_in_actual_context": "Directionality of TDP-43 and NPC changes can depend on model and stage.",
+        "source_context": "reported TDP-43/NPC genetic and cellular models",
+        "actual_intervention": "model-specific TDP-43/Nup manipulations",
+        "actual_endpoint": "NPC and disease-related responses",
+        "negative_or_boundary": "Reverse causality remains a relevant alternative.",
+        "prohibited_transfer": "Do not force TDP-43 loss as a necessary consequence of every NUP50 change.",
+        "required_transfer_assumption": "Temporal order and mediation require independent testing."
+      }
+    ],
+    "knowledge_edges": [
+      {
+        "from": "VIEW-F01",
+        "relation": "source-reported modification/function effect in source context",
+        "to": "transport receptor interaction/migration",
+        "status": "reported_observation"
+      },
+      {
+        "from": "VIEW-F03",
+        "relation": "source-reported abundance intervention in neuronal context",
+        "to": "reporter export and survival",
+        "status": "reported_observation"
+      },
+      {
+        "from": "VIEW-F01+VIEW-F03",
+        "relation": "new proposed cross-study link",
+        "to": "abundance-dependent phosphorylation sensitivity",
+        "status": "unproven_hypothesis_not_a_fact"
+      },
+      {
+        "from": "VIEW-F04",
+        "relation": "competing explanation",
+        "to": "ALS transport phenotype",
+        "status": "alternative_source_context"
+      },
+      {
+        "from": "VIEW-F05",
+        "relation": "competing explanation",
+        "to": "NPC injury",
+        "status": "alternative_source_context"
+      }
+    ],
+    "selected_gap": {
+      "gap_id": "G01",
+      "question": "Does NUP50 abundance modify sensitivity to phosphorylation-dependent nuclear transport dysfunction?",
+      "anchors": [
+        "VIEW-F01",
+        "VIEW-F03"
+      ],
+      "missing_causal_link": "abundance-by-phosphorylation interaction in ALS-related neural context",
+      "prior_work_checked": [
+        "Q10",
+        "Q12",
+        "Q16",
+        "Q19"
+      ],
+      "nearest_prior_work_result": "Relevant papers found; complete novelty remains undetermined.",
+      "important_alternatives": [
+        "VIEW-F04",
+        "VIEW-F05",
+        "VIEW-F09"
+      ]
+    },
+    "coverage_summary": {
+      "searched_intents": [
+        "disease",
+        "phosphorylation/function",
+        "transport alternatives",
+        "nearest named-protein prior art"
+      ],
+      "not_systematically_searched": [
+        "all recent PubMed indexed articles",
+        "all full-text/supplementary sources",
+        "all possible kinases",
+        "all relevant neuron subtypes"
+      ],
+      "source_acquisition_noted_failure": {
+        "id": "Q-API-FAILED",
+        "backend": "Europe PMC REST via web tool",
+        "status": "access_failed",
+        "not_equal_to_zero_results": true
+      },
+      "paper_count_is_not_a_readiness_gate": true
+    },
+    "input_selection_and_trimming": {
+      "source_view_ids": [
+        "VIEW-F01",
+        "VIEW-F02",
+        "VIEW-F03",
+        "VIEW-F04",
+        "VIEW-F05",
+        "VIEW-F09"
+      ],
+      "preserved_negative_findings": [
+        "VIEW-F03"
+      ],
+      "kept_competitors": [
+        "VIEW-F04",
+        "VIEW-F05",
+        "VIEW-F09"
+      ],
+      "removed_materials": [
+        "Unselected v0.3 papers not necessary for this directed seed; not claimed fully surveyed"
+      ],
+      "model_context_capacity_used": "not_measured_no_actual_call",
+      "verbatim_full_text_sent": false
+    },
+    "not_a_complete_M05_dossier": true,
+    "readiness_decision": {
+      "seed_id": "DIRECTED-TRANSPORT-01",
+      "decision": "ready",
+      "requested_specificity": "conceptual conditional mechanism, no verified neuron-specific residue/kinase assignment",
+      "allowed_specificity": "qualitative interaction hypothesis requiring neuron-specific confirmation",
+      "checks": [
+        {
+          "criterion": "goal_interpretable",
+          "met": true,
+          "record_refs": [
+            "GoalContext"
+          ],
+          "reason": "Goal explicitly requires nucleoporin phosphorylation in relation to ALS and a testable mechanism."
+        },
+        {
+          "criterion": "anchor_traceable",
+          "met": true,
+          "record_refs": [
+            "VIEW-F01",
+            "VIEW-F03"
+          ],
+          "reason": "Verified source identities and inspected-level finding paraphrases support limited modification/function and abundance/ALS starting points; the interaction is unproven."
+        },
+        {
+          "criterion": "context_preserved",
+          "met": true,
+          "record_refs": [
+            "VIEW-F01",
+            "VIEW-F02",
+            "VIEW-F03"
+          ],
+          "reason": "Permeabilized receptor movement, abundance depletion, measured export, and kinase attribution caveats are separated."
+        },
+        {
+          "criterion": "alternatives_considered",
+          "met": true,
+          "record_refs": [
+            "VIEW-F04",
+            "VIEW-F05",
+            "VIEW-F09"
+          ],
+          "reason": "Ran-related transport defects, structural NPC injury and reverse causality represented."
+        },
+        {
+          "criterion": "critical_reading_adequate",
+          "met": true,
+          "record_refs": [
+            "VIEW-F01",
+            "VIEW-F03"
+          ],
+          "reason": "Adequate only for a qualified conceptual conjecture; not enough for confident human neuron site-specific causality."
+        },
+        {
+          "criterion": "closest_prior_work_attempted",
+          "met": true,
+          "record_refs": [
+            "Q10",
+            "Q12",
+            "Q16",
+            "Q19"
+          ],
+          "reason": "Named-protein search attempts recorded; novelty remains undetermined."
+        }
+      ],
+      "hypothetical_unknowns": [
+        "Is site/state present in actual ALS-relevant neurons?",
+        "Does low abundance modify the direction/magnitude?",
+        "Does effect precede injury?"
+      ],
+      "premise_information_gaps_not_blocking_at_allowed_specificity": [
+        "Human/ALS motor-neuron phosphosite and kinase identity unverified; do not assert these facts."
+      ],
+      "not_required_before_generation": [
+        "Proof of proposed interaction",
+        "Completed discriminating prediction",
+        "Global novelty proof",
+        "Completed R1 evidence appraisal"
+      ],
+      "must_not_claim": "Scientifically validated or globally novel hypothesis."
+    }
+  },
+  "TransportSeedModelInputRendering": {
+    "purpose": "Illustration of an actual model-visible USER message, not proof any model was called.",
+    "system_message_template_ref": "W1_English_Prompt_Pack_v0.4_PROPOSED.md#common-system-message",
+    "developer_message_template_ref": "W1_English_Prompt_Pack_v0.4_PROPOSED.md#p08--m01generate_hypothesis-developer",
+    "example_rendered_user_message": "{\n  \"goal_context\": {\n    \"brief_revision_id\": \"DEMO-BRIEF-ALS-GOAL\",\n    \"original_question\": \"Propose a novel, testable mechanism by which phosphorylation of a nuclear pore complex nucleoporin may contribute to amyotrophic lateral sclerosis. Explain the molecular mechanism and suggest feasible validation experiments.\",\n    \"hard_requirements\": [\n      {\n        \"requirement\": \"Investigate nucleoporin phosphorylation in relation to ALS\",\n        \"input_locator\": \"original_question\"\n      },\n      {\n        \"requirement\": \"Propose a mechanistic and testable hypothesis\",\n        \"input_locator\": \"original_question\"\n      },\n      {\n        \"requirement\": \"Explain mechanism and feasible validation approach\",\n        \"input_locator\": \"original_question\"\n      }\n    ],\n    \"unspecified\": [\n      \"Nucleoporin identity\",\n      \"kinase identity\",\n      \"ALS subtype\",\n      \"experimental model\",\n      \"phosphosite\"\n    ],\n    \"not_user_constraints\": [\n      \"iPSC-derived motor-neuron model\"\n    ],\n    \"clarification_required\": false,\n    \"status\": \"DEMONSTRATION_PREPARED_NOT_MODEL_EXECUTED\"\n  },\n  \"seed_brief\": {\n    \"seed_id\": \"DIRECTED-TRANSPORT-01\",\n    \"mode\": \"directed\",\n    \"scientific_question\": \"Could the effect of NUP50 phosphorylation on nuclear-transport recovery depend on NUP50 abundance in ALS-relevant neurons?\",\n    \"causal_bottleneck\": \"Interaction between nucleoporin abundance and modification state\",\n    \"starting_anchors\": [\n      \"VIEW-F01\",\n      \"VIEW-F03\"\n    ],\n    \"source_negatives_and_alternatives\": [\n      \"VIEW-F03\",\n      \"VIEW-F04\",\n      \"VIEW-F05\",\n      \"VIEW-F09\"\n    ],\n    \"unknown_bridge\": \"Interaction of abundance and phosphorylation in target neuronal context\",\n    \"not_an_answer\": \"This question is not an assertion of direction, novelty, or evidence support for the new bridge.\"\n  },\n  \"readiness_record\": {\n    \"seed_id\": \"DIRECTED-TRANSPORT-01\",\n    \"decision\": \"ready\",\n    \"requested_specificity\": \"conceptual conditional mechanism, no verified neuron-specific residue/kinase assignment\",\n    \"allowed_specificity\": \"qualitative interaction hypothesis requiring neuron-specific confirmation\",\n    \"checks\": [\n      {\n        \"criterion\": \"goal_interpretable\",\n        \"met\": true,\n        \"record_refs\": [\n          \"GoalContext\"\n        ],\n        \"reason\": \"Goal explicitly requires nucleoporin phosphorylation in relation to ALS and a testable mechanism.\"\n      },\n      {\n        \"criterion\": \"anchor_traceable\",\n        \"met\": true,\n        \"record_refs\": [\n          \"VIEW-F01\",\n          \"VIEW-F03\"\n        ],\n        \"reason\": \"Verified source identities and inspected-level finding paraphrases support limited modification/function and abundance/ALS starting points; the interaction is unproven.\"\n      },\n      {\n        \"criterion\": \"context_preserved\",\n        \"met\": true,\n        \"record_refs\": [\n          \"VIEW-F01\",\n          \"VIEW-F02\",\n          \"VIEW-F03\"\n        ],\n        \"reason\": \"Permeabilized receptor movement, abundance depletion, measured export, and kinase attribution caveats are separated.\"\n      },\n      {\n        \"criterion\": \"alternatives_considered\",\n        \"met\": true,\n        \"record_refs\": [\n          \"VIEW-F04\",\n          \"VIEW-F05\",\n          \"VIEW-F09\"\n        ],\n        \"reason\": \"Ran-related transport defects, structural NPC injury and reverse causality represented.\"\n      },\n      {\n        \"criterion\": \"critical_reading_adequate\",\n        \"met\": true,\n        \"record_refs\": [\n          \"VIEW-F01\",\n          \"VIEW-F03\"\n        ],\n        \"reason\": \"Adequate only for a qualified conceptual conjecture; not enough for confident human neuron site-specific causality.\"\n      },\n      {\n        \"criterion\": \"closest_prior_work_attempted\",\n        \"met\": true,\n        \"record_refs\": [\n          \"Q10\",\n          \"Q12\",\n          \"Q16\",\n          \"Q19\"\n        ],\n        \"reason\": \"Named-protein search attempts recorded; novelty remains undetermined.\"\n      }\n    ],\n    \"hypothetical_unknowns\": [\n      \"Is site/state present in actual ALS-relevant neurons?\",\n      \"Does low abundance modify the direction/magnitude?\",\n      \"Does effect precede injury?\"\n    ],\n    \"premise_information_gaps_not_blocking_at_allowed_specificity\": [\n      \"Human/ALS motor-neuron phosphosite and kinase identity unverified; do not assert these facts.\"\n    ],\n    \"not_required_before_generation\": [\n      \"Proof of proposed interaction\",\n      \"Completed discriminating prediction\",\n      \"Global novelty proof\",\n      \"Completed R1 evidence appraisal\"\n    ],\n    \"must_not_claim\": \"Scientifically validated or globally novel hypothesis.\"\n  },\n  \"actual_frozen_seed_background_packet\": {\n    \"packet_id\": \"BP-T-v0.4-DEMO\",\n    \"status\": \"COMPLETE_DOCUMENTATION_EXAMPLE_NOT_EXECUTED_PRODUCTION_PACKET\",\n    \"goal_context\": {\n      \"brief_revision_id\": \"DEMO-BRIEF-ALS-GOAL\",\n      \"original_question\": \"Propose a novel, testable mechanism by which phosphorylation of a nuclear pore complex nucleoporin may contribute to amyotrophic lateral sclerosis. Explain the molecular mechanism and suggest feasible validation experiments.\",\n      \"hard_requirements\": [\n        {\n          \"requirement\": \"Investigate nucleoporin phosphorylation in relation to ALS\",\n          \"input_locator\": \"original_question\"\n        },\n        {\n          \"requirement\": \"Propose a mechanistic and testable hypothesis\",\n          \"input_locator\": \"original_question\"\n        },\n        {\n          \"requirement\": \"Explain mechanism and feasible validation approach\",\n          \"input_locator\": \"original_question\"\n        }\n      ],\n      \"unspecified\": [\n        \"Nucleoporin identity\",\n        \"kinase identity\",\n        \"ALS subtype\",\n        \"experimental model\",\n        \"phosphosite\"\n      ],\n      \"not_user_constraints\": [\n        \"iPSC-derived motor-neuron model\"\n      ],\n      \"clarification_required\": false,\n      \"status\": \"DEMONSTRATION_PREPARED_NOT_MODEL_EXECUTED\"\n    },\n    \"seed_brief\": {\n      \"seed_id\": \"DIRECTED-TRANSPORT-01\",\n      \"mode\": \"directed\",\n      \"scientific_question\": \"Could the effect of NUP50 phosphorylation on nuclear-transport recovery depend on NUP50 abundance in ALS-relevant neurons?\",\n      \"causal_bottleneck\": \"Interaction between nucleoporin abundance and modification state\",\n      \"starting_anchors\": [\n        \"VIEW-F01\",\n        \"VIEW-F03\"\n      ],\n      \"source_negatives_and_alternatives\": [\n        \"VIEW-F03\",\n        \"VIEW-F04\",\n        \"VIEW-F05\",\n        \"VIEW-F09\"\n      ],\n      \"unknown_bridge\": \"Interaction of abundance and phosphorylation in target neuronal context\",\n      \"not_an_answer\": \"This question is not an assertion of direction, novelty, or evidence support for the new bridge.\"\n    },\n    \"executed_search_history_from_v03\": [\n      {\n        \"id\": \"Q02\",\n        \"actual_query\": \"ALS NUP50 phosphorylation nuclear pore transport\",\n        \"backend\": \"web_search\",\n        \"scope_complete\": false,\n        \"actual_record_status\": \"v0.3_public_web_study_lead_not_exhaustive_database_search\",\n        \"selected_sources\": [\n          \"S02\"\n        ]\n      },\n      {\n        \"id\": \"Q03\",\n        \"actual_query\": \"C9orf72 ALS nucleocytoplasmic transport RanGAP1 Zhang 2015 Nature\",\n        \"backend\": \"web_search\",\n        \"scope_complete\": false,\n        \"actual_record_status\": \"v0.3_public_web_study_lead_not_exhaustive_database_search\",\n        \"selected_sources\": [\n          \"S03\"\n        ]\n      },\n      {\n        \"id\": \"Q04\",\n        \"actual_query\": \"ALS CHMP7 POM121 nuclear pore loss 2021 2023\",\n        \"backend\": \"web_search\",\n        \"scope_complete\": false,\n        \"actual_record_status\": \"v0.3_public_web_study_lead_not_exhaustive_database_search\",\n        \"selected_sources\": [\n          \"S04\"\n        ]\n      },\n      {\n        \"id\": \"Q10\",\n        \"actual_query\": \"\\\"NUP50\\\" \\\"phosphorylation\\\" \\\"ALS\\\" \\\"ERK\\\"\",\n        \"backend\": \"web_search\",\n        \"scope_complete\": false,\n        \"actual_record_status\": \"v0.3_public_web_study_lead_not_exhaustive_database_search\",\n        \"selected_sources\": [\n          \"S01\",\n          \"S02\"\n        ]\n      },\n      {\n        \"id\": \"Q12\",\n        \"actual_query\": \"NUP50 ALS ERK Ser221 Ser315 phosphorylation motor neurons recovery\",\n        \"backend\": \"web_search\",\n        \"scope_complete\": false,\n        \"actual_record_status\": \"v0.3_public_web_study_lead_not_exhaustive_database_search\",\n        \"selected_sources\": [\n          \"S01\"\n        ]\n      },\n      {\n        \"id\": \"Q16\",\n        \"actual_query\": \"\\\"NUP50\\\" \\\"ERK\\\" \\\"ALS\\\" phosphorylation\",\n        \"backend\": \"web_search\",\n        \"scope_complete\": false,\n        \"actual_record_status\": \"v0.3_public_web_study_lead_not_exhaustive_database_search\",\n        \"selected_sources\": [\n          \"S01\",\n          \"S08\"\n        ]\n      },\n      {\n        \"id\": \"Q19\",\n        \"actual_query\": \"\\\"NUP50\\\" \\\"phosphorylation\\\" \\\"amyotrophic\\\"\",\n        \"backend\": \"web_search\",\n        \"scope_complete\": false,\n        \"actual_record_status\": \"v0.3_public_web_study_lead_not_exhaustive_database_search\",\n        \"selected_sources\": [\n          \"S06\",\n          \"S08\"\n        ]\n      }\n    ],\n    \"source_views\": [\n      {\n        \"source_view_id\": \"VIEW-F01\",\n        \"source_id\": \"S01\",\n        \"source_title\": \"Phosphoproteomics reveals new ERK MAP kinase targets and links ERK to nucleoporin-mediated nuclear transport\",\n        \"source_url\": \"https://pubmed.ncbi.nlm.nih.gov/19767751/\",\n        \"source_doi\": \"10.1038/nsmb.1656\",\n        \"study_family_id\": \"Kosako2009\",\n        \"source_locator\": \"Original abstract\",\n        \"access_description\": \"Original abstract plus selected original supplementary text; supplementary Figure 5 visually inspected. Main article full text unavailable.\",\n        \"representation\": \"METHOD_STUDY_V03_ASSISTANT_PARAPHRASE_NOT_RAW_SOURCE_TEXT\",\n        \"visible_text\": \"Phosphorylation reduced Nup50 affinity for importin-beta and transportin; receptor nuclear migration was impaired.\",\n        \"negative_observation_visible\": null,\n        \"not_established\": \"ALS causality, intact motor-neuron cargo kinetics, or TDP-43 pathology.\",\n        \"biological_system\": \"Non-neuronal experimental cells, including digitonin-permeabilized transport assay\",\n        \"intervention\": \"ERK activation / Nup50 phosphorylation\",\n        \"actual_measured_endpoint\": \"Receptor binding and nuclear migration\"\n      },\n      {\n        \"source_view_id\": \"VIEW-F02\",\n        \"source_id\": \"S01\",\n        \"source_title\": \"Phosphoproteomics reveals new ERK MAP kinase targets and links ERK to nucleoporin-mediated nuclear transport\",\n        \"source_url\": \"https://pubmed.ncbi.nlm.nih.gov/19767751/\",\n        \"source_doi\": \"10.1038/nsmb.1656\",\n        \"study_family_id\": \"Kosako2009\",\n        \"source_locator\": \"Supplementary Figure 5, physical p9\",\n        \"access_description\": \"Original abstract plus selected original supplementary text; supplementary Figure 5 visually inspected. Main article full text unavailable.\",\n        \"representation\": \"METHOD_STUDY_V03_ASSISTANT_PARAPHRASE_NOT_RAW_SOURCE_TEXT\",\n        \"visible_text\": \"The same S221/S315 sites can also be phosphorylated by CDK1/cyclin B in vitro.\",\n        \"negative_observation_visible\": null,\n        \"not_established\": \"An S221/S315 signal alone identifies ERK as its cellular cause.\",\n        \"biological_system\": \"Purified in-vitro assay\",\n        \"intervention\": \"CDK1/cyclin B\",\n        \"actual_measured_endpoint\": \"Nup50 phosphosite signals\"\n      },\n      {\n        \"source_view_id\": \"VIEW-F03\",\n        \"source_id\": \"S02\",\n        \"source_title\": \"Integrative genetic analysis illuminates ALS heritability and identifies risk genes\",\n        \"source_url\": \"https://pmc.ncbi.nlm.nih.gov/articles/PMC9860017/\",\n        \"source_doi\": \"10.1038/s41467-022-35724-1\",\n        \"study_family_id\": \"Megat2023\",\n        \"source_locator\": \"Results: Consequences of NUP50 depletion in cultured neurons\",\n        \"access_description\": \"Full HTML available; selected NUP50 Results and figure legends read, not independent image or raw-data reanalysis.\",\n        \"representation\": \"METHOD_STUDY_V03_ASSISTANT_PARAPHRASE_NOT_RAW_SOURCE_TEXT\",\n        \"visible_text\": \"Export and survival were impaired; endogenous TDP-43 localization and two assessed splicing readouts did not change in the reported setting.\",\n        \"negative_observation_visible\": \"endogenous TDP-43 localization and two assessed splicing readouts did not change in the reported setting.\",\n        \"not_established\": \"Depletion equals phosphorylation, export equals import, or absence of a TDP-43 effect in every context.\",\n        \"biological_system\": \"HT22 mouse hippocampal cells; survival also assessed in primary cortical neurons\",\n        \"intervention\": \"Nup50 depletion\",\n        \"actual_measured_endpoint\": \"Reporter export, endogenous TDP-43, neuronal survival\"\n      },\n      {\n        \"source_view_id\": \"VIEW-F04\",\n        \"source_id\": \"S03\",\n        \"source_title\": \"The C9ORF72 repeat expansion disrupts nucleocytoplasmic transport\",\n        \"source_url\": \"https://pmc.ncbi.nlm.nih.gov/articles/PMC4800742/\",\n        \"source_doi\": \"10.1038/nature14973\",\n        \"study_family_id\": \"Zhang2015\",\n        \"source_locator\": \"Selected Results on RanGAP\",\n        \"access_description\": \"Full HTML available; selected RanGAP Results read.\",\n        \"representation\": \"METHOD_STUDY_V03_ASSISTANT_PARAPHRASE_NOT_RAW_SOURCE_TEXT\",\n        \"visible_text\": \"RanGAP-related dysfunction provides a competing transport mechanism.\",\n        \"negative_observation_visible\": null,\n        \"not_established\": \"A NUP50-specific phosphorylation mechanism.\",\n        \"biological_system\": \"C9ORF72 repeat models\",\n        \"intervention\": \"Repeat expression and transport-regulator perturbation\",\n        \"actual_measured_endpoint\": \"Transport and disease-related phenotypes\"\n      },\n      {\n        \"source_view_id\": \"VIEW-F05\",\n        \"source_id\": \"S04\",\n        \"source_title\": \"Nuclear accumulation of CHMP7 initiates nuclear pore complex injury and subsequent TDP-43 dysfunction in sporadic and familial ALS\",\n        \"source_url\": \"https://pmc.ncbi.nlm.nih.gov/articles/PMC9022198/\",\n        \"source_doi\": \"10.1126/scitranslmed.abe1923\",\n        \"study_family_id\": \"Coyne2021\",\n        \"source_locator\": \"Results: impaired nuclear export of CHMP7\",\n        \"access_description\": \"Full HTML available; selected Results and figure legends read.\",\n        \"representation\": \"METHOD_STUDY_V03_ASSISTANT_PARAPHRASE_NOT_RAW_SOURCE_TEXT\",\n        \"visible_text\": \"CHMP7-linked NPC injury supplies a structural alternative.\",\n        \"negative_observation_visible\": null,\n        \"not_established\": \"A phosphorylation mechanism caused this cascade.\",\n        \"biological_system\": \"Human induced neurons\",\n        \"intervention\": \"CHMP7 nuclear accumulation\",\n        \"actual_measured_endpoint\": \"Nup abundance and later TDP-43 readouts\"\n      },\n      {\n        \"source_view_id\": \"VIEW-F09\",\n        \"source_id\": \"S08\",\n        \"source_title\": \"TDP-43 pathology disrupts nuclear pore complexes and nucleocytoplasmic transport in ALS/FTD\",\n        \"source_url\": \"https://pmc.ncbi.nlm.nih.gov/articles/PMC5800968/\",\n        \"source_doi\": \"10.1038/s41593-017-0047-3\",\n        \"study_family_id\": \"Chou2018\",\n        \"source_locator\": \"Results/Discussion on TDP-43 pathology and genetic modifiers\",\n        \"access_description\": \"Full HTML; selected Results and Discussion read.\",\n        \"representation\": \"METHOD_STUDY_V03_ASSISTANT_PARAPHRASE_NOT_RAW_SOURCE_TEXT\",\n        \"visible_text\": \"Reverse causation and context-dependent Nup genetic effects must remain alternatives.\",\n        \"negative_observation_visible\": null,\n        \"not_established\": \"Every reduction of every Nup is harmful, or NUP50 phosphorylation is upstream of TDP-43 in ALS.\",\n        \"biological_system\": \"TDP-43 models including Drosophila\",\n        \"intervention\": \"TDP-43 expression and Nup gene perturbations\",\n        \"actual_measured_endpoint\": \"Pore pathology and toxicity\"\n      }\n    ],\n    \"context_contrasts\": [\n      {\n        \"view_ref\": \"VIEW-F01\",\n        \"known_in_actual_context\": \"ERK phosphorylation of NUP50 changes importin-beta/transportin interactions and their migration in a permeabilized assay.\",\n        \"source_context\": \"non-neuronal experimental cells/permeabilized transport assay\",\n        \"actual_intervention\": \"ERK pathway manipulation / NUP50 phosphorylation\",\n        \"actual_endpoint\": \"receptor association and migration, not motor-neuron cargo flux\",\n        \"negative_or_boundary\": \"No direct ALS phenotype measured in this source material.\",\n        \"prohibited_transfer\": \"Do not treat receptor migration as a direct measurement of cargo import in intact motor neurons.\",\n        \"required_transfer_assumption\": \"Comparable NUP50 phosphorylation affects relevant cargo transport in the proposed disease-relevant cells.\"\n      },\n      {\n        \"view_ref\": \"VIEW-F02\",\n        \"known_in_actual_context\": \"CDK1/cyclin B can phosphorylate the indicated NUP50 sites in a separate in-vitro assay.\",\n        \"source_context\": \"purified in-vitro assay\",\n        \"actual_intervention\": \"CDK1/cyclin B\",\n        \"actual_endpoint\": \"site-specific phosphorylation signal\",\n        \"negative_or_boundary\": \"Site detection cannot uniquely assign ERK as the physiological kinase.\",\n        \"prohibited_transfer\": \"Do not infer exclusive ERK causation from S221/S315 signal alone.\",\n        \"required_transfer_assumption\": \"Kinase identity must be independently established in the selected cells.\"\n      },\n      {\n        \"view_ref\": \"VIEW-F03\",\n        \"known_in_actual_context\": \"NUP50 depletion in HT22 cells impaired a reporter export phenotype and increased neuronal death in reported systems.\",\n        \"source_context\": \"HT22 mouse hippocampal cells; other survival assays in primary cortical neurons\",\n        \"actual_intervention\": \"NUP50 abundance knockdown, not phosphorylation\",\n        \"actual_endpoint\": \"NLS-mCherry-NES reporter export, endogenous TDP-43 localization/splicing measures, survival\",\n        \"negative_or_boundary\": \"Endogenous TDP-43 localization and two splicing measures did not change in this reported setting.\",\n        \"prohibited_transfer\": \"Do not equate depletion with phosphorylation or use these results as proof of ALS-specific phosphorylation pathology.\",\n        \"required_transfer_assumption\": \"If relevant, the abundance phenotype and modification phenotype can be experimentally disentangled.\"\n      },\n      {\n        \"view_ref\": \"VIEW-F04\",\n        \"known_in_actual_context\": \"Ran-related dysfunction offers a distinct ALS-related transport mechanism.\",\n        \"source_context\": \"C9ORF72-related model; selected original Results\",\n        \"actual_intervention\": \"repeat-associated manipulations\",\n        \"actual_endpoint\": \"transport and related cellular phenotypes\",\n        \"negative_or_boundary\": \"Does not establish a NUP50 modification mechanism.\",\n        \"prohibited_transfer\": \"Do not assume all transport impairment arises upstream from NUP50 phosphorylation.\",\n        \"required_transfer_assumption\": \"A candidate needs a discriminator against Ran-driven impairment.\"\n      },\n      {\n        \"view_ref\": \"VIEW-F05\",\n        \"known_in_actual_context\": \"CHMP7-linked NPC injury provides an alternative route to NPC/transport damage.\",\n        \"source_context\": \"ALS-linked models; selected original Results\",\n        \"actual_intervention\": \"NPC-injury related manipulations\",\n        \"actual_endpoint\": \"NPC injury and disease-associated molecular dysfunction\",\n        \"negative_or_boundary\": \"Does not establish a phosphorylation-mediated initiating mechanism.\",\n        \"prohibited_transfer\": \"Do not attribute pore-structure damage uniquely to phosphorylation.\",\n        \"required_transfer_assumption\": \"A modification mechanism should distinguish early functional effects from general structural injury.\"\n      },\n      {\n        \"view_ref\": \"VIEW-F09\",\n        \"known_in_actual_context\": \"Directionality of TDP-43 and NPC changes can depend on model and stage.\",\n        \"source_context\": \"reported TDP-43/NPC genetic and cellular models\",\n        \"actual_intervention\": \"model-specific TDP-43/Nup manipulations\",\n        \"actual_endpoint\": \"NPC and disease-related responses\",\n        \"negative_or_boundary\": \"Reverse causality remains a relevant alternative.\",\n        \"prohibited_transfer\": \"Do not force TDP-43 loss as a necessary consequence of every NUP50 change.\",\n        \"required_transfer_assumption\": \"Temporal order and mediation require independent testing.\"\n      }\n    ],\n    \"knowledge_edges\": [\n      {\n        \"from\": \"VIEW-F01\",\n        \"relation\": \"source-reported modification/function effect in source context\",\n        \"to\": \"transport receptor interaction/migration\",\n        \"status\": \"reported_observation\"\n      },\n      {\n        \"from\": \"VIEW-F03\",\n        \"relation\": \"source-reported abundance intervention in neuronal context\",\n        \"to\": \"reporter export and survival\",\n        \"status\": \"reported_observation\"\n      },\n      {\n        \"from\": \"VIEW-F01+VIEW-F03\",\n        \"relation\": \"new proposed cross-study link\",\n        \"to\": \"abundance-dependent phosphorylation sensitivity\",\n        \"status\": \"unproven_hypothesis_not_a_fact\"\n      },\n      {\n        \"from\": \"VIEW-F04\",\n        \"relation\": \"competing explanation\",\n        \"to\": \"ALS transport phenotype\",\n        \"status\": \"alternative_source_context\"\n      },\n      {\n        \"from\": \"VIEW-F05\",\n        \"relation\": \"competing explanation\",\n        \"to\": \"NPC injury\",\n        \"status\": \"alternative_source_context\"\n      }\n    ],\n    \"selected_gap\": {\n      \"gap_id\": \"G01\",\n      \"question\": \"Does NUP50 abundance modify sensitivity to phosphorylation-dependent nuclear transport dysfunction?\",\n      \"anchors\": [\n        \"VIEW-F01\",\n        \"VIEW-F03\"\n      ],\n      \"missing_causal_link\": \"abundance-by-phosphorylation interaction in ALS-related neural context\",\n      \"prior_work_checked\": [\n        \"Q10\",\n        \"Q12\",\n        \"Q16\",\n        \"Q19\"\n      ],\n      \"nearest_prior_work_result\": \"Relevant papers found; complete novelty remains undetermined.\",\n      \"important_alternatives\": [\n        \"VIEW-F04\",\n        \"VIEW-F05\",\n        \"VIEW-F09\"\n      ]\n    },\n    \"coverage_summary\": {\n      \"searched_intents\": [\n        \"disease\",\n        \"phosphorylation/function\",\n        \"transport alternatives\",\n        \"nearest named-protein prior art\"\n      ],\n      \"not_systematically_searched\": [\n        \"all recent PubMed indexed articles\",\n        \"all full-text/supplementary sources\",\n        \"all possible kinases\",\n        \"all relevant neuron subtypes\"\n      ],\n      \"source_acquisition_noted_failure\": {\n        \"id\": \"Q-API-FAILED\",\n        \"backend\": \"Europe PMC REST via web tool\",\n        \"status\": \"access_failed\",\n        \"not_equal_to_zero_results\": true\n      },\n      \"paper_count_is_not_a_readiness_gate\": true\n    },\n    \"input_selection_and_trimming\": {\n      \"source_view_ids\": [\n        \"VIEW-F01\",\n        \"VIEW-F02\",\n        \"VIEW-F03\",\n        \"VIEW-F04\",\n        \"VIEW-F05\",\n        \"VIEW-F09\"\n      ],\n      \"preserved_negative_findings\": [\n        \"VIEW-F03\"\n      ],\n      \"kept_competitors\": [\n        \"VIEW-F04\",\n        \"VIEW-F05\",\n        \"VIEW-F09\"\n      ],\n      \"removed_materials\": [\n        \"Unselected v0.3 papers not necessary for this directed seed; not claimed fully surveyed\"\n      ],\n      \"model_context_capacity_used\": \"not_measured_no_actual_call\",\n      \"verbatim_full_text_sent\": false\n    },\n    \"not_a_complete_M05_dossier\": true,\n    \"readiness_decision\": {\n      \"seed_id\": \"DIRECTED-TRANSPORT-01\",\n      \"decision\": \"ready\",\n      \"requested_specificity\": \"conceptual conditional mechanism, no verified neuron-specific residue/kinase assignment\",\n      \"allowed_specificity\": \"qualitative interaction hypothesis requiring neuron-specific confirmation\",\n      \"checks\": [\n        {\n          \"criterion\": \"goal_interpretable\",\n          \"met\": true,\n          \"record_refs\": [\n            \"GoalContext\"\n          ],\n          \"reason\": \"Goal explicitly requires nucleoporin phosphorylation in relation to ALS and a testable mechanism.\"\n        },\n        {\n          \"criterion\": \"anchor_traceable\",\n          \"met\": true,\n          \"record_refs\": [\n            \"VIEW-F01\",\n            \"VIEW-F03\"\n          ],\n          \"reason\": \"Verified source identities and inspected-level finding paraphrases support limited modification/function and abundance/ALS starting points; the interaction is unproven.\"\n        },\n        {\n          \"criterion\": \"context_preserved\",\n          \"met\": true,\n          \"record_refs\": [\n            \"VIEW-F01\",\n            \"VIEW-F02\",\n            \"VIEW-F03\"\n          ],\n          \"reason\": \"Permeabilized receptor movement, abundance depletion, measured export, and kinase attribution caveats are separated.\"\n        },\n        {\n          \"criterion\": \"alternatives_considered\",\n          \"met\": true,\n          \"record_refs\": [\n            \"VIEW-F04\",\n            \"VIEW-F05\",\n            \"VIEW-F09\"\n          ],\n          \"reason\": \"Ran-related transport defects, structural NPC injury and reverse causality represented.\"\n        },\n        {\n          \"criterion\": \"critical_reading_adequate\",\n          \"met\": true,\n          \"record_refs\": [\n            \"VIEW-F01\",\n            \"VIEW-F03\"\n          ],\n          \"reason\": \"Adequate only for a qualified conceptual conjecture; not enough for confident human neuron site-specific causality.\"\n        },\n        {\n          \"criterion\": \"closest_prior_work_attempted\",\n          \"met\": true,\n          \"record_refs\": [\n            \"Q10\",\n            \"Q12\",\n            \"Q16\",\n            \"Q19\"\n          ],\n          \"reason\": \"Named-protein search attempts recorded; novelty remains undetermined.\"\n        }\n      ],\n      \"hypothetical_unknowns\": [\n        \"Is site/state present in actual ALS-relevant neurons?\",\n        \"Does low abundance modify the direction/magnitude?\",\n        \"Does effect precede injury?\"\n      ],\n      \"premise_information_gaps_not_blocking_at_allowed_specificity\": [\n        \"Human/ALS motor-neuron phosphosite and kinase identity unverified; do not assert these facts.\"\n      ],\n      \"not_required_before_generation\": [\n        \"Proof of proposed interaction\",\n        \"Completed discriminating prediction\",\n        \"Global novelty proof\",\n        \"Completed R1 evidence appraisal\"\n      ],\n      \"must_not_claim\": \"Scientifically validated or globally novel hypothesis.\"\n    }\n  },\n  \"mode\": \"ASSUMPTION_STRUCTURED\",\n  \"candidate_id_from_caller\": \"SIM-TRANSPORT-v04\"\n}",
+    "execution_status": "NOT_SENT_TO_ANY_MODEL",
+    "tokens_used": null,
+    "assembly_fields": [
+      "goal_context",
+      "seed_brief",
+      "readiness_record",
+      "actual_frozen_seed_background_packet",
+      "mode",
+      "candidate_id_from_caller"
+    ],
+    "allowed_single_call_modes": [
+      "DIRECT",
+      "ASSUMPTION_STRUCTURED"
+    ]
+  },
+  "StructuralSeedNotReady": {
+    "seed_id": "DIRECTED-STRUCTURE-01",
+    "mode": "directed",
+    "scientific_question": "Could nucleoporin phosphorylation modify pore integrity or permeability in nondividing cells?",
+    "source_refs": [
+      "S05"
+    ],
+    "requested_specificity": "NUP98 site-specific mechanism in postmitotic neurons",
+    "readiness_decision": "retrieve_more",
+    "failed_check": {
+      "criterion": "critical_reading_adequate",
+      "why": "Current v0.3 card largely relied on a mitotic study abstract; site-specific, nondividing-cell detail not inspected."
+    },
+    "targeted_followup": {
+      "request": "Read original NUP98 study Results, Figure/legend and critical Methods for phosphorylation site, assay, mitotic conditions and measured pore endpoint.",
+      "what_it_changes": "Whether a site-specific mechanism can be responsibly proposed versus only a broad cross-context analogy."
+    },
+    "not_a_scientific_rejection": true
+  },
+  "OpenSeedInitialInputIsolation": {
+    "seed_id": "OPEN-01",
+    "mode": "open",
+    "status": "DEMONSTRATION_LAUNCH_PACKET_NOT_AN_EXECUTED_INDEPENDENT_AGENT",
+    "allowed_input": {
+      "original_goal": "Propose a novel, testable mechanism by which phosphorylation of a nuclear pore complex nucleoporin may contribute to amyotrophic lateral sclerosis. Explain the molecular mechanism and suggest feasible validation experiments.",
+      "neutral_orientation": "Research sources discuss ALS-related nuclear-pore changes and nucleoporin modification in diverse experimental contexts; none by itself establishes the requested causal connection.",
+      "source_capabilities": [
+        "biomedical_metadata_search",
+        "abstract_fetch",
+        "available_open_fulltext_fetch"
+      ],
+      "search_constraints": "Search broadly across hypotheses, including mechanisms that need not involve transport. Record actual sources and contradictions."
+    },
+    "forbidden_inputs": [
+      "DIRECTED-TRANSPORT-01 seed brief",
+      "DIRECTED-STRUCTURE-01 seed brief",
+      "G01/G02/G03 prioritized gap map",
+      "NUP50-AMPK metabolic explanation as a preselected target",
+      "sibling completed hypothesis claims",
+      "coordinator proposed answer",
+      "reviewer expected answers"
+    ],
+    "after_its_own_search_may_form_new_direction": "The v0.3 study eventually discussed energy-responsive NUP50 mechanisms, but this is NOT assumed to have emerged from an isolated run in the present example."
+  },
+  "HypothesisIllustrativeNotModelExecuted": {
+    "candidate_id": "SIM-TRANSPORT-v04",
+    "method": "ASSUMPTION_STRUCTURED_MANUAL_ILLUSTRATION",
+    "model_call_executed": false,
+    "derived_from_v03_study": "SIM-I0 and its evaluated limitations; not an independent generation experiment",
+    "seed_id": "DIRECTED-TRANSPORT-01",
+    "scoped_claim": "If a disease-relevant neuronal population has reduced NUP50 abundance, a particular reversible NUP50 phosphorylation state may disproportionately delay receptor-dependent cargo-transport recovery, contributing to injury before widespread NPC disassembly.",
+    "biological_context": "proposed ALS-relevant neuronal system; low-NUP50 status and specific phosphosite must be established in the selected system",
+    "mechanism_steps": [
+      {
+        "statement": "NUP50 phosphorylation can change transport-receptor binding in studied non-neuronal systems.",
+        "status": "source_observation_in_original_context",
+        "source_view_refs": [
+          "VIEW-F01"
+        ]
+      },
+      {
+        "statement": "Some ALS-related experimental systems have reduced NUP50 or NUP50-associated phenotypes.",
+        "status": "source_observation_in_original_context",
+        "source_view_refs": [
+          "VIEW-F03"
+        ]
+      },
+      {
+        "statement": "NUP50 abundance modifies sensitivity to a particular phosphorylation state in ALS-related cells.",
+        "status": "new_causal_bridge_unverified",
+        "source_view_refs": [
+          "VIEW-F01",
+          "VIEW-F03"
+        ]
+      },
+      {
+        "statement": "Delayed nuclear-transport recovery contributes to later neuronal vulnerability.",
+        "status": "new_causal_bridge_unverified",
+        "source_view_refs": []
+      }
+    ],
+    "assumption_ledger": [
+      {
+        "necessary_bridge": "Reversible NUP50 phosphorylation state occurs in selected neurons",
+        "known_anchor": [
+          "VIEW-F01"
+        ],
+        "missing": "neuron state and specific modification",
+        "proposed_check": "verify state and target engagement"
+      },
+      {
+        "necessary_bridge": "Low abundance interacts with phosphorylation state",
+        "known_anchor": [
+          "VIEW-F03"
+        ],
+        "missing": "interaction direction",
+        "proposed_check": "compare factor effects at matched conditions"
+      },
+      {
+        "necessary_bridge": "Time-resolved recovery has causal relevance to injury",
+        "known_anchor": [],
+        "missing": "temporality/mediation",
+        "proposed_check": "separate transport readout and later injury"
+      }
+    ],
+    "prediction": {
+      "comparison": "NUP50 abundance (normal/reduced) x modification state (verified states)",
+      "hypothesis_prediction": "A larger state-dependent delay in time-resolved receptor-dependent cargo transport recovery at lower abundance.",
+      "alternative_prediction": "A general Ran defect or structural pore loss need not produce the specified abundance-by-state interaction.",
+      "readouts": [
+        "time-resolved transport recovery",
+        "NUP50 abundance",
+        "target modification engagement",
+        "baseline pore integrity",
+        "later injury"
+      ]
+    },
+    "falsification": "With adequate verified interventions and measurement precision, the predicted interaction and relevant recovery phenotype fail to occur.",
+    "limits": [
+      "ERK cannot be uniquely inferred from an S221/S315 signal.",
+      "Depletion != phosphorylation.",
+      "No direct ALS or neuron-specific causal evidence established.",
+      "Prior-art novelty not established."
+    ],
+    "source_view_refs": [
+      "VIEW-F01",
+      "VIEW-F02",
+      "VIEW-F03",
+      "VIEW-F04",
+      "VIEW-F05",
+      "VIEW-F09"
+    ]
+  },
+  "CandidateEthicsIllustrative": {
+    "candidate_id": "SIM-TRANSPORT-v04",
+    "status": "SIMULATED_DEVELOPMENT_CHECK",
+    "decision": "pass",
+    "policy_id": "POLICY-W1-DEMO-PROPOSED",
+    "policy_approved": false,
+    "scope": "nonclinical scientific ideation only",
+    "rationale": "In this illustrative draft policy, the candidate is a conceptual research mechanism without a prohibited clinical application.",
+    "warning": "This is not real production policy review, human ethics approval or medical advice."
+  },
+  "R0ReviewIllustrative": {
+    "candidate_id": "SIM-TRANSPORT-v04",
+    "status": "SIMULATED_INITIAL_REVIEW",
+    "disposition": "proceed_to_R1",
+    "goal_alignment": "addresses required ALS/nucleoporin phosphorylation and is conditional/testable",
+    "blocking_defects": [],
+    "scientific_unknowns": [
+      "neuronal target phosphosite and upstream kinase",
+      "interaction sign and presence",
+      "transport-to-injury temporal link",
+      "closest prior-art overlap"
+    ],
+    "required_R1_checks": [
+      {
+        "question": "Does proposed modification occur in disease-relevant neuronal models?",
+        "source_view_refs": [
+          "VIEW-F01",
+          "VIEW-F03"
+        ]
+      },
+      {
+        "question": "What evidence isolates phosphorylation from protein depletion?",
+        "source_view_refs": [
+          "VIEW-F01",
+          "VIEW-F03"
+        ]
+      },
+      {
+        "question": "Could Ran-related defects or CHMP7-mediated pore damage explain the same transport phenotype?",
+        "source_view_refs": [
+          "VIEW-F04",
+          "VIEW-F05"
+        ]
+      },
+      {
+        "question": "Is the abundance-by-state interaction already present in nearest prior work?",
+        "search_refs": [
+          "Q10",
+          "Q12",
+          "Q16",
+          "Q19"
+        ]
+      }
+    ],
+    "important_nonblocking_negative": "F03 reported no endogenous TDP-43 localization/splicing changes in its specific depletion assay. Candidate does not assert that effect as a necessary consequence.",
+    "review_limit": "No new independent literature search or R1 scientific appraisal performed in this mock R0."
+  },
+  "NegativeControlsReference": [
+    {
+      "id": "NC-GOAL",
+      "text": "A mechanism that explicitly excludes phosphorylation despite goal requiring it",
+      "expected_R0": "blocked"
+    },
+    {
+      "id": "NC-SOURCE",
+      "text": "An indispensable factual premise explicitly misquotes what the visible source experimentally observed",
+      "expected_R0": "blocked_if_directly_verifiable_not_a_disputed_interpretation"
+    },
+    {
+      "id": "NC-UNKNOWN",
+      "text": "A plausible cross-context mechanism lacks direct evidence but is specific and falsifiable",
+      "expected_R0": "proceed_to_R1_with_checks"
+    }
+  ],
+  "UIProjectionIllustrative": [
+    {
+      "step": "Goal",
+      "source": "GoalContext",
+      "display": "original question, hard requirements, unspecified details",
+      "fake_completion_prohibited": true
+    },
+    {
+      "step": "Background",
+      "source": "search and packet facts",
+      "display": "actual sources, access, negative findings, per-seed readiness",
+      "fake_completion_prohibited": true
+    },
+    {
+      "step": "Hypothesis",
+      "source": "saved candidate",
+      "display": "claim, new bridge, prediction, falsifier, actual source refs",
+      "fake_completion_prohibited": true
+    },
+    {
+      "step": "R0",
+      "source": "M02 R0 result",
+      "display": "pass-to-R1 or blocking defect and required next checks",
+      "fake_completion_prohibited": true
+    }
+  ],
+  "adoption_revision": {
+    "status": "proposed_documentation_only",
+    "basis": "User accepted W0-T4 decisions; original package preserved",
+    "one_call_is_not_multiround_iteration": true
+  }
+}

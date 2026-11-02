@@ -1,0 +1,6 @@
+....................................................{"scenario": "goal_saved_response_replay", "crashed_pid": 69720, "resumed_pid": 69721, "prepare_sends": 1, "screen_sends": 1}
+...............{"scenario": "boundary_restart", "creator_pid": 69741, "resumer_pid": 69742, "run_id": "d27958ab32564f72b8c28587c4cbb174", "result": 32, "attempts": 2}
+.{"scenario": "crash_after_saved_success", "creator_pid": 69748, "resumer_pid": 69753, "external_sends": 1, "attempts": 1, "status": "completed"}
+.{"scenario": "crash_during_send", "creator_pid": 69754, "blocked_pid": 69755, "resumer_pid": 69756, "sends_before_authorization": 1, "sends_after_authorization": 2, "attempt_states": ["uncertain", "succeeded"]}
+........................................
+109 passed in 2.88s

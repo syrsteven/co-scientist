@@ -6,7 +6,9 @@
   remains Proposed. W0-T0/T1 adopts M14a/M12/M15a engineering semantics;
   W0-T2 adds only M09a/M11a/LiteraturePort representations and structural tests.
   W0-T3 adopts the supplied real-case package as public development data and a
-  Proposed M01/M02 plan; it does not authorize production scientific logic.
+  Proposed M01/M02 plan. W0-T4 separately authorizes only Goal preparation, binary
+  Goal Ethics, narrow conditional advancement and its persisted local page.
+  Read docs/W0_T4_DECISIONS.md for accepted overrides; W1 originals stay Proposed.
 - For W0 real cases read `docs/W0_REAL_CASES.md`. Raw casebooks and reviewer
   expected/critical_failures/assessment must never be sent to tested models. Use
   the explicit data export; source paraphrases, original facts and author model
@@ -20,9 +22,14 @@
   qualification. M11 proposes Delta intent, M03 resolves it after child Inventory;
   M04/M05 independently decide material/appraisal reuse. Contract checks cannot
   prove scientific decisions, real Inventory completion or source access truth.
+- Completed Goal Ethics decisions are only pass/reject. Clarification, policy/input
+  problems and failures are execution states, not a third verdict. This does not
+  change Candidate Ethics. R0 is not implemented; its accepted policy permits
+  reliable core factual-error blocking, but not solely model memory or assistant
+  paraphrase presented as original-source contradiction.
 - M14 owns immutable Brief revisions; M01 owns scientific Goal preparation;
   M02 owns ethics. M12 schedules and does not judge scientific quality.
-- Future scientific workflow: Goal preparation → Goal Ethics → Generation;
+- Future scientific workflow: Goal preparation → Goal Ethics → background research → Generation;
   candidate Ethics/R0 → R1 → R2; ordinary R1 supplements return to R2;
   only R2 high-impact issues trigger R3, which returns to R2. Reflection
   cannot edit hypotheses. Ranking cannot retrieve or request scientific checks.

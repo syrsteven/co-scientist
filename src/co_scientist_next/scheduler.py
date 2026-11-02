@@ -43,7 +43,15 @@ class Scheduler:
             )
             if not isinstance(result, ModuleResult):
                 raise TypeError("Module must return ModuleResult")
-            store.submit_result(task["id"], result.output)
+            if task["module"] in ("goal.prepare.v1", "goal.screen.v1"):
+                from .goal import goal_route
+
+                stop, context = goal_route(task["module"], result.output)
+                store.submit_result(
+                    task["id"], result.output, stop_status=stop, goal_context=context
+                )
+            else:
+                store.submit_result(task["id"], result.output)
         except Exception as exc:  # noqa: BLE001 -- module boundary persists failure facts
             status = "blocked" if isinstance(exc, UncertainCall) else "failed"
             error = {"type": type(exc).__name__, "message": str(exc), "module": task["module"]}

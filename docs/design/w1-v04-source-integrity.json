@@ -1,0 +1,15 @@
+{
+  "status": "proposed",
+  "zip_sha256": "063616ba824204ee17df491d8c30b61892b4b62069cf0616c371a79b6c6a30db",
+  "files": {
+    "W1_Supervisor_Codex_Handoff_v0.4_PROPOSED.md": "238ef60d02115be3e5511e9b5ef70b85fe7774abdeabb2ea495a200ef1b54fa2",
+    "W1_Complete_Worked_Input_v0.4_PROPOSED.json": "a8664e7996654acae7cf199a0c60638e778c5ccbdf6843dc0fc4f722b83390b9",
+    "README.md": "ec624ad4df7513fd61372fc7184947d3f9c86c2a88e409f8b6459d78ab82ff34",
+    "W1_Method_Protocol_v0.4_PROPOSED.md": "7cda9824562e105b1a38b0d949c36283bc7691a0d5be906f9f805ae801b9a6b7",
+    "W1_ALS_Worked_Walkthrough_v0.4_PROPOSED.md": "0588f9b180f8dff45c61fc534a9f9b4cc112704dd18daf8b554a29976f07eaf0",
+    "W1_English_Prompt_Pack_v0.4_PROPOSED.md": "a0b2d729db70edd58312f8090ee519d24875a1fbcd7e4df93709ccbba7512c74",
+    "SHA256SUMS.txt": "650211e4fe745d07a65b2113be49636d8d1179938a3e9fe324e19832b0ade769"
+  },
+  "v5_reference_sha256": "526f9628643402971fd8dfdc875779c634bb1f44225957046005a300d77b6c9a",
+  "v5_reference_usage": "visual reference only; embedded cases are not imported"
+}

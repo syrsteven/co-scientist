@@ -1,0 +1,41 @@
+{
+  "development_test": true,
+  "science_validated": false,
+  "pass_run": "af7a20efbec54885b3070e94b0282d96",
+  "refresh_posts_added": 0,
+  "usage_unchanged_after_refresh": true,
+  "fixed_run_unchanged_after_edit": true,
+  "mobile_no_horizontal_overflow": true,
+  "scenario_results": {
+    "reject": {
+      "run_id": "272537d7c7b245aaba7b7d860d09dd7e",
+      "state": "goal_rejected",
+      "tasks": 2
+    },
+    "clarification": {
+      "run_id": "11123c8874cb4e31a1b65d3897fbef80",
+      "state": "awaiting_clarification",
+      "tasks": 1
+    },
+    "risk_information": {
+      "run_id": "cd79210f856e4046ad203fa77c918da7",
+      "state": "awaiting_risk_context",
+      "tasks": 2
+    },
+    "invalid_output": {
+      "run_id": "7b7ff5983a9f444f9a17bf4b4166ce55",
+      "state": "invalid_output",
+      "tasks": 2
+    },
+    "technical_failure": {
+      "run_id": "56df2b52fa914d3a97b3d297d0739d25",
+      "state": "failed",
+      "tasks": 2
+    },
+    "missing_policy": {
+      "run_id": "ce4f5b29fe434e73a8dbd0721f3c05bd",
+      "state": "missing_policy"
+    }
+  },
+  "page_errors": []
+}

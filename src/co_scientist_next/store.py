@@ -78,6 +78,14 @@ class Store:
                     usage TEXT NOT NULL, started_at TEXT NOT NULL, finished_at TEXT,
                     retry_authorization TEXT, UNIQUE(task_id, call_key, ordinal)
                 );
+                CREATE TABLE IF NOT EXISTS goal_contexts (
+                    id TEXT PRIMARY KEY, run_id TEXT NOT NULL UNIQUE REFERENCES runs(id),
+                    revision_id TEXT NOT NULL REFERENCES brief_revisions(id),
+                    content TEXT NOT NULL, created_at TEXT NOT NULL
+                );
+                CREATE TABLE IF NOT EXISTS goal_run_config (
+                    run_id TEXT PRIMARY KEY REFERENCES runs(id), config TEXT NOT NULL
+                );
                 CREATE TABLE IF NOT EXISTS execution_facts (
                     id INTEGER PRIMARY KEY, task_id TEXT NOT NULL REFERENCES tasks(id),
                     kind TEXT NOT NULL, detail TEXT NOT NULL, created_at TEXT NOT NULL
@@ -141,6 +149,7 @@ class Store:
         *,
         policy_ref: str,
         goal_context_ref: str | None = None,
+        goal_config: JSON | None = None,
     ):
         if not modules or not all(isinstance(m, str) and m for m in modules):
             raise ValueError("A nonempty explicit module plan is required")
@@ -162,6 +171,10 @@ class Store:
                     now(),
                 ),
             )
+            if goal_config is not None:
+                self.db.execute(
+                    "INSERT INTO goal_run_config VALUES(?,?)", (run_id, encode(goal_config))
+                )
             self._create_task(run_id, 0, None)
         return run_id
 
@@ -197,7 +210,9 @@ class Store:
     def tasks(self, run_id):
         return self.rows("SELECT * FROM tasks WHERE run_id=? ORDER BY step", (run_id,))
 
-    def submit_result(self, task_id: str, output: JSON) -> bool:
+    def submit_result(
+        self, task_id: str, output: JSON, *, stop_status=None, goal_context=None
+    ) -> bool:
         """Commit result, its application, successor and run state atomically."""
         payload = encode(output)
         with self.db:
@@ -224,8 +239,25 @@ class Store:
             self.db.execute("UPDATE tasks SET status='succeeded',error=NULL WHERE id=?", (task_id,))
             self.fact(task_id, "result_applied", {})
             run = self.run(task["run_id"])
+            if goal_context is not None:
+                goal_id = "goal-" + task_id
+                self.db.execute(
+                    "INSERT INTO goal_contexts VALUES(?,?,?,?,?)",
+                    (
+                        goal_id,
+                        run["id"],
+                        run["revision_id"],
+                        encode(goal_context),
+                        now(),
+                    ),
+                )
+                self.db.execute(
+                    "UPDATE runs SET goal_context_ref=? WHERE id=?", (goal_id, run["id"])
+                )
             next_step = task["step"] + 1
-            if next_step < len(json.loads(run["plan"])):
+            if stop_status is not None:
+                status = stop_status
+            elif next_step < len(json.loads(run["plan"])):
                 self._create_task(run["id"], next_step, json.loads(payload))
                 status = "ready"
             else:
@@ -244,15 +276,20 @@ class Store:
             self.db.execute("UPDATE tasks SET status='ready' WHERE id=?", (task_id,))
             self.db.execute("UPDATE runs SET status='ready' WHERE id=?", (task["run_id"],))
 
-    def recover(self):
+    def recover(self, run_id=None):
         """Call once after exclusively opening a database in a new runtime.
 
         Running modules may execute again: they must put external effects through
         Calls. No external request is repeated just because a process restarted.
         """
         with self.db:
-            for task in self.rows("""SELECT * FROM tasks WHERE status='running' OR id IN (
-                SELECT task_id FROM attempts WHERE status='in_flight')"""):
+            query = """SELECT * FROM tasks WHERE (status='running' OR id IN (
+                SELECT task_id FROM attempts WHERE status='in_flight'))"""
+            params = ()
+            if run_id is not None:
+                query += " AND run_id=?"
+                params = (run_id,)
+            for task in self.rows(query, params):
                 inflight = self.rows(
                     "SELECT id FROM attempts WHERE task_id=? AND status='in_flight'", (task["id"],)
                 )

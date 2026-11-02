@@ -25,3 +25,9 @@ in `w0-real-cases-proposed-v0.1/`; integrity is recorded in
 complete and independent primary study are preserved as attachment history, not
 adopted as verified conclusions. See `../W0_REAL_CASES.md` for fresh checks and
 review-only adoption corrections. This package and the M01/M02 proposal stay Proposed.
+
+
+W0-T4 preserves all seven W1 v0.4 files under `w1-method-v0.4-proposed/` with
+`w1-v04-source-integrity.json`. Accepted task-specific changes live separately in
+`../W0_T4_DECISIONS.md`; an adopted worked input is documentation only. V5 HTML is
+used only as visual reference (hash recorded), never as runtime replay or case data.
