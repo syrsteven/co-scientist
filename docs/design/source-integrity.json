@@ -1,0 +1,43 @@
+{
+  "M00_Phase3_Architecture_Baseline_v1.0_ACCEPTED.zip": {
+    "sha256": "c005da8c63e0260b303450340cb931c8789616962f7dffa32ccf27a74239f7b8",
+    "files": {
+      "m00-accepted-v1.0/00_EXECUTIVE_SUMMARY.md": "5e23511e6d447385c3b6b20bc3eaaa870bcb04198fb1b81821a157d2194b0bb1",
+      "m00-accepted-v1.0/01_ARCHITECTURE_BASELINE.md": "9baf94f69e36f0a6207259bc46f654c4d42e821cb47c23580811e9cf01b85277",
+      "m00-accepted-v1.0/02_GLOBAL_DECISION_LOG.md": "f22379341e87bec565bc445beb82306c86d3ad540a59c83d49dd78fd9a5af4a0",
+      "m00-accepted-v1.0/03_INTERFACE_OWNERSHIP_MAP.md": "e6b5503cf13accd970f29ca947db9bad30893b90425c08afc57cf1378dced8b2",
+      "m00-accepted-v1.0/04_MODULE_DEPENDENCY_MAP.md": "36b4d33a5bbfd93cbe69aff511784a6c0707ce10a2671fb65007b1e8a3724e5f",
+      "m00-accepted-v1.0/05_G3_REFERENCE_PRESERVATION.md": "3ab51342efb8181818632d51fc2f3cc094519deac4329eadd014f3792aa19c77",
+      "m00-accepted-v1.0/06_M00_HANDOFF.md": "55034862fdb8a31ca99516ce3aeea6e7d93067ab1fedde1db68eef5c70e2d785",
+      "m00-accepted-v1.0/07_ACCEPTANCE_AND_OPEN_ISSUES.md": "953c4df9320c3c0ecfafb4389df697208818d2869895a6b0463e6fe0a62e4cea",
+      "m00-accepted-v1.0/08_SOURCE_TRACEABILITY.md": "5246f66746596d906a3380e67bec0477055c77eb3b57679c945a8a768b6d90fe",
+      "m00-accepted-v1.0/09_ACCEPTANCE_RECORD.md": "b99e6bb317975da5f327bd8b9472d77080c9045b1d880a8ebb5637a8ae8e8db8",
+      "m00-accepted-v1.0/README.md": "31b9e30919345763a2c147d7f478848b22de6e31799a9c07ff75538981865a86",
+      "m00-accepted-v1.0/VALIDATION_REPORT.md": "42bef5aaad18d51bab276d7fc101671fa1dbf67c1ec32964a67c455b21895192",
+      "m00-accepted-v1.0/diagrams/01_scientific_workflow.mmd": "4a74617e83a7fd11980394ef21a3b9715243e575fa4bdb1774072cde64265a5b",
+      "m00-accepted-v1.0/diagrams/02_reflection_issue_closure.mmd": "b9c24f84c064f2fc6e5706eac0a7b67e93f90887c8065ab8986811e4da8fe59a",
+      "m00-accepted-v1.0/diagrams/03_minimal_single_system_layers.mmd": "deb2f5917321ae5e8edbb4ef0137b7c37e4386590b525a7f2b74e959a957c721",
+      "m00-accepted-v1.0/diagrams/04_module_dependencies.mmd": "110fd3ff14af1546388dd6f989237184023b33c46923888005f32fbb80601e1b",
+      "m00-accepted-v1.0/diagrams/05_scientific_identity_and_provenance.mmd": "afcceae6a18c415f6ea2aa9232ce95035458c76448079e7bed37a651b1e07ecb",
+      "m00-accepted-v1.0/diagrams/README.md": "10d129b184973b7a411d0148e08b9ac74e233a6d4bbfe9bcfe0af55d708ee7fa",
+      "m00-accepted-v1.0/manifest.json": "24735fe4bc73bbed8bf058f354a34f17ac66753e6323e22a68ceb387da517a6e",
+      "m00-accepted-v1.0/reference/00_COMMON_CONTEXT_legacy.md": "4a66d1b73ef89c4a0e6c0099ff726ffb5b3e86b2682838979da342826ac34cd3",
+      "m00-accepted-v1.0/reference/01_HANDOFF_TEMPLATE_legacy.md": "1f12945d7b5d146d78dc365d742ac10b2996898625b0d258d8f8933f9c6dd4a6",
+      "m00-accepted-v1.0/reference/02_PROJECT_STATE_legacy.md": "24bbcd7493b2aa3a6f7695d79c9ddedeff94e848a967e3e3e60777ae2c2713c0",
+      "m00-accepted-v1.0/reference/03_WORKFLOW_PROTOCOL_legacy.md": "79b27928a9b6055f2d7a332bd4e89d82584d831ff7eb34ba77d44b53afb093dc",
+      "m00-accepted-v1.0/reference/06_DECISION_LOG_legacy.md": "2942b3feae8e22976295eb2eb48a3ac4286133fbed98aebd350850ed1b0e32bd",
+      "m00-accepted-v1.0/reference/Evidence_Dossier_Contract_V1_legacy.md": "98429a36bcd0a6aec1a99ce0529bbdb57880ab84fa80756508a5253fcef12ecc",
+      "m00-accepted-v1.0/reference/M00_PHASE1_REVIEW.md": "98054c4457a5de52914e3ddc674100e1362e4e6f76ef5e0674212dc5de9e2b1f",
+      "m00-accepted-v1.0/reference/M00_PHASE2_REVISION_PROPOSED.md": "22c5ab6c83580e720af0b14c70624d790c74fb80823e47aae43d6992ca04cb5b",
+      "m00-accepted-v1.0/reference/README.md": "580b466f0f48e16a94bf9540e269bda73b8722a660eee9f8e39e4238aa9e9b2a",
+      "m00-accepted-v1.0/reference/Reflection_Pipeline_Contract_V1_legacy.md": "b6d75a9e199cf97c227d7e414c8d8eb7f58bfd25791b8f8b2d8db0df1c826d38"
+    }
+  },
+  "CoScientist_W0_Minimal_Design_v0.1_PROPOSED.zip": {
+    "sha256": "92bdf7e7a3358e80602ab7d74bf5ad2d03c95ce897ed45aaaf4897c3f697ad21",
+    "files": {
+      "w0-proposed-v0.1/01_W0_MINIMAL_INTERFACES_PROPOSED.md": "5e72103ae920da2ace389cc1fc267d2ebaded94fc25e13b24dcf501e0e085e07",
+      "w0-proposed-v0.1/02_W0_SCIENTIFIC_TEST_CASES_PROPOSED.md": "6dae663af0c18981a6ca2624d208fc3a084848291ea46ed63cfac055d9821875"
+    }
+  }
+}

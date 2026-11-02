@@ -1,0 +1,29 @@
+flowchart TD
+    H["Hypothesis + R0重点"] --> I["M03 Claim Inventory / Coverage"]
+    D["子代 DeltaProposal"] -.-> I
+    I --> DR["M03 ResolvedDelta (仅子代)"]
+    DR --> SEARCH["M04 Retrieval：范围、支持/反证/先前研究"]
+    SEARCH --> ASSESS["M05 Appraisal：发现/解释/适用性"]
+    ASSESS --> DOS["M06 Dossier：Prior-art、冲突、缺口"]
+    DOS --> R2["M07 R2：完整机制科学评议"]
+    R2 --> GAP{"普通新必要前提 / Coverage遗漏 / 证据缺口?"}
+    GAP -->|是| FIX["R2普通R1SupplementRequest：M03–M06按需补核查"]
+    FIX --> I
+    GAP -->|否| Q{"新的未核验高影响Issue?"}
+    Q -->|否或已有有效关闭结果| FIN["M07 最终 Reflection"]
+    Q -->|是，仅R2可触发| R3["M08 R3：限定Issue、Claim与范围"]
+    R3 --> CHECK["核验前提、子前提、重要冲突"]
+    CHECK --> N{"需要补充材料/评价?"}
+    N -->|是| WORK["M03–M06 必要增量工作"]
+    WORK --> FIND["R3发现、核查范围、局限、结束状态"]
+    N -->|否| FIND
+    FIND --> STATUS{"核查完成或未完成?"}
+    STATUS -->|范围完成/非致命未知| BACK["R2整合全部R3结论"]
+    STATUS -->|发现阻断性缺陷| BACK
+    STATUS -->|技术或范围未完成| INC["明确未完成：不得声明已证实或无反证"]
+    INC --> BACK
+    BACK --> R2
+    FIND -.->|RevisionSuggestion，只存反馈| FUTURE["未来合格父代Evolution可参考；不直接生成"]
+    FIN --> A["M09 Admission检查：固定科学依据"]
+    A -->|符合条件| RANK["Ranking只比较"]
+    A -->|阻断或不完整| HOLD["不参赛，保留原因"]

@@ -1,0 +1,31 @@
+flowchart TD
+    BR["Brief / 研究资料"] --> PREP["M01.prepare_goal"]
+    PREP --> GE{"M02.screen_goal：Goal Ethics"}
+    GE -->|通过| BG["M01 背景检索与生成上下文"]
+    BG --> GEN["M01.generate_hypotheses：新 Hypothesis"]
+    GEN --> ETH{"M02.candidate_ethics"}
+    ETH -->|通过| R0["M02：R0 初评"]
+    R0 --> R1["R1: Inventory → Retrieval → Appraisal → Dossier"]
+    R1 --> R2["R2 完整机制评价"]
+    R2 --> GAP{"普通证据缺口／新必要前提／Coverage 遗漏?"}
+    GAP -->|是| FIX["R2 提出普通 R1 补核查：按需 M03–M06"]
+    FIX --> R1
+    GAP -->|否| RISK{"存在尚未核验的高影响科学 Issue?"}
+    RISK -->|是| R3["R3 指定高影响问题核验"]
+    R3 --> R1WORK["必要的 R1 补充工作 / 或直接返回核验结论"]
+    R1WORK --> R2
+    RISK -->|否| FIN["最终 Reflection"]
+    FIN --> AD{"Admission 固定依据"}
+    AD -->|准入| E["单一 Epoch：追加新候选"]
+    E --> CMP["Pairwise Ranking"]
+    CMP -->|decisive| TS["TrueSkill μ/σ"]
+    CMP -->|non-decisive| CF["只记录比较反馈"]
+    TS --> SCH{"继续研究 / 终局?"}
+    CF --> SCH
+    SCH -->|有合格父代且继续| UCB["UCB Tournament Selection"]
+    UCB --> EVO["Crossover / Mutation"]
+    EVO --> CH["新子代 + DeltaProposal"]
+    CH --> ETH
+    SCH -->|结束| TERM["最高合格 μ / 无正式 Winner"]
+    AD -->|阻断或未完成| HOLD["明确候选处置"]
+    TERM --> M18["另起 M18 预实验核验阶段"]

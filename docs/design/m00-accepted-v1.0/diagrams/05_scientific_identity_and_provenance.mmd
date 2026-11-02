@@ -1,0 +1,21 @@
+flowchart LR
+    G["ResearchBriefRevision / GoalContext"] --> R["Research Run: single Epoch"]
+    R --> H["Immutable Hypothesis"]
+    H --> C["M03 Claim Inventory"]
+    C --> D["M06 Evidence Dossier"]
+    D --> F["M07 Final Reflection"]
+    F --> A["M09 Admission fixed refs"]
+    A --> M["M10 Pairwise Match"]
+    M --> T["M10 TrueSkill rating"]
+    T --> P["Qualified parents: UCB"]
+    P --> E["M11 Evolution"]
+    E --> CH["New Hypothesis"]
+    CH --> C
+    E --> DP["DeltaProposal"]
+    DP -.-> C
+    R --> TERM["Terminal: max qualified mu / no winner"]
+    T --> TERM
+    SOURCES["Raw literature & observed findings"] --> D
+    CALLS["Actual model-visible evidence in call record"] -.-> F
+    CALLS -.-> M
+    TERM --> PH["Independent M18 / M19"]
