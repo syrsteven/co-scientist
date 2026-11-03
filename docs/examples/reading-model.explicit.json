@@ -1,0 +1,10 @@
+{
+  "provider": "openai",
+  "endpoint": "https://api.openai.com/v1/chat/completions",
+  "model": "",
+  "parameters": {
+    "max_completion_tokens": 2000,
+    "response_format": {"type": "json_object"}
+  },
+  "max_request_bytes": 64000
+}

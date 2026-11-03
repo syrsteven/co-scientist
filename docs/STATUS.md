@@ -1,4 +1,118 @@
-# 项目状态 — W1-L1
+# 项目状态 — W1-L2
+
+## PR #7 总控复现修正（2026-11-03）
+
+修正起始head：`43ca215b0e7f7ac19b353ca4107d728e1449398f`；继续同分支/PR，不合并。
+原进展指纹只含材料/查询，遗漏了阅读和背景综合的实质变化，可能把补充阅读后的P07错误判成no_progress。
+现以内容规范化P04卡片/待读请求、P05概览/竞争解释/关系及依据/限制/选择，与原文/查询/具体程度一起比较；
+临时引用映射成对应内容并去重，不把新ID、时间戳或重复记录计作进展。不同Run/seed范围保持隔离。
+历史P07按已保存input重算新指纹，历史结果不改写，无数据迁移；新记录标记p07-preparation-content-v2。
+页面提示已同步。新增回归覆盖同原文有效重读、仅综合更新、重复阅读/重建包、ID/时钟变化和seed隔离。
+本轮无真实付费模型调用、无新公共检索、无P08/Candidate Ethics/R0或科学验收扩展。
+限制：比较结构化内容，不判断科学价值；自然语言同义改写可能触发重评。
+本次检查：183 passed、0 failed、0 skipped（原176 + 新7），背景专项23项通过；
+Ruff/33文件format、两JS语法、Wheel构建和新编文件空白检查通过，用户232项改动指纹未变。
+页面实测以旧版P07已保存输入作相同内容检查，v2返回no_progress且无新Attempt（13→13）；刷新0 POST，无JS错误。
+记录见 [progress-fix-tests.txt](verification/w1-l2/progress-fix-tests.txt)、
+[页面检查](verification/w1-l2/progress-fix-browser.json)及[提示截图](verification/w1-l2/progress-fix-no-progress.png)。
+未运行真实模型/付费调用、专家科学审阅及Python3.12本地回归；原科学未验证状态不变。
+
+## 原W1-L2交付（2026-11-03，Asia/Shanghai，以下保留原验证记录）
+
+重新fetch核实main / 起始commit：`cb3f79f987e6c14a6f8d2c5475868f17414f7a96`，PR #6已合并。
+独立分支 `codex/w1-l2-reading`，checkout `/private/tmp/co-scientist-w1-l2`；独立PR，不直接合并。
+最终head以该PR及 `git rev-parse HEAD` 为准。用户原工作区232项改动、暂存区与status指纹保持不变。
+M00 Accepted、W0-T4接受决定不改，原W1 v0.4包仍Proposed，旧G3未改。
+
+| 维度 | 实际状态 |
+|---|---|
+| 已实现 | P03计划/显式LiteraturePort执行接入、P04选定视图阅读、P05中性/单seed综合、分离P06定向与开放调用、P07逐seed readiness |
+| 真实适配器 | 独立OpenAI Chat HTTP客户端、显式模型/端点/参数配置、独立凭据与授权开关、无SDK隐藏重试、实际请求/原始响应/用量记录 |
+| 替身验证 | 离线夹具、模拟OpenAI HTTP、真实本地页面/SQLite持久化和恢复已验证；不计为真实模型阅读 |
+| 真实模型调用是否执行 | **未执行**，本轮0次真实供应商请求/付费模型调用；只提供后续另获授权后的单次P04命令 |
+| 模型阅读表现是否审阅 | **未审阅**；未做真实输出科学准确性、负结果理解或种子质量审阅 |
+| 科学有效性是否验证 | **未验证，science_validated=false**；不宣称完整W1-L2已通过真实阅读验收 |
+| 页面/M12 | 逐步显式操作、原文/模型解读分区、状态/负结果/来源/背景/seed/readiness/配置/用量可读；ready停等待生成，刷新不执行 |
+
+只增加material_views与background_actions两表，复用Run/Task/Attempt/Result；无独立服务或通用图工作流。
+新代码：background.py、background_ops.py、reading_model.py、background_trial.py和background.js。
+Store/Scheduler/workspace及既有LiteratureService只作当前切片必要接入，不调用旧Orchestrator。
+实施/操作/官方文档/输入隔离见 [W1_L2_BACKGROUND.md](W1_L2_BACKGROUND.md)。
+
+### 运行与当前可操作页面
+
+```sh
+cd /private/tmp/co-scientist-w1-l2
+PYTHONPATH=src python -m co_scientist_next.workspace --db runs/w1-l2-live.sqlite --port 8786 --development-test --development-reading --public-literature
+```
+
+已启动 `http://127.0.0.1:8786/#run=9b5abf8a5ccd496d8c45ff9a6666b20e`。
+数据库是既有W1-L1真实获取事实的一致独立备份，源数据库只读、未修改；不是V5内置结果。
+Goal/Ethics与本轮背景结果均清楚标为开发替身，材料是真实已取得文献。模型与公共检索各需显式启用/操作，启动不发送。
+没有配置时不回退替身；真实模式没有授权时不发送。当前无真实模型凭据读取。
+
+### 最小契约和边界
+
+- 材料视图固定Run/Goal/seed范围、获取Task、来源/版本/位置、字符范围/SHA与裁剪理由；原始材料不被转述覆盖。
+- P04保留上下文、干预/对照、实测终点、观察/负结果、作者解释、未证明与外推。摘要/片段不升级成完整全文阅读，图像/补充未读。
+- P05使用实际解读与执行查询；保留所选卡片/原文/负结果/竞争解释与覆盖限制。不做M05正式评级、M06 Dossier或新颖性结论。
+  排除解读需显式理由，当前不允许排除已知负结果；容量不够明确不调用，不无记录截断。
+- P06_OPEN单独调用，实际输入仅Goal、中性概览、来源能力、通用约束；没有定向seed/优先机制/兄弟资料/评审答案。
+  seed是问题，数量是本次配置，不成为全局科学规则；不是候选答案。
+- P03保存计划不等于执行；显式执行通过LiteraturePort/M15，宽/seed意图及后续分页/fetch继续保留。兄弟定向资料/解读不能混入开放分支。
+- P07 ready/retrieve_more/unable_to_prepare分别记录理由/具体程度/缺失及后续动作；无因果桥证明、判别预测完成或论文/全文配额要求。
+  同资料/覆盖/具体程度不无限重复，no_progress不发模型、不改科学结论；一个seed未准备好不阻止其他seed ready。
+- 技术失败/无效输出/缺配置与科学未知分离；成功本地回放，幂等结果与任务；响应保存失败留下未决发送时也不能绕过恢复继续新模型任务。
+  每seed的完成决定固定在自己的packet；Run状态是最近机械操作状态，不是全局科研完成。
+
+### 真实试跑（本轮未执行）
+
+公开配置模板 [reading-model.explicit.json](examples/reading-model.explicit.json)故意不选model。
+先另获授权、填入明确模型与支持参数，并通过独立环境变量/仓库外私密文件提供凭据。
+单运行者SQLite要求先停止占用该库的页面。帮助和不带执行标志拒绝路径已验证，下面真实执行命令**未运行**：
+
+```sh
+PYTHONPATH=src python -m co_scientist_next.background_trial --db runs/w1-l2-live.sqlite --run-id YOUR_RUN_ID --view-id YOUR_SAVED_VIEW_ID --config /private/tmp/reading-model.json --credential-env CO_SCIENTIST_READING_KEY --execute-real-call
+```
+
+仅做一次P04，不自动综合或生成；seed视图另传seed-id。密钥不进公开配置/Prompt/M15/Git/日志；回显脱敏、异常信息去凭据。
+实际HTTP body/模型配置/Prompt版本/完整消息/原始响应、解析错误与可得用量持久保存。成本未知为null，未用量不填0。
+
+### 实际验证
+
+环境macOS / Python3.11.4，复用已有环境；无新生产依赖，支持兼容conda，不强制.venv。
+浏览器使用临时工具Playwright1.64.0与Chromium1248。
+
+| 检查 | 实际结果 |
+|---|---|
+| `PYTHONPATH=src python -m pytest -q -s tests/next` | 176 passed，0 failed，0 skipped（原142 + 新34） |
+| 输入/材料/seed隔离 | Run/Goal/来源/视图/seed/packet绑定、原文与转述分离、负结果/限制、开放四字段、评审字段隔离、P03范围继承通过 |
+| 供应商模拟HTTP | 实际请求格式/响应/usage、非stop完成、HTTP302/429/503不重试、凭据回显脱敏/异常脱敏、未配置/未授权无回退均通过；不是实际供应商成功 |
+| readiness | 三分支、假设未知可保留、未准备seed不阻挡其他ready、重复检查无进展停止、技术问题无科学决定通过 |
+| M15/跨进程 | 真正os._exit于P04成功响应保存后、结果应用前退出；另一PID只回放，fixture发送仍1；重复应用/不确定授权谱系及响应保存失败反例通过 |
+| 本地HTTP/页面 | HTTP服务子进程重启后背景/seed事实不变；实际浏览器14动作/13替身Attempt/3条解读，刷新POST=0、固定Brief与L1材料不变、无JS错误、390px无溢出 |
+| Ruff / JS | check与33文件format通过；两份前端JS语法检查及Prettier通过 |
+| Wheel | 构建与隔离运行通过；4份页面资源、真实客户端导入和离线P04–P07持久链可用，无真实发送 |
+| 原工作区/原件 | 用户232项指纹不变；未改M00/W0/W1原件；新编文件空白检查通过 |
+
+[tests.txt](verification/w1-l2/tests.txt)、[浏览器报告](verification/w1-l2/browser.json)、
+[完整开发执行证据gzip](verification/w1-l2/development-execution.json.gz)、[页面](verification/w1-l2/workspace.png)、
+[解读](verification/w1-l2/saved-reading.png)、[seed](verification/w1-l2/seeds.png)、[刷新](verification/w1-l2/after-refresh.png)、[移动](verification/w1-l2/mobile-seeds.png)。
+初期浏览器脚本CSP等待/隐藏控件选择问题已修正并重跑，诊断数据库保留；没有放松CSP。
+本轮P03执行接入用响应夹具验证，页面只保存未执行计划；未新增真实公共文献请求，未执行真实模型调用。
+
+### 未实现、未运行与待审阅
+
+未实现P08、Candidate Ethics、R0及后续模块；无候选、排名或科研完成。未建无人值守循环、全自动分块综合或知识图谱服务。
+真实供应商兼容性/权限/计费/模型输出质量尚未试跑；工程引用检查不能证明引文支持、正确情境理解或seed科学价值。
+真实模型上下文限制由显式技术配置和供应商错误处理，不把字节限制当token保证。
+**未运行：** 真实模型/付费试跑、真实阅读表现/专家科学审阅、科学有效性与开放/定向策略评测、完整W1-L或S01–S14、湿实验、旧G3全套本地测试、Python3.12本地回归。
+待专家审阅：转述准确性/负结果与情境保留、中性综合遗漏/偏向、seed是否问题、readiness具体程度是否合理。
+无新增需总控修改M00规则的跨模块冲突；后续真实试跑与科学验收需另行授权。
+
+---
+
+## W1-L1历史交付（以下按当时状态保留）
 
 ## 当前交付（2026-11-03，Asia/Shanghai）
 

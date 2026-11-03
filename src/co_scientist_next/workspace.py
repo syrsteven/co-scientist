@@ -4,11 +4,15 @@ import argparse
 import json
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from importlib.resources import files
+from pathlib import Path
 from urllib.parse import parse_qs, urlsplit
 
+from .background import BackgroundService
+from .background_ops import DevelopmentReadingAdapter
 from .europe_pmc import public_http
 from .goal import DEVELOPMENT_POLICY, DevelopmentAdapter, GoalSlice, validate_brief
 from .literature_runtime import LiteratureService
+from .reading_model import OpenAIChat, load_credential
 from .store import Store
 
 
@@ -19,12 +23,15 @@ def make_server(
     development_test=False,
     public_literature=False,
     literature_transport=public_http,
+    reading_adapter=None,
 ):
     service = GoalSlice(
         store, DevelopmentAdapter() if development_test else None, development_test=development_test
     )
 
     literature = LiteratureService(store, enabled=public_literature, transport=literature_transport)
+
+    background = BackgroundService(store, reading_adapter)
 
     class Handler(BaseHTTPRequestHandler):
         def log_message(self, *_):
@@ -61,10 +68,11 @@ def make_server(
                 self.allowed_origin()
                 parsed = urlsplit(self.path)
                 path = parsed.path
-                if path in ("/", "/app.js", "/app.css"):
+                if path in ("/", "/app.js", "/app.css", "/background.js"):
                     asset, mime = {
                         "/": ("index.html", "text/html"),
                         "/app.js": ("app.js", "text/javascript"),
+                        "/background.js": ("background.js", "text/javascript"),
                         "/app.css": ("app.css", "text/css"),
                     }[path]
                     self.reply(
@@ -78,6 +86,7 @@ def make_server(
                         {
                             "development_test": development_test,
                             "real_adapter_connected": False,
+                            "reading_model": background.config(),
                             "public_literature_enabled": public_literature,
                             "example_policy": DEVELOPMENT_POLICY if development_test else None,
                         },
@@ -106,6 +115,15 @@ def make_server(
                             "runs": runs,
                         },
                     )
+                elif path == "/api/background":
+                    self.reply(200, background.snapshot(parse_qs(parsed.query)["run_id"][0]))
+                elif path == "/api/background/attempt":
+                    attempt = store.one(
+                        """SELECT p.* FROM attempts p JOIN background_actions a ON a.task_id=p.task_id
+                        WHERE p.id=?""",
+                        (parse_qs(parsed.query)["attempt_id"][0],),
+                    )
+                    self.reply(200, attempt)
                 elif path == "/api/literature/response":
                     attempt = store.one(
                         """SELECT p.* FROM attempts p JOIN literature_actions a
@@ -162,10 +180,45 @@ def make_server(
                     self.reply(201, {"run_id": run})
                 elif path == "/api/execute":
                     # POST is explicit. Loading /api/run does not reach this operation.
-                    if store.tasks(data["run_id"])[-1]["module"].startswith("literature."):
+                    if store.tasks(data["run_id"])[-1]["module"].startswith(
+                        ("literature.", "background.")
+                    ):
                         raise ValueError("Use the explicit literature action recovery endpoint")
                     service.execute(data["run_id"], recover=data.get("recover") is True)
                     self.reply(200, service.snapshot(data["run_id"]))
+                elif path == "/api/material-views":
+                    view = background.create_view(
+                        data["run_id"],
+                        data["acquisition_task_id"],
+                        start=data.get("start", 0),
+                        end=data.get("end"),
+                        reason=data.get("reason", ""),
+                        seed_id=data.get("seed_id"),
+                    )
+                    self.reply(201, view)
+                elif path == "/api/background":
+                    action = background.submit(
+                        data["run_id"], data["request_id"], data["operation"], data["request"]
+                    )
+                    self.reply(
+                        201, {"request_id": action["request_id"], "task_id": action["task_id"]}
+                    )
+                elif path == "/api/background/execute":
+                    self.reply(
+                        200,
+                        background.execute(data["request_id"], recover=data.get("recover") is True),
+                    )
+                elif path == "/api/background/query":
+                    self.reply(
+                        200,
+                        background.execute_query(
+                            data["run_id"],
+                            data["plan_ref"],
+                            data["query_index"],
+                            data["request_id"],
+                            literature,
+                        ),
+                    )
                 elif path == "/api/literature":
                     action = literature.submit(data["run_id"], data["request_id"], data["request"])
                     self.reply(200, literature.execute(action["request_id"]))
@@ -196,17 +249,64 @@ def main():
         action="store_true",
         help="Enable explicit real public Europe PMC requests; no models",
     )
+    parser.add_argument(
+        "--development-reading",
+        action="store_true",
+        help="Explicit offline P03-P07 fixtures, not real model reading",
+    )
+    parser.add_argument(
+        "--reading-model-config", help="Public explicit OpenAI model/endpoint/parameters JSON"
+    )
+    parser.add_argument(
+        "--credential-env", help="Explicitly named environment with separate model credential"
+    )
+    parser.add_argument(
+        "--credential-file", help="Separate private JSON credential file, outside Git"
+    )
+    parser.add_argument(
+        "--allow-real-model-calls",
+        action="store_true",
+        help="Explicitly authorize model sends only when operations are clicked",
+    )
     args = parser.parse_args()
+    if args.development_reading and (
+        args.reading_model_config
+        or args.allow_real_model_calls
+        or args.credential_env
+        or args.credential_file
+    ):
+        parser.error("Select explicit development reading or real configuration; no fallback")
+    if not args.reading_model_config and (
+        args.credential_env or args.credential_file or args.allow_real_model_calls
+    ):
+        parser.error(
+            "Explicit model configuration required; credentials/authorization alone do not select a model"
+        )
+    adapter = DevelopmentReadingAdapter() if args.development_reading else None
+    if args.reading_model_config:
+        try:
+            config = json.loads(Path(args.reading_model_config).read_text())
+            secret = (
+                load_credential(env_name=args.credential_env, credential_file=args.credential_file)
+                if args.credential_env or args.credential_file
+                else None
+            )
+            adapter = OpenAIChat(config, secret, authorized=args.allow_real_model_calls)
+        except (ValueError, OSError):
+            parser.error(
+                "Reading configuration/credential unavailable; no fallback or secret details printed"
+            )
     with Store(args.db) as store:
         server = make_server(
             store,
             port=args.port,
             development_test=args.development_test,
             public_literature=args.public_literature,
+            reading_adapter=adapter,
         )
         # No store.recover() here. Restart and refresh are observational until explicit POST.
         print(
-            f"http://127.0.0.1:{server.server_port} | development_test={args.development_test} | real_adapter_connected=False",
+            f"http://127.0.0.1:{server.server_port} | development_test={args.development_test} | goal_real_adapter_connected=False | reading_mode={adapter.execution_mode if adapter else 'not_configured'}",
             flush=True,
         )
         try:

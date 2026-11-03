@@ -1,0 +1,8 @@
+...........{"scenario": "P04_saved_response_replay", "crashed_pid": 9768, "resumed_pid": 9749, "fixture_sends": 1}
+..........................................................{"scenario": "goal_saved_response_replay", "crashed_pid": 9797, "resumed_pid": 9798, "prepare_sends": 1, "screen_sends": 1}
+................................{"scenario": "literature_saved_http_replay", "crashed_pid": 9815, "resumed_pid": 9749, "external_fixture_sends": 1}
+................{"scenario": "boundary_restart", "creator_pid": 9845, "resumer_pid": 9846, "run_id": "8421cad8016b4a2bab52faf0de718a51", "result": 32, "attempts": 2}
+.{"scenario": "crash_after_saved_success", "creator_pid": 9847, "resumer_pid": 9848, "external_sends": 1, "attempts": 1, "status": "completed"}
+.{"scenario": "crash_during_send", "creator_pid": 9849, "blocked_pid": 9850, "resumer_pid": 9851, "sends_before_authorization": 1, "sends_after_authorization": 2, "attempt_states": ["uncertain", "succeeded"]}
+.........................................................
+176 passed in 8.84s

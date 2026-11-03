@@ -10,13 +10,13 @@
     <aside>
       <div class="brand">
         <span class="mark">C</span>
-        <div>Co-Scientist<small>研究工作区 · W1-L1</small></div>
+        <div>Co-Scientist<small>研究工作区 · W1-L2</small></div>
       </div>
       <button id="new-project" class="primary">＋ 新建研究</button>
       <h3>已保存研究</h3>
       <nav id="projects"></nav>
       <div class="sidebar-note">
-        Goal 制备与目标筛查<br />人工文献获取 · 模型阅读未接入
+        Goal 制备与目标筛查<br />文献获取 · 背景准备（科学未验证）
       </div>
     </aside>
     <main>
@@ -144,14 +144,98 @@
             <p id="literature-gate" class="muted"></p>
             <div id="literature-history"></div>
           </div>
+          <div class="panel" id="background-panel" hidden>
+            <h2>背景阅读与 seed 准备</h2>
+            <p id="background-mode" class="mode"></p>
+            <p id="background-count" class="muted"></p>
+            <details>
+              <summary>当前显式模型配置与用量边界</summary>
+              <pre id="background-config" class="data"></pre>
+            </details>
+            <label
+              >准备范围<select id="background-scope">
+                <option value="">宽背景 / 中性概览</option>
+              </select></label
+            >
+            <h3>1. 明确选择原始材料视图</h3>
+            <label>已取得材料<select id="background-material"></select></label>
+            <div class="fields">
+              <label
+                >起始字符<input
+                  id="view-start"
+                  type="number"
+                  min="0"
+                  value="0" /></label
+              ><label
+                >结束字符<input id="view-end" type="number" min="1"
+              /></label>
+            </div>
+            <label
+              >选择/裁剪理由<input
+                id="view-reason"
+                placeholder="裁剪时必填；不能声称阅读未选片段"
+            /></label>
+            <button id="save-view">保存不可变材料视图</button>
+            <div id="background-views"></div>
+            <h3>2. 显式执行一个步骤</h3>
+            <label
+              >操作<select id="background-operation">
+                <option value="P04">P04 · 阅读选择的视图</option>
+                <option value="P05">P05 · 综合当前范围实际阅读</option>
+                <option value="P06_DIRECTED">P06 · 规划定向 seed 问题</option>
+                <option value="P06_OPEN">P06 · 独立规划开放 seed 问题</option>
+                <option value="P03">P03 · 规划查询（不等于已执行）</option>
+                <option value="P07">P07 · 检查当前 seed readiness</option>
+              </select></label
+            >
+            <label id="background-view-label"
+              >材料视图<select id="background-view"></select
+            ></label>
+            <label id="background-orientation-label" hidden
+              >中性背景记录<select id="background-orientation"></select
+            ></label>
+            <label id="background-packet-label" hidden
+              >当前 seed 背景记录<select id="background-packet"></select
+            ></label>
+            <label id="background-number-label" hidden
+              >本次数量（配置，不是全局科研规则）<input
+                id="background-number"
+                type="number"
+                min="1"
+                value="1"
+            /></label>
+            <label id="background-specificity-label" hidden
+              >允许的机制具体程度<input
+                id="background-specificity"
+                value="可提出可检验的概念关系，不预设特定位点或激酶"
+            /></label>
+            <label id="background-fixture-label" hidden
+              >开发替身情景<select id="background-fixture">
+                <option value="ready">工程成功 / ready</option>
+                <option value="retrieve_more">需补具体材料</option>
+                <option value="unable_to_prepare">当前无法准备</option>
+                <option value="invalid_output">无效输出</option>
+                <option value="technical_failure">技术失败</option>
+              </select></label
+            >
+            <button class="primary" id="background-run">
+              保存并执行这一步
+            </button>
+            <p>
+              不会自动循环、检索或生成。重新阅读或更新背景后可再检查；只换
+              ID、时间或重复保存不算进展。查询计划需逐条显式执行；ready
+              只表示可开始有依据的猜想，随后停在等待生成能力。
+            </p>
+            <div id="background-seeds"></div>
+            <div id="background-records"></div>
+          </div>
           <div class="panel boundary">
             <span class="eyebrow">CAPABILITY BOUNDARY</span>
             <h2>本轮到此为止</h2>
             <p>
-              完成的 pass
-              可进行显式人工查询和文献获取。自动查询规划、模型阅读、知识图谱、
-              seed readiness、Generation、Candidate Ethics 和 R0
-              未实施，不显示候选、排名或科研完成。
+              完成的 pass 可进入显式文献获取与 P03–P07 逐步背景准备。
+              真实模型阅读表现尚未审阅，科学有效性未验证。没有无人值守循环、知识图谱、
+              Generation、Candidate Ethics 或 R0，不显示候选、排名或科研完成。
             </p>
             <strong>科学有效性与伦理分类准确性：未验证</strong>
           </div>
@@ -159,5 +243,6 @@
       </div>
     </main>
     <script src="/app.js" defer></script>
+    <script src="/background.js" defer></script>
   </body>
 </html>

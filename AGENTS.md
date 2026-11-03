@@ -12,7 +12,14 @@
   W1-L1 separately authorizes explicit human-query Europe PMC search/fetch only
   after a saved completed Goal Ethics pass; see docs/W1_L1_LITERATURE.md.
   Development Goal screening plus real public acquisition is not real ethical
-  review or a production scientific chain. No model reading/readiness/generation.
+  review or a production scientific chain. That slice did not include reading.
+  W1-L2 separately authorizes P03–P07 background preparation and a configurable
+  real model boundary. Read docs/W1_L2_BACKGROUND.md. No automatic paid calls,
+  no P08, Candidate Ethics or R0. Fixtures do not prove real model/science quality.
+  Open seed calls receive only Goal, neutral overview, capabilities and generic
+  constraints; sibling queries/materials/seed narratives must remain isolated.
+  Preserve immutable original views separately from model interpretations;
+  missing information and technical failure are not scientific rejection.
 - For W0 real cases read `docs/W0_REAL_CASES.md`. Raw casebooks and reviewer
   expected/critical_failures/assessment must never be sent to tested models. Use
   the explicit data export; source paraphrases, original facts and author model

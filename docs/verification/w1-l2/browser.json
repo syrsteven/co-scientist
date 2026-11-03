@@ -1,0 +1,28 @@
+{
+  "run_id": "9b5abf8a5ccd496d8c45ff9a6666b20e",
+  "material_origin": "previously saved W1-L1 real public acquisition; not fetched again",
+  "model_execution": "development_fixture",
+  "real_vendor_calls_executed": false,
+  "model_reading_performance_reviewed": false,
+  "science_validated": false,
+  "actions": 14,
+  "fixture_model_attempts": 13,
+  "saved_readings": 3,
+  "query_plan_executed": false,
+  "public_searches_added": 0,
+  "open_input_keys": [
+    "generic_search_constraints",
+    "goal_context",
+    "neutral_overview",
+    "source_discovery_capabilities"
+  ],
+  "directed_seed": "seed-ecd589693d8946718c5b66b080a5f745-0",
+  "open_seed": "seed-7f7ff4f0aea24b63a2a6fba4b247b39a-0",
+  "directed_readiness": "retrieve_more",
+  "open_readiness": "ready",
+  "unchanged_readiness_recheck": "no_progress_without_send",
+  "refresh_added_posts": 0,
+  "raw_materials_unchanged": true,
+  "fixed_brief_unchanged": true,
+  "page_errors": []
+}
