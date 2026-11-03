@@ -1,0 +1,126 @@
+{
+  "artifact": {
+    "finding_cards": [
+      {
+        "access": "abstract",
+        "author_interpretation": "作者将 ANXA11 解释为具有内在淀粉样形成能力、可发生相转变且具有类朊病毒性质的蛋白。",
+        "biological_context": "ANXA11 相分离、淀粉样纤维形成及传播；摘要明确提到人 iPSC 衍生神经元中的细胞间传播，但未说明相分离实验的具体体系。",
+        "endpoint": "液液相分离、液固相转变、淀粉样纤维形成、自模板播种及细胞间传播。",
+        "id": "finding-63d759a46095455b8d4248ba556d89fc-0",
+        "images_seen": false,
+        "intervention_comparator": "涉及 ANXA11 纤维及播种活性；具体处理条件、剂量、时程和对照未知。",
+        "negative_findings": [],
+        "negative_quotes": [],
+        "negative_state": "not_reported_in_view",
+        "not_established": [
+          "仅阅读所提供摘要，未读取全文、图像或补充材料；实验条件、效应量和重复情况未知。",
+          "摘要未建立这些过程依赖核孔蛋白磷酸化。",
+          "这些结果本身不确立细胞间传播是 ALS 发病的必要或充分条件。"
+        ],
+        "reported_observation": "作者报告 ANXA11 可由相分离状态成熟为淀粉样纤维，并报告其纤维具有自模板播种活性及在神经元间传播的现象。",
+        "representation": "complete obtained provider abstract, markup flattened; not full text",
+        "source_locator": "attempt:metadata/body_base64#result.abstractText",
+        "source_ref": "epmc:PPR:PPR1217875",
+        "source_version": "provider version unreported",
+        "source_view_ref": "4613ac8294ed4429a34558f470833ec8",
+        "supplements_seen": false,
+        "supporting_quote": "Here, we demonstrate that ANXA11 undergoes liquid-liquid phase separation and subsequently matures into amyloid fibrils through a liquid-to-solid phase transition. ANXA11 fibrils exhibit prion-like properties, including self-templating seeding activity and intercellular propagation in human iPSC-derived neurons.",
+        "transfer_assumptions": [
+          "若将这些发现用于核孔蛋白磷酸化问题，需要另行证明相转变或播种过程与核孔蛋白磷酸化存在联系；本摘要未提供该桥接证据。"
+        ]
+      },
+      {
+        "access": "abstract",
+        "author_interpretation": "作者将这些变化解释为 ANXA11 纤维诱导 TDP-43 病理性转变，并将其纳入两种蛋白之间的病理联系。",
+        "biological_context": "ANXA11 纤维与 TDP-43 病理变化；该句未明确各项 TDP-43 检测所用的具体细胞体系，不能直接沿用其他实验的模型信息。",
+        "endpoint": "TDP-43 过度磷酸化、去污剂不溶性组分积累及胞质聚集体形成。",
+        "id": "finding-63d759a46095455b8d4248ba556d89fc-1",
+        "images_seen": false,
+        "intervention_comparator": "作者报告 ANXA11 纤维诱导的变化；纤维制备方式、处理方式及比较组未知。",
+        "negative_findings": [],
+        "negative_quotes": [],
+        "negative_state": "not_reported_in_view",
+        "not_established": [
+          "这里报告的磷酸化对象是 TDP-43，而不是核孔蛋白。",
+          "具体磷酸化位点、相关酶、直接或间接作用机制，以及磷酸化与聚集的先后顺序未知。",
+          "摘要未说明 TDP-43 磷酸化是否介导后续核质运输缺陷或神经元毒性。"
+        ],
+        "reported_observation": "摘要报告 ANXA11 纤维伴随上述三类 TDP-43 病理变化。",
+        "representation": "complete obtained provider abstract, markup flattened; not full text",
+        "source_locator": "attempt:metadata/body_base64#result.abstractText",
+        "source_ref": "epmc:PPR:PPR1217875",
+        "source_version": "provider version unreported",
+        "source_view_ref": "4613ac8294ed4429a34558f470833ec8",
+        "supplements_seen": false,
+        "supporting_quote": "Strikingly, ANXA11 fibrils induces pathological conversion of TDP-43, including hyperphosphorylation, accumulation in detergent-insoluble fractions, and formation of cytoplasmic aggregates.",
+        "transfer_assumptions": [
+          "不能把 TDP-43 过度磷酸化替代为核孔蛋白磷酸化证据；若要连接两者，必须另行验证。"
+        ]
+      },
+      {
+        "access": "abstract",
+        "author_interpretation": "作者认为 ANXA11 播种聚集与核质运输缺陷和神经元损伤相联系，为 ANXA11 相关 ALS/FTD 的发病机制提供框架。",
+        "biological_context": "ANXA11 聚集体邻近蛋白质组，以及 iPSC 衍生神经元中的核膜、核孔蛋白分布、mRNA 输出和毒性表型；邻近标记实验的具体细胞背景未知。",
+        "endpoint": "核孔复合体及核质运输因子的邻近富集、核膜异常、核孔蛋白分布改变、mRNA 输出受损和进行性神经元毒性。",
+        "id": "finding-63d759a46095455b8d4248ba556d89fc-2",
+        "images_seen": false,
+        "intervention_comparator": "TurboID 邻近标记用于分析聚集相关富集；具体聚集条件、参照状态和控制设计未在摘要中给出。",
+        "negative_findings": [],
+        "negative_quotes": [],
+        "negative_state": "not_reported_in_view",
+        "not_established": [
+          "摘要未报告核孔蛋白磷酸化、具体位点或其变化方向，也未指明发生分布改变的核孔蛋白。",
+          "邻近富集不能单独证明直接结合、功能性隔离或磷酸化调控。",
+          "尚未由该摘要建立核孔变化、mRNA 输出受损与神经元毒性之间的因果顺序、必要性或救援关系。",
+          "患者脑中的既往观察与本摘要中的细胞实验不是相同情境，不能视为已完成人体机制验证。",
+          "空的 negative_findings 和 negative_quotes 仅表示该摘要未报告阴性结果，不表示进行了阴性实验。"
+        ],
+        "reported_observation": "摘要报告聚集依赖的核孔与运输因子邻近富集，并报告 ANXA11 聚集与上述结构和功能异常相关。",
+        "representation": "complete obtained provider abstract, markup flattened; not full text",
+        "source_locator": "attempt:metadata/body_base64#result.abstractText",
+        "source_ref": "epmc:PPR:PPR1217875",
+        "source_version": "provider version unreported",
+        "source_view_ref": "4613ac8294ed4429a34558f470833ec8",
+        "supplements_seen": false,
+        "supporting_quote": "TurboID proximity-labeling proteomics further revealed aggregation-dependent enrichment of nuclear pore complex and nucleocytoplasmic transport factors in the ANXA11 aggregate-proximal proteome. Consistently, ANXA11 aggregation was associated with nuclear envelope abnormalities, altered nucleoporin distribution, impaired mRNA export, and progressive neuronal toxicity in iPSC-derived neurons.",
+        "transfer_assumptions": [
+          "若迁移至核孔蛋白磷酸化问题，需要证明核孔蛋白分布变化涉及磷酸化，而非仅为聚集或损伤的伴随现象。",
+          "若迁移至更广泛 ALS 情境，需要验证该联系是否超出 ANXA11 相关背景；本摘要未建立这种适用范围。"
+        ]
+      }
+    ],
+    "source_view_id": "4613ac8294ed4429a34558f470833ec8",
+    "targeted_reading_requests": [
+      "若可获取全文，定向核查核孔相关结果是否包含核孔蛋白磷酸化检测；明确区分核孔蛋白磷酸化与摘要中报告的 TDP-43 磷酸化。",
+      "核查 TurboID 实验的生物学体系、聚集与非聚集比较、背景控制，以及核孔和核质运输因子的具体富集结果；若相关内容仅见于图表或补充材料，需单独获取后再判断。",
+      "核查核孔蛋白分布改变、核膜异常、mRNA 输出受损及神经元毒性的检测方式、时间顺序，以及是否报告阻断、救援、无效处理或其他阴性结果。",
+      "核查不同结果分别来自哪些实验体系，并区分本研究数据、既往患者脑研究与作者机制解释；保持具体分子和后续实验模型不预选。"
+    ]
+  },
+  "background_status": "saved",
+  "binding": {
+    "goal_ref": "goal-93646f710e6c468c960f6ffcb602b960",
+    "run_id": "9b5abf8a5ccd496d8c45ff9a6666b20e",
+    "seed_id": null
+  },
+  "execution_mode": "real_model",
+  "model_config": {
+    "credential_configured": true,
+    "endpoint": "https://api.openai.com/v1/chat/completions",
+    "execution_mode": "real_model",
+    "max_request_bytes": 64000,
+    "model": "gpt-6.1-sol",
+    "parameters": {
+      "max_completion_tokens": 32768,
+      "reasoning_effort": "high",
+      "response_format": {
+        "type": "json_object"
+      }
+    },
+    "provider": "openai",
+    "timeout_seconds": 600
+  },
+  "operation": "P04",
+  "progress_fingerprint": null,
+  "science_validated": false
+}

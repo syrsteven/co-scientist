@@ -4,7 +4,10 @@
   "model": "",
   "parameters": {
     "max_completion_tokens": 2000,
-    "response_format": {"type": "json_object"}
+    "response_format": {
+      "type": "json_object"
+    }
   },
-  "max_request_bytes": 64000
+  "max_request_bytes": 64000,
+  "timeout_seconds": 600
 }

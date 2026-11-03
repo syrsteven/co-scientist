@@ -17,7 +17,7 @@ ENDPOINT = "https://api.openai.com/v1/chat/completions"
 
 
 def model_config(value):
-    if not isinstance(value, dict) or set(value) != {
+    if not isinstance(value, dict) or set(value) - {"timeout_seconds"} != {
         "provider",
         "endpoint",
         "model",
@@ -68,6 +68,14 @@ def model_config(value):
         raise ValueError(
             "Explicit request byte limit required (1000..2000000); not a token estimate"
         )
+    timeout = value.get("timeout_seconds", 90)
+    if (
+        isinstance(timeout, bool)
+        or not isinstance(timeout, (int, float))
+        or not math.isfinite(timeout)
+        or not 1 <= timeout <= 3600
+    ):
+        raise ValueError("timeout_seconds must be finite and between 1 and 3600")
     return json.loads(encode(value))
 
 
@@ -121,6 +129,11 @@ class OpenAIChat:
     def request(self, messages):
         return {
             "endpoint": self.config["endpoint"],
+            **(
+                {"timeout_seconds": self.config["timeout_seconds"]}
+                if "timeout_seconds" in self.config
+                else {}
+            ),
             "body": {
                 "model": self.config["model"],
                 "messages": messages,
@@ -153,7 +166,9 @@ class OpenAIChat:
         )
         try:
             try:
-                response = urllib.request.build_opener(NoRedirect()).open(req, timeout=90)
+                response = urllib.request.build_opener(NoRedirect()).open(
+                    req, timeout=actual.get("timeout_seconds", 90)
+                )
             except urllib.error.HTTPError as exc:
                 response = exc
             with response:
@@ -182,6 +197,16 @@ class OpenAIChat:
             raise RuntimeError(
                 "Model send outcome uncertain; credential details withheld"
             ) from None
+        # Preserve every provider usage detail, including reasoning/cache counters,
+        # independently of the narrow shared Usage summary and domain parsing.
+        try:
+            envelope = json.loads(text)
+            saved["provider_usage"] = envelope.get("usage")
+            choices = envelope.get("choices") or []
+            saved["finish_reason"] = choices[0].get("finish_reason") if choices else None
+        except (ValueError, TypeError, AttributeError, KeyError):
+            saved["provider_usage"] = None
+            saved["finish_reason"] = None
         usage = available_usage(text)
         if not 200 <= saved["http_status"] < 300:
             raise KnownCallFailure(
@@ -196,8 +221,12 @@ class OpenAIChat:
         data = json.loads(output["raw_response"])
         choice = data["choices"][0]
         if choice["finish_reason"] != "stop" or choice["message"].get("refusal"):
-            raise ValueError("Incomplete/refused model response; no scientific decision applied")
+            raise ValueError(
+                f"Incomplete/refused model response (finish_reason={choice['finish_reason']}); no scientific decision applied"
+            )
         content = choice["message"]["content"]
         if not isinstance(content, str):
             raise TypeError("Text JSON response required")
+        if not content.strip():
+            raise ValueError("Empty model response; no scientific reading applied")
         return content

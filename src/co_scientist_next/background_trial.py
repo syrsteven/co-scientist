@@ -17,6 +17,10 @@ def main():
     parser.add_argument("--run-id", required=True)
     parser.add_argument("--view-id", required=True)
     parser.add_argument("--seed-id")
+    parser.add_argument(
+        "--request-id",
+        help="Stable identity for this single trial; reuse to read/replay, never to silently resend an uncertain call",
+    )
     parser.add_argument("--config", required=True)
     parser.add_argument("--credential-env")
     parser.add_argument("--credential-file")
@@ -37,10 +41,15 @@ def main():
             request = {"view_id": args.view_id}
             if args.seed_id:
                 request["seed_id"] = args.seed_id
-            request_id = "trial-" + identity()
+            request_id = args.request_id or "trial-" + identity()
             service.submit(args.run_id, request_id, "P04", request)
             snapshot = service.execute(request_id)
             action = next(a for a in snapshot["actions"] if a["request_id"] == request_id)
+            attempts = store.rows(
+                "SELECT * FROM attempts WHERE task_id=? ORDER BY ordinal", (action["task_id"],)
+            )
+            last = attempts[-1] if attempts else None
+            response = json.loads(last["response"]) if last and last["response"] else {}
             print(
                 json.dumps(
                     {
@@ -48,7 +57,12 @@ def main():
                         "task_status": action["task_status"],
                         "result_status": (action["result"] or {}).get("background_status"),
                         "execution_mode": "real_model",
-                        "usage": store.usage(run_id=args.run_id),
+                        "attempt_id": last["id"] if last else None,
+                        "attempt_count": len(attempts),
+                        "finish_reason": response.get("finish_reason"),
+                        "provider_usage": response.get("provider_usage"),
+                        "usage": json.loads(last["usage"]) if last else None,
+                        "usage_scope": "this trial latest attempt; raw full provider usage saved separately",
                         "science_validated": False,
                     }
                 )

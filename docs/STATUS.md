@@ -1,5 +1,39 @@
 # 项目状态 — W1-L2
 
+## 首次真实P04：初审与独立PR交付（2026-11-03）
+
+基线main重新fetch核实为 `e705953818feb866dddfcb8093fbc6230e02978f`。
+独立分支 `codex/w1-l2-trial-preparation`；代码commit `796a94b497978e7010cf5f3a2ae5e0cef926085e`，
+后续提交仅为审阅/验证证据及本状态；本轮提交独立PR，保持未合并，未改main。
+用户原工作区232项改动及暂存状态指纹保持不变，不切换/不stash原工作区。
+
+| 维度 | 当前事实 |
+|---|---|
+| 真实文献及访问 | 已取得Europe PMC PPR1217875预印本摘要字段2746字符；含文字Highlights/In Brief，非全文、未看图或补充 |
+| 已授权单次真实P04（前一轮） | gpt-6.1-sol/high/32768/JSON object，无temperature，timeout=600秒；HTTP200/stop，saved；仅一个Attempt，无自动重发 |
+| 完整用量 | 输入1477、输出2785（含reasoning1010）、合计4262；cache_write1474/cached0；cost=null；原响应/完整usage保留 |
+| 本轮新真实模型调用 | **0次**，仅导出/文本初审/离线测试/代码PR；不执行P05–P07、P08、Candidate Ethics或R0 |
+| 模型阅读审阅 | **Codex 初审，待独立人工复核**，35项带原文字符位置/实际字段/问题；未改原始输入、模型输出或解析结果 |
+| 科学与伦理验证 | science_validated=false；Goal/Ethics仍为开发适配器事实；不声称真实伦理审查、独立发现或完整W1-L2真实阅读验收 |
+| 代码 | 可选显式timeout、兼容旧请求形状、finish_reason/完整provider_usage、空正文/截断/无效JSON拒绝解读、稳定trial ID和本次Attempt用量 |
+| 当前工程验证 | **197 passed、0 failed、0 skipped**，在代码commit796a94b上全量tests/next；包含此前未重跑4项HTTP |
+
+此前196和193两次均为HEAD=e705加未提交修改，并非两个已提交版本；196+新增1项旧请求兼容性测试=197，
+排除4项HTTP后=193。上轮全量复跑审批容量失败的缺口已在本轮获准回归中补齐；
+详细命令/代码版本边界/历史日志见[测试证据](trials/w1-l2-first-real-p04-review/TEST_PROVENANCE.md)。
+旧G3全套回归、本机Python3.12和独立专家科学审阅本轮**未运行**。
+
+[审阅包入口](trials/w1-l2-first-real-p04-review/README.md) ·
+[35项对照](trials/w1-l2-first-real-p04-review/codex-initial-review.md) ·
+[ZIP](review-bundles/w1-l2-first-real-p04-review.zip)（SHA-256见旁边.sha256）。
+未发布SQLite/旧替身P04–P07记录/凭据；仓库可访问路径交付，不只提供本机链接。
+
+初审重点：SH-SY5Y情境遗漏，“未知”须限定视图，“诱导”与“伴随”的措辞层次、作者机制总结句定位、
+空阴性数组不等于干预无效；固定Goal存在早期仅检索阶段的历史文字，已披露但不篡改本次输入。
+以上为Codex文本初审，不是独立科学验收；原W1包仍Proposed，M00不变。
+
+## 以下保留PR #7及更早交付的历史记录
+
 ## PR #7 总控复现修正（2026-11-03）
 
 修正起始head：`43ca215b0e7f7ac19b353ca4107d728e1449398f`；继续同分支/PR，不合并。
