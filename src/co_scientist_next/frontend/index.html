@@ -10,13 +10,13 @@
     <aside>
       <div class="brand">
         <span class="mark">C</span>
-        <div>Co-Scientist<small>研究工作区 · W0-T4</small></div>
+        <div>Co-Scientist<small>研究工作区 · W1-L1</small></div>
       </div>
       <button id="new-project" class="primary">＋ 新建研究</button>
       <h3>已保存研究</h3>
       <nav id="projects"></nav>
       <div class="sidebar-note">
-        Goal 制备与目标筛查<br />背景调研与生成尚未接入
+        Goal 制备与目标筛查<br />人工文献获取 · 模型阅读未接入
       </div>
     </aside>
     <main>
@@ -116,13 +116,42 @@
               保存简报并创建 Run 后，查看真实记录。
             </div>
           </div>
+          <div class="panel" id="literature-panel" hidden>
+            <h2>真实文献获取</h2>
+            <p id="literature-mode" class="mode"></p>
+            <p>
+              固定目标与筛查见上方。查询由用户/开发者人工输入，不是 Agent
+              自动规划。取得文献不代表已阅读或支持任何主张。
+            </p>
+            <label
+              >人工查询<textarea
+                id="literature-query"
+                rows="3"
+                placeholder="输入明确的 Europe PMC 查询"
+              ></textarea>
+            </label>
+            <label
+              >每页数量（1–20）<input
+                id="literature-page-size"
+                type="number"
+                min="1"
+                max="20"
+                value="5"
+            /></label>
+            <button id="literature-search" class="primary">
+              执行真实公共检索
+            </button>
+            <p id="literature-gate" class="muted"></p>
+            <div id="literature-history"></div>
+          </div>
           <div class="panel boundary">
             <span class="eyebrow">CAPABILITY BOUNDARY</span>
             <h2>本轮到此为止</h2>
             <p>
               完成的 pass
-              仅能到达“等待背景调研接入”。背景调研、Generation、Candidate Ethics
-              和 R0 均未实施，不会显示候选、排名或科研完成。
+              可进行显式人工查询和文献获取。自动查询规划、模型阅读、知识图谱、
+              seed readiness、Generation、Candidate Ethics 和 R0
+              未实施，不显示候选、排名或科研完成。
             </p>
             <strong>科学有效性与伦理分类准确性：未验证</strong>
           </div>

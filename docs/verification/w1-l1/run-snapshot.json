@@ -1,0 +1,1399 @@
+{
+  "run": {
+    "id": "9b5abf8a5ccd496d8c45ff9a6666b20e",
+    "project_id": "98b46cb8ac34405d8540b0949d0702c2",
+    "revision_id": "43d70e2d907c412e9f839f48c1dccd51",
+    "policy_ref": "POLICY-W1-DEMO-PROPOSED@w0-t4-dev-1",
+    "goal_context_ref": "goal-93646f710e6c468c960f6ffcb602b960",
+    "plan": "[\"goal.prepare.v1\", \"goal.screen.v1\", \"literature.search.v1\", \"literature.fetch.v1\", \"literature.fetch.v1\", \"literature.search.v1\", \"literature.search.v1\"]",
+    "status": "literature_acquired_unread",
+    "created_at": "2026-11-03T01:57:28.435922+00:00"
+  },
+  "fixed_brief": {
+    "background": "采用已有ALS-GOAL开发者转述，非原文逐字引用；本次仅检索获取，不执行模型阅读。",
+    "hard_constraints": [
+      "保留核孔蛋白磷酸化问题",
+      "不预选具体分子或实验模型"
+    ],
+    "intended_use": "非临床文献检索开发验证",
+    "materials": [],
+    "preferences": [],
+    "question": "针对核孔复合体中某核孔蛋白的磷酸化，提出解释导致 ALS 的关键因素或过程的新假说；详细说明作用机制，并给出可行的检验实验。"
+  },
+  "tasks": [
+    {
+      "id": "93646f710e6c468c960f6ffcb602b960",
+      "run_id": "9b5abf8a5ccd496d8c45ff9a6666b20e",
+      "step": 0,
+      "module": "goal.prepare.v1",
+      "input": "{\"brief\": {\"background\": \"采用已有ALS-GOAL开发者转述，非原文逐字引用；本次仅检索获取，不执行模型阅读。\", \"hard_constraints\": [\"保留核孔蛋白磷酸化问题\", \"不预选具体分子或实验模型\"], \"intended_use\": \"非临床文献检索开发验证\", \"materials\": [], \"preferences\": [], \"question\": \"针对核孔复合体中某核孔蛋白的磷酸化，提出解释导致 ALS 的关键因素或过程的新假说；详细说明作用机制，并给出可行的检验实验。\"}, \"brief_revision_id\": \"43d70e2d907c412e9f839f48c1dccd51\", \"goal_context_ref\": null, \"policy_ref\": \"POLICY-W1-DEMO-PROPOSED@w0-t4-dev-1\", \"previous_result\": null, \"run_id\": \"9b5abf8a5ccd496d8c45ff9a6666b20e\", \"task_id\": \"93646f710e6c468c960f6ffcb602b960\"}",
+      "status": "succeeded",
+      "error": null
+    },
+    {
+      "id": "1a26d7187c4c4a9b8ae7148ae7965cd5",
+      "run_id": "9b5abf8a5ccd496d8c45ff9a6666b20e",
+      "step": 1,
+      "module": "goal.screen.v1",
+      "input": "{\"brief\": {\"background\": \"采用已有ALS-GOAL开发者转述，非原文逐字引用；本次仅检索获取，不执行模型阅读。\", \"hard_constraints\": [\"保留核孔蛋白磷酸化问题\", \"不预选具体分子或实验模型\"], \"intended_use\": \"非临床文献检索开发验证\", \"materials\": [], \"preferences\": [], \"question\": \"针对核孔复合体中某核孔蛋白的磷酸化，提出解释导致 ALS 的关键因素或过程的新假说；详细说明作用机制，并给出可行的检验实验。\"}, \"brief_revision_id\": \"43d70e2d907c412e9f839f48c1dccd51\", \"goal_context_ref\": \"goal-93646f710e6c468c960f6ffcb602b960\", \"policy_ref\": \"POLICY-W1-DEMO-PROPOSED@w0-t4-dev-1\", \"previous_result\": {\"execution_status\": \"prepared\", \"goal_context\": {\"brief_revision_id\": \"43d70e2d907c412e9f839f48c1dccd51\", \"clarification_questions\": [], \"clarification_required\": false, \"hard_requirements\": [{\"input_locator\": \"explicit_constraints[0]\", \"supporting_span\": \"保留核孔蛋白磷酸化问题\", \"text\": \"保留核孔蛋白磷酸化问题\"}, {\"input_locator\": \"explicit_constraints[1]\", \"supporting_span\": \"不预选具体分子或实验模型\", \"text\": \"不预选具体分子或实验模型\"}], \"intended_use\": \"非临床文献检索开发验证\", \"material_manifest\": [], \"optional_interpretations\": [], \"original_question\": \"针对核孔复合体中某核孔蛋白的磷酸化，提出解释导致 ALS 的关键因素或过程的新假说；详细说明作用机制，并给出可行的检验实验。\", \"preferences\": [], \"prepared_question\": \"针对核孔复合体中某核孔蛋白的磷酸化，提出解释导致 ALS 的关键因素或过程的新假说；详细说明作用机制，并给出可行的检验实验。\", \"supplied_background\": \"采用已有ALS-GOAL开发者转述，非原文逐字引用；本次仅检索获取，不执行模型阅读。\", \"unspecified_details\": [\"测试适配器不补充未指定的分子、模型或实验条件；原始问题中的条件始终有效。\"]}}, \"run_id\": \"9b5abf8a5ccd496d8c45ff9a6666b20e\", \"task_id\": \"1a26d7187c4c4a9b8ae7148ae7965cd5\"}",
+      "status": "succeeded",
+      "error": null
+    },
+    {
+      "id": "27e3bce4bee341b0a46e4cd01a692b29",
+      "run_id": "9b5abf8a5ccd496d8c45ff9a6666b20e",
+      "step": 2,
+      "module": "literature.search.v1",
+      "input": "{\"brief\": {\"background\": \"采用已有ALS-GOAL开发者转述，非原文逐字引用；本次仅检索获取，不执行模型阅读。\", \"hard_constraints\": [\"保留核孔蛋白磷酸化问题\", \"不预选具体分子或实验模型\"], \"intended_use\": \"非临床文献检索开发验证\", \"materials\": [], \"preferences\": [], \"question\": \"针对核孔复合体中某核孔蛋白的磷酸化，提出解释导致 ALS 的关键因素或过程的新假说；详细说明作用机制，并给出可行的检验实验。\"}, \"brief_revision_id\": \"43d70e2d907c412e9f839f48c1dccd51\", \"goal_context_ref\": \"goal-93646f710e6c468c960f6ffcb602b960\", \"policy_ref\": \"POLICY-W1-DEMO-PROPOSED@w0-t4-dev-1\", \"previous_result\": {\"manual_literature_request\": {\"cursor\": null, \"kind\": \"search\", \"page_size\": 5, \"query\": \"\\\"amyotrophic lateral sclerosis\\\" AND (nucleoporin OR \\\"nuclear pore\\\")\", \"query_origin\": \"human_entered\", \"scope\": \"Europe PMC indexed publications; manual query; relevance order; no automatic expansion\", \"source\": \"Europe PMC\"}}, \"run_id\": \"9b5abf8a5ccd496d8c45ff9a6666b20e\", \"task_id\": \"27e3bce4bee341b0a46e4cd01a692b29\"}",
+      "status": "succeeded",
+      "error": null
+    },
+    {
+      "id": "bdc98f97085f4538b9fa0aa3c5ed8130",
+      "run_id": "9b5abf8a5ccd496d8c45ff9a6666b20e",
+      "step": 3,
+      "module": "literature.fetch.v1",
+      "input": "{\"brief\": {\"background\": \"采用已有ALS-GOAL开发者转述，非原文逐字引用；本次仅检索获取，不执行模型阅读。\", \"hard_constraints\": [\"保留核孔蛋白磷酸化问题\", \"不预选具体分子或实验模型\"], \"intended_use\": \"非临床文献检索开发验证\", \"materials\": [], \"preferences\": [], \"question\": \"针对核孔复合体中某核孔蛋白的磷酸化，提出解释导致 ALS 的关键因素或过程的新假说；详细说明作用机制，并给出可行的检验实验。\"}, \"brief_revision_id\": \"43d70e2d907c412e9f839f48c1dccd51\", \"goal_context_ref\": \"goal-93646f710e6c468c960f6ffcb602b960\", \"policy_ref\": \"POLICY-W1-DEMO-PROPOSED@w0-t4-dev-1\", \"previous_result\": {\"manual_literature_request\": {\"desired_access\": \"abstract\", \"kind\": \"fetch\", \"query_origin\": \"human_selected_source\", \"source_ref\": \"epmc:PPR:PPR1217875\"}}, \"run_id\": \"9b5abf8a5ccd496d8c45ff9a6666b20e\", \"task_id\": \"bdc98f97085f4538b9fa0aa3c5ed8130\"}",
+      "status": "succeeded",
+      "error": null
+    },
+    {
+      "id": "44d5da00cd504cbfbf4fb3699dc42fe7",
+      "run_id": "9b5abf8a5ccd496d8c45ff9a6666b20e",
+      "step": 4,
+      "module": "literature.fetch.v1",
+      "input": "{\"brief\": {\"background\": \"采用已有ALS-GOAL开发者转述，非原文逐字引用；本次仅检索获取，不执行模型阅读。\", \"hard_constraints\": [\"保留核孔蛋白磷酸化问题\", \"不预选具体分子或实验模型\"], \"intended_use\": \"非临床文献检索开发验证\", \"materials\": [], \"preferences\": [], \"question\": \"针对核孔复合体中某核孔蛋白的磷酸化，提出解释导致 ALS 的关键因素或过程的新假说；详细说明作用机制，并给出可行的检验实验。\"}, \"brief_revision_id\": \"43d70e2d907c412e9f839f48c1dccd51\", \"goal_context_ref\": \"goal-93646f710e6c468c960f6ffcb602b960\", \"policy_ref\": \"POLICY-W1-DEMO-PROPOSED@w0-t4-dev-1\", \"previous_result\": {\"manual_literature_request\": {\"desired_access\": \"full_text\", \"kind\": \"fetch\", \"query_origin\": \"human_selected_source\", \"source_ref\": \"epmc:MED:42437963\"}}, \"run_id\": \"9b5abf8a5ccd496d8c45ff9a6666b20e\", \"task_id\": \"44d5da00cd504cbfbf4fb3699dc42fe7\"}",
+      "status": "succeeded",
+      "error": null
+    },
+    {
+      "id": "3fe25e2069594e0caa15ad0d46b6f0ac",
+      "run_id": "9b5abf8a5ccd496d8c45ff9a6666b20e",
+      "step": 5,
+      "module": "literature.search.v1",
+      "input": "{\"brief\": {\"background\": \"采用已有ALS-GOAL开发者转述，非原文逐字引用；本次仅检索获取，不执行模型阅读。\", \"hard_constraints\": [\"保留核孔蛋白磷酸化问题\", \"不预选具体分子或实验模型\"], \"intended_use\": \"非临床文献检索开发验证\", \"materials\": [], \"preferences\": [], \"question\": \"针对核孔复合体中某核孔蛋白的磷酸化，提出解释导致 ALS 的关键因素或过程的新假说；详细说明作用机制，并给出可行的检验实验。\"}, \"brief_revision_id\": \"43d70e2d907c412e9f839f48c1dccd51\", \"goal_context_ref\": \"goal-93646f710e6c468c960f6ffcb602b960\", \"policy_ref\": \"POLICY-W1-DEMO-PROPOSED@w0-t4-dev-1\", \"previous_result\": {\"manual_literature_request\": {\"cursor\": \"AoIIQMjEdSg1NDgzMzA5Mw==\", \"kind\": \"search\", \"page_size\": 5, \"query\": \"\\\"amyotrophic lateral sclerosis\\\" AND (nucleoporin OR \\\"nuclear pore\\\")\", \"query_origin\": \"human_entered\", \"scope\": \"Europe PMC indexed publications; manual query; relevance order; no automatic expansion\", \"source\": \"Europe PMC\"}}, \"run_id\": \"9b5abf8a5ccd496d8c45ff9a6666b20e\", \"task_id\": \"3fe25e2069594e0caa15ad0d46b6f0ac\"}",
+      "status": "succeeded",
+      "error": null
+    },
+    {
+      "id": "2e9042f8a7354503895c3b90529f2532",
+      "run_id": "9b5abf8a5ccd496d8c45ff9a6666b20e",
+      "step": 6,
+      "module": "literature.search.v1",
+      "input": "{\"brief\": {\"background\": \"采用已有ALS-GOAL开发者转述，非原文逐字引用；本次仅检索获取，不执行模型阅读。\", \"hard_constraints\": [\"保留核孔蛋白磷酸化问题\", \"不预选具体分子或实验模型\"], \"intended_use\": \"非临床文献检索开发验证\", \"materials\": [], \"preferences\": [], \"question\": \"针对核孔复合体中某核孔蛋白的磷酸化，提出解释导致 ALS 的关键因素或过程的新假说；详细说明作用机制，并给出可行的检验实验。\"}, \"brief_revision_id\": \"43d70e2d907c412e9f839f48c1dccd51\", \"goal_context_ref\": \"goal-93646f710e6c468c960f6ffcb602b960\", \"policy_ref\": \"POLICY-W1-DEMO-PROPOSED@w0-t4-dev-1\", \"previous_result\": {\"manual_literature_request\": {\"cursor\": null, \"kind\": \"search\", \"page_size\": 5, \"query\": \"EXT_ID:W1L1EngineeringNoSuchRecord20261103 AND SRC:MED\", \"query_origin\": \"human_entered\", \"scope\": \"Europe PMC indexed publications; manual query; relevance order; no automatic expansion\", \"source\": \"Europe PMC\"}}, \"run_id\": \"9b5abf8a5ccd496d8c45ff9a6666b20e\", \"task_id\": \"2e9042f8a7354503895c3b90529f2532\"}",
+      "status": "succeeded",
+      "error": null
+    }
+  ],
+  "results": [
+    {
+      "task_id": "93646f710e6c468c960f6ffcb602b960",
+      "output": {
+        "execution_status": "prepared",
+        "goal_context": {
+          "brief_revision_id": "43d70e2d907c412e9f839f48c1dccd51",
+          "clarification_questions": [],
+          "clarification_required": false,
+          "hard_requirements": [
+            {
+              "input_locator": "explicit_constraints[0]",
+              "supporting_span": "保留核孔蛋白磷酸化问题",
+              "text": "保留核孔蛋白磷酸化问题"
+            },
+            {
+              "input_locator": "explicit_constraints[1]",
+              "supporting_span": "不预选具体分子或实验模型",
+              "text": "不预选具体分子或实验模型"
+            }
+          ],
+          "intended_use": "非临床文献检索开发验证",
+          "material_manifest": [],
+          "optional_interpretations": [],
+          "original_question": "针对核孔复合体中某核孔蛋白的磷酸化，提出解释导致 ALS 的关键因素或过程的新假说；详细说明作用机制，并给出可行的检验实验。",
+          "preferences": [],
+          "prepared_question": "针对核孔复合体中某核孔蛋白的磷酸化，提出解释导致 ALS 的关键因素或过程的新假说；详细说明作用机制，并给出可行的检验实验。",
+          "supplied_background": "采用已有ALS-GOAL开发者转述，非原文逐字引用；本次仅检索获取，不执行模型阅读。",
+          "unspecified_details": [
+            "测试适配器不补充未指定的分子、模型或实验条件；原始问题中的条件始终有效。"
+          ]
+        }
+      },
+      "applied_at": "2026-11-03T01:57:28.526897+00:00"
+    },
+    {
+      "task_id": "1a26d7187c4c4a9b8ae7148ae7965cd5",
+      "output": {
+        "ethics": {
+          "completed": true,
+          "decision": "pass",
+          "limitations": [
+            "非生产政策审查，不批准临床或实验执行。"
+          ],
+          "policy_refs": [
+            "POLICY-W1-DEMO-PROPOSED@w0-t4-dev-1"
+          ],
+          "rationale": "开发测试适配器的固定情景结果，不代表真实伦理分类准确性。",
+          "target_scope": "development fixture only"
+        },
+        "execution_status": "screened"
+      },
+      "applied_at": "2026-11-03T01:57:28.534283+00:00"
+    },
+    {
+      "task_id": "27e3bce4bee341b0a46e4cd01a692b29",
+      "output": {
+        "acquisition": {
+          "error": null,
+          "executed_at": "2026-11-03T01:57:31.142663+00:00",
+          "items": [
+            {
+              "citation": "https://europepmc.org/article/PPR/PPR1217875",
+              "source_ref": "epmc:PPR:PPR1217875",
+              "title": "Seeded aggregation of ANXA11 induces prion-like propagation, TDP-43 co-pathology and nucleocytoplasmic transport defects"
+            },
+            {
+              "citation": "https://europepmc.org/article/PMC/PMC12359546",
+              "source_ref": "epmc:PMC:PMC12359546",
+              "title": "349. NUCLEOPORIN POM121 CONFER PASSIVE NUCLEAR TRANSLOCATION AND ENVELOP INTEGRITY VIA SIGMA-1 RECEPTOR IN POLY-PR-INDUCED C9ORF72 ALS"
+            },
+            {
+              "citation": "https://europepmc.org/article/MED/42437963",
+              "source_ref": "epmc:MED:42437963",
+              "title": "Nuclear dysfunction in aging and neurodegeneration."
+            },
+            {
+              "citation": "https://europepmc.org/article/MED/40480424",
+              "source_ref": "epmc:MED:40480424",
+              "title": "Sigma-1R-Pom121 axis preserves nuclear transport and integrity in poly-PR-induced C9orf72 ALS."
+            },
+            {
+              "citation": "https://europepmc.org/article/MED/41622490",
+              "source_ref": "epmc:MED:41622490",
+              "title": "Nuclear membrane disruption in neurodegenerative diseases: Emerging perspectives."
+            }
+          ],
+          "next_cursor": "AoIIQMjEdSg1NDgzMzA5Mw==",
+          "reported_total": 1781,
+          "request": {
+            "cursor": null,
+            "query": "\"amyotrophic lateral sclerosis\" AND (nucleoporin OR \"nuclear pore\")",
+            "scope": "Europe PMC indexed publications; manual query; relevance order; no automatic expansion",
+            "source": "Europe PMC"
+          },
+          "scope_complete": false,
+          "status": "succeeded"
+        },
+        "details": {
+          "deduplicated_count": 5,
+          "model_read": false,
+          "provider": "Europe PMC",
+          "provider_request": {
+            "cursorMark": "*",
+            "pageSize": 5,
+            "queryString": "\"amyotrophic lateral sclerosis\" AND (nucleoporin OR \"nuclear pore\")",
+            "resultType": "lite",
+            "sort": "",
+            "synonym": false
+          },
+          "raw_response_locator": "attempt:search/body_base64#resultList.result",
+          "raw_returned_count": 5,
+          "relationships": [],
+          "sources": [
+            {
+              "access": "metadata",
+              "metadata": {
+                "authorString": "Luo H, Zheng H, Lu Y, Liu C, Zhang K, Duan S, Zhang H, Zhang Y, Song Y, Wang T, Liu H, Zhang N, Xia Z, Xu Y.",
+                "bookOrReportDetails": {
+                  "publisher": "bioRxiv",
+                  "yearOfPublication": 2026
+                },
+                "citedByCount": 0,
+                "doi": "10.64898/2026.03.24.713853",
+                "firstIndexDate": "2026-05-19",
+                "firstPublicationDate": "2026-03-26",
+                "hasBook": "N",
+                "hasDbCrossReferences": "N",
+                "hasLabsLinks": "Y",
+                "hasPDF": "N",
+                "hasReferences": "N",
+                "hasSuppl": "N",
+                "hasTMAccessionNumbers": "N",
+                "hasTextMinedTerms": "Y",
+                "id": "PPR1217875",
+                "inEPMC": "N",
+                "inPMC": "N",
+                "isOpenAccess": "N",
+                "pubType": "preprint",
+                "pubYear": "2026",
+                "source": "PPR",
+                "title": "Seeded aggregation of ANXA11 induces prion-like propagation, TDP-43 co-pathology and nucleocytoplasmic transport defects"
+              },
+              "source": {
+                "citation": "https://europepmc.org/article/PPR/PPR1217875",
+                "source_ref": "epmc:PPR:PPR1217875",
+                "title": "Seeded aggregation of ANXA11 induces prion-like propagation, TDP-43 co-pathology and nucleocytoplasmic transport defects"
+              }
+            },
+            {
+              "access": "metadata",
+              "metadata": {
+                "citedByCount": 0,
+                "firstIndexDate": "2025-08-22",
+                "firstPublicationDate": "2025-08-01",
+                "fullTextIdList": {
+                  "fullTextId": [
+                    "PMC12359546"
+                  ]
+                },
+                "hasBook": "N",
+                "hasDbCrossReferences": "N",
+                "hasLabsLinks": "N",
+                "hasPDF": "Y",
+                "hasReferences": "N",
+                "hasSuppl": "N",
+                "hasTMAccessionNumbers": "N",
+                "hasTextMinedTerms": "Y",
+                "id": "PMC12359546",
+                "inEPMC": "Y",
+                "inPMC": "Y",
+                "isOpenAccess": "Y",
+                "issue": "suppl 2",
+                "journalIssn": "1461-1457; 1469-5111; ",
+                "journalTitle": "Int J Neuropsychopharmacol",
+                "journalVolume": "28",
+                "pageInfo": "ii124-ii124",
+                "pmcid": "PMC12359546",
+                "pubType": "abstract",
+                "pubYear": "2025",
+                "source": "PMC",
+                "title": "349. NUCLEOPORIN POM121 CONFER PASSIVE NUCLEAR TRANSLOCATION AND ENVELOP INTEGRITY VIA SIGMA-1 RECEPTOR IN POLY-PR-INDUCED C9ORF72 ALS"
+              },
+              "source": {
+                "citation": "https://europepmc.org/article/PMC/PMC12359546",
+                "source_ref": "epmc:PMC:PMC12359546",
+                "title": "349. NUCLEOPORIN POM121 CONFER PASSIVE NUCLEAR TRANSLOCATION AND ENVELOP INTEGRITY VIA SIGMA-1 RECEPTOR IN POLY-PR-INDUCED C9ORF72 ALS"
+              }
+            },
+            {
+              "access": "metadata",
+              "metadata": {
+                "authorString": "Aday A, Tiller J, Melukote A, Walton ZC, King A, Castillo L, Kayed R, Montalbano M.",
+                "citedByCount": 0,
+                "doi": "10.1002/alz.71657",
+                "firstIndexDate": "2026-07-13",
+                "firstPublicationDate": "2026-07-01",
+                "fullTextIdList": {
+                  "fullTextId": [
+                    "PMC13357693"
+                  ]
+                },
+                "hasBook": "N",
+                "hasDbCrossReferences": "N",
+                "hasLabsLinks": "N",
+                "hasPDF": "Y",
+                "hasReferences": "Y",
+                "hasSuppl": "Y",
+                "hasTMAccessionNumbers": "Y",
+                "hasTextMinedTerms": "Y",
+                "id": "42437963",
+                "inEPMC": "Y",
+                "inPMC": "Y",
+                "isOpenAccess": "Y",
+                "issue": "7",
+                "journalIssn": "1552-5260; 1552-5279; ",
+                "journalTitle": "Alzheimers Dement",
+                "journalVolume": "22",
+                "pageInfo": "e71657",
+                "pmcid": "PMC13357693",
+                "pmid": "42437963",
+                "pubType": "review-article; review; journal article",
+                "pubYear": "2026",
+                "source": "MED",
+                "title": "Nuclear dysfunction in aging and neurodegeneration.",
+                "tmAccessionTypeList": {
+                  "accessionType": [
+                    "doi"
+                  ]
+                }
+              },
+              "source": {
+                "citation": "https://europepmc.org/article/MED/42437963",
+                "source_ref": "epmc:MED:42437963",
+                "title": "Nuclear dysfunction in aging and neurodegeneration."
+              }
+            },
+            {
+              "access": "metadata",
+              "metadata": {
+                "authorString": "Lin CY, Wu HC, Fu RH, Weng EF, Hsieh WC, Su TP, Wu HE, Wang SM.",
+                "citedByCount": 4,
+                "doi": "10.1016/j.nbd.2025.106992",
+                "firstIndexDate": "2025-06-11",
+                "firstPublicationDate": "2025-06-05",
+                "hasBook": "N",
+                "hasDbCrossReferences": "N",
+                "hasLabsLinks": "Y",
+                "hasPDF": "N",
+                "hasReferences": "Y",
+                "hasSuppl": "N",
+                "hasTMAccessionNumbers": "N",
+                "hasTextMinedTerms": "Y",
+                "id": "40480424",
+                "inEPMC": "N",
+                "inPMC": "N",
+                "isOpenAccess": "N",
+                "journalIssn": "0969-9961; 1095-953x; ",
+                "journalTitle": "Neurobiol Dis",
+                "journalVolume": "212",
+                "pageInfo": "106992",
+                "pmid": "40480424",
+                "pubType": "research support, n.i.h., intramural; research support, non-u.s. gov't; journal article",
+                "pubYear": "2025",
+                "source": "MED",
+                "title": "Sigma-1R-Pom121 axis preserves nuclear transport and integrity in poly-PR-induced C9orf72 ALS."
+              },
+              "source": {
+                "citation": "https://europepmc.org/article/MED/40480424",
+                "source_ref": "epmc:MED:40480424",
+                "title": "Sigma-1R-Pom121 axis preserves nuclear transport and integrity in poly-PR-induced C9orf72 ALS."
+              }
+            },
+            {
+              "access": "metadata",
+              "metadata": {
+                "authorString": "Yuan S, Essepian N, Wang Q, Jiang L.",
+                "citedByCount": 0,
+                "doi": "10.4103/nrr.nrr-d-25-01127",
+                "firstIndexDate": "2026-02-06",
+                "firstPublicationDate": "2026-01-27",
+                "fullTextIdList": {
+                  "fullTextId": [
+                    "PMC13568667"
+                  ]
+                },
+                "hasBook": "N",
+                "hasDbCrossReferences": "N",
+                "hasLabsLinks": "N",
+                "hasPDF": "Y",
+                "hasReferences": "Y",
+                "hasSuppl": "N",
+                "hasTMAccessionNumbers": "N",
+                "hasTextMinedTerms": "Y",
+                "id": "41622490",
+                "inEPMC": "Y",
+                "inPMC": "Y",
+                "isOpenAccess": "Y",
+                "issue": "10",
+                "journalIssn": "1673-5374; 1876-7958; ",
+                "journalTitle": "Neural Regen Res",
+                "journalVolume": "21",
+                "pageInfo": "4729-4733",
+                "pmcid": "PMC13568667",
+                "pmid": "41622490",
+                "pubType": "review-article; journal article",
+                "pubYear": "2026",
+                "source": "MED",
+                "title": "Nuclear membrane disruption in neurodegenerative diseases: Emerging perspectives."
+              },
+              "source": {
+                "citation": "https://europepmc.org/article/MED/41622490",
+                "source_ref": "epmc:MED:41622490",
+                "title": "Nuclear membrane disruption in neurodegenerative diseases: Emerging perspectives."
+              }
+            }
+          ],
+          "transport": "real_public_http",
+          "warnings": []
+        },
+        "model_read": false,
+        "science_validated": false
+      },
+      "applied_at": "2026-11-03T01:57:31.146110+00:00"
+    },
+    {
+      "task_id": "bdc98f97085f4538b9fa0aa3c5ed8130",
+      "output": {
+        "acquisition": {
+          "access": "abstract",
+          "error": null,
+          "executed_at": "2026-11-03T01:57:33.136402+00:00",
+          "limitation": null,
+          "request": {
+            "desired_access": "abstract",
+            "source_ref": "epmc:PPR:PPR1217875"
+          },
+          "source": {
+            "citation": "https://europepmc.org/article/PPR/PPR1217875",
+            "source_ref": "epmc:PPR:PPR1217875",
+            "title": "Seeded aggregation of ANXA11 induces prion-like propagation, TDP-43 co-pathology and nucleocytoplasmic transport defects"
+          },
+          "status": "succeeded",
+          "text": "ABSTRACT   Mutations in ANXA11 cause amyotrophic lateral sclerosis (ALS) and frontotemporal dementia (FTD), yet the mechanisms linking ANXA11 dysfunction to neurodegeneration remain poorly defined. Recent cryo-EM studies revealed heteromeric ANXA11-TDP-43 filaments in patient brains, suggesting a direct pathological connection between these two ALS-associated proteins. However, whether ANXA11 possesses intrinsic amyloidogenic properties and how its aggregation relates to TDP-43 proteinopathy remain unknown. Here, we demonstrate that ANXA11 undergoes liquid-liquid phase separation and subsequently matures into amyloid fibrils through a liquid-to-solid phase transition. ANXA11 fibrils exhibit prion-like properties, including self-templating seeding activity and intercellular propagation in human iPSC-derived neurons. Strikingly, ANXA11 fibrils induces pathological conversion of TDP-43, including hyperphosphorylation, accumulation in detergent-insoluble fractions, and formation of cytoplasmic aggregates. TurboID proximity-labeling proteomics further revealed aggregation-dependent enrichment of nuclear pore complex and nucleocytoplasmic transport factors in the ANXA11 aggregate-proximal proteome. Consistently, ANXA11 aggregation was associated with nuclear envelope abnormalities, altered nucleoporin distribution, impaired mRNA export, and progressive neuronal toxicity in iPSC-derived neurons. Together, these findings establish ANXA11 as an intrinsically amyloidogenic, phase-transition-competent protein whose seeded assemblies propagate between cells, induce TDP-43 co-pathology, and are linked to nucleocytoplasmic transport defects and neuronal injury, thereby providing a mechanistic framework for ANXA11-associated ALS/FTD pathogenesis.  Graphic Abstract    Highlights   ANXA11 undergoes liquid-liquid phase separation and matures into amyloid fibrils through a liquid-to-solid phase transition. ANXA11 fibrils supports homotypic seeding and propagate within SH-SY5Y cells and iPSC-derived neurons. ANXA11 fibrils induce TDP-43 pathological conversion, including phosphorylation and accumulation in insoluble aggregates. ANXA11 aggregation is associated with nuclear pore complex remodeling, impaired mRNA export, and neuronal toxicity.  In Brief   ANXA11 undergoes phase separation and matures into prion-like amyloid fibrils through a liquid-to-solid transition. These seeded assemblies propagate between cells and human neurons, induce TDP-43 pathological conversion, and are associated with remodeling of nuclear pore complexes, impaired mRNA export, and progressive neuronal toxicity. ANXA11 forms seeded amyloid assemblies that spread between cells, induce TDP-43 pathology, and disrupt nucleocytoplasmic transport."
+        },
+        "details": {
+          "metadata": {
+            "abstractText": "<h4>ABSTRACT</h4>  Mutations in ANXA11 cause amyotrophic lateral sclerosis (ALS) and frontotemporal dementia (FTD), yet the mechanisms linking ANXA11 dysfunction to neurodegeneration remain poorly defined. Recent cryo-EM studies revealed heteromeric ANXA11-TDP-43 filaments in patient brains, suggesting a direct pathological connection between these two ALS-associated proteins. However, whether ANXA11 possesses intrinsic amyloidogenic properties and how its aggregation relates to TDP-43 proteinopathy remain unknown. Here, we demonstrate that ANXA11 undergoes liquid-liquid phase separation and subsequently matures into amyloid fibrils through a liquid-to-solid phase transition. ANXA11 fibrils exhibit prion-like properties, including self-templating seeding activity and intercellular propagation in human iPSC-derived neurons. Strikingly, ANXA11 fibrils induces pathological conversion of TDP-43, including hyperphosphorylation, accumulation in detergent-insoluble fractions, and formation of cytoplasmic aggregates. TurboID proximity-labeling proteomics further revealed aggregation-dependent enrichment of nuclear pore complex and nucleocytoplasmic transport factors in the ANXA11 aggregate-proximal proteome. Consistently, ANXA11 aggregation was associated with nuclear envelope abnormalities, altered nucleoporin distribution, impaired mRNA export, and progressive neuronal toxicity in iPSC-derived neurons. Together, these findings establish ANXA11 as an intrinsically amyloidogenic, phase-transition-competent protein whose seeded assemblies propagate between cells, induce TDP-43 co-pathology, and are linked to nucleocytoplasmic transport defects and neuronal injury, thereby providing a mechanistic framework for ANXA11-associated ALS/FTD pathogenesis. <h4>Graphic Abstract</h4>  <h4>Highlights</h4>  ANXA11 undergoes liquid-liquid phase separation and matures into amyloid fibrils through a liquid-to-solid phase transition. ANXA11 fibrils supports homotypic seeding and propagate within SH-SY5Y cells and iPSC-derived neurons. ANXA11 fibrils induce TDP-43 pathological conversion, including phosphorylation and accumulation in insoluble aggregates. ANXA11 aggregation is associated with nuclear pore complex remodeling, impaired mRNA export, and neuronal toxicity. <h4>In Brief</h4>  ANXA11 undergoes phase separation and matures into prion-like amyloid fibrils through a liquid-to-solid transition. These seeded assemblies propagate between cells and human neurons, induce TDP-43 pathological conversion, and are associated with remodeling of nuclear pore complexes, impaired mRNA export, and progressive neuronal toxicity. ANXA11 forms seeded amyloid assemblies that spread between cells, induce TDP-43 pathology, and disrupt nucleocytoplasmic transport.",
+            "authMan": "N",
+            "authorIdList": {
+              "authorId": [
+                {
+                  "type": "ORCID",
+                  "value": "0000-0002-1933-4911"
+                }
+              ]
+            },
+            "authorList": {
+              "author": [
+                {
+                  "firstName": "Haiyang",
+                  "fullName": "Luo H",
+                  "initials": "H",
+                  "lastName": "Luo"
+                },
+                {
+                  "firstName": "Honglin",
+                  "fullName": "Zheng H",
+                  "initials": "H",
+                  "lastName": "Zheng"
+                },
+                {
+                  "firstName": "Yongting",
+                  "fullName": "Lu Y",
+                  "initials": "Y",
+                  "lastName": "Lu"
+                },
+                {
+                  "firstName": "Chenyang",
+                  "fullName": "Liu C",
+                  "initials": "C",
+                  "lastName": "Liu"
+                },
+                {
+                  "firstName": "Kang",
+                  "fullName": "Zhang K",
+                  "initials": "K",
+                  "lastName": "Zhang"
+                },
+                {
+                  "firstName": "Suying",
+                  "fullName": "Duan S",
+                  "initials": "S",
+                  "lastName": "Duan"
+                },
+                {
+                  "firstName": "Hang",
+                  "fullName": "Zhang H",
+                  "initials": "H",
+                  "lastName": "Zhang"
+                },
+                {
+                  "firstName": "Yaochong",
+                  "fullName": "Zhang Y",
+                  "initials": "Y",
+                  "lastName": "Zhang"
+                },
+                {
+                  "firstName": "Yaxuan",
+                  "fullName": "Song Y",
+                  "initials": "Y",
+                  "lastName": "Song"
+                },
+                {
+                  "firstName": "Tuo",
+                  "fullName": "Wang T",
+                  "initials": "T",
+                  "lastName": "Wang"
+                },
+                {
+                  "firstName": "Han",
+                  "fullName": "Liu H",
+                  "initials": "H",
+                  "lastName": "Liu"
+                },
+                {
+                  "firstName": "Na",
+                  "fullName": "Zhang N",
+                  "initials": "N",
+                  "lastName": "Zhang"
+                },
+                {
+                  "authorId": {
+                    "type": "ORCID",
+                    "value": "0000-0002-1933-4911"
+                  },
+                  "firstName": "Zongping",
+                  "fullName": "Xia Z",
+                  "initials": "Z",
+                  "lastName": "Xia"
+                },
+                {
+                  "firstName": "Yuming",
+                  "fullName": "Xu Y",
+                  "initials": "Y",
+                  "lastName": "Xu"
+                }
+              ]
+            },
+            "authorString": "Luo H, Zheng H, Lu Y, Liu C, Zhang K, Duan S, Zhang H, Zhang Y, Song Y, Wang T, Liu H, Zhang N, Xia Z, Xu Y.",
+            "bookOrReportDetails": {
+              "publisher": "bioRxiv",
+              "yearOfPublication": 2026
+            },
+            "citedByCount": 0,
+            "dataLinksTagsList": {
+              "dataLinkstag": [
+                "altmetrics"
+              ]
+            },
+            "dateOfCreation": "2026-05-19",
+            "doi": "10.64898/2026.03.24.713853",
+            "epmcAuthMan": "N",
+            "firstIndexDate": "2026-05-19",
+            "firstPublicationDate": "2026-03-26",
+            "fullTextUrlList": {
+              "fullTextUrl": [
+                {
+                  "availability": "Free",
+                  "availabilityCode": "F",
+                  "documentStyle": "doi",
+                  "site": "DOI",
+                  "url": "https://doi.org/10.64898/2026.03.24.713853"
+                }
+              ]
+            },
+            "hasBook": "N",
+            "hasData": "N",
+            "hasDbCrossReferences": "N",
+            "hasEvaluations": "N",
+            "hasLabsLinks": "Y",
+            "hasPDF": "N",
+            "hasReferences": "N",
+            "hasSuppl": "N",
+            "hasTMAccessionNumbers": "N",
+            "hasTextMinedTerms": "Y",
+            "id": "PPR1217875",
+            "inEPMC": "N",
+            "inPMC": "N",
+            "isOpenAccess": "N",
+            "nihAuthMan": "N",
+            "pubTypeList": {
+              "pubType": [
+                "Preprint"
+              ]
+            },
+            "pubYear": "2026",
+            "source": "PPR",
+            "title": "Seeded aggregation of ANXA11 induces prion-like propagation, TDP-43 co-pathology and nucleocytoplasmic transport defects"
+          },
+          "metadata_locator": "attempt:metadata/body_base64#result",
+          "model_read": false,
+          "provider": "Europe PMC",
+          "relationships": [],
+          "representation": "provider abstract, markup flattened; not full text",
+          "source": {
+            "citation": "https://europepmc.org/article/PPR/PPR1217875",
+            "source_ref": "epmc:PPR:PPR1217875",
+            "title": "Seeded aggregation of ANXA11 induces prion-like propagation, TDP-43 co-pathology and nucleocytoplasmic transport defects"
+          },
+          "text_locator": "attempt:metadata/body_base64#result.abstractText",
+          "transport": "real_public_http"
+        },
+        "model_read": false,
+        "science_validated": false
+      },
+      "applied_at": "2026-11-03T01:57:33.139462+00:00"
+    },
+    {
+      "task_id": "44d5da00cd504cbfbf4fb3699dc42fe7",
+      "output": {
+        "acquisition": {
+          "access": "full_text",
+          "error": null,
+          "executed_at": "2026-11-03T01:57:41.784984+00:00",
+          "limitation": "Figures/binary files and supplementary files not downloaded",
+          "request": {
+            "desired_access": "full_text",
+            "source_ref": "epmc:MED:42437963"
+          },
+          "source": {
+            "citation": "https://europepmc.org/article/MED/42437963",
+            "source_ref": "epmc:MED:42437963",
+            "title": "Nuclear dysfunction in aging and neurodegeneration."
+          },
+          "status": "succeeded",
+          "text": "pmc\nAlzheimers Dement\nAlzheimers Dement\n4549\nalzdem\n101231978\nALZ\nAlzheimer's & Dementia\n1552-5260\n1552-5279\nWiley\nPMC13357693\nPMC13357693.1\n13357693\n13357693\n42437963\n10.1002/alz.71657\nALZ71657\n1\nReview Article\nReview Article\nNuclear dysfunction in aging and neurodegeneration\nADAY\net al.\nAday\nAbbigael\n1\n2\n3\nTiller\nJack\n1\n2\n3\nMelukote\nAdarsh\n3\n4\nWalton\nZachary C.\n3\n4\nKing\nAnna\n3\n4\nCastillo\nLuke\n1\n3\nKayed\nRakez\n1\n3\nMontalbano\nMauro\nhttps://orcid.org/0000-0002-0456-452X\n1\n3\nmamontal@utmb.edu\n1\nDepartment of Neurology\nUniversity of Texas Medical Branch\nGalveston\nTexas\nUSA\n2\nMD‐PhD Program\nUniversity of Texas Medical Branch\nGalveston\nTexas\nUSA\n3\nMitchell Center for Neurodegenerative Disorders\nUniversity of Texas Medical Branch\nGalveston\nTexas\nUSA\n4\nSchool of Medicine\nUniversity of Texas Medical Branch\nGalveston\nTexas\nUSA\n*\nCorrespondence\nMauro Montalbano, PhD, University of Texas Medical Branch, Medical Research Building Room 10.138C, 301 University Blvd, Galveston, TX 77555‐1045.\nEmail:\nmamontal@utmb.edu\n12\n7\n2026\n7\n2026\n22\n7\n516233\n10.1002/alz.v22.7\ne71657\n01\n6\n2026\n07\n4\n2026\n13\n6\n2026\n12\n07\n2026\n14\n07\n2026\n18\n08\n2026\n© 2026 The Author(s).\nAlzheimer's & Dementia\npublished by Wiley Periodicals LLC on behalf of Alzheimer's Association.\nhttps://creativecommons.org/licenses/by-nc-nd/4.0/\nThis is an open access article under the terms of the\nhttp://creativecommons.org/licenses/by-nc-nd/4.0/\nLicense, which permits use and distribution in any medium, provided the original work is properly cited, the use is non‐commercial and no modifications or adaptations are made.\nAbstract\nNeurodegenerative diseases are characterized by a loss of neuronal function and structure, often in a region‐specific manner. Multiple factors contribute to neuronal dysfunction and death, including pathogenic protein buildup, protein mislocalization, and inflammation. Despite extensive research, the common mechanisms driving neurodegeneration remain incompletely understood, partly because pathological processes affect interconnected cellular components such as the cytosol, cytoskeleton, and nucleus. Emerging evidence indicates that changes in nuclear structure and function are not simply secondary to cellular stress but play key roles in aging and neurodegenerative disease progression. This review explores important aspects of nuclear dysfunction, including alterations in nuclear architecture, chromatin organization, nucleocytoplasmic transport, DNA damage responses, and inflammatory signaling. It further discusses how these processes converge to increase neuronal vulnerability and may extend beyond normal aging to promote neurodegeneration. Overall, this review highlights nuclear dysfunction as a significant factor in neuronal impairment and underscores the need for therapies targeting nuclear integrity.\nHighlights\nNuclear dysfunction is a central driver of neurodegeneration.\nProtein aggregation disrupts nuclear transport and architecture.\nTau, TDP‐43, and FUS link cytoplasmic pathology to nuclear damage.\nAging increases nuclear vulnerability in neurons.\nTargeting nuclear integrity is a potential therapeutic strategy.\naging\ndementia\nneurodegeneration\nnuclear dysfunction\nnucleocytoplasmic transport\nprotein aggregation\nNational Institute on Aging\n10.13039/100000049\n1R03AG088929‐01\npmc-status-qastatus\n0\npmc-status-live\nyes\npmc-status-embargo\nno\npmc-status-released\nyes\npmc-prop-open-access\nyes\npmc-prop-olf\nno\npmc-prop-manuscript\nno\npmc-prop-legally-suppressed\nno\npmc-prop-has-pdf\nyes\npmc-prop-has-supplement\nyes\npmc-prop-pdf-only\nno\npmc-prop-suppress-copyright\nno\npmc-prop-is-real-version\nno\npmc-prop-is-scanned-article\nno\npmc-prop-preprint\nno\npmc-prop-in-epmc\nyes\npmc-license-ref\nCC BY-NC-ND\nsource-schema-version-number\n2.0\ncover-date\nJuly 2026\ndetails-of-publishers-convertor\nConverter:WILEY_ML3GV2_TO_JATSPMC version:6.8.4 mode:remove_FC converted:12.07.2026\n1\nINTRODUCTION\nNeurodegenerative diseases are a leading cause of physical and cognitive disability, affecting more than 50 million people worldwide, with numbers anticipated to drastically increase over the next several decades.\n1\nNeurodegenerative diseases comprise a heterogeneous group of disorders with differing clinical, regional, and pathological features. The most common include Alzheimer's disease (AD), Parkinson's disease (PD), prion disease, amyotrophic lateral sclerosis (ALS), frontotemporal dementia (FTD), motor neuron disease, Huntington's disease (HD), spinal muscular atrophy, and spinocerebellar ataxia.\n2\n,\n3\n,\n4\nThese diseases are characterized by the progressive degradation of neurons and neural networks, which, depending on the regional location of neuronal loss, result in clinical manifestations such as cognitive decline, motor impairment and paralysis, mood or personality changes, vision loss, and autonomic dysfunction.\n3\nRESEARCH IN CONTEXT\nSystematic review\n: The authors reviewed the literature using traditional scientific databases, including PubMed, with an emphasis on recent studies investigating nuclear dysfunction in aging and neurodegenerative disease. Particular focus was placed on studies examining NE instability, chromatin remodeling, nucleocytoplasmic transport defects, RNA‐binding protein pathology, and protein aggregation across AD, PD, and ALS/FTD.\nInterpretation\n: This review integrates emerging evidence supporting nuclear dysfunction as a convergent mechanism linking aging to neurodegeneration. The findings highlight how disruptions in nuclear architecture, chromatin organization, nucleocytoplasmic trafficking, and protein homeostasis interact to promote neuronal vulnerability and disease progression across multiple neurodegenerative conditions.\nFuture directions\n: More studies are needed to define the temporal relationship between nuclear dysfunction and neurodegenerative pathology, determine whether nuclear abnormalities are causative or secondary disease events, and identify shared versus disease‐specific mechanisms. Investigation into therapeutic strategies targeting nuclear stability may provide new opportunities for intervention in aging‐associated neurodegenerative diseases.\nMultiple cellular pathways contribute to neurodegeneration, including inflammation, accumulation of pathogenic protein aggregates, synaptic defects, cytoskeletal abnormalities, altered energy homeostasis, and DNA/RNA damage.\n5\nMany of these hallmarks either introduce or result from nuclear dysfunction and often engage in multiplicative feedback loops that drive progressive neuronal dysfunction and death. Importantly, nuclear dysfunction should not be viewed solely as a downstream consequence of these pathological processes but rather as a critical point of convergence where multiple disease‐driving pathways intersect. Protein aggregation, protein mislocalization, inflammation, and aging all directly influence nuclear structure and function, while nuclear abnormalities in turn amplify these same stressors through altered gene expression, genomic instability, and impaired cellular stress responses. Framing nuclear dysfunction as a central integrator of cellular stress provides a unifying mechanistic perspective and highlights the nucleus as a potential therapeutic focal point in neurodegenerative disease.\nNuclear dysfunction broadly refers to structural and functional abnormalities of the nucleus, including changes in nuclear envelope (NE) integrity, lamina organization, chromatin architecture, nucleocytoplasmic transport, and transcriptional regulation. Structurally compromising aberrations like nuclear invaginations, lamin disruption, and nuclear pore complex defects are increasingly revealed as key players in aging and neurodegenerative disease models. Since neurons are post‐mitotic and need to maintain genomic stability for decades, even minor impairments in nuclear architecture can lead to cumulative damage and disruption (see Table\n1\n).\nIn this review, we examine nuclear abnormalities in neurodegenerative diseases, considering the effects of protein aggregation, protein mislocalization (including tau and RNA‐binding proteins), inflammation, and aging on nuclear structure and function. Our goal is to summarize key mechanisms of nuclear dysfunction associated with aging and neurodegeneration to create a cohesive framework that may help identify new therapeutic targets. By emphasizing the importance of nuclear integrity within the context of aging and neurodegeneration, we aim to highlight its crucial role as both a driver and a result of disease progression. A conceptual overview of these interconnected mechanisms is shown in Figure\n1\n.\nFIGURE 1\nConvergence of pathogenic mechanisms on neuronal nuclear dysfunction in neurodegeneration. Multiple upstream stressors, including protein aggregation (tau, α‐synuclein, TDP‐43), chronic inflammation, protein mislocalization, and aging, converge on the nucleus and lead to changes in nuclear structure and function. Key nuclear abnormalities include lamin disruption, chromatin disorganization, DNA damage buildup, and defects in nucleocytoplasmic transport. These nuclear alterations result in shared downstream effects such as transcriptional dysregulation, impaired DNA repair, activation of inflammatory signaling pathways (e.g., cGAS‐STING), synaptic dysfunction, and, ultimately, neuronal death. The schematic in the figure shows the neuronal nucleus as a central hub for various pathogenic processes in aging and neurodegenerative disease. Created in BioRender. Aday, A. (2026)\nhttps://BioRender.com/1o3gn3x\n.\n2\nNUCLEAR DYSFUNCTION IN NEURODEGENERATIVE DISEASES\nNuclear dysfunction involves both structural and functional changes in the nucleus, including disruption of the nuclear lamina, nuclear pore complexes, chromatin organization, nucleocytoplasmic transport, and mechano‐transduction pathways. These abnormalities weaken genomic stability, transcriptional regulation, and cellular stress responses. Importantly, these structural components do not work independently; their disruption collectively destabilizes overall nuclear integrity, making neurons especially vulnerable due to their long lifespan and limited regenerative capacity. These impairments can worsen with aging and in neurodegenerative diseases. Here, we review each major nuclear component and examine how aging and neurodegeneration interfere with their normal functions. The major components of nuclear integrity and function, which can be disrupted in aging and neurodegeneration, are displayed in Figure\n2\n.\nFIGURE 2\nOverview of the structure and components of the nucleus, highlighting the major areas of nuclear regulation and architecture that can be damaged in aging and neurodegeneration, including the nuclear lamina and envelope, nuclear pore complex, and LINC complex. Created in BioRender. Aday, A. (2026) https://BioRender.com/mc4js2u.\n2.1\nNuclear lamina and envelope\nThe nucleus is enclosed by a lipid bilayer known as the NE, which consists of an outer nuclear membrane (ONM) and an inner nuclear membrane (INM).\n6\nAlong the interior aspect of the INM lies the nuclear lamina (NL), a meshwork of lamin proteins that provide structural support and serve as a scaffold for heterochromatin organization through lamin‐associated domains (LADs; Figure\n2\n). Although chromatin organization is altered when the NL is disrupted, the precise and differential roles of individual lamin isoforms in chromatin regulation remain incompletely defined. Current literature suggests that multiple lamin isoforms can interact with similar LAD regions.\n7\n,\n8\n,\n9\nIn humans, four primary lamin proteins contribute to the NL: lamins A, B1, B2, and C. Lamins A and C arise from alternative splicing of the\nLMNA\ngene, while lamins B1 and B2 are encoded by\nLMNB1\nand\nLMNB2\n, respectively. NL composition varies across cell types, tissue contexts, and ages. Although the distinct functions of each lamin isoform are not fully understood, altered expression or dysfunction of specific lamins has been consistently associated with abnormal nuclear morphology and disorganized genome architecture.\n7\n,\n10\n,\n11\nAlterations in the NL have been strongly linked to aging and nuclear dysfunction. A key example can be found in the disease Hutchinson‐Gilford Progeria Syndrome (HGPS), where a point mutation in the\nLMNA\ngene results in an abnormal splice site and truncated form of lamin A known as progerin.\n7\n,\n12\nProgerin protein accumulates in the NE and causes structural instability known as “blebbing,” disrupting interactions of lamin A and C with replication‐associated proteins such as proliferating cell nuclear antigen (PCNA), resulting in stalled DNA replication, genomic instability, and ultimately manifests in the characteristic premature aging seen in HGPS.\n13\n,\n14\n,\n15\nAdditionally, mutations in\nLMNA\n,\nLMNB1\n, and\nLMNB2\ngenes are associated with neuropathies, abnormal neuronal migration, microcephaly, impaired cortical development, and early postnatal lethality in knockout models, underscoring the importance of lamins in neuronal development and survival.\n16\n,\n17\n,\n18\n,\n19\n,\n20\n,\n21\n,\n22\nBeyond developmental phenotypes, lamin dysfunction is also linked to neurodegenerative diseases. Changes in lamin levels and NE stability have been observed in human\npost mortem\nbrain tissue from patients with AD and PD, indicating that lamina instability goes beyond premature aging syndromes and may contribute to impaired nuclear integrity, altered chromatin organization, and increased neuronal vulnerability in age‐related neurodegeneration.\n23\nLamin dysfunction also perturbs telomere positioning and chromatin regulation, where loss of lamin A is associated with telomere attrition and altered chromatin organization,\n24\nwhile lamin B1 overexpression can induce telomere instability and features of premature aging.\n25\nB‐type lamins further contribute to heterochromatin organization, oxidative stress responses, mitotic spindle integrity, chromosome positioning, gene transcription, and DNA replication.\n16\nDownregulation of B‐type lamins in\nDrosophila\nadult neurons results in nuclear membrane invaginations, a structural abnormality similarly observed in human laminopathies. Such invaginations are significant because they reflect compromised nuclear mechanical integrity and altered nucleocytoplasmic trafficking, which can exacerbate genomic instability and transcriptional dysregulation during aging and neurodegeneration.\nSimilar NE abnormalities have also been observed in neurodegenerative diseases. Neurons in AD and PD exhibit features like nuclear blebbing, disrupted lamin organization, and NE invaginations, all suggesting weakened lamina integrity.\n26\nRecent studies further support a direct mechanistic link between tau pathology and NL disruption. Oligomeric tau has been shown to interact with lamin B1 and promote disorganization of the NL in neurons, PS19 mice overexpressing human P301S tau, and human AD brain tissues, suggesting that pathogenic tau species may directly destabilize NE architecture.\n27\nMore recent work demonstrated that tau oligomers can also recruit lamin B receptor (LBR) and lamin B2 to induce NE invaginations and chromatin remodeling in the tauopathy mouse model (P301S PS19) and human tissue, further implicating tau‐mediated lamina dysfunction as an early contributor to neurodegeneration.\n28\nImportantly, reductions in lamin B1 in aging neurons are associated with loss of heterochromatin, chromatin reorganization, and widespread changes in gene transcription, thereby highlighting a role for lamina disruption in neuronal vulnerability and disease progression. Disruption of lamina‐associated chromatin organization can also lead to downstream epigenetic effects, such as heterochromatin relaxation, changes in histone acetylation, and activation of normally silenced elements, such as transposable elements.\n8\n,\n23\n,\n29\nThese changes further contribute to the transcriptional instability seen in aging and neurodegenerative diseases.\nBeyond its function in chromatin organization, the NL helps maintain genome stability by supporting DNA damage response pathways.\n30\n,\n31\nDisruption of lamina integrity has been associated with the buildup of DNA damage, such as double‐strand breaks, and transcription‐related stress like R‐loop formation.\n30\n,\n32\nThese issues may result from altered chromatin structure and decreased protection of genomic regions at the nuclear periphery.\n31\nMitochondrial dysfunction, another critical contributing factor in neurodegeneration, may further amplify nuclear stress through ATP depletion and reactive oxygen species (ROS) generation, impairing chromatin remodeling, DNA repair, and transcriptional fidelity.\n33\n,\n34\n,\n35\nTau pathology, a major driver of several neurodegenerative diseases, has also been linked to loss of chromatin stability, which could further increase vulnerability to DNA damage in neurodegenerative conditions like AD, progressive supranuclear palsy (PSP), and Pick's disease as observed in tau‐overexpressing transgenic mice and human AD brain tissue.\n23\n,\n36\nIn neurodegenerative diseases, impaired DNA repair mechanisms further contribute to genomic instability.\n37\nRNA‐binding proteins, such as transactive response DNA‐binding protein 43 (TDP‐43) and fused in sarcoma (FUS), are frequently mislocalized in ALS and FTD and have been shown to participate in DNA damage response pathways, including the recruitment of repair factors to sites of damage, such as ataxia‐telangiectasia mutated (ATM), Nibrin/MRN complex component (NBS1), Lupus Ku autoantigen protein p70 (Ku70), and histone deacetylase 1 (HDAC1).\n38\n,\n39\nTheir dysfunction is associated with reduced repair efficiency and persistence of DNA lesions in human induced pluripotent stem cell (hiPSC)‐derived motor neurons (MNs).\n32\n,\n39\nTogether, these findings suggest that the disruption of nuclear structure and protein homeostasis converges on defective DNA repair, reinforcing a cycle of genomic instability and neuronal dysfunction.\n37\n2.2\nNuclear pore complex\nNuclear pore complexes (NPCs) are large protein assemblies composed of roughly 30 nucleoporins, many of which are designated using the prefix “Nup” followed by a numerical identifier, and are organized into five structural domains that span both the ONM and INM, regulating the exchange of proteins and macromolecules between the nucleus and cytoplasm.\n40\nThe structural domains include cytoplasmic filaments, scaffold‐forming cytoplasmic and nuclear rings surrounding the selective transport channel, and the nuclear basket extending into the nucleoplasm (Figure\n2\n).\n41\nProteins with approximate molecular mass ≤30 kDa may diffuse through the NPC, whereas larger proteins require active transport mediated by nuclear transport receptors.\n42\n,\n43\n,\n44\nWith aging, long‐lived nucleoporins exhibit reduced turnover and increased susceptibility to oxidative damage, leading to the structural deterioration of NPC components and impaired nucleocytoplasmic transport.\n43\n,\n44\nAge‐associated nucleoporin loss or aggregation has been shown to compromise NPC selectivity and barrier function, contributing to nuclear permeability defects. Because NPCs are also essential for RNA export, their disruption can impair mRNA and ribonucleoprotein trafficking, leading to nuclear retention of transcripts and reduced cytoplasmic protein synthesis.\n41\nAbnormal NPC organization and nucleoporin aggregation have also been identified in various neurodegenerative diseases.\n45\nPathological tau, which plays a key role in the onset and progression of many neurodegenerative disorders, has been shown to co‐aggregate with nucleoporins such as Nup98 and Nup62, disrupting NPC diffusion barrier properties, as seen in primary cortical neurons sourced from wild‐type (CD1) mice and PS19 transgenic mice, tau‐overexpressing transgenic mice, and human AD brain tissue.\n36\n,\n46\n,\n47\n,\n48\n,\n49\nHowever, several nucleoporins (e.g., Nup54, POM121, Nup153) remain structurally intact, suggesting that NPCs undergo partial functional impairment rather than complete structural collapse.\n36\n,\n45\nDespite partial structural preservation, tau‐associated alterations impair nucleocytoplasmic transport.\n50\nDisruption of nucleoporins and NPC‐associated factors, such as nuclear transport factor 2 (NTF2), alters nuclear import and export dynamics.\n51\n,\n52\nCytoskeletal disruption may further exacerbate nuclear dysfunction by impairing axonal transport of signaling endosomes, mitochondria, and transcriptional regulators required for neuronal homeostasis.\n53\n,\n54\n,\n55\n,\n56\nTau hyperphosphorylation and α‐synuclein aggregation disrupt microtubule stability and intracellular trafficking in human iPSC‐based models and mouse cortical neurons, thereby weakening trophic signaling and compounding nucleocytoplasmic transport defects.\n53\n,\n55\n,\n57\nCytoskeletal abnormalities linked to tau dysfunction are further associated with NE invaginations containing embedded NPCs,\n46\n,\n58\nsuggesting that tau pathology can secondarily destabilize the nuclear transport architecture. Interestingly, phosphorylated tau preferentially interacts with Nup98, whereas oligomeric tau does not.\n59\nNotably, tau oligomers may reduce tau‐Nup98 interactions, raising the question of whether NPC dysfunction arises from direct tau‐nucleoporin interactions or is a downstream consequence of broader cellular degeneration.\nImportantly, NPC dysfunction in neurodegeneration is not limited to tau‐mediated pathology. In ALS and FTD, TDP‐43 and FUS mislocalization have been shown to disrupt nuclear import machinery and nucleocytoplasmic transport dynamics in\npost mortem\nbrain tissue.\n60\nMutations in nuclear transport receptors, alterations in ras‐related nuclear protein (Ran)‐GTP gradients, and oxidative damage to long‐lived nucleoporins have also been implicated in age‐associated transport defects. In ALS, aberrant nuclear accumulation of charged multivesicular body protein 7 (CHMP7) has been shown to trigger nucleoporin degradation and NPC injury, ultimately contributing to the collapse of nucleocytoplasmic transport.\n41\nCHMP7 is a protein involved in nuclear pore surveillance that accumulates in the nucleus in both familial (C9orf72) and sporadic ALS, causing NPC injury and subsequent TDP‐43 dysfunction. Inhibiting or knocking down CHMP7 can prevent this damage, making it a promising potential therapeutic target. Similar nucleocytoplasmic transport defects are observed in HD, where polyglutamine‐expanded huntingtin sequesters key transport factors such as RanGAP1 and Gle1, leading to impaired nuclear export of mRNA and accelerated NE damage in an age‐dependent manner.\n61\n,\n62\nCollectively, these findings suggest that impaired nucleocytoplasmic transport represents a shared and convergent mechanism across multiple neurodegenerative diseases.\n2.3\nLinker of nucleoskeletal and cytoskeletal complex (LINC complex)\nThe ONM is continuous with the endoplasmic reticulum and anchors to the cytoskeleton via Nesprins.\n40\nInternally, Sad1/UNC‐84 (SUN) domain‐containing proteins embedded within the INM interact with the NL.\n63\nNesprins spanning the ONM bind SUN proteins spanning the INM, forming the linker of nucleoskeletal and cytoskeletal (LINC) complex, which physically connects the cytoskeleton to the nucleoskeleton\n10\n(Figure\n2\n). The LINC complex plays a central role in mechanotransduction, enabling extracellular mechanical stimuli to influence nuclear positioning, chromatin organization, and gene expression.\n64\n,\n65\n,\n66\n,\n67\n,\n68\n,\n69\nDisruption of LINC components or lamins alters nuclear mechanics and transcriptional responses to mechanical stress, playing an integrated role in mechanosignaling. In neurons, which are highly polarized and experience ongoing cytoskeletal tension from axonal transport and synaptic activity, LINC‐mediated force transmission contributes to nuclear positioning and chromatin accessibility.\n70\nDisruption of this coupling can alter transcriptional responses by influencing chromatin organization under mechanical stress.\n71\nAging is associated with progressive changes in nuclear mechanical properties and LINC complex function. Aging is linked to increased nuclear stiffness, decreased lamin turnover, and a gradual disconnect of the LINC‐lamina axis, which together weaken cellular responses to mechanical signals.\n72\nThese changes can modify force transfer to the nucleus and interfere with normal chromatin remodeling, resulting in decreased chromatin accessibility and less effective activation of mechanosensitive genes.\n73\nOver time, this may hinder cells' ability to produce proper transcriptional responses to mechanical and environmental stress. Consequently, these age‐related impairments in LINC‐mediated mechanotransduction create a vulnerable cellular environment that lowers the threshold for nuclear dysfunction and increases susceptibility to neurodegeneration.\nIn neurodegeneration, LINC complex dysfunction occurs beyond the changes observed in normal aging and is markedly amplified. Emerging evidence indicates that disruption of LINC complex integrity leads to abnormal nuclear morphology, altered nuclear tension, and impaired mechanotransduction. In motor neuron disease, defects in LINC components have been associated with abnormal nuclear positioning within elongated axons, as demonstrated in a\nDrosophila\nmodel and human cells, which may interfere with intracellular transport and increase neuronal vulnerability.\n74\n,\n75\nMutations in nuclear envelope spectrin‐repeat proteins (nesprins) and SUN proteins have been connected to neuromuscular and neurodegenerative phenotypes in fibroblasts from patients with muscular dystrophy and altered cytoskeletal‐nuclear coupling may worsen NE instability under pathological stress.\n75\nAlthough the detailed mechanisms are still being studied, dysregulation of LINC‐mediated force transmission likely adds an additional pathway through which cytoskeletal abnormalities contribute to nuclear dysfunction, with effects that are exacerbated in neurodegenerative diseases relative to normal aging.\nCollectively, disruption of the lamina, NPCs, and LINC complexes leads to impaired nuclear mechanics, chromatin organization, and nucleocytoplasmic transport, all of which are fundamental features of nuclear dysfunction observed both in aging and across multiple neurodegenerative diseases and provide a structural foundation for the downstream mechanisms discussed in the next section.\n3\nAGING AND NUCLEAR VULNERABILITY IN NEURODEGENERATION\nNormal aging is accompanied by progressive alterations in nuclear structure and function that, while often subtle, cumulatively erode nuclear homeostasis. Reductions in lamin‐B1 have been reported in aging astrocytes and hippocampal neurons in the human brain, contributing to NE irregularities and altered chromatin anchoring.\n76\nAging is also associated with heterochromatin loss and epigenetic drift, including changes in histone marks such as H4K20me3, which can destabilize transcriptional programs.\n18\nIn parallel, DNA damage, particularly double‐strand breaks, accumulates with age in post‐mitotic neurons, placing sustained pressure on repair pathways and genomic stability.\n77\nEmerging evidence further suggests that nucleocytoplasmic transport efficiency declines during aging, likely reflecting compromised nuclear pore complex integrity and disrupted Ran‐dependent gradients.\n78\n,\n79\nIndividually, these alterations may be modest; collectively, they signal a gradual weakening of nuclear resilience.\nIn neurodegenerative diseases, these same pathways appear in amplified and persistent forms. In AD, altered lamin expression, including aberrant lamin A and loss of lamin B isoforms, coincides with tau‐mediated nuclear deformation and inappropriate cell cycle re‐entry in human tissue.\n18\nIn PD, mitochondrial stress can activate protein kinase C delta (PKCδ) signaling, destabilize lamin B1, and promote NE disassembly and neuronal death in a mouse model.\n78\nNuclear accumulation of α‐synuclein has also been linked to transcriptional dysregulation and DNA damage responses associated with senescence‐like phenotypes in the mouse brain.\n80\nAcross ALS and FTD, pronounced nucleocytoplasmic transport defects and nuclear pore complex disruption further exacerbate neuronal dysfunction.\n78\n,\n79\nNotably, stress‐induced activation of retrotransposon elements, such as long interspersed nuclear element‐1 (LINE‐1), can compromise NE integrity beyond levels typically observed in physiological aging in human neurons.\n79\nThus, rather than introducing entirely distinct nuclear pathologies, neurodegenerative disorders appear to intensify aging‐associated nuclear defects in magnitude, duration, and downstream consequence.\nThese observations support a model in which aging lowers the threshold for nuclear failure. Accumulated DNA damage, lamina instability, heterochromatin disorganization, and declining transport capacity collectively reduce the ability of the nucleus to buffer additional stressors such as protein aggregation or mitochondrial dysfunction. Once compensatory capacity is exceeded, inflammatory signaling pathways, including cGAS‐STING activation in response to cytosolic DNA, may further amplify nuclear and cellular damage.\n81\nIn this framework, aging does not merely coincide with neurodegeneration; it establishes a state of heightened nuclear vulnerability that predisposes neurons to irreversible decline.\nTogether, these findings position the nucleus as a dynamic structure whose gradual destabilization with age creates a permissive environment for neurodegenerative pathology. Understanding how nuclear integrity is maintained or lost may reveal common vulnerabilities across disorders. These themes emphasize a broader principle: Nuclear dysfunction is central to the pathogenesis and progression of neurodegeneration, not solely a consequence of other contributory pathways.\n4\nMECHANISMS OF NUCLEAR DYSFUNCTION AND THEIR CONSEQUENCES\nAlthough discussed separately, the mechanisms described below do not function in isolation. Protein aggregation, mislocalization, and inflammation often occur simultaneously and reinforce each other as the disease advances. Instead of being separate insults, these processes converge on a common outcome: ongoing destabilization of nuclear structure and function. Understanding how these pathways intersect at the nuclear level offers a unifying framework for interpreting various pathological features across neurodegenerative disorders.\n4.1\nProtein aggregation\n4.1.1\nLiquid–liquid phase separation\nProtein aggregation is a pathological feature seen commonly among many neurodegenerative diseases and is a key contributor to nuclear dysfunction. In normal physiological conditions, neuronal proteins exist in equilibrium between soluble and condensed states, allowing them to compartmentalize without the need for additional membranes through a process called liquid–liquid phase separation (LLPS). Many aggregation‐prone proteins contain low‐complexity or intrinsically disordered domains that facilitate LLPS, which enables the formation of membrane‐less organelles such as stress granules and nuclear speckles, allowing dynamic and reversible protein–RNA interactions that are essential for RNA metabolism and cellular stress responses under normal physiological conditions.\n82\n,\n83\n,\n84\nWithin these condensates, insoluble but reversible aggregates exist to help facilitate these processes. However, chronic stress, aging, or disease‐associated mutations shift the equilibrium toward increased granule presence and maturation, which leads to the formation of stable aggregates with amyloid structures and can lead to the recruitment of many disease‐associated proteins and aberrant aggregation of many proteins.\n85\n,\n86\n,\n87\n,\n88\n,\n89\n,\n90\n,\n91\nFurthermore, in neurodegenerative diseases, many proteins undergo post‐translational modifications, alternative splicing, or mutations that alter LLPS equilibrium and drive the formation of irreversible insoluble aggregates.\n92\n,\n93\n,\n94\nTau is a key example of a pathogenic protein that participates in LLPS.\n95\n,\n96\nIn a variety of experimental models, including recombinant protein assays, primary cortical neurons, and human AD brain extracts, tau has been shown to undergo LLPS through interactions with RNA and RNA‐binding proteins, forming dynamic condensates that may serve as intermediates in pathological aggregation.\n89\n,\n95\n,\n96\n,\n97\nUnder disease‐associated conditions, including phosphorylation, mutation, or chronic cellular stress, tau‐containing condensates can progressively transition into more gel‐like assemblies enriched in β‐sheet structures and aggregation‐prone tau species.\n89\n,\n96\nTau phase separation has additionally been linked to stress granule biology and microtubule organization, suggesting that altered condensate dynamics may broadly disrupt neuronal homeostasis and contribute to neurodegenerative disease progression.\n86\n,\n95\n,\n97\nWhen proteins like tau aggregate into pathogenic species, as detailed below, they interfere with essential cellular components, impairing nuclear architecture, nucleocytoplasmic transport, chromatin organization, and gene expression in human\npost mortem\nfrontal cortex tissue​ (Figure\n3\n).\n52\n,\n73\nTherefore, this transition from dynamic phase‐separated assemblies to irreversible aggregates represents a central mechanism linking protein condensation to nuclear dysfunction.\nFIGURE 3\nMajor contributors to nuclear dysfunction in neurodegenerative diseases. The central diagram illustrates the interconnected processes of protein aggregation, inflammation, protein mislocalization, and aging that converge on and amplify nuclear dysfunction, with detailed mechanistic insets highlighting key pathways for each. Created in BioRender. Aday, A. (2026)\nhttps://BioRender.com/im1v79i\n.\nThe nucleolus is a phase‐separated compartment responsible for rRNA transcription and ribosomal subunit assembly, making it especially sensitive to changes in protein solubility and RNA‐binding behavior.\n98\nAggregation‐prone proteins, including tau and TDP‐43, can localize to or disrupt nucleolar components, causing nucleolar stress, decreasing rRNA transcription, and hindering ribosome production. Disruption of nucleolar integrity further reduces protein synthesis ability and activates stress‐response pathways, which increases neuronal vulnerability in neurodegenerative diseases.\n99\nTherefore, protein aggregation resulting from pathological phase separation also damages nucleolar structure and function.\n96\n4.1.2\nConsequences of protein aggregation, propagation, and interactions\nThe aggregation of proteins in neurodegenerative diseases interferes with essential cellular components, impairing nuclear architecture, nucleocytoplasmic transport, chromatin organization, and gene expression (Figure\n3\n).\n71\n,\n98\nOne of the most extensively studied aggregation‐prone proteins is tau, a microtubule‐associated protein that, under physiological conditions, is predominantly cytoplasmic, with limited nuclear localization.\n100\n,\n101\n,\n102\nIn AD, tau becomes hyperphosphorylated, reducing its function in stabilizing microtubules and forming cytoplasmic neurofibrillary tangles.\n101\n,\n102\nIn this pathological state, tau aggregation induces NE invaginations and blebs, reduces nuclear tension, and disrupts nucleocytoplasmic transport by displacing nucleoporins.\n52\n,\n73\nHyperphosphorylated tau also alters chromatin organization and transposable element regulation, contributing to genomic instability,\n103\ndisturbs nuclear calcium homeostasis,\n104\nand sequesters RNA‐binding proteins involved in RNA metabolism, leading to widespread defects in RNA processing.\n105\n,\n106\n,\n107\nTau aggregation also disrupts heterochromatin organization by promoting chromatin relaxation and loss of repressive histone marks, leading to aberrant gene expression and activation of normally silenced genomic regions, including transposable elements.\n108\n,\n109\n,\n110\nHuman brain tissue samples from AD patients further demonstrate NE invaginations filled with hyperphosphorylated tau and actin filaments,\n23\nconsistent with more recent findings showing that oligomeric tau can directly promote NL invagination and chromatin remodeling in AD models and human tissue.\n28\nCollectively, these findings demonstrate that tau aggregation perturbs nuclear structure, chromatin regulation, and the transport machinery through multiple convergent mechanisms.\nAggregation of RNA‐binding proteins (RBPs) represents another major pathological hallmark in neurodegenerative disease. TDP‐43, a predominantly nuclear RBP, is a defining feature of ALS and FTD pathophysiology.\n111\n,\n112\nUnder physiological stress conditions, TDP‐43 undergoes LLPS to form ribonucleoprotein granules.\n113\nIn disease, diminished reversibility of these granules promotes the formation of insoluble fibrils.\n114\nDepletion of soluble nuclear TDP‐43 leads to splicing defects,\n115\nwhile cytoplasmic aggregates sequester additional RBPs and interfere with nucleocytoplasmic transport, amplifying nuclear dysfunction. Pathogenic TDP‐43 aggregates exert both loss‐of‐function and toxic gain‐of‐function effects: Loss of nuclear TDP‐43 disrupts RNA splicing, transport, and DNA repair, while cytoplasmic aggregates promote further protein sequestration, mitochondrial dysfunction, and neuronal toxicity. This dual mechanism contributes to progressive motor neuron degeneration and frontotemporal atrophy characteristic of ALS and FTD.\nFUS exhibits similar behavior. Like TDP‐43, FUS undergoes LLPS under normal conditions,\n85\nbut pathogenic variants demonstrate increased aggregation and decreased solubility. This results in defective DNA damage repair, aberrant chromatin binding, and impaired transcriptional regulation.\n116\n,\n117\nMislocalization and pathological aggregation of nuclear proteins such as TDP‐43 and FUS compromise nuclear integrity and transcriptional regulation, ultimately impairing neuronal viability in ALS and FTD cellular and mouse models.\n118\n,\n119\nThus, aggregation of RBPs such as TDP‐43 and FUS results in both loss of nuclear function and a toxic gain of cytoplasmic function, reinforcing nuclear instability. Synucleinopathies such as PD provide another example of aggregation‐associated nuclear consequences. Aggregated α‐synuclein, although primarily cytoplasmic, can localize to the nucleus and interact with DNA and histones, as observed in human PD\npost mortem\ntissue and α‐synuclein transgenic models, altering chromatin condensation and reducing transcription of genes required for mitochondrial function and proteostasis.\n120\n,\n121\n,\n122\nAdditionally, α‐synuclein inclusions disturb NE composition and interfere with repair mechanisms, leading to nuclear deformation.\n123\nLysosomal dysfunction is also considered a central driver of α‐synuclein pathology in PD and related synucleinopathies.\n124\n,\n125\n,\n126\nMutations in glucosylceramidase beta 1 (GBA1), which encodes the lysosomal enzyme glucocerebrosidase, promote lysosomal impairment and accumulation of α‐synuclein aggregates. At the same time, leucine‐rich repeat kinase 2 (LRRK2) signaling has been linked to lysosomal stress responses, lysosomal repair pathways, and propagation of pathogenic α‐synuclein species.\n124\n,\n125\n,\n126\nTogether, these findings suggest that α‐synuclein pathology extends beyond cytoplasmic aggregation to disrupt lysosomal homeostasis, nuclear integrity, and broader cellular function in synucleinopathies.\nFurthermore, small soluble aggregates like tau oligomers, but also other pathogenic protein aggregates, can spread throughout and between neurons by triggering the aggregation of monomeric tau in a template‐dependent manner through a process called seeding, allowing for the propagation of aggregates throughout the brain in a prion‐like manner.\n100\n,\n127\n,\n128\n,\n129\n,\n130\n,\n131\n,\n132\nAmyloidogenic aggregates can also induce the aggregation of other proteins through a process called cross‐seeding, a process by which amyloidogenic proteins induce conformational changes in other proteins in a template‐dependent manner, often leading to their loss of function and the spread of toxicity throughout the neuron.\n100\n,\n101\n,\n102\n,\n133\nFor instance, amyloid beta and α‐synuclein can cross‐seed tau, forming distinct oligomeric species with enhanced neurotoxicity.\n133\n,\n134\nTau also has the capacity to cross‐seed other disease‐promoting proteins such as α‐synuclein.\n127\nIn this context, the aggregation cascade and spreading of pathology become particularly important for hallmarks of neurodegeneration like tau, TDP43, FUS, α‐synuclein, and others, which have known contributory pathogenic mechanisms involving nuclear dysfunction.\n102\n,\n130\n,\n133\n,\n135\nThese prion‐like spreading and cross‐seeding mechanisms frequently result in co‐pathologies, where multiple aggregating proteins accumulate together in the same brain regions, synergistically exacerbating nuclear dysfunction and accelerating neuronal decline across neurodegenerative diseases.\nIn addition to seeding and cross‐seeding, recent cryo‐electron microscopy and structural studies further suggest that neurodegenerative aggregates may also include multiple pathological proteins in phenomena like co‐aggregates and heteroamyloids. In frontotemporal lobar degeneration with TDP‐43 inclusions (FTLD‐TDP), TDP‐43 has been shown to co‐assemble with annexin A11 (ANXA11) into heteromeric amyloid filaments, redefining the molecular architecture of pathogenic inclusions.\n136\nThe presence of heterotypic amyloids in human disease tissue is revolutionary in the field and further supports the important notion that multiple pathways and aggregation cascades can coincide to enhance cellular damage and dysregulation, including nuclear damage. Additional work has demonstrated that TDP‐43 filaments can accumulate at synapses and contribute to presynaptic dysfunction and neuronal hyperexcitability, further linking aggregate structure to neuronal toxicity and propagation.\n137\nSimilarly, structurally distinct TATA‐box binding protein‐associated factor 15 (TAF15) filament conformations have been identified across FTLD human tissue with FET protein inclusions (FTLD‐FET;\nF\nUS,\nE\nWS,\nT\nAF15) subtypes, supporting the concept that diverse aggregate conformers may underlie differences in disease phenotype and progression.\n138\nPolyglutamine‐expanded huntingtin in HD similarly forms nuclear and perinuclear aggregates that distort the NE, induce lamin B1 alterations, trigger nucleolar stress, and promote nuclear rupture, further linking protein aggregation to nuclear dysfunction across polyglutamine disorders.\n61\n,\n139\n,\n140\n,\n141\nTogether, these findings expand earlier models of protein misfolding and aggregation, which emphasized that variations in aggregate structure can strongly influence toxicity, propagation, and cellular vulnerability.\n142\nNuclear dysfunction is greatly influenced by protein aggregation, and this dysfunction in turn contributes greatly to the progression of disease, as well as further protein aggregation, stressing the importance of designing therapeutics and strategies that address multiple intersecting components of this feedback loop.\nIn addition to these hallmark proteins, other RBPs, including T‐cell intracellular antigen 1 (TIA1), Musashi, Ras‐GTPase activating protein‐binding protein 1 (G3BP1), and heterogeneous nuclear ribonucleoproteins (hnRNPs), aggregate in response to cellular stress and frequently co‐localize with tau or TDP‐43.\n105\n,\n106\n,\n111\nTIA1 and related stress granule RBPs have been shown to directly interact with tau and promote its phase separation and toxicity in a stress granule‐dependent manner, as well as modulate tau misfolding and neurodegeneration in vivo.\n86\n,\n143\n,\n144\nCo‐aggregation of multiple RBPs further disrupts RNA splicing, mRNA export, and translational regulation,\n107\nsuggesting synergistic toxicity in which multiple aggregation‐prone proteins converge on shared nuclear pathways. While G3BP‐family proteins are classically stress granule scaffolds, recent work further implicates Ras‐GTPase activating protein‐binding protein 2 (G3BP2) as a direct tau interactor that can modulate tau aggregation dynamics and is altered in tauopathy brains.\n145\nSuch co‐pathologies are increasingly recognized in aging and neurodegenerative brains,\n106\n,\n146\nreinforcing the idea that nuclear dysfunction arises from intersecting aggregation mechanisms rather than a single pathogenic protein.\nEven in the absence of overt neurodegenerative disease, protein aggregation occurs during normal aging. In aging individuals without clinical evidence of dementia, modest accumulation of proteins such as tau and α‐synuclein occurs.\n29\n,\n147\nThese aggregates correlate with altered nucleolar organization and changes in DNA transcription.\n148\nHowever, in non‐demented aging, compensatory mechanisms, including molecular chaperones and autophagy, typically limit aggregate expansion.\n59\nThese observations suggest that aging may prime the nucleus for increased vulnerability, but progression to severe nuclear dysfunction likely requires additional pathological stressors.\nOverall, protein aggregation disrupts nuclear morphology, nucleocytoplasmic transport, chromatin organization, and RNA metabolism.\n102\n,\n111\n,\n149\nThrough loss of nuclear protein function, sequestration of essential factors, and impairment of transport machinery, aggregation establishes a feed‐forward cycle that progressively destabilizes nuclear homeostasis, which in turn further promotes aggregation and neuronal degradation in neurodegenerative diseases.\n4.2\nProtein mislocalization\nWith cellular stress and aging, nucleocytoplasmic transport becomes progressively less efficient, leading to loss of compartmental fidelity. As a result, nuclear import efficiency declines, nuclear proteins accumulate in the cytoplasm, and inappropriate bidirectional leakage across the NE can occur, as seen in human brain tissue and animal models.\n149\n,\n150\nInterestingly, cytoskeletal abnormalities can lead to nuclear membrane distortions and impaired nucleocytoplasmic transport, processes that are essential for maintaining neuronal health. Thus, protein mislocalization represents both a consequence and a driver of nuclear dysfunction: Once transport fidelity is compromised, compartmental imbalance further destabilizes nuclear homeostasis.\nAlthough tau lacks a canonical nuclear localization signal and is predominantly cytoplasmic under normal conditions, small amounts of tau are detected in the nucleus, where its physiological role remains incompletely understood. In disease states, hyperphosphorylated tau accumulates aberrantly and associates with nuclear lamins and nucleoporins.\n58\n,\n99\nThese interactions disrupt nuclear pore complex integrity and impair nucleocytoplasmic transport in human AD tissue and tauopathy models.\n46\n,\n151\nImportantly, this reflects not only aggregation‐driven toxicity (discussed above) but also the pathological redistribution of tau, which destabilizes nuclear architecture and the transport machinery.\nSimilarly, in HD mouse models and human tissue, polyglutamine‐expanded huntingtin protein disrupts nuclear pores and mislocalizes essential transport proteins, which leads to the impaired nuclear export of mRNA and ultimately results in perturbed nucleocytoplasmic compartmentalization.\n61\nFurthermore, mutant huntingtin protein drives nucleolar stress and nucleolar protein redistribution, which serve as a key driver of disease progression in a knock‐in HD mouse model, which was also verified in human tissue.\n62\nOverall, this underscores how nuclear dysfunction drives protein mislocalization and thereby enhances neurotoxicity.\nMislocalization of RBPs further illustrates this mechanism. TDP‐43 and FUS, which normally function within the nucleus to regulate transcription, splicing, and DNA repair, are frequently depleted from the nucleus and accumulate in the cytoplasm in ALS and FTD patient brains. Loss of nuclear localization results in defective RNA processing, impaired microRNA biogenesis, and compromised DNA repair pathways.\n114\n,\n116\nConcurrently, their cytoplasmic accumulation contributes to stress granule formation and sequestration of transport factors, further impairing nuclear import/export. Thus, RBP mislocalization produces a dual effect: nuclear loss of function and cytoplasmic gain of toxicity.\nHexanucleotide repeat expansions in the chromosome 9 open reading frame 72 gene (\nC9orf72\n) in ALS and FTD further demonstrate how protein mislocalization and nuclear transport failure are mechanistically connected.\n50\n,\n152\nThese expansions generate toxic dipeptide repeat (DPR) proteins, especially arginine‐rich types like poly(GR) and poly(PR), which bind to nuclear transport machinery.\n153\nDPR proteins disrupt nucleocytoplasmic transport by blocking importin‐dependent cargo trafficking in C9orf72 patient iPSC‐derived neurons and fly models.\n50\n,\n154\nImportantly, this leads to widespread disruption of nucleocytoplasmic transport directionality.\n155\nConsequently, nuclear proteins build up in the cytoplasm, while cytoplasmic proteins abnormally enter the nucleus, worsening compartmental dysfunction and fueling neurodegenerative pathology.\nHeterogeneous nuclear ribonucleoproteins (hnRNP A1 and hnRNP K) similarly translocate from the nucleus to the cytoplasm in conditions such as multiple sclerosis (MS) and FTD.\n156\n,\n157\nIn addition, nuclear RNA‐binding proteins involved in stress responses, including TIA1 and hnRNPA2B1, relocalize to cytoplasmic stress granules under cellular stress and have been implicated in neurodegenerative disease‐associated protein aggregation.\n86\n,\n143\n,\n144\nTheir nuclear depletion disrupts RNA metabolism, while cytoplasmic redistribution promotes stress granule formation and further destabilizes nucleocytoplasmic trafficking. This reinforces the concept that transport defects amplify mislocalization in a feed‐forward manner.\nNucleoporins also undergo pathological alteration in neurodegenerative diseases. Proteins such as Nup62, Nup205, and Nup107 exhibit altered expression or mislocalization in ALS and PD.\n150\n,\n158\nAlterations in nucleoporins in neurodegenerative disease contribute to impaired nucleocytoplasmic transport. Inappropriate nuclear entry of cytoplasmic proteins and cytoplasmic retention of nuclear factors follow, contributing to chromatin disorganization, activation of DNA damage responses, and further redistribution of proteins such as TDP‐43, FUS, and tau.\n59\n,\n98\nEven during normal aging, long‐lived nucleoporins show decreased turnover and more oxidative modifications, causing subtle reductions in nuclear transport efficiency.\n149\nAlthough these age‐related transport issues are usually minor, they may lower the threshold for pathological mislocalization under additional stress, increasing neuronal vulnerability.\nCollectively, current evidence shows a two‐way relationship between nuclear transport failure and protein mislocalization. Disruption of NPC integrity and the Ran gradient causes nuclear proteins to move to the cytoplasm, while the buildup of mislocalized proteins in the cytoplasm further impairs the transport system, as seen in C9orf72‐associated disease. Over time, this self‐perpetuating cycle leads to ongoing nuclear defects that are characteristic of neurodegenerative diseases.\n4.3\nInflammation\nAcross various pathologies, inflammatory signaling interacts with NE structure, nuclear pore function, RNA processing, and transcription regulation, thereby contributing to nuclear dysfunction that can speed up neuronal death (Figure\n3\n).\nInflammation often activates key signaling pathways, such as nuclear factor kappa B (NF‐κB), which plays a central role in regulating gene expression associated with immune responses and cellular stress.\n159\n,\n160\n,\n161\nNF‐κB is critically involved in the inflammatory response, mediating the expression of pro‐inflammatory cytokines, including interleukin (IL)‐1β, IL‐6, and tumor necrosis factor‐alpha (TNF‐α).\n162\nExposure of neurons to these inflammatory cytokines can alter nuclear architecture, including the lamina and chromatin structure, DNA damage, and PML remodeling and can even influence RNA‐binding protein function and nuclear‐cytoplasmic balance, all of which contribute to the pathogenesis and progression of neurodegenerative diseases.\n61\nChronic inflammation, a characteristic of many neurodegenerative disorders, can sustain NF‐κB activation, promoting cellular senescence and disrupting neuronal homeostasis, ultimately leading to neurodegenerative changes.\nA key mechanism connecting nuclear dysfunction to inflammation is the activation of cytosolic DNA‐sensing pathways, especially the cGAS‐STING axis.\n163\nDNA damage, rupture of the NE, or faulty mitosis can result in nuclear DNA leaking into the cytoplasm or forming micronuclei, which are susceptible to rupture.\n164\n,\n165\nCytosolic DNA is detected by cyclic GMP‐AMP synthase (cGAS), triggering the activation of STING and subsequent type I interferon signaling.\n163\nLikewise, mitochondrial dysfunction can release mitochondrial DNA (mtDNA) into the cytosol, which further enhances innate immune activation.\n166\n,\n167\nThis pathway creates a direct link between nuclear structural instability and chronic inflammatory signaling in neurodegeneration. NE instability and rupture further exacerbate this process by enabling direct leakage of chromatin fragments into the cytoplasm, which serve as potent immunostimulatory signals and sustain interferon‐driven inflammation.\n168\n,\n169\nAs mentioned earlier, many pathways that influence nuclear dysfunction intersect, and both protein aggregation and mitochondrial dysfunction can influence inflammation, thereby further contributing to nuclear dysfunction. Aggregated proteins such as tau can activate microglia, astrocytes, and infiltrated immune cells to a pro‐inflammatory phenotype in AD and tauopathy mouse models, which, through the NF‐κB pathway, can lead to the release of pro‐inflammatory cytokines, thereby disrupting neuronal function.\n170\n,\n171\n,\n172\n,\n173\nWhile initial inflammatory responses to aggregated proteins are neuroprotective, chronically activated microglia exhibit altered phagocytosis, debris clearance, and synaptic clearance, while reactive astrocytes become polarized toward neurotoxic profiles.\n170\n,\n174\nThis chronic inflammation further exacerbates protein aggregation, acting as a positive feedback loop that accelerates neurodegeneration, especially in the context of nuclear dysfunction, which further impairs proper cellular transport and protein regulation, contributing to proteinopathies.\n175\nAging further enhances inflammatory signaling through the development of a senescence‐associated secretory phenotype (SASP), where stressed neurons and glial cells release pro‐inflammatory cytokines, chemokines, and proteases.\n176\n,\n177\nThe buildup of DNA damage, changes to the NE, and chromatin instability in aging cells promote ongoing activation of inflammatory pathways, including cGAS‐STING and NF‐κB signaling.\n178\nThis persistent, low‐grade inflammation (“inflammaging”) worsens nuclear dysfunction and lowers the threshold for neurodegenerative processes in the aging human brain.\n179\nMitochondrial dysfunction further intersects with inflammation to influence nuclear integrity. In addition to ROS production, mitochondrial dysfunction promotes the release of mtDNA into the cytosol, which activates cGAS‐STING signaling and further amplifies inflammatory and interferon responses.\n166\n,\n180\nInflammatory signaling and mitochondrial dysfunction together can drive excessive mitochondrial ROS, which damage NEs, pore complexes, and lamins, thereby disrupting nucleocytoplasmic dynamics.\n150\n,\n181\nSpecifically, NF‐κB activation and TNF signaling can influence transcriptional and nuclear signaling in stressed neurons that exhibit ROS, reinforcing a bidirectional relationship between inflammation and mitochondrial health.\n161\nThis can thereby exacerbate persistent oxidative damage and increase the likelihood of DNA lesions, genomic instability, and transcriptional dysregulation.\n182\nAdditionally, the NOD‐, LRR‐, and pyrin‐domain‐containing protein 3 (NLRP3) inflammasome, a crucial part of the innate immune response, has been linked to mediating inflammatory effects on nuclear function. NLRP3 inflammasome activation in aged macrophages is diminished during\nStreptococcus pneumoniae\ninfection.\n183\nProlonged inflammasome activation may disrupt nucleocytoplasmic transport mechanisms, which are vital for maintaining nuclear‐cytoplasmic homeostasis. Disruptions in these transport pathways can hinder mRNA processing, protein trafficking, and transcriptional regulation, ultimately impairing neuronal viability.\n182\nIn neurodegenerative diseases, the cumulative effects of chronic inflammation and nuclear dysfunction, alongside various contributory and co‐acting pathways, lead to progressive cellular damage and ultimately neuronal death. This underscores a delicate but critical interplay between inflammatory signaling and nuclear responses, in which persistent inflammatory stimuli can drive pathological nuclear remodeling that accelerates neuronal decline. Emerging studies suggest that modulating inflammatory pathways through therapeutic intervention, including targeting the NF‐κB pathway or introducing anti‐inflammatory cytokines and other therapeutics, may help restore nuclear function and improve cellular health.\n161\n,\n184\nAnti‐inflammatory and mitochondrial‐supportive strategies are being developed for the treatment of multiple neurodegenerative disorders and may have the ability to restore and/or stabilize nuclear integrity.\n170\n,\n171\n,\n182\n,\n185\nIn summary, inflammation significantly impairs nuclear function through multiple mechanisms, including NF‐κB activation, oxidative stress secondary to mitochondrial dysfunction, modulation of aggregation cascades, disruption of nucleocytoplasmic transport, and cytosolic DNA sensing through the cGAS‐STING pathway. Understanding these interconnected pathways provides important insights into potential therapeutic strategies to counteract the detrimental effects of chronic inflammation on neuronal health.\n5\nCONCLUSIONS\nThe nucleus plays an instrumental role in maintaining genome organization, regulating transcription, and managing cellular stress responses. When this architecture becomes unstable, gene expression patterns change, DNA damage builds up, and transport between the nucleus and cytoplasm becomes less efficient. Overall, nuclear abnormalities and dysregulation in these processes have been observed across neurodegenerative diseases, representing a common contributor to neuronal decline. Furthermore, many different pathogenic pathways intersect, where protein aggregation, protein mislocalization, inflammation, mitochondrial dysfunction, and problems with cellular architecture and transport together contribute to the progressive decline of nuclear function and ultimate neuronal loss. Many of these processes are attempts at cellular response to stress or normal cellular processes that become pathogenic and irreversible.\nFurthermore, the gradual aging of individuals represents an interesting insight into neurodegeneration, where these intersecting pathways appear to be exacerbated from aging to neurodegeneration. The declines in lamina integrity, chromatin stability, and repair efficiency seen with aging may decrease neurons' ability to tolerate additional stressors, such as protein aggregation or mitochondrial damage. In this context, neurodegenerative disease might reflect a buildup of vulnerabilities that occur over the lifespan.\nOverall, current evidence indicates that nuclear dysfunction is an integral aspect of neuronal vulnerability, dysfunction, and dysregulation, serving as a major contributor to neurodegeneration rather than just a secondary result. Understanding when and how nuclear integrity is compromised, and whether it can be restored, will be crucial for grasping disease progression and finding common intervention points across disorders.\nA key next step is translating these mechanistic insights into strategies that effectively preserve nuclear function. Instead of targeting individual downstream effects, approaches that stabilize nuclear structure, support nucleocytoplasmic transport, and reduce chronic stress signaling may be more successful in slowing disease progression. Since many of these pathways are interconnected, addressing upstream causes like mitochondrial dysfunction, protein aggregation, or ongoing inflammation might prevent nuclear damage from becoming irreversible. Concurrently, it is important to better understand when nuclear dysfunction first appears and whether these changes can be reversed. Finding early indicators of nuclear instability and identifying which components are most responsive to intervention will be crucial for developing therapies that sustain neuronal health over time. Progress in this field will likely rely on improved model systems that track nuclear changes over time, along with longitudinal studies in humans to determine how early these alterations happen in disease.\nCONFLICT OF INTEREST STATEMENT\nThe authors declare no conflicts of interest. Author disclosures are available in the\nSupporting Information\n.\n6\nTABLE 1\nSummary of key nuclear abnormalities in aging and neurodegeneration.\nNuclear abnormality\nMolecular drivers\nDisease context\nEvidence type/model\nKey references\nNuclear envelope invaginations and blebbing\nProgerin (truncated lamin A); lamin A/C and B1/B2 disruption\nHGPS (premature aging model); AD; PD; HD\nHuman\npost mortem\ntissue; laminopathy models; aging neurons\n13\n,\n14\n,\n15\n,\n23\n,\n26\n,\n139\n,\n141\nLamin B1 downregulation and heterochromatin loss\nReduced lamin B1 expression; tau oligomers; aging\nAD; normal aging; tauopathies (PSP, Pick's disease); HD\nHuman\npost mortem\nbrain; PS19 transgenic mice; iPSC neurons\n26\n,\n27\n,\n28\n,\n76\n,\n110\n,\n140\nTau‐mediated nuclear lamina disruption\nOligomeric tau → lamin B1/B2 disorganization; LBR recruitment\nAD; tauopathy models\nHuman AD tissue; P301S PS19 mouse model; primary cortical neurons\n23\n,\n27\n,\n28\n,\n36\nNPC disruption and nucleoporin co‐aggregation\nTau co‐aggregation with Nup98, Nup62; p‐tau preferentially binds Nup98\nAD; tauopathy models\nHuman AD brain; PS19 transgenic mice; wild‐type (CD1) primary cortical neurons\n36\n,\n46\n,\n47\n,\n48\n,\n49\n,\n52\nCHMP7 nuclear accumulation and NPC injury\nCHMP7 (nuclear pore surveillance protein); C9orf72 repeat expansion\nFamilial and sporadic ALS\nHuman ALS tissue; iPSC‐derived neurons; C9orf72 models\n41\n,\n49\n,\n152\nImpaired nucleocytoplasmic transport\nDisrupted Ran‐GTP gradient; oxidative damage to long‐lived nucleoporins; DPR proteins (poly‐GR, poly‐PR)\nALS; FTD; AD; normal aging; HD\nHuman\npost mortem\nbrain; C9orf72 iPSC‐derived neurons; Drosophila models\n41\n,\n60\n,\n61\n,\n149\n,\n150\n,\n153\n,\n154\nAbnormal nuclear positioning and mechanotransduction failure\nNesprin/SUN protein mutations; LINC complex disruption; cytoskeletal uncoupling\nMotor neuron disease; muscular dystrophy with neurological features\nDrosophila motor neuron model; human fibroblasts (muscular dystrophy patients)\n74\n,\n75\nHeterochromatin loss and epigenetic drift\nLoss of H4K20me3 and repressive histone marks; tau hyperphosphorylation; transposable element (LINE‐1) activation\nAD; aging; tauopathies\nHuman\npost mortem\ntissue; tau‐overexpressing transgenic mice; aging human neurons\n18\n,\n79\n,\n103\n,\n108\n,\n110\nAberrant cell cycle re‐entry\nAltered lamin A/B expression; tau‐mediated nuclear deformation\nAD\nHuman\npost mortem\ntissue\n18\n,\n23\nTDP‐43 cytoplasmic mislocalization and nuclear depletion\nTDP‐43 aggregation and LLPS dysregulation; loss of nuclear function; cytoplasmic gain of toxicity\nALS; FTD (FTLD‐TDP)\nHuman ALS/FTD\npost mortem\ntissue; iPSC‐derived motor neurons; mouse models\n111\n,\n112\n,\n113\n,\n114\n,\n115\n,\n118\n,\n119\nFUS mislocalization and DNA repair defects\nPathogenic FUS variants; increased aggregation; impaired chromatin binding\nALS; FTD (FTLD‐FET)\nALS/FTD cellular models; mouse models; human\npost mortem\nbrain\n85\n,\n116\n,\n117\n,\n118\n,\n119\nTDP‐43/ANXA11 heteromeric amyloid co‐aggregates\nTDP‐43 co‐assembly with annexin A11 into heterotypic amyloid filaments\nFTLD‐TDP\nHuman\npost mortem\ntissue (cryo‐EM structural studies)\n136\nNuclear α‐synuclein accumulation and chromatin disruption\nα‐synuclein nuclear localization; interaction with DNA and histones; lysosomal dysfunction (GBA1, LRRK2)\nPD; synucleinopathies\nHuman PD\npost mortem\ntissue; α‐synuclein transgenic models; mouse brain\n120\n,\n121\n,\n122\n,\n123\n,\n124\n,\n125\n,\n126\nGenomic instability and DNA damage accumulation\nDouble‐strand breaks; R‐loop formation; impaired ATM/NBS1/Ku70/HDAC1 recruitment; mitochondrial ROS\nALS; FTD; AD; HD; normal aging\niPSC‐derived motor neurons; human\npost mortem\nbrain; aging neurons\n30\n,\n31\n,\n37\n,\n38\n,\n39\n,\n77\ncGAS‐STING activation by cytosolic DNA\nNuclear envelope rupture; micronuclei; mtDNA release; chromatin fragment leakage\nAD; ALS; aging (inflammaging)\nHuman tissue; mouse neurodegeneration models; aging cell culture\n81\n,\n163\n,\n164\n,\n165\n,\n168\n,\n169\n,\n178\nNF‐κB‐driven chronic neuroinflammation\nPro‐inflammatory cytokines (IL‐1β, IL‐6, TNF‐α); SASP; tau‐activated microglia/astrocytes\nAD; PD; ALS; FTD; aging\nAD/tauopathy mouse models; human\npost mortem\nbrain; glial cell culture\n161\n,\n170\n,\n171\n,\n172\n,\n173\n,\n176\n,\n177\n,\n179\nPathological LLPS and stress granule maturation\nTau, TDP‐43, FUS, TIA1, G3BP1/2, hnRNPs; post‐translational modifications; chronic stress\nAD; ALS; FTD; aging\nRecombinant protein assays; primary cortical neurons; human AD brain extracts; iPSC models\n82\n,\n83\n,\n84\n,\n85\n,\n86\n,\n90\n,\n95\n,\n96\nNucleolar stress and rRNA transcription disruption\nTau and TDP‐43 nucleolar localization; altered protein solubility; ribosome assembly failure\nAD; ALS; FTD; HD\nHuman\npost mortem\ntissue; cell models; iPSC neurons\n62\n,\n98\n,\n99\n,\n147\nNote\n: The table summarizes major nuclear dysfunction phenotypes observed across aging and neurodegenerative diseases, organized by mechanism. Each row lists the nuclear abnormality, primary molecular drivers, disease context, supporting experimental evidence, and key references. Evidence is drawn from human\npost mortem\ntissue, iPSC‐derived neurons, transgenic animal models, and in vitro systems.\nAbbreviations: AD, Alzheimer's disease; PD, Parkinson's disease; ALS, amyotrophic lateral sclerosis; FTD, frontotemporal dementia; HGPS, Hutchinson‐Gilford Progeria Syndrome; FTLD, frontotemporal lobar degeneration; iPSC, induced pluripotent stem cell; LLPS, liquid–liquid phase separation; NPC, nuclear pore complex; LINC, linker of nucleoskeletal and cytoskeletal complex; SASP, senescence‐associated secretory phenotype.\nJohn Wiley & Sons, Ltd.\nSupporting information\nSupporting Information\n: alz71657‐sup‐0001‐ICMJE.pdf\nACKNOWLEDGMENTS\nWe thank all members of the Kayed and Montalbano laboratories for their valuable discussions. We also gratefully acknowledge the support of the National Institutes of Health and the Mitchell Center for Neurodegenerative Diseases at the University of Texas Medical Branch. This work was supported by the National Institute on Aging (grant number 1R03AG088929‐01).\nREFERENCES\n1\nVan Schependom\nJ\n,\nD'haeseleer\nM\n.\nAdvances in neurodegenerative diseases\n.\nJ Clin Med\n.\n2023\n;\n12\n(\n5\n):\n1709\n.\n36902495\n10.3390/jcm12051709\nPMC10002914\n2\nGadhave\nDG\n,\nSugandhi\nVV\n,\nJha\nSK\n, et al.\nNeurodegenerative disorders: mechanisms of degeneration and therapeutic approaches with their clinical relevance\n.\nAgeing Res Rev\n.\n2024\n;\n99\n:\n102357\n.\n38830548\n10.1016/j.arr.2024.102357\n3\nLamptey\nRNL\n,\nChaulagain\nB\n,\nTrivedi\nR\n,\nGothwal\nA\n,\nLayek\nB\n,\nSingh\nJ\n.\nA review of the common neurodegenerative disorders: current therapeutic approaches and the potential role of nanotherapeutics\n.\nInt J Mol Sci\n.\n2022\n;\n23\n(\n3\n):\n1851\n. doi:\n10.3390/ijms23031851\n35163773\n10.3390/ijms23031851\nPMC8837071\n4\nErkkinen\nMG\n,\nKim\nMO\n,\nGeschwind\nMD\n.\nClinical neurology and epidemiology of the major neurodegenerative diseases\n.\nCold Spring Harb Perspect Biol\n.\n2018\n;\n10\n(\n4\n):\na033118\n. doi:\n10.1101/cshperspect.a033118\n28716886\n10.1101/cshperspect.a033118\nPMC5880171\n5\nWilson\nDM\n,\nCookson\nMR\n,\nVan Den Bosch\nL\n,\nZetterberg\nH\n,\nHoltzman\nDM\n,\nDewachter\nI\n.\nHallmarks of neurodegenerative diseases\n.\nCell\n.\n2023\n;\n186\n(\n4\n):\n693\n‐\n714\n. doi:\n10.1016/j.cell.2022.12.032\n36803602\n10.1016/j.cell.2022.12.032\n6\nHampoelz\nB\n,\nSchwarz\nA\n,\nRonchi\nP\n, et al.\nNuclear pores assemble from nucleoporin condensates during oogenesis\n.\nCell\n.\n2019\n;\n179\n(\n3\n):\n671\n‐\n686.e17\n. doi:\n10.1016/j.cell.2019.09.022\n31626769\n10.1016/j.cell.2019.09.022\nPMC6838685\n7\nShin\nJY\n,\nWorman\nHJ\n.\nMolecular pathology of laminopathies\n.\nAnnu Rev Pathol\n.\n2021\n;\n17\n:\n159\n‐\n180\n. doi:\n10.1146/annurev‐pathol‐042220‐034240\n34672689\n10.1146/annurev-pathol-042220-034240\nPMC8881990\n8\nvan Steensel\nB\n,\nBelmont\nAS\n.\nLamina‐Associated domains: links with chromosome architecture, heterochromatin, and gene repression\n.\nCell\n. Cell Press.\n2017\n;\n169\n(\n5\n):\n780\n‐\n791\n.\n28525751\n10.1016/j.cell.2017.04.022\nPMC5532494\n9\nKind\nJ\n,\nvan Steensel\nB\n.\nStochastic genome‐nuclear lamina interactions: modulating roles of lamin a and BAF\n.\nNucleus (United States)\n.\n2014\n;\n5\n(\n2\n):\n124\n‐\n130\n.\n10.4161/nucl.28825\nPMC4049918\n24717229\n10\nDittmer\nT\n,\nMisteli\nT\n.\nThe Lamin Protein Family\n.\nGenome Biol\n.\n2011\n;\n12\n(\n5\n):\n222\n.\n21639948\n10.1186/gb-2011-12-5-222\nPMC3219962\n11\nShevelyov\nYY\n,\nUlianov\nSV\n.\nThe nuclear lamina as an organizer of chromosome architecture\n.\nCells\n. MDPI.\n2019\n;\n8\n(\n2\n):\n136\n. doi:\n10.3390/cells8020136\n30744037\n10.3390/cells8020136\nPMC6406483\n12\nGil\nL\n,\nNiño\nSA\n,\nCapdeville\nG\n,\nME\nJ‐C\n.\nAging and Alzheimer's disease connection: nuclear tau and lamin A\n.\nNeurosci Lett\n. Elsevier Ireland Ltd.\n2021\n;\n749\n:\n135741\n.\n33610669\n10.1016/j.neulet.2021.135741\n13\nNie\nP\n,\nZhang\nC\n,\nWu\nF\n,\nChen\nS\n,\nWang\nL\n.\nThe Compromised fanconi anemia pathway in prelamin a‐expressing cells contributes to replication stress‐induced genomic instability\n.\nAdvanced Science\n.\n2024\n;\n11\n(\n30\n):\ne2307751\n. doi:\n10.1002/advs.202307751\n38894550\n10.1002/advs.202307751\nPMC11321653\n14\nHilton\nBA\n,\nLiu\nJi\n,\nCartwright\nBM\n, et al.\nProgerin sequestration of PCNA promotes replication fork collapse and mislocalization of XPA in laminopathy‐related progeroid syndromes\n.\nFASEB Journal\n.\n2017\n;\n31\n(\n9\n):\n3882\n‐\n3893\n. doi:\n10.1096/fj.201700014R\n28515154\n10.1096/fj.201700014R\nPMC5572696\n15\nCobb\nAM\n,\nMurray\nTV\n,\nWarren\nDT\n,\nLiu\nY\n,\nShanahan\nCM\n.\nDisruption of PCNA‐lamins A/C interactions by prelamin a induces DNA replication fork stalling\n.\nNucleus\n.\n2016\n;\n7\n(\n5\n):\n498\n‐\n511\n. doi:\n10.1080/19491034.2016.1239685\n27676213\n10.1080/19491034.2016.1239685\nPMC5120601\n16\nKim\nY\n,\nSharov\nAA\n,\nMcDole\nK\n, et al.\nMouse B‐type lamins are required for proper organogenesis but not by embryonic stem cells\n.\nScience\n.\n2011\n;\n334\n(\n6063\n):\n1706\n‐\n1710\n.\n22116031\n10.1126/science.1211222\nPMC3306219\n17\nHutchison\nCJ\n.\nB‐type lamins in health and disease\n.\nSemin Cell Dev Biol\n. Elsevier Ltd.\n2014\n;\n29\n:\n158\n‐\n163\n. doi:\n10.1016/j.semcdb.2013.12.012\n24380701\n10.1016/j.semcdb.2013.12.012\nPMC4053831\n18\nGil\nL\n,\nNiño\nSA\n,\nChi‐Ahumada\nE\n, et al.\nPerinuclear lamin a and nucleoplasmic lamin B2 characterize two types of hippocampal neurons through Alzheimer's disease progression\n.\nInt J Mol Sci\n.\n2020\n;\n21\n(\n5\n):\n1841\n. doi:\n10.3390/ijms21051841\n32155994\n10.3390/ijms21051841\nPMC7084765\n19\nVergnes\nL\n,\nTerfy\nP\n,\nBergo\nMO\n,\nSG\nY\n,\nReue\nK\n.\nLamin B1 Is Required for Mouse Development and Nuclear Integrity\n.\nProc Natl Acad Sci U S A\n.\n2004\n;\n101\n(\n28\n):\n10428\n‐\n10433\n.\n15232008\n10.1073/pnas.0401424101\nPMC478588\n20\nCoffinier\nC\n,\nChang\nSY\n,\nNobumori\nC\n, et al.\nAbnormal development of the cerebral cortex and cerebellum in the setting of lamin B2 deficiency\n.\nProc Natl Acad Sci U S A\n.\n2010\n;\n107\n(\n11\n):\n5076\n‐\n5081\n. doi:\n10.1073/pnas.0908790107\n20145110\n10.1073/pnas.0908790107\nPMC2841930\n21\nCoffinier\nC\n,\nJung\nH‐J\n,\nNobumori\nC\n, et al.\nDeficiencies in lamin B1 and lamin B2 cause neurodevelopmental defects and distinct nuclear shape abnormalities in neurons\n.\nMol Biol Cell\n.\n2011\n;\n22\n(\n23\n):\n4683\n‐\n4693\n. doi:\n10.1091/mbc.e11‐06‐0504\n21976703\n10.1091/mbc.E11-06-0504\nPMC3226484\n22\nCoffinier\nC\n,\nJung\nH‐J\n,\nLi\nZ\n, et al.\nDirect synthesis of lamin a, bypassing prelamin a processing, causes misshapen nuclei in fibroblasts but no detectable pathology in mice\n.\nJ Biol Chem\n.\n2010\n;\n285\n(\n27\n):\n20818\n‐\n20826\n. doi:\n10.1074/jbc.M110.128835\n20439468\n10.1074/jbc.M110.128835\nPMC2898298\n23\nFrost\nB\n,\nBardai\nFH\n,\nFeany\nMB\n.\nLamin dysfunction mediates neurodegeneration in tauopathies\n.\nCurrent Biology\n.\n2016\n;\n26\n(\n1\n):\n129\n‐\n136\n. doi:\n10.1016/j.cub.2015.11.039\n26725200\n10.1016/j.cub.2015.11.039\nPMC4713335\n24\nPatil\nS\n,\nDeshpande\nS\n,\nSengupta\nK\n.\nNuclear envelope protein lamin B receptor protects the genome from chromosomal instability and tumorigenesis\n.\nHum Mol Genet\n.\n2023\n;\n32\n(\n5\n):\n745\n‐\n763\n. doi:\n10.1093/hmg/ddac235\n36124691\n10.1093/hmg/ddac235\n25\nPennarun\nG\n,\nPicotto\nJ\n,\nEtourneaud\nL\n, et al.\nIncrease in lamin B1 promotes telomere instability by disrupting the shelterin complex in human cells\n.\nNucleic Acids Res\n.\n2021\n;\n49\n(\n17\n):\n9886\n‐\n9905\n. doi:\n10.1093/nar/gkab761\n34469544\n10.1093/nar/gkab761\nPMC8464066\n26\nKoufi\nF‐D\n,\nNeri\nI\n,\nRamazzotti\nG\n, et al.\nLamin B1 as a key modulator of the developing and aging brain\n.\nFront Cell Neurosci\nFrontiers Media SA.\n2023\n;\n17\n:\n1263310\n. doi:\n10.3389/fncel.2023.1263310\n37720548\n10.3389/fncel.2023.1263310\nPMC10501396\n27\nJiang\nL\n,\nLin\nW\n,\nZhang\nC\n, et al.\nInteraction of tau with HNRNPA2B1 and N6‐methyladenosine RNA mediates the progression of tauopathy\n.\nMol Cell\n.\n2021\n;\n81\n(\n20\n):\n4209\n‐\n4227.e12\n. doi:\n10.1016/j.molcel.2021.07.038\n34453888\n10.1016/j.molcel.2021.07.038\nPMC8541906\n28\nYuan\nS\n,\nEssepian\nN\n,\nRoberts\nR\n, et al.\nTau oligomerization induces nuclear lamina invagination and chromatin remodeling in Alzheimer's disease\n.\nActa Neuropathol\n.\n2026\n;\n151\n(\n1\n):\n43\n. doi:\n10.1007/s00401‐026‐03018‐1\n42017968\n10.1007/s00401-026-03018-1\nPMC13102949\n29\nMansuroglu\nZ\n,\nBenhelli‐Mokrani\nH\n,\nMarcato\nV\n, et al.\nLoss of Tau protein affects the structure, transcription and repair of neuronal pericentromeric heterochromatin\n.\nSci Rep\n.\n2016\n;\n6\n:\n33047\n. doi:\n10.1038/srep33047\n27605042\n10.1038/srep33047\nPMC5015075\n30\nGonzalo\nS\n,\nKreienkamp\nR\n.\nDNA repair defects and genome instability in Hutchinson‐gilford progeria syndrome\n.\nCurr Opin Cell Biol\n. Elsevier Ltd.\n2015\n;\n34\n:\n75\n‐\n83\n. doi:\n10.1016/j.ceb.2015.05.007\n26079711\n10.1016/j.ceb.2015.05.007\nPMC4522337\n31\nDechat\nT\n,\nPfleghaar\nK\n,\nSengupta\nK\n, et al.\nNuclear lamins: major factors in the structural organization and function of the nucleus and chromatin\n.\nGenes Dev\n.\n2008\n;\n22\n(\n7\n):\n832\n‐\n853\n. doi:\n10.1101/gad.1652708\n18381888\n10.1101/gad.1652708\nPMC2732390\n32\nLópez‐Otín\nC\n,\nBlasco\nMA\n,\nPartridge\nL\n,\nSerrano\nM\n,\nKroemer\nG\n.\nThe hallmarks of aging\n.\nCell\n. Elsevier B.V.\n2013\n;\n153\n(\n6\n):\n1194\n.\n23746838\n10.1016/j.cell.2013.05.039\nPMC3836174\n33\nFord‐Roshon\nD\n,\nDudek\nM\n,\nGlynn\nA\n, et al.\nSpinocerebellar Ataxia type 1 (SCA1) cell models display widespread mitochondrial and extra‐nuclear alterations\n.\nJ Mol Neurosci\n.\n2025\n;\n75\n(\n4\n):\n131\n. doi:\n10.1007/s12031‐025‐02425‐5\n41034456\n10.1007/s12031-025-02425-5\nPMC12488812\n34\nFairbrother‐Browne\nA\n,\nAli\nAT\n,\nReynolds\nRH\n, et al.\nMitochondrial‐nuclear cross‐talk in the human brain is modulated by cell type and perturbed in neurodegenerative disease\n.\nCommun Biol\n.\n2021\n;\n4\n(\n1\n):\n1262\n. doi:\n10.1038/s42003‐021‐02792‐w\n34737414\n10.1038/s42003-021-02792-w\nPMC8569145\n35\nSun\nN\n,\nYoule\nRJ\n,\nFinkel\nT\n.\nThe mitochondrial basis of aging\n.\nMol Cell\n. Cell Press.\n2016\n;\n61\n(\n5\n):\n654\n‐\n666\n. doi:\n10.1016/j.molcel.2016.01.028\n26942670\n10.1016/j.molcel.2016.01.028\nPMC4779179\n36\nEftekharzadeh\nB\n,\nDaigle\nJG\n,\nKapinos\nLE\n, et al.\nTau protein disrupts nucleocytoplasmic transport in Alzheimer's disease\n.\nNeuron\n.\n2018\n;\n99\n(\n5\n):\n925\n‐\n940.e7\n. doi:\n10.1016/j.neuron.2018.07.039\n30189209\n10.1016/j.neuron.2018.07.039\nPMC6240334\n37\nMadabhushi\nR\n,\nPan\nL\n,\nTsai\nLH\n.\nDNA damage and its links to neurodegeneration\n.\nNeuron\n. Cell Press.\n2014\n;\n83\n(\n2\n):\n266\n‐\n282\n. doi:\n10.1016/j.neuron.2014.06.034\n25033177\n10.1016/j.neuron.2014.06.034\nPMC5564444\n38\nWang\nW‐Y\n,\nPan\nL\n,\nSu\nSC\n, et al.\nInteraction of FUS and HDAC1 regulates DNA damage response and repair in neurons\n.\nNat Neurosci\n.\n2013\n;\n16\n(\n10\n):\n1383\n‐\n1391\n. doi:\n10.1038/nn.3514\n24036913\n10.1038/nn.3514\nPMC5564396\n39\nNaumann\nM\n,\nPal\nA\n,\nGoswami\nA\n, et al.\nImpaired DNA damage response signaling by FUS‐NLS mutations leads to neurodegeneration and FUS aggregate formation\n.\nNat Commun\n.\n2018\n;\n9\n(\n1\n):\n335\n. doi:\n10.1038/s41467‐017‐02299‐1\n29362359\n10.1038/s41467-017-02299-1\nPMC5780468\n40\nCrisp\nM\n,\nLiu\nQ\n,\nRoux\nK\n, et al.\nCoupling of the nucleus and cytoplasm: role of the LINC complex\n.\nJ Cell Biol\n.\n2006\n;\n172\n(\n1\n):\n41\n‐\n53\n. doi:\n10.1083/jcb.200509124\n16380439\n10.1083/jcb.200509124\nPMC2063530\n41\nWu\nT\n,\nXu\nH\n,\nCheng\nL\n,\nWu\nR\n,\nGuo\nF\n,\nChen\nX\n.\nThe nuclear envelope and nuclear pore complexes in neurodegenerative diseases\n.\nFront Cell Dev Biol\n. Frontiers Media SA.\n2025\n;\n13\n:\n1550859\n. doi:\n10.3389/fcell.2025.1550859\n40433544\n10.3389/fcell.2025.1550859\nPMC12106417\n42\nFahrenkrog\nB\n,\nAebi\nU\n.\nThe nuclear pore complex: nucleocytoplasmic transport and beyond\n.\nNat Rev Mol Cell Biol\n. European Association for Cardio‐Thoracic Surgery.\n2003\n;\n4\n(\n10\n):\n757\n‐\n766\n. doi:\n10.1038/nrm1230\n14570049\n10.1038/nrm1230\n43\nBeck\nM\n,\nHurt\nE\n.\nThe nuclear pore complex: understanding its function through structural insight\n.\nNat Rev Mol Cell Biol\n. Nature Publishing Group.\n2017\n;\n18\n(\n2\n):\n73\n‐\n89\n. doi:\n10.1038/nrm.2016.147\n27999437\n10.1038/nrm.2016.147\n44\nTalcott\nB\n,\nMoore\nMS\n.\nGetting across the Nuclear Pore complex\n.\nTrends Cell Biol\n.\n1999\n;\n9\n(\n8\n):\n312\n‐\n318\n.\n10407410\n10.1016/s0962-8924(99)01608-6\n45\nSheffield\nLG\n,\nMiskiewicz\nHB\n,\nTannenbaum\nLB\n,\nMirra\nSS\n.\nNuclear Pore Complex Proteins in Alzheimer Disease\n.\nJ Neuropathol Exp Neurol\n.\n2006\n;\n65\n:\n45\n‐\n54\n16410748\n10.1097/01.jnen.0000195939.40410.08\n46\nTripathi\nT\n,\nKalita\nJ\n.\nAbnormal microtubule dynamics impair the nuclear‐cytoplasmic transport in dementia\n.\nACS Chem Neurosci\n. American Chemical Society.\n2019\n;\n10\n(\n3\n):\n1133\n‐\n1134\n.\n30785261\n10.1021/acschemneuro.9b00079\n47\nDiez\nL\n,\nWegmann\nS\n.\nNuclear Transport Deficits in Tau‐Related Neurodegenerative Diseases\n.\nFront Neurol\n. Frontiers Media S.A.\n2020\n;\n11\n:\n1056\n. doi:\n10.3389/fneur.2020.01056\n33101165\n10.3389/fneur.2020.01056\nPMC7546323\n48\nMoore\nS\n,\nRabichow\nBE\n,\nSattler\nR\n.\nThe Hitchhiker's guide to nucleocytoplasmic trafficking in neurodegeneration\n.\nNeurochem Res\n. Springer.\n2020\n;\n45\n(\n6\n):\n1306\n‐\n1327\n. doi:\n10.1007/s11064‐020‐02989‐1\n32086712\n10.1007/s11064-020-02989-1\n49\nZhang\nKe\n,\nDonnelly\nCJ\n,\nHaeusler\nAR\n, et al.\nThe C9orf72 repeat expansion disrupts nucleocytoplasmic transport\n.\nNature\n.\n2015\n;\n525\n(\n7567\n):\n56\n‐\n61\n. doi:\n10.1038/nature14973\n26308891\n10.1038/nature14973\nPMC4800742\n50\nMetuzals\nJ\n,\nRobitaille\nY\n,\nHoughton\nS\n,\nGauthier\nS\n,\nLeblanc\nR\n.\nPaired Helical Filaments and the Cytoplasmic‐Nuclear Interface in Alzheimer's Disease\n.\nJ Neurocytol\n.\n1988\n;\n17\n(\n6\n):\n827\n‐\n833\n3230400\n10.1007/BF01216709\n51\nChaillan‐Huntington\nC\n,\nVilla Braslavsky\nC\n,\nrgen Kuhlmann\nJ\n,\nStewart\nM\n.\nDissecting the Interactions between NTF2, RanGDP, and the Nucleoporin XFXFG Repeats\n.\nJ Biol Chem\n.\n2000\n;\n275\n(\n8\n):\n5874\n‐\n5879\n.\n10681579\n10.1074/jbc.275.8.5874\n52\nNag\nN\n,\nTripathi\nT\n.\nNucleoporin 98 mislocalization is a common feature in primary tauopathies\n.\nBrain Commun\n. Oxford University Press.\n2023\n;\n5\n(\n2\n):\nfcad097\n. doi:\n10.1093/braincomms/fcad097\n37033335\n10.1093/braincomms/fcad097\nPMC10077330\n53\nProts\nI\n,\nGrosch\nJ\n,\nBrazdis\nR‐M\n, et al.\nα‐Synuclein oligomers induce early axonal dysfunction in human iPSC‐based models of synucleinopathies\n.\nProc Natl Acad Sci U S A\n.\n2018\n;\n115\n(\n30\n):\n7813\n‐\n7818\n. doi:\n10.1073/pnas.1713129115\n29991596\n10.1073/pnas.1713129115\nPMC6065020\n54\nDecker\nH\n,\nLo\nKY\n,\nUnger\nSM\n,\nFerreira\nST\n,\nSilverman\nMA\n.\nAmyloid‐β peptide oligomers disrupt axonal transport through an NMDA receptor‐dependent mechanism that is mediated by glycogen synthase kinase 3β in primary cultured hippocampal neurons\n.\nJournal of Neuroscience\n.\n2010\n;\n30\n(\n27\n):\n9166\n‐\n9171\n. doi:\n10.1523/JNEUROSCI.1074‐10.2010\n20610750\n10.1523/JNEUROSCI.1074-10.2010\nPMC6632489\n55\nChou\nQ‐L\n,\nAlik\nA\n,\nMarquier\nF\n,\nMelki\nR\n,\nTreussart\nF\n,\nSimonneau\nM\n.\nImpact of α‐Synuclein fibrillar strains and b‐amyloid assemblies on mouse cortical neurons endo‐lysosomal logistics\n.\neNeuro\n.\n2022\n;\n9\n(\n3\n):ENEURO.0227‐21.2022. doi:\n10.1523/ENEURO.0227‐21.2022\n10.1523/ENEURO.0227-21.2022\nPMC9118757\n35470226\n56\nVillarroel‐Campos\nD\n,\nRhymes\nER\n,\nTosolini\nAP\n, et al.\nProcessivity and BDNF‐dependent modulation of signalling endosome axonal transport are impaired in mice with advanced age\n.\nNeurobiol Aging\n.\n2025\n;\n153\n:\n1\n‐\n9\n. doi:\n10.1016/j.neurobiolaging.2025.05.002\n40449249\n10.1016/j.neurobiolaging.2025.05.002\n57\nCastillo‐Casaña\nY\n,\nArias\nC\n,\nCoria\nR\n.\nTau–Mitochondria Interactions in Neurodegeneration: Mechanisms and Therapeutic Potential\n.\nCell Mol Neurobiol\n. Springer.\n2026\n;\n46\n(\n1\n):\n3\n.\n10.1007/s10571-025-01634-1\nPMC12775240\n41291371\n58\nPaonessa\nF\n,\nEvans\nLD\n,\nSolanki\nR\n, et al.\nMicrotubules deform the nuclear membrane and disrupt nucleocytoplasmic transport in tau‐mediated frontotemporal dementia\n.\nCell Rep\n.\n2019\n;\n26\n(\n3\n):\n582\n‐\n593.e5\n. doi:\n10.1016/j.celrep.2018.12.085\n30650353\n10.1016/j.celrep.2018.12.085\nPMC6335264\n59\nHernandez‐Diaz\nS\n,\nSoukup\nSF\n.\nThe role of lipids in autophagy and its implication in neurodegeneration\n.\nCell Stress\n. Shared Science Publishers OG.\n2020\n;\n4\n(\n7\n):\n167\n‐\n186\n. doi:\n10.15698/cst2020.07.225\n32656499\n10.15698/cst2020.07.225\nPMC7328674\n60\nEderle\nH\n,\nDormann\nD\n.\nTDP‐43 and FUS en route from the nucleus to the cytoplasm\n.\nFEBS Lett\n. Wiley Blackwell.\n2017\n;\n591\n(\n11\n):\n1489\n‐\n1507\n. doi:\n10.1002/1873‐3468.12646\n28380257\n10.1002/1873-3468.12646\n61\nGasset‐Rosa\nF\n,\nChillon‐Marinas\nC\n,\nGoginashvili\nA\n, et al.\nPolyglutamine‐Expanded huntingtin exacerbates age‐related disruption of nuclear integrity and nucleocytoplasmic transport\n.\nNeuron\n.\n2017\n;\n94\n(\n1\n):\n48\n‐\n57.e4\n. doi:\n10.1016/j.neuron.2017.03.027\n28384474\n10.1016/j.neuron.2017.03.027\nPMC5479704\n62\nSönmez\nA\n,\nMustafa\nR\n,\nRyll\nST\n, et al.\nNucleolar stress controls mutant huntington toxicity and monitors huntington's disease progression\n.\nCell Death Dis\n.\n2021\n;\n12\n(\n12\n):\n1139\n.\n34880223\n10.1038/s41419-021-04432-x\nPMC8655027\n63\nRazafsky\nD\n,\nHodzic\nD\n.\nBringing KASH under the SUN: the many faces of nucleo‐cytoskeletal connections\n.\nJournal of Cell Biology\n.\n2009\n;\n186\n(\n4\n):\n461\n‐\n472\n. doi:\n10.1083/jcb.200906068\n19687252\n10.1083/jcb.200906068\nPMC2733748\n64\nArsenovic\nPT\n,\nRamachandran\nI\n,\nBathula\nK\n, et al.\nNesprin‐2G, a component of the nuclear linc complex, is subject to myosin‐dependent tension\n.\nBiophys J\n.\n2016\n;\n110\n(\n1\n):\n34\n‐\n43\n. doi:\n10.1016/j.bpj.2015.11.014\n26745407\n10.1016/j.bpj.2015.11.014\nPMC4805861\n65\nAlam\nSG\n,\nZhang\nQ\n,\nPrasad\nN\n, et al.\nThe mammalian LINC complex regulates genome transcriptional responses to substrate rigidity\n.\nSci Rep\n.\n2016\n;\n6\n:\n38063\n. doi:\n10.1038/srep38063\n27905489\n10.1038/srep38063\nPMC5131312\n66\nCarley\nE\n,\nStewart\nRM\n,\nZieman\nA\n, et al.\nThe linc complex transmits integrin‐dependent tension to the nuclear lamina and represses epidermal differentiation\n.\nElife\n.\n2021\n;\n10\n:\ne58541\n. doi:\n10.7554/eLife.58541\n33779546\n10.7554/eLife.58541\nPMC8051949\n67\nZhang\nY\n,\nKutateladze\nTG\n.\nLiquid–liquid phase separation is an intrinsic physicochemical property of chromatin\n.\nNat Struct Mol Biol\n.\n2019\n;\n26\n(\n12\n):\n1085\n‐\n1086\n. doi:\n10.1038/s41594‐019‐0333‐8\n31695191\n10.1038/s41594-019-0333-8\nPMC11514442\n68\nVersaevel\nM\n,\nBraquenier\nJB\n,\nRiaz\nM\n,\nGrevesse\nT\n,\nLantoine\nJ\n,\nGabriele\nS\n.\nSuper‐resolution microscopy reveals LINC complex recruitment at nuclear indentation sites\n.\nSci Rep\n.\n2014\n;\n4\n:\n7362\n. doi:\n10.1038/srep07362\n25482017\n10.1038/srep07362\nPMC4258653\n69\nOsmanagic‐Myers\nS\n,\nDechat\nT\n,\nFoisner\nR\n.\nLamins at the crossroads of mechanosignaling\n.\nGenes Dev\n. Cold Spring Harbor Laboratory Press.\n2015\n;\n29\n(\n3\n):\n225\n‐\n237\n. doi:\n10.1101/gad.255968.114\n25644599\n10.1101/gad.255968.114\nPMC4318140\n70\nBurke\nB\n.\nChain reaction: linc complexes and nuclear positioning\n.\nF1000Res\n. F1000 Research Ltd.\n2019\n;\n8\n:\nF1000\n. doi:\n10.12688/f1000research.16877.1\n10.12688/f1000research.16877.1\nPMC6357990\n30774932\n71\nUhler\nC\n,\nShivashankar\nGV\n.\nRegulation of genome organization and gene expression by nuclear mechanotransduction\n.\nNat Rev Mol Cell Biol\n. Nature Publishing Group.\n2017\n;\n18\n(\n12\n):\n717\n‐\n727\n. doi:\n10.1038/nrm.2017.101\n29044247\n10.1038/nrm.2017.101\n72\nScaffidi\nP\n,\nMisteli\nT\n.\nLamin A truncation in Hutchinson‐gilford progeria\n.\nScience\n.\n2006\n;\n312\n(\n5776\n):\n1059\n‐\n1063\n.\n16645051\n10.1126/science.1127168\nPMC1855250\n73\nGruenbaum\nY\n,\nFoisner\nR\n.\nLamins: nuclear intermediate filament proteins with fundamental functions in nuclear mechanics and genome regulation\n.\nAnnu Rev Biochem\n.\n2015\n;\n84\n:\n131\n‐\n164\n. doi:\n10.1146/annurev‐biochem‐060614‐034115\n25747401\n10.1146/annurev-biochem-060614-034115\n74\nKim\nHJ\n,\nTaylor\nJP\n.\nLost in transportation: nucleocytoplasmic transport defects in als and other neurodegenerative diseases\n.\nNeuron\n. Cell Press.\n2017\n;\n96\n(\n2\n):\n285\n‐\n297\n. doi:\n10.1016/j.neuron.2017.07.029\n29024655\n10.1016/j.neuron.2017.07.029\nPMC5678982\n75\nZhang\nQ\n,\nBethmann\nC\n,\nWorth\nNF\n, et al.\nNesprin‐1 and ‐2 are involved in the pathogenesis of emery—dreifuss muscular dystrophy and are critical for nuclear envelope integrity\n.\nHum Mol Genet\n.\n2007\n;\n16\n(\n23\n):\n2816\n‐\n2833\n. doi:\n10.1093/hmg/ddm238\n17761684\n10.1093/hmg/ddm238\n76\nMatias\nI\n,\nDiniz\nLP\n,\nDamico\nIV\n, et al.\nLoss of lamin‐B1 and defective nuclear morphology are hallmarks of astrocyte senescence in vitro and in the aging human hippocampus\n.\nAging Cell\n.\n2022\n;\n21\n(\n1\n):\ne13521\n. doi:\n10.1111/acel.13521\n34894056\n10.1111/acel.13521\nPMC8761005\n77\nShanbhag\nNM\n,\nEvans\nMD\n,\nMao\nW\n, et al.\nEarly neuronal accumulation of DNA double strand breaks in Alzheimer's disease\n.\nActa Neuropathol Commun\n.\n2019\n;\n7\n(\n1\n):\n77\n. doi:\n10.1186/s40478‐019‐0723‐5\n31101070\n10.1186/s40478-019-0723-5\nPMC6524256\n78\nCharli\nA\n,\nChang\nY‐T\n,\nLuo\nJ\n, et al.\nMitochondrial stress disassembles nuclear architecture through proteolytic activation of PKCδ and Lamin B1 phosphorylation in neuronal cells: implications for pathogenesis of age‐related neurodegenerative diseases\n.\nFront Cell Neurosci\n.\n2025\n;\n19\n:\n1549265\n. doi:\n10.3389/fncel.2025.1549265\n40313592\n10.3389/fncel.2025.1549265\nPMC12043892\n79\nZnaidi\nR\n,\nMassiani‐Beaudoin\nO\n,\nMailly\nP\n, et al.\nNuclear translocation of the LINE‐1 encoded ORF1 protein alters nuclear envelope integrity in human neurons\n.\nBrain Res\n.\n2025\n;\n1857\n:\n149579\n.\n40157412\n10.1016/j.brainres.2025.149579\n80\nDu\nT\n,\nLi\nG\n,\nZong\nQ\n,\nLuo\nH\n,\nPan\nY\n,\nMa\nK\n.\nNuclear alpha‐synuclein accelerates cell senescence and neurodegeneration\n.\nImmunity and Ageing\n.\n2024\n;\n21\n(\n1\n):\n47\n. doi:\n10.1186/s12979‐024‐00429‐0\n38997709\n10.1186/s12979-024-00429-0\nPMC11242018\n81\nGulen\nMF\n,\nSamson\nN\n,\nKeller\nA\n, et al.\ncGAS–STING drives ageing‐related inflammation and neurodegeneration\n.\nNature\n.\n2023\n;\n620\n(\n7973\n):\n374\n‐\n380\n. doi:\n10.1038/s41586‐023‐06373‐1\n37532932\n10.1038/s41586-023-06373-1\nPMC10412454\n82\nElbaum‐Garfinkle\nS\n.\nMatter over mind: liquid phase separation and neurodegeneration\n.\nJournal of Biological Chemistry\n. American Society for Biochemistry and Molecular Biology Inc.\n2019\n;\n294\n(\n18\n):\n7160\n‐\n7168\n. doi:\n10.1074/jbc.REV118.001188\n30914480\n10.1074/jbc.REV118.001188\nPMC6509495\n83\nZbinden\nA\n,\nPérez‐Berlanga\nM\n,\nDe Rossi\nP\n,\nPolymenidou\nM\n.\nPhase separation and neurodegenerative diseases: a disturbance in the force\n.\nDev Cell\n. Cell Press.\n2020\n;\n55\n(\n1\n):\n45\n‐\n68\n. doi:\n10.1016/j.devcel.2020.09.014\n33049211\n10.1016/j.devcel.2020.09.014\n84\nZhang\nJZ\n,\nMehta\nS\n,\nZhang\nJ\n.\nLiquid–liquid phase separation: a principal organizer of the cell's biochemical activity architecture\n.\nTrends Pharmacol Sci\n.\n2021\n;\n42\n(\n10\n):\n845\n‐\n856\n. doi:\n10.1016/j.tips.2021.07.003\n34373114\n10.1016/j.tips.2021.07.003\nPMC8858030\n85\nPatel\nA\n,\nLee\nHO\n,\nJawerth\nL\n, et al.\nA liquid‐to‐solid phase transition of the als protein fus accelerated by disease mutation\n.\nCell\n.\n2015\n;\n162\n(\n5\n):\n1066\n‐\n1077\n. doi:\n10.1016/j.cell.2015.07.047\n26317470\n10.1016/j.cell.2015.07.047\n86\nAsh\nPEA\n,\nLei\nS\n,\nShattuck\nJ\n, et al.\nTIA1 potentiates tau phase separation and promotes generation of toxic oligomeric tau\n.\nProc Natl Acad Sci U S A\n.\n2021\n;\n118\n(\n9\n):\ne2014188118\n.\n33619090\n10.1073/pnas.2014188118\nPMC7936275\n87\nHuai\nY\n,\nMao\nW\n,\nWang\nX\n, et al.\nHow do RNA binding proteins trigger liquid‐liquid phase separation in human health and diseases?\nBiosci Trends\n. International Advancement Center for Medicine and Health Research Co., Ltd.\n2022\n;\n16\n(\n6\n):\n389\n‐\n404\n. doi:\n10.5582/bst.2022.01449\n36464283\n10.5582/bst.2022.01449\n88\nGuo\nQ\n,\nShi\nX\n,\nWang\nX\n.\nRNA and liquid‐liquid phase separation\n.\nNoncoding RNA Res\n. KeAi Communications Co.\n2021\n;\n6\n(\n2\n):\n92\n‐\n99\n. doi:\n10.1016/j.ncrna.2021.04.003\n33997539\n10.1016/j.ncrna.2021.04.003\nPMC8111091\n89\nZhang\nX\n,\nLin\nY\n,\nEschmann\nNA\n, et al.\nRNA stores tau reversibly in complex coacervates\n.\nPLoS Biol\n.\n2017\n;\n15\n(\n7\n):\ne2002183\n. doi:\n10.1371/journal.pbio.2002183\n28683104\n10.1371/journal.pbio.2002183\nPMC5500003\n90\nMackenzie\nIR\n,\nNicholson\nAM\n,\nSarkar\nM\n, et al.\nTIA1 mutations in amyotrophic lateral sclerosis and frontotemporal dementia promote phase separation and alter stress granule dynamics\n.\nNeuron\n.\n2017\n;\n95\n(\n4\n):\n808\n‐\n816.e9\n. doi:\n10.1016/j.neuron.2017.07.025\n28817800\n10.1016/j.neuron.2017.07.025\nPMC5576574\n91\nWolozin\nB\n.\nRegulated protein aggregation: stress granules and neurodegeneration\n.\nMol Neurodegener\n.\n2012\n;\n7\n(\n1\n):\n56\n. doi:\n10.1186/1750‐1326‐7‐56\n23164372\n10.1186/1750-1326-7-56\nPMC3519755\n92\nBuee\nL\n,\nBussiere\nT\n,\nBuee‐Scherrer\nV\n,\nDelacourte\nA\n,\nHof\nPR\n.\nTau Protein Isoforms, Phosphorylation and Role in Neurodegenerative Disorders\n.\nBrain Res Brain Res Rev\n.\n2000\n;\n33\n(\n1\n):\n95\n‐\n130\n.\n10967355\n10.1016/s0165-0173(00)00019-9\n93\nWang\nW\n,\nWang\nL\n,\nLu\nJ\n, et al.\nThe inhibition of TDP‐43 mitochondrial localization blocks its neuronal toxicity\n.\nNat Med\n.\n2016\n;\n22\n(\n8\n):\n869\n‐\n878\n. doi:\n10.1038/nm.4130\n27348499\n10.1038/nm.4130\nPMC4974139\n94\nMontalbano\nM\n,\nMcAllen\nS\n,\nSengupta\nU\n, et al.\nTau oligomers mediate aggregation of RNA‐binding proteins musashi1 and musashi2 inducing lamin alteration\n.\nAging Cell\n.\n2019\n;\n18\n(\n6\n):\ne13035\n. doi:\n10.1111/acel.13035\n31532069\n10.1111/acel.13035\nPMC6826126\n95\nNajafi\nS\n,\nLin\nY\n,\nLonghini\nAP\n, et al.\nLiquid–liquid phase separation of tau by self and complex coacervation\n.\nProtein Science\n.\n2021\n;\n30\n(\n7\n):\n1393\n‐\n1407\n. doi:\n10.1002/pro.4101\n33955104\n10.1002/pro.4101\nPMC8197434\n96\nWegmann\nS\n,\nEftekharzadeh\nB\n,\nTepper\nK\n, et al.\nTau protein liquid–liquid phase separation can initiate tau aggregation\n.\nEMBO J\n.\n2018\n;\n37\n(\n7\n):\ne98049\n. doi:\n10.15252/embj.201798049\n29472250\n10.15252/embj.201798049\nPMC5881631\n97\nHernández‐Vega\nA\n,\nBraun\nM\n,\nScharrel\nL\n, et al.\nLocal nucleation of microtubule bundles through tubulin concentration into a condensed tau phase\n.\nCell Rep\n.\n2017\n;\n20\n(\n10\n):\n2304\n‐\n2312\n. doi:\n10.1016/j.celrep.2017.08.042\n28877466\n10.1016/j.celrep.2017.08.042\nPMC5828996\n98\nLatonen\nL\n.\nPhase‐to‐phase with nucleoli—Stress responses, protein aggregation and novel roles of RNA\n.\nFront Cell Neurosci\n. Frontiers Media S.A.\n2019\n;\n13\n:\n151\n. doi:\n10.3389/fncel.2019.00151\n31080406\n10.3389/fncel.2019.00151\nPMC6497782\n99\nSohn\nC\n,\nMa\nJ\n,\nRay\nWJ\n,\nFrost\nB\n.\nPathogenic tau decreases nuclear tension in cultured neurons\n.\nFrontiers in Aging\n.\n2023\n;\n4\n:\n1058968\n. doi:\n10.3389/fragi.2023.1058968\n36756194\n10.3389/fragi.2023.1058968\nPMC9901542\n100\nGerson\nJE\n,\nKayed\nR\n.\nFormation and propagation of tau oligomeric seeds\n.\nFront Neurol\n.\n2013\n;\n4\n:\n93\n. doi:\n10.3389/fneur.2013.00093\n23882255\n10.3389/fneur.2013.00093\nPMC3713404\n101\nFarmer\nK\n,\nGerson\nJE\n,\nKayed\nR\n.\nOligomer formation and cross‐seeding: the new frontier\n.\nIsr J Chem\n. Wiley‐VCH Verlag.\n2017\n;\n57\n(\n7\n):\n665\n‐\n673\n. doi:\n10.1002/ijch.201600103\n102\nJucker\nM\n,\nWalker\nLC\n.\nPropagation and spread of pathogenic protein assemblies in neurodegenerative diseases\n.\nNat Neurosci\n.\nNature Publishing Group\n.\n2018\n;\n21\n(\n10\n):\n1341\n‐\n1349\n.\n30258241\n10.1038/s41593-018-0238-6\nPMC6375686\n103\nGuo\nC\n,\nJeong\nH‐H\n,\nHsieh\nYi‐C\n, et al.\nTau activates transposable elements in Alzheimer's disease\n.\nCell Rep\n.\n2018\n;\n23\n(\n10\n):\n28742880\n. doi:\n10.1016/j.celrep.2018.05.004\n10.1016/j.celrep.2018.05.004\nPMC6181645\n29874575\n104\nMahoney\nR\n,\nOchoa Thomas\nE\n,\nRamirez\nP\n, et al.\nPathogenic tau causes a toxic depletion of nuclear calcium\n.\nCell Rep\n.\n2020\n;\n32\n(\n2\n):\n107900\n. doi:\n10.1016/j.celrep.2020.107900\n32668249\n10.1016/j.celrep.2020.107900\nPMC7428851\n105\nSengupta\nU\n,\nMontalbano\nM\n,\nMcAllen\nS\n,\nMinuesa\nG\n,\nKharas\nM\n,\nKayed\nR\n.\nFormation of toxic oligomeric assemblies of rna‐binding protein: musashi in Alzheimer's disease\n.\nActa Neuropathol Commun\n.\n2018\n;\n6\n(\n1\n):\n113\n. doi:\n10.1186/s40478‐018‐0615‐0\n30367664\n10.1186/s40478-018-0615-0\nPMC6203984\n106\nKinoshita\nC\n,\nKubota\nN\n,\nAoyama\nK\n.\nInterplay of rna‐binding proteins and micrornas in neurodegenerative diseases\n.\nInt J Mol Sci\n. MDPI AG.\n2021\n;\n22\n(\n10\n):\n5292\n. doi:\n10.3390/ijms22105292\n34069857\n10.3390/ijms22105292\nPMC8157344\n107\nMaziuk\nBF\n,\nApicco\nDJ\n,\nCruz\nAL\n, et al.\nRNA binding proteins co‐localize with small tau inclusions in tauopathy\n.\nActa Neuropathol Commun\n.\n2018\n;\n6\n(\n1\n):\n71\n. doi:\n10.1186/s40478‐018‐0574‐5\n30068389\n10.1186/s40478-018-0574-5\nPMC6069705\n108\nFrost\nB\n,\nHemberg\nM\n,\nLewis\nJ\n,\nFeany\nMB\n.\nTau promotes neurodegeneration through global chromatin relaxation\n.\nNat Neurosci\n.\n2014\n;\n17\n(\n3\n):\n357\n‐\n366\n. doi:\n10.1038/nn.3639\n24464041\n10.1038/nn.3639\nPMC4012297\n109\nCasale\nAM\n,\nLiguori\nF\n,\nAnsaloni\nF\n, et al.\nTransposable element activation promotes neurodegeneration in a Drosophila model of Huntington's disease\niScience\n.\n2022\n;\n25\n(\n1\n):\n103702\n.\n35036881\n10.1016/j.isci.2021.103702\nPMC8752904\n110\nKlein\nH‐U\n,\nMcCabe\nC\n,\nGjoneska\nE\n, et al.\nEpigenome‐wide study uncovers large‐scale changes in histone acetylation driven by tau pathology in aging and Alzheimer's human brains\n.\nNat Neurosci\n.\n2019\n;\n22\n(\n1\n):\n37\n‐\n46\n. doi:\n10.1038/s41593‐018‐0291‐1\n30559478\n10.1038/s41593-018-0291-1\nPMC6516529\n111\nMontalbano\nM\n,\nMcAllen\nS\n,\nPuangmalai\nN\n, et al.\nRNA‐binding proteins musashi and tau soluble aggregates initiate nuclear dysfunction\n.\nNat Commun\n.\n2020\n;\n11\n(\n1\n):\n4305\n. doi:\n10.1038/s41467‐020‐18022‐6\n32855391\n10.1038/s41467-020-18022-6\nPMC7453003\n112\nJawaid\nA\n,\nWoldemichael\nBT\n,\nKremer\nEA\n, et al.\nMemory decline and its reversal in aging and neurodegeneration involve miR‐183/96/182 biogenesis\n.\nMol Neurobiol\n.\n2019\n;\n56\n(\n5\n):\n3451\n‐\n3462\n. doi:\n10.1007/s12035‐018‐1314‐3\n30128653\n10.1007/s12035-018-1314-3\n113\nConicella\nAE\n,\nZerze\nGH\n,\nMittal\nJ\n,\nFawzi\nNL\n.\nALS Mutations disrupt phase separation mediated by α‐helical structure in the TDP‐43 low‐complexity C‐Terminal domain\n.\nStructure\n.\n2016\n;\n24\n(\n9\n):\n1537\n‐\n1549\n.\n27545621\n10.1016/j.str.2016.07.007\nPMC5014597\n114\nJo\nM\n,\nLee\nS\n,\nJeon\nYM\n,\nKim\nS\n,\nKwon\nY\n,\nKim\nHJ\n.\nThe role of TDP‐43 propagation in neurodegenerative diseases: integrating insights from clinical and experimental studies\n.\nExp Mol Med\n.\n2020\n;\n52\n(\n10\n):\n1652\n‐\n1662\n. doi:\n10.1038/s12276‐020‐00513‐7\n33051572\n10.1038/s12276-020-00513-7\nPMC8080625\n115\nNeelagandan\nN\n,\nGonnella\nG\n,\nDang\nS\n, et al.\nTDP‐43 enhances translation of specific mRNAs linked to neurodegenerative disease\n.\nNucleic Acids Res\n.\n2019\n;\n47\n(\n1\n):\n341\n‐\n361\n. doi:\n10.1093/nar/gky972\n30357366\n10.1093/nar/gky972\nPMC6326785\n116\nGasperini\nL\n,\nRossi\nA\n,\nCornella\nN\n, et al.\nThe hnRNP RALY regulates PRMT1 expression and interacts with the ALS‐linked protein FUS: implication for reciprocal cellular localization\n.\nMol Biol Cell\n.\n2018\n;\n29\n(\n26\n):\n3067\n‐\n3081\n. doi:\n10.1091/mbc.E18‐02‐0108\n30354839\n10.1091/mbc.E18-02-0108\nPMC6340211\n117\nMarrone\nL\n,\nDrexler\nHCA\n,\nWang\nJ\n, et al.\nFUS pathology in ALS is linked to alterations in multiple ALS‐associated proteins and rescued by drugs stimulating autophagy\n.\nActa Neuropathol\n.\n2019\n;\n138\n(\n1\n):\n67\n‐\n84\n. doi:\n10.1007/s00401‐019‐01998‐x\n30937520\n10.1007/s00401-019-01998-x\nPMC6570784\n118\nKeating\nSS\n,\nBademosi\nAT\n,\nSan Gil\nR\n,\nWalker\nAK\n.\nAggregation‐prone TDP‐43 sequesters and drives pathological transitions of free nuclear TDP‐43\n.\nCell Mol Life Sci\n.\n2023\n;\n80\n(\n4\n):\n95\n. doi:\n10.1007/s00018‐023‐04739‐2\n36930291\n10.1007/s00018-023-04739-2\nPMC10023653\n119\nWalker\nAK\n,\nSpiller\nKJ\n,\nGe\nG\n, et al.\nFunctional recovery in new mouse models of ALS/FTLD after clearance of pathological cytoplasmic TDP‐43\n.\nActa Neuropathol\n.\n2015\n;\n130\n(\n5\n):\n643\n‐\n660\n. doi:\n10.1007/s00401‐015‐1460‐x\n26197969\n10.1007/s00401-015-1460-x\nPMC5127391\n120\nChu\nY\n,\nKordower\nJH\n.\nPost‐Mortem studies of neurturin gene therapy for Parkinson's disease: two subjects with 10 years CERE120 delivery\n.\nMov Disord\n2023\n;\n38\n(\n9\n):\n1728\n‐\n1736\n. doi:\n10.1002/mds.29518\n37544016\n10.1002/mds.29518\n121\nPan\nY\n,\nZong\nQ\n,\nLi\nG\n, et al.\nNuclear localization of alpha‐synuclein affects the cognitive and motor behavior of mice by inducing DNA damage and abnormal cell cycle of hippocampal neurons\n.\nFront Mol Neurosci\n.\n2022\n;\n15\n:\n1015881\n.\n36438187\n10.3389/fnmol.2022.1015881\nPMC9684191\n122\nHan\nJ\n,\nFan\nY\n,\nWu\nP\n, et al.\nParkinson's Disease Dementia: synergistic Effects of Alpha‐Synuclein, Tau, Beta‐Amyloid, and Iron\n.\nFront Aging Neurosci\n. Frontiers Media S.A.\n2021\n;\n13\n:\n743754\n. doi:\n10.3389/fnagi.2021.743754\n34707492\n10.3389/fnagi.2021.743754\nPMC8542689\n123\nMillett\nM\n,\nComite\nA\n,\nCastosa\nEM\n, et al.\nPathological α‐synuclein perturbs nuclear integrity\n.\nNeurobiol Dis\n.\n2025\n;\n214\n:\n107028\n. doi:\n10.1016/j.nbd.2025.107028\n40669776\n10.1016/j.nbd.2025.107028\nPMC12959962\n124\nAbe\nT\n,\nKuwahara\nT\n,\nSuenaga\nS\n,\nSakurai\nM\n,\nTakatori\nS\n,\nIwatsubo\nT\n.\nLysosomal stress drives the release of pathogenic α‐synuclein from macrophage lineage cells via the LRRK2‐Rab10 pathway\n.\niScience\n.\n2024\n;\n27\n(\n2\n):\n108893\n. doi:\n10.1016/j.isci.2024.108893\n38313055\n10.1016/j.isci.2024.108893\nPMC10835446\n125\nYsselstein\nD\n,\nNguyen\nM\n,\nYoung\nTJ\n, et al.\nLRRK2 kinase activity regulates lysosomal glucocerebrosidase in neurons derived from Parkinson's disease patients\n.\nNat Commun\n.\n2019\n;\n10\n(\n1\n):\n5570\n. doi:\n10.1038/s41467‐019‐13413‐w\n31804465\n10.1038/s41467-019-13413-w\nPMC6895201\n126\nNavarro‐Romero\nA\n,\nFernandez‐Gonzalez\nI\n,\nRiera\nJ\n, et al.\nLysosomal lipid alterations caused by glucocerebrosidase deficiency promote lysosomal dysfunction, chaperone‐mediated‐autophagy deficiency, and alpha‐synuclein pathology\n.\nNPJ Parkinsons Dis\n.\n2022\n;\n8\n(\n1\n):\n126\n. doi:\n10.1038/s41531‐022‐00397‐6\n36202848\n10.1038/s41531-022-00397-6\nPMC9537323\n127\nGhag\nG\n,\nBhatt\nN\n,\nCantu\nDV\n, et al.\nSoluble tau aggregates, not large fibrils, are the toxic species that display seeding and cross‐seeding behavior\n.\nProtein Science\n.\n2018\n;\n27\n(\n11\n):\n1901\n‐\n1909\n. doi:\n10.1002/pro.3499\n30125425\n10.1002/pro.3499\nPMC6201727\n128\nNiewiadomska\nG\n,\nNiewiadomski\nW\n,\nSteczkowska\nM\n,\nGasiorowska\nA\n,\nTau oligomers neurotoxicity\n.\nLife (Basel)\n. MDPI AG.\n2021\n;\n11\n(\n1\n):\n1\n‐\n28\n.\n10.3390/life11010028\nPMC7824853\n33418848\n129\nPuangmalai\nN\n,\nBhatt\nN\n,\nMontalbano\nM\n, et al.\nInternalization mechanisms of brain‐derived tau oligomers from patients with Alzheimer's disease, progressive supranuclear palsy and dementia with lewy bodies\n.\nCell Death Dis\n.\n2020\n;\n11\n(\n5\n):\n314\n. doi:\n10.1038/s41419‐020‐2503‐3\n32366836\n10.1038/s41419-020-2503-3\nPMC7198578\n130\nLasagna‐Reeves\nCA\n,\nCastillo‐Carranza\nDL\n,\nSengupta\nU\n, et al.\nAlzheimer brain‐derived tau oligomers propagate pathology from endogenous tau\n.\nSci Rep\n.\n2012\n;\n2\n:\n700\n. doi:\n10.1038/srep00700\n23050084\n10.1038/srep00700\nPMC3463004\n131\nLasagna‐Reeves\nCA\n,\nCastillo‐Carranza\nDL\n,\nSengupta\nU\n, et al.\nIdentification of oligomers at early stages of tau aggregation in Alzheimer's disease\n.\nThe FASEB Journal\n.\n2012\n;\n26\n(\n5\n):\n1946\n‐\n1959\n. doi:\n10.1096/fj.11‐199851\n22253473\n10.1096/fj.11-199851\nPMC4046102\n132\nFurman\nJL\n,\nHolmes\nBB\n,\nDiamond\nMI\n.\nSensitive detection of proteopathic seeding activity with FRET flow cytometry\n.\nJ Vis Exp\n.\n2015\n;\n2015\n(\n106\n):\ne53205\n. doi:\n10.3791/53205\n10.3791/53205\nPMC4692784\n26710240\n133\nVasconcelos\nB\n,\nStancu\nI‐C\n,\nBuist\nA\n, et al.\nHeterotypic seeding of tau fibrillization by pre‐aggregated abeta provides potent seeds for prion‐like seeding and propagation of tau‐pathology in vivo\n.\nActa Neuropathol\n.\n2016\n;\n131\n(\n4\n):\n549\n‐\n569\n. doi:\n10.1007/s00401‐015‐1525‐x\n26739002\n10.1007/s00401-015-1525-x\nPMC4789256\n134\nLasagna‐Reeves\nCA\n,\nCastillo‐Carranza\nDL\n,\nGuerrero‐Muñoz\nMJ\n,\nJackson\nGR\n,\nKayed\nR\n.\nPreparation and characterization of neurotoxic tau oligomers\n.\nBiochemistry\n.\n2010\n;\n49\n(\n47\n):\n10039\n‐\n10041\n. doi:\n10.1021/bi1016233\n21047142\n10.1021/bi1016233\n135\nMeisl\nG\n,\nXu\nCK\n,\nTaylor\nJD\n, et al.\nUncovering the Universality of Self‐Replication in Protein Aggregation and Its Link to Disease\n.\nSci Adv\n.\n2022\n;\n8\n(\n32\n):\neabn6831\n35960802\n10.1126/sciadv.abn6831\nPMC9374340\n136\nArseni\nD\n,\nNonaka\nT\n,\nJacobsen\nMH\n, et al.\nHeteromeric amyloid filaments of ANXA11 and TDP‐43 in FTLD‐TDP type C\n.\nNature\n.\n2024\n;\n634\n(\n8034\n):\n662\n‐\n668\n. doi:\n10.1038/s41586‐024‐08024‐5\n39260416\n10.1038/s41586-024-08024-5\nPMC11485244\n137\nChen\nR\n,\nStockwell\nI\n,\nPierce\nJC\n, et al.\nPathological TDP‐43 filaments accumulate at synapses and cause synaptic dysfunction\n.\nbioRxiv\n.\n2026\n;\n27\n:2026.01.27.701787.\n138\nTetter\nS\n,\nVarghese\nNR\n,\nMurzin\nAG\n, et al.\nDistinct TAF15 amyloid filament folds define multiple subtypes of FTLD‐TAF15\n.\nbioRxiv\n.\n2026\n;\n12\n:2026.01.12.698957.\n139\nKorsten\nG\n,\nOsinga\nM\n,\nPelle\nRA\n, et al.\nNuclear poly‐glutamine aggregates rupture the nuclear envelope and hinder its repair\n.\nJournal of Cell Biology\n.\n2024\n;\n223\n(\n11\n):\ne202307142\n. doi:\n10.1083/jcb.202307142\n39150509\n10.1083/jcb.202307142\nPMC11329780\n140\nAlcalá‐Vida\nR\n,\nGarcia‐Forn\nM\n,\nCastany‐Pladevall\nC\n, et al.\nNeuron type‐specific increase in lamin B1 contributes to nuclear dysfunction in Huntington's disease\n.\nEMBO Mol Med\n.\n2021\n;\n13\n(\n2\n):\ne12105\n.\n33369245\n10.15252/emmm.202012105\nPMC7863407\n141\nChapple\nJP\n,\nBros‐Facer\nV\n,\nButler\nR\n,\nGallo\nJM\n.\nFocal distortion of the nuclear envelope by huntingtin aggregates revealed by lamin immunostaining\n.\nNeurosci Lett\n.\n2008\n;\n447\n(\n2‐3\n):\n172\n‐\n174\n. doi:\n10.1016/j.neulet.2008.09.075\n18840504\n10.1016/j.neulet.2008.09.075\nPMC2593798\n142\nDobson\nC\n.\nProtein folding and misfolding\n.\nNature\n.\n2003\n;\n426\n(\n6968\n):\n884\n‐\n890\n. doi:\n10.1038/nature02261\n14685248\n10.1038/nature02261\n143\nVanderweyde\nT\n,\nYu\nH\n,\nVarnum\nM\n, et al.\nContrasting pathology of the stress granule proteins TIA‐1 and G3BP in tauopathies\n.\nJournal of Neuroscience\n.\n2012\n;\n32\n(\n24\n):\n8270\n‐\n8283\n. doi:\n10.1523/JNEUROSCI.1592‐12.2012\n22699908\n10.1523/JNEUROSCI.1592-12.2012\nPMC3402380\n144\nVanderweyde\nT\n,\nApicco\nDJ\n,\nYoumans‐Kidder\nK\n, et al.\nInteraction of tau with the RNA‐Binding Protein TIA1 Regulates tau Pathophysiology and Toxicity\n.\nCell Rep\n.\n2016\n;\n15\n(\n7\n):\n1455\n‐\n1466\n. doi:\n10.1016/j.celrep.2016.04.045\n27160897\n10.1016/j.celrep.2016.04.045\nPMC5325702\n145\nWang\nC\n,\nTerrigno\nM\n,\nLi\nJ\n, et al.\nIncreased G3BP2‐Tau interaction in tauopathies is a natural defense against Tau aggregation\n.\nNeuron\n.\n2023\n;\n111\n(\n17\n):\n2660\n‐\n2674.e9\n. doi:\n10.1016/j.neuron.2023.05.033\n37385246\n10.1016/j.neuron.2023.05.033\n146\nWang\nY\n,\nXu\nE\n,\nMusich\nPR\n,\nLin\nF\n.\nMitochondrial dysfunction in neurodegenerative diseases and the potential countermeasure\n.\nCNS Neurosci Ther\nBlackwell Publishing Ltd\n.\n2019\n;\n25\n(\n7\n):\n816\n‐\n824\n. doi:\n10.1111/cns.13116\n30889315\n10.1111/cns.13116\nPMC6566063\n147\nMaina\nMB\n,\nBailey\nLJ\n,\nWagih\nS\n, et al.\nThe involvement of tau in nucleolar transcription and the stress response\n.\nActa Neuropathol Commun\n.\n2018\n;\n6\n(\n1\n):\n70\n. doi:\n10.1186/s40478‐018‐0565‐6\n30064522\n10.1186/s40478-018-0565-6\nPMC6066928\n148\nBourdenx\nM\n,\nDehay\nB\n.\nAutophagie et cerveau ‐ Le cas des maladies neurodégénératives [Autophagy and brain: the case of neurodegenerative diseases]\n.\nMed Sci (Paris)\n.\n2017\n;\n33\n(\n3\n):\n268\n‐\n274\n. doi:\n10.1051/medsci/20173303013\n28367813\n10.1051/medsci/20173303013\n149\nD'Angelo\nMA\n,\nRaices\nM\n,\nPanowski\nSH\n,\nHetzer\nMW\n.\nAge‐Dependent deterioration of nuclear pore complexes causes a loss of nuclear integrity in postmitotic cells\n.\nCell\n.\n2009\n;\n136\n(\n2\n):\n284\n‐\n295\n.\n19167330\n10.1016/j.cell.2008.11.037\nPMC2805151\n150\nRiaz\nZ\n,\nRichardson\nGS\n,\nJin\nH\n, et al.\nNuclear pore and nucleocytoplasmic transport impairment in oxidative stress‐induced neurodegeneration: relevance to molecular mechanisms in pathogenesis of parkinson's and other related neurodegenerative diseases\n.\nMol Neurodegener\n. BioMed Central Ltd.\n2024\n;\n19\n(\n1\n):\n87\n.\n39578912\n10.1186/s13024-024-00774-0\nPMC11585115\n151\nDickson\nJR\n,\nFrosch\nMP\n,\nHyman\nBT\n.\nAltered localization of nucleoporin 98 in primary tauopathies\n.\nBrain Commun\n.\n2023\n;\n5\n(\n1\n):\nfcac334\n. doi:\n10.1093/braincomms/fcac334\n36601621\n10.1093/braincomms/fcac334\nPMC9806717\n152\nZhang\nYJ\n,\nGuo\nL\n,\nGonzales\nPK\n, et al.\nHeterochromatin anomalies and double‐stranded RNA accumulation underlie C9orf72 poly(PR) toxicity\n.\nScience\n.\n2019\n;\n363\n(\n6428\n):\neaav2606\n.\n30765536\n10.1126/science.aav2606\nPMC6524780\n153\nHayes\nLR\n,\nDuan\nL\n,\nBowen\nK\n,\nKalab\nP\n,\nRothstein\nJD\n.\nC9orf72 arginine‐rich dipeptide repeat proteins disrupt karyopherin‐mediated nuclear import\n.\nElife\n.\n2020\n;\n9\n:\ne51685\n. doi:\n10.7554/eLife.51685\n32119645\n10.7554/eLife.51685\nPMC7051184\n154\nHutten\nS\n,\nUsluer\nS\n,\nBourgeois\nB\n, et al.\nNuclear import receptors directly bind to arginine‐rich dipeptide repeat proteins and suppress their pathological interactions\n.\nCell Rep\n.\n2020\n;\n33\n(\n12\n):\n108538\n. doi:\n10.1016/j.celrep.2020.108538\n33357437\n10.1016/j.celrep.2020.108538\nPMC7814465\n155\nRiaz\nZ\n,\nChang\nYT\n,\nZenitsky\nG\n, et al.\nMitochondrial dysfunction impairs the nuclear pore complex in parkinson's disease pathogenesis\n. Preprint posted online November 5, 2024.\n156\nSalapa\nHE\n,\nJohnson\nC\n,\nHutchinson\nC\n,\nPopescu\nBF\n,\nLevin\nMC\n.\nDysfunctional RNA binding proteins and stress granules in multiple sclerosis\n.\nJ Neuroimmunol\n.\n2018\n;\n324\n:\n149\n‐\n156\n. doi:\n10.1016/j.jneuroim.2018.08.015\n30190085\n10.1016/j.jneuroim.2018.08.015\n157\nSidhu\nR\n,\nGatt\nA\n,\nFratta\nP\n,\nLashley\nT\n,\nBampton\nA\n.\nHnRNP K mislocalisation in neurons of the dentate nucleus is a novel neuropathological feature of neurodegenerative disease and ageing\n.\nNeuropathol Appl Neurobiol\n.\n2022\n;\n48\n(\n4\n):\ne12793\n. doi:\n10.1111/nan.12793\n35064577\n10.1111/nan.12793\nPMC9208575\n158\nSpead\nO\n,\nZaepfel\nBL\n,\nRothstein\nJD\n.\nNuclear pore dysfunction in neurodegeneration\n.\nNeurotherapeutics\n. Springer Science and Business Media Deutschland GmbH.\n2022\n;\n19\n(\n4\n):\n1050\n‐\n1060\n. doi:\n10.1007/s13311‐022‐01293‐w\n36070178\n10.1007/s13311-022-01293-w\nPMC9587172\n159\nWang\nDJ\n,\nRatnam\nNM\n,\nByrd\nJC\n,\nGuttridge\nDC\n.\nNF‐κB functions in tumor initiation by suppressing the surveillance of both innate and adaptive immune cells\n.\nCell Rep\n.\n2014\n;\n9\n(\n1\n):\n90\n‐\n103\n. doi:\n10.1016/j.celrep.2014.08.049\n25263557\n10.1016/j.celrep.2014.08.049\nPMC4882153\n160\nYang\nW\n,\nLiu\nLi\n,\nLi\nC\n, et al.\nTRIM52 plays an oncogenic role in ovarian cancer associated with NF‐kB pathway\n.\nCell Death Dis\n.\n2018\n;\n9\n(\n9\n):\n908\n. doi:\n10.1038/s41419‐018‐0881‐6\n30185771\n10.1038/s41419-018-0881-6\nPMC6125490\n161\nAlbensi\nBC\n.\nWhat is nuclear factor kappa B (NF‐κB) doing in and to the mitochondrion?\nFront Cell Dev Biol\n. Frontiers Media S.A.\n2019\n;\n7\n:\n154\n.\n31448275\n10.3389/fcell.2019.00154\nPMC6692429\n162\nLuo\nAi‐J\n,\nTan\nJ\n,\nHe\nLe‐Ye\n, et al.\nSuppression of tescalcin inhibits growth and metastasis in renal cell carcinoma via downregulating NHE1 and NF‐kB signaling\n.\nExp Mol Pathol\n.\n2019\n;\n107\n:\n110\n‐\n117\n. doi:\n10.1016/j.yexmp.2018.12.004\n30594602\n10.1016/j.yexmp.2018.12.004\n163\nChen\nQ\n,\nSun\nL\n,\nChen\nZJ\n.\nRegulation and function of the cGAS‐STING pathway of cytosolic DNA sensing\n.\nNat Immunol\n. Nature Publishing Group.\n2016\n;\n17\n(\n10\n):\n1142\n‐\n1149\n. doi:\n10.1038/ni.3558\n27648547\n10.1038/ni.3558\n164\nMackenzie\nKJ\n,\nCarroll\nP\n,\nMartin\nC‐A\n, et al.\nCGAS surveillance of micronuclei links genome instability to innate immunity\n.\nNature\n.\n2017\n;\n548\n(\n7668\n):\n461\n‐\n465\n. doi:\n10.1038/nature23449\n28738408\n10.1038/nature23449\nPMC5870830\n165\nHarding\nSM\n,\nBenci\nJL\n,\nIrianto\nJ\n,\nDischer\nDE\n,\nMinn\nAJ\n,\nGreenberg\nRA\n.\nMitotic progression following DNA damage enables pattern recognition within micronuclei\n.\nNature\n.\n2017\n;\n548\n(\n7668\n):\n466\n‐\n470\n. doi:\n10.1038/nature23470\n28759889\n10.1038/nature23470\nPMC5857357\n166\nWest\nAP\n,\nShadel\nGS\n.\nMitochondrial DNA in innate immune responses and inflammatory pathology\n.\nNat Rev Immunol\n. Nature Publishing Group.\n2017\n;\n17\n(\n6\n):\n363\n‐\n375\n. doi:\n10.1038/nri.2017.21\n28393922\n10.1038/nri.2017.21\nPMC7289178\n167\nSzczesny\nB\n,\nMarcatti\nM\n,\nAhmad\nA\n, et al.\nMitochondrial DNA damage and subsequent activation of Z‐DNA binding protein 1 links oxidative stress to inflammation in epithelial cells\n.\nSci Rep\n.\n2018\n;\n8\n(\n1\n):\n914\n. doi:\n10.1038/s41598‐018‐19216‐1\n29343810\n10.1038/s41598-018-19216-1\nPMC5772643\n168\nRaab\nM\n,\nGentili\nM\n,\nDe Belly\nH\n, et al.\nESCRT III Repairs Nuclear Envelope Ruptures during Cell Migration to Limit DNA Damage and Cell Death\n.\nScience\n.\n2016\n;\n352\n(\n6283\n):\n359\n‐\n362\n.\n27013426\n10.1126/science.aad7611\n169\nDenais\nCM\n,\nGilbert\nRM\n,\nIsermann\nP\n, et al.\nNuclear envelope rupture and repair during cancer cell migration\n.\nScience\n.\n2016\n;\n352\n(\n6283\n):\n353\n‐\n358\n.\n27013428\n10.1126/science.aad7297\nPMC4833568\n170\nSarazin\nM\n,\nLagarde\nJ\n,\nEl Haddad\nI\n, et al.\nThe path to next‐generation disease‐modifying immunomodulatory combination therapies in Alzheimer's disease\n.\nNat Aging\n.\n2024\n;\n4\n(\n6\n):\n761\n‐\n770\n. doi:\n10.1038/s43587‐024‐00630‐2\n38839924\n10.1038/s43587-024-00630-2\n171\nMamuladze\nT\n,\nKipnis\nJ\n.\nType 2 immunity in the brain and brain borders\n.\nCell Mol Immunol\n. Springer Nature.\n2023\n;\n20\n(\n11\n):\n1290\n‐\n1299\n. doi:\n10.1038/s41423‐023‐01043‐8\n37429945\n10.1038/s41423-023-01043-8\nPMC10616183\n172\nHaage\nV\n,\nDe Jager\nPL\n.\nNeuroimmune contributions to Alzheimer's disease: a focus on human data\n.\nMol Psychiatry\n. Springer Nature.\n2022\n;\n27\n(\n8\n):\n3164\n‐\n3181\n. doi:\n10.1038/s41380‐022‐01637‐0\n35668160\n10.1038/s41380-022-01637-0\nPMC9168642\n173\nChen\nX\n,\nFirulyova\nM\n,\nManis\nM\n, et al.\nMicroglia‐mediated T cell infiltration drives neurodegeneration in tauopathy\n.\nNature\n.\n2023\n;\n615\n(\n7953\n):\n668\n‐\n677\n. doi:\n10.1038/s41586‐023‐05788‐0\n36890231\n10.1038/s41586-023-05788-0\nPMC10258627\n174\nAskin\nB\n,\nWegmann\nS\n.\nInteraction of microglia and T cells: a deadly duo behind Tau‐mediated neurodegeneration\n.\nSignal Transduct Target Ther\n. Springer Nature.\n2023\n;\n8\n(\n1\n):\n317\n.\n37604929\n10.1038/s41392-023-01563-9\nPMC10442408\n175\nJafarzadeh\nA\n,\nSheikhi\nA\n,\nJafarzadeh\nZ\n,\nNemati\nM\n.\nDifferential roles of regulatory T cells in Alzheimer's disease\n.\nCell Immunol\n. Academic Press Inc.\n2023\n;\n393‐394\n:\n104778\n.\n10.1016/j.cellimm.2023.104778\n37907046\n176\nCoppé\nJP\n,\nDesprez\nPY\n,\nKrtolica\nA\n,\nCampisi\nJ\n.\nThe senescence‐associated secretory phenotype: the dark side of tumor suppression\n.\nAnnual Review of Pathology: Mechanisms of Disease\n.\n2010\n;\n5\n:\n99\n‐\n118\n.\n10.1146/annurev-pathol-121808-102144\nPMC4166495\n20078217\n177\nChilds\nBG\n,\nDurik\nM\n,\nBaker\nDJ\n,\nVan Deursen\nJM\n.\nCellular senescence in aging and age‐related disease: from mechanisms to therapy\n.\nNat Med\n. Nature Publishing Group.\n2015\n;\n21\n(\n12\n):\n1424\n‐\n1435\n. doi:\n10.1038/nm.4000\n26646499\n10.1038/nm.4000\nPMC4748967\n178\nGlück\nS\n,\nGuey\nB\n,\nGulen\nMF\n, et al.\nInnate immune sensing of cytosolic chromatin fragments through cGAS promotes senescence\n.\nNat Cell Biol\n.\n2017\n;\n19\n(\n9\n):\n1061\n‐\n1070\n.\n28759028\n10.1038/ncb3586\nPMC5826565\n179\nFranceschi\nC\n,\nGaragnani\nP\n,\nParini\nP\n,\nGiuliani\nC\n,\nSantoro\nA\n.\nInflammaging: a new immune–metabolic viewpoint for age‐related diseases\n.\nNat Rev Endocrinol\n. Nature Publishing Group.\n2018\n;\n14\n(\n10\n):\n576\n‐\n590\n. doi:\n10.1038/s41574‐018‐0059‐4\n30046148\n10.1038/s41574-018-0059-4\n180\nRiley\nJS\n,\nTait\nSW\n.\nMitochondrial DNA in inflammation and immunity\n.\nEMBO Rep\n.\n2020\n;\n21\n(\n4\n):\ne49799\n. doi:\n10.15252/embr.201949799\n32202065\n10.15252/embr.201949799\nPMC7132203\n181\nFischer\nR\n,\nMaier\nO\n.\nInterrelation of oxidative stress and inflammation in neurodegenerative disease: role of TNF\n.\nOxid Med Cell Longev\n. Hindawi Limited.\n2015\n;\n2015\n:\n610813\n. doi:\n10.1155/2015/610813\n25834699\n10.1155/2015/610813\nPMC4365363\n182\nMissiroli\nS\n,\nGenovese\nI\n,\nPerrone\nM\n,\nVezzani\nB\n,\nVitto\nVAM\n,\nGiorgi\nC\n.\nThe role of mitochondria in inflammation: from cancer to neurodegenerative disorders\n.\nJ Clin Med\n. MDPI.\n2020\n;\n9\n(\n3\n):\n740\n. doi:\n10.3390/jcm9030740\n32182899\n10.3390/jcm9030740\nPMC7141240\n183\nCho\nSJ\n,\nRooney\nK\n,\nChoi\nAMK\n,\nStout‐Delgado\nHW\n.\nNLRP3 inflammasome activation in aged macrophages is diminished during Streptococcus pneumoniae infection\n.\nAm J Physiol Lung Cell Mol Physiol\n.\n2018\n;\n314\n:\n372\n‐\n387\n. doi:\n10.1152/ajplung.00393.2017\n10.1152/ajplung.00393.2017\nPMC5900358\n29097427\n184\nKung\nWM\n,\nLin\nMS\n.\nThe nfκb antagonist cdgsh iron‐sulfur domain 2 is a promising target for the treatment of neurodegenerative diseases\n.\nInt J Mol Sci\n. MDPI AG.\n2021\n;\n22\n(\n2\n):\n1\n‐\n12\n. doi:\n10.3390/ijms22020934\n10.3390/ijms22020934\nPMC7832822\n33477809\n185\nFołta\nJ\n,\nRzepka\nZ\n,\nWrześniok\nD\n.\nThe role of inflammation in neurodegenerative diseases: parkinson's disease, Alzheimer's disease, and multiple sclerosis\n.\nInt J Mol Sci\n. Multidisciplinary Digital Publishing Institute (MDPI).\n2025\n;\n26\n(\n11\n):\n5177\n.\n40507988\n10.3390/ijms26115177\nPMC12154089"
+        },
+        "details": {
+          "limitations": "Figures/binary files and supplementary files not downloaded",
+          "metadata": {
+            "abstractText": "Neurodegenerative diseases are characterized by a loss of neuronal function and structure, often in a region-specific manner. Multiple factors contribute to neuronal dysfunction and death, including pathogenic protein buildup, protein mislocalization, and inflammation. Despite extensive research, the common mechanisms driving neurodegeneration remain incompletely understood, partly because pathological processes affect interconnected cellular components such as the cytosol, cytoskeleton, and nucleus. Emerging evidence indicates that changes in nuclear structure and function are not simply secondary to cellular stress but play key roles in aging and neurodegenerative disease progression. This review explores important aspects of nuclear dysfunction, including alterations in nuclear architecture, chromatin organization, nucleocytoplasmic transport, DNA damage responses, and inflammatory signaling. It further discusses how these processes converge to increase neuronal vulnerability and may extend beyond normal aging to promote neurodegeneration. Overall, this review highlights nuclear dysfunction as a significant factor in neuronal impairment and underscores the need for therapies targeting nuclear integrity.",
+            "affiliation": "Department of Neurology, University of Texas Medical Branch, Galveston, Texas, USA.",
+            "authMan": "N",
+            "authorIdList": {
+              "authorId": [
+                {
+                  "type": "ORCID",
+                  "value": "0000-0002-0456-452X"
+                }
+              ]
+            },
+            "authorList": {
+              "author": [
+                {
+                  "authorAffiliationDetailsList": {
+                    "authorAffiliation": [
+                      {
+                        "affiliation": "Department of Neurology, University of Texas Medical Branch, Galveston, Texas, USA."
+                      },
+                      {
+                        "affiliation": "MD-PhD Program, University of Texas Medical Branch, Galveston, Texas, USA."
+                      },
+                      {
+                        "affiliation": "Mitchell Center for Neurodegenerative Disorders, University of Texas Medical Branch, Galveston, Texas, USA."
+                      }
+                    ]
+                  },
+                  "firstName": "Abbigael",
+                  "fullName": "Aday A",
+                  "initials": "A",
+                  "lastName": "Aday"
+                },
+                {
+                  "authorAffiliationDetailsList": {
+                    "authorAffiliation": [
+                      {
+                        "affiliation": "Department of Neurology, University of Texas Medical Branch, Galveston, Texas, USA."
+                      },
+                      {
+                        "affiliation": "MD-PhD Program, University of Texas Medical Branch, Galveston, Texas, USA."
+                      },
+                      {
+                        "affiliation": "Mitchell Center for Neurodegenerative Disorders, University of Texas Medical Branch, Galveston, Texas, USA."
+                      }
+                    ]
+                  },
+                  "firstName": "Jack",
+                  "fullName": "Tiller J",
+                  "initials": "J",
+                  "lastName": "Tiller"
+                },
+                {
+                  "authorAffiliationDetailsList": {
+                    "authorAffiliation": [
+                      {
+                        "affiliation": "Mitchell Center for Neurodegenerative Disorders, University of Texas Medical Branch, Galveston, Texas, USA."
+                      },
+                      {
+                        "affiliation": "School of Medicine, University of Texas Medical Branch, Galveston, Texas, USA."
+                      }
+                    ]
+                  },
+                  "firstName": "Adarsh",
+                  "fullName": "Melukote A",
+                  "initials": "A",
+                  "lastName": "Melukote"
+                },
+                {
+                  "authorAffiliationDetailsList": {
+                    "authorAffiliation": [
+                      {
+                        "affiliation": "Mitchell Center for Neurodegenerative Disorders, University of Texas Medical Branch, Galveston, Texas, USA."
+                      },
+                      {
+                        "affiliation": "School of Medicine, University of Texas Medical Branch, Galveston, Texas, USA."
+                      }
+                    ]
+                  },
+                  "firstName": "Zachary C",
+                  "fullName": "Walton ZC",
+                  "initials": "ZC",
+                  "lastName": "Walton"
+                },
+                {
+                  "authorAffiliationDetailsList": {
+                    "authorAffiliation": [
+                      {
+                        "affiliation": "Mitchell Center for Neurodegenerative Disorders, University of Texas Medical Branch, Galveston, Texas, USA."
+                      },
+                      {
+                        "affiliation": "School of Medicine, University of Texas Medical Branch, Galveston, Texas, USA."
+                      }
+                    ]
+                  },
+                  "firstName": "Anna",
+                  "fullName": "King A",
+                  "initials": "A",
+                  "lastName": "King"
+                },
+                {
+                  "authorAffiliationDetailsList": {
+                    "authorAffiliation": [
+                      {
+                        "affiliation": "Department of Neurology, University of Texas Medical Branch, Galveston, Texas, USA."
+                      },
+                      {
+                        "affiliation": "Mitchell Center for Neurodegenerative Disorders, University of Texas Medical Branch, Galveston, Texas, USA."
+                      }
+                    ]
+                  },
+                  "firstName": "Luke",
+                  "fullName": "Castillo L",
+                  "initials": "L",
+                  "lastName": "Castillo"
+                },
+                {
+                  "authorAffiliationDetailsList": {
+                    "authorAffiliation": [
+                      {
+                        "affiliation": "Department of Neurology, University of Texas Medical Branch, Galveston, Texas, USA."
+                      },
+                      {
+                        "affiliation": "Mitchell Center for Neurodegenerative Disorders, University of Texas Medical Branch, Galveston, Texas, USA."
+                      }
+                    ]
+                  },
+                  "firstName": "Rakez",
+                  "fullName": "Kayed R",
+                  "initials": "R",
+                  "lastName": "Kayed"
+                },
+                {
+                  "authorAffiliationDetailsList": {
+                    "authorAffiliation": [
+                      {
+                        "affiliation": "Department of Neurology, University of Texas Medical Branch, Galveston, Texas, USA."
+                      },
+                      {
+                        "affiliation": "Mitchell Center for Neurodegenerative Disorders, University of Texas Medical Branch, Galveston, Texas, USA."
+                      }
+                    ]
+                  },
+                  "authorId": {
+                    "type": "ORCID",
+                    "value": "0000-0002-0456-452X"
+                  },
+                  "firstName": "Mauro",
+                  "fullName": "Montalbano M",
+                  "initials": "M",
+                  "lastName": "Montalbano"
+                }
+              ]
+            },
+            "authorString": "Aday A, Tiller J, Melukote A, Walton ZC, King A, Castillo L, Kayed R, Montalbano M.",
+            "citedByCount": 0,
+            "dataLinksTagsList": {
+              "dataLinkstag": [
+                "supporting_data"
+              ]
+            },
+            "dateOfCompletion": "2026-07-13",
+            "dateOfCreation": "2026-07-12",
+            "dateOfRevision": "2026-08-20",
+            "doi": "10.1002/alz.71657",
+            "epmcAuthMan": "N",
+            "firstIndexDate": "2026-07-13",
+            "firstPublicationDate": "2026-07-01",
+            "fullTextIdList": {
+              "fullTextId": [
+                "PMC13357693"
+              ]
+            },
+            "fullTextReceivedDate": "2026-09-03",
+            "fullTextUrlList": {
+              "fullTextUrl": [
+                {
+                  "availability": "Subscription required",
+                  "availabilityCode": "S",
+                  "documentStyle": "doi",
+                  "site": "DOI",
+                  "url": "https://doi.org/10.1002/alz.71657"
+                },
+                {
+                  "availability": "Open access",
+                  "availabilityCode": "OA",
+                  "documentStyle": "html",
+                  "site": "Europe_PMC",
+                  "url": "https://europepmc.org/articles/PMC13357693"
+                },
+                {
+                  "availability": "Open access",
+                  "availabilityCode": "OA",
+                  "documentStyle": "pdf",
+                  "site": "Europe_PMC",
+                  "url": "https://europepmc.org/articles/PMC13357693?pdf=render"
+                }
+              ]
+            },
+            "grantsList": {
+              "grant": [
+                {
+                  "acronym": "AG",
+                  "agency": "NIA NIH HHS",
+                  "grantId": "1R03AG088929-01",
+                  "orderIn": 0
+                },
+                {
+                  "agency": "National Institute on Aging",
+                  "grantId": "1R03AG088929‐01",
+                  "orderIn": 0
+                },
+                {
+                  "acronym": "AG",
+                  "agency": "NIA NIH HHS",
+                  "grantId": "R03 AG088929",
+                  "orderIn": 0
+                }
+              ]
+            },
+            "hasBook": "N",
+            "hasData": "Y",
+            "hasDbCrossReferences": "N",
+            "hasEvaluations": "N",
+            "hasLabsLinks": "N",
+            "hasPDF": "Y",
+            "hasReferences": "Y",
+            "hasSuppl": "Y",
+            "hasTMAccessionNumbers": "Y",
+            "hasTextMinedTerms": "Y",
+            "id": "42437963",
+            "inEPMC": "Y",
+            "inPMC": "Y",
+            "isOpenAccess": "Y",
+            "journalInfo": {
+              "dateOfPublication": "2026 Jul",
+              "issue": "7",
+              "journal": {
+                "essn": "1552-5279",
+                "isoabbreviation": "Alzheimers Dement",
+                "issn": "1552-5260",
+                "medlineAbbreviation": "Alzheimers Dement",
+                "nlmid": "101231978",
+                "title": "Alzheimer's & dementia : the journal of the Alzheimer's Association"
+              },
+              "journalIssueId": 4219886,
+              "monthOfPublication": 7,
+              "printPublicationDate": "2026-07-01",
+              "volume": "22",
+              "yearOfPublication": 2026
+            },
+            "keywordList": {
+              "keyword": [
+                "Aging",
+                "Protein aggregation",
+                "Neurodegeneration",
+                "Dementia",
+                "Nucleocytoplasmic Transport",
+                "Nuclear Dysfunction"
+              ]
+            },
+            "language": "eng",
+            "license": "cc by-nc-nd",
+            "meshHeadingList": {
+              "meshHeading": [
+                {
+                  "descriptorName": "Neurons",
+                  "majorTopic_YN": "N",
+                  "meshQualifierList": {
+                    "meshQualifier": [
+                      {
+                        "abbreviation": "PA",
+                        "majorTopic_YN": "N",
+                        "qualifierName": "pathology"
+                      }
+                    ]
+                  }
+                },
+                {
+                  "descriptorName": "Cell Nucleus",
+                  "majorTopic_YN": "Y",
+                  "meshQualifierList": {
+                    "meshQualifier": [
+                      {
+                        "abbreviation": "ME",
+                        "majorTopic_YN": "N",
+                        "qualifierName": "metabolism"
+                      },
+                      {
+                        "abbreviation": "PA",
+                        "majorTopic_YN": "N",
+                        "qualifierName": "pathology"
+                      }
+                    ]
+                  }
+                },
+                {
+                  "descriptorName": "Animals",
+                  "majorTopic_YN": "N"
+                },
+                {
+                  "descriptorName": "Humans",
+                  "majorTopic_YN": "N"
+                },
+                {
+                  "descriptorName": "Neurodegenerative Diseases",
+                  "majorTopic_YN": "Y",
+                  "meshQualifierList": {
+                    "meshQualifier": [
+                      {
+                        "abbreviation": "ME",
+                        "majorTopic_YN": "N",
+                        "qualifierName": "metabolism"
+                      },
+                      {
+                        "abbreviation": "PA",
+                        "majorTopic_YN": "N",
+                        "qualifierName": "pathology"
+                      },
+                      {
+                        "abbreviation": "PP",
+                        "majorTopic_YN": "N",
+                        "qualifierName": "physiopathology"
+                      }
+                    ]
+                  }
+                },
+                {
+                  "descriptorName": "DNA Damage",
+                  "majorTopic_YN": "N"
+                },
+                {
+                  "descriptorName": "Aging",
+                  "majorTopic_YN": "Y",
+                  "meshQualifierList": {
+                    "meshQualifier": [
+                      {
+                        "abbreviation": "PA",
+                        "majorTopic_YN": "N",
+                        "qualifierName": "pathology"
+                      }
+                    ]
+                  }
+                }
+              ]
+            },
+            "nihAuthMan": "N",
+            "pageInfo": "e71657",
+            "pmcid": "PMC13357693",
+            "pmid": "42437963",
+            "pubModel": "Print",
+            "pubTypeList": {
+              "pubType": [
+                "review-article",
+                "Review",
+                "Journal Article"
+              ]
+            },
+            "pubYear": "2026",
+            "publicationStatus": "ppublish",
+            "source": "MED",
+            "subsetList": {
+              "subset": [
+                {
+                  "code": "IM",
+                  "name": "Index Medicus"
+                }
+              ]
+            },
+            "title": "Nuclear dysfunction in aging and neurodegeneration.",
+            "tmAccessionTypeList": {
+              "accessionType": [
+                "doi"
+              ]
+            }
+          },
+          "metadata_locator": "attempt:metadata/body_base64#result",
+          "model_read": false,
+          "pmcid": "PMC13357693",
+          "provider": "Europe PMC",
+          "relationships": [],
+          "representation": "JATS XML saved; flattened article text, not a scientific interpretation",
+          "source": {
+            "citation": "https://europepmc.org/article/MED/42437963",
+            "source_ref": "epmc:MED:42437963",
+            "title": "Nuclear dysfunction in aging and neurodegeneration."
+          },
+          "supplementary": "not fetched; links inside XML are not obtained supplementary materials",
+          "text_locator": "attempt:fulltext/body_base64#/article",
+          "transport": "real_public_http"
+        },
+        "model_read": false,
+        "science_validated": false
+      },
+      "applied_at": "2026-11-03T01:57:41.815111+00:00"
+    },
+    {
+      "task_id": "3fe25e2069594e0caa15ad0d46b6f0ac",
+      "output": {
+        "acquisition": {
+          "error": null,
+          "executed_at": "2026-11-03T01:57:46.817261+00:00",
+          "items": [
+            {
+              "citation": "https://europepmc.org/article/PPR/PPR1223302",
+              "source_ref": "epmc:PPR:PPR1223302",
+              "title": "Novel single molecule imaging approaches reveal structure-function alterations to the nuclear pore complex in early  <i>C9ORF72</i>  -associated TDP-43 proteinopathy"
+            },
+            {
+              "citation": "https://europepmc.org/article/PMC/PMC13635352",
+              "source_ref": "epmc:PMC:PMC13635352",
+              "title": "Global research architecture of RNA-binding proteins in neurodegenerative diseases: a web of science bibliometric study with PubMed record verification, 2001–2025"
+            },
+            {
+              "citation": "https://europepmc.org/article/MED/42543164",
+              "source_ref": "epmc:MED:42543164",
+              "title": "Intron retention in health and amyotrophic lateral sclerosis."
+            },
+            {
+              "citation": "https://europepmc.org/article/MED/40891053",
+              "source_ref": "epmc:MED:40891053",
+              "title": "C9orf72 ALS-causing mutations lead to mislocalization and aggregation of nucleoporin Nup107 into stress granules."
+            },
+            {
+              "citation": "https://europepmc.org/article/MED/42383305",
+              "source_ref": "epmc:MED:42383305",
+              "title": "TDP-43 proteinopathy as a biomarker and therapeutic target in amyotrophic lateral sclerosis."
+            }
+          ],
+          "next_cursor": "AoIIQMMT9ig1NTg4NDcyNw==",
+          "reported_total": 1781,
+          "request": {
+            "cursor": "AoIIQMjEdSg1NDgzMzA5Mw==",
+            "query": "\"amyotrophic lateral sclerosis\" AND (nucleoporin OR \"nuclear pore\")",
+            "scope": "Europe PMC indexed publications; manual query; relevance order; no automatic expansion",
+            "source": "Europe PMC"
+          },
+          "scope_complete": false,
+          "status": "succeeded"
+        },
+        "details": {
+          "deduplicated_count": 5,
+          "model_read": false,
+          "provider": "Europe PMC",
+          "provider_request": {
+            "cursorMark": "AoIIQMjEdSg1NDgzMzA5Mw==",
+            "pageSize": 5,
+            "queryString": "\"amyotrophic lateral sclerosis\" AND (nucleoporin OR \"nuclear pore\")",
+            "resultType": "lite",
+            "sort": "",
+            "synonym": false
+          },
+          "raw_response_locator": "attempt:search/body_base64#resultList.result",
+          "raw_returned_count": 5,
+          "relationships": [],
+          "sources": [
+            {
+              "access": "metadata",
+              "metadata": {
+                "authorString": "Lee S, Mizielinska S.",
+                "bookOrReportDetails": {
+                  "publisher": "bioRxiv",
+                  "yearOfPublication": 2026
+                },
+                "citedByCount": 0,
+                "doi": "10.64898/2026.02.17.706337",
+                "firstIndexDate": "2026-05-19",
+                "firstPublicationDate": "2026-02-18",
+                "fullTextIdList": {
+                  "fullTextId": [
+                    "PPR1223302"
+                  ]
+                },
+                "hasBook": "N",
+                "hasDbCrossReferences": "N",
+                "hasLabsLinks": "N",
+                "hasPDF": "Y",
+                "hasReferences": "Y",
+                "hasSuppl": "Y",
+                "hasTMAccessionNumbers": "Y",
+                "hasTextMinedTerms": "Y",
+                "id": "PPR1223302",
+                "inEPMC": "Y",
+                "inPMC": "N",
+                "isOpenAccess": "Y",
+                "pubType": "preprint",
+                "pubYear": "2026",
+                "source": "PPR",
+                "title": "Novel single molecule imaging approaches reveal structure-function alterations to the nuclear pore complex in early  <i>C9ORF72</i>  -associated TDP-43 proteinopathy",
+                "tmAccessionTypeList": {
+                  "accessionType": [
+                    "doi"
+                  ]
+                }
+              },
+              "source": {
+                "citation": "https://europepmc.org/article/PPR/PPR1223302",
+                "source_ref": "epmc:PPR:PPR1223302",
+                "title": "Novel single molecule imaging approaches reveal structure-function alterations to the nuclear pore complex in early  <i>C9ORF72</i>  -associated TDP-43 proteinopathy"
+              }
+            },
+            {
+              "access": "metadata",
+              "metadata": {
+                "authorString": "Zhu R, Li H.",
+                "citedByCount": 0,
+                "firstIndexDate": "2026-10-06",
+                "firstPublicationDate": "2026-10-06",
+                "fullTextIdList": {
+                  "fullTextId": [
+                    "PMC13635352"
+                  ]
+                },
+                "hasBook": "N",
+                "hasDbCrossReferences": "N",
+                "hasLabsLinks": "N",
+                "hasPDF": "Y",
+                "hasReferences": "N",
+                "hasSuppl": "N",
+                "hasTMAccessionNumbers": "N",
+                "hasTextMinedTerms": "N",
+                "id": "PMC13635352",
+                "inEPMC": "Y",
+                "inPMC": "Y",
+                "isOpenAccess": "Y",
+                "journalIssn": "1663-4365",
+                "journalTitle": "Front Aging Neurosci",
+                "journalVolume": "18",
+                "pmcid": "PMC13635352",
+                "pubType": "research-article; journal article",
+                "source": "PMC",
+                "title": "Global research architecture of RNA-binding proteins in neurodegenerative diseases: a web of science bibliometric study with PubMed record verification, 2001–2025"
+              },
+              "source": {
+                "citation": "https://europepmc.org/article/PMC/PMC13635352",
+                "source_ref": "epmc:PMC:PMC13635352",
+                "title": "Global research architecture of RNA-binding proteins in neurodegenerative diseases: a web of science bibliometric study with PubMed record verification, 2001–2025"
+              }
+            },
+            {
+              "access": "metadata",
+              "metadata": {
+                "authorString": "Wang CY, Taylor S, Pandya VA, Clarke BE, Pal K, Shelkovnikova TA, Wang Y, Luisier R, Patani R.",
+                "citedByCount": 0,
+                "doi": "10.1093/brain/awag142",
+                "firstIndexDate": "2026-08-03",
+                "firstPublicationDate": "2026-08-01",
+                "fullTextIdList": {
+                  "fullTextId": [
+                    "PMC13431790"
+                  ]
+                },
+                "hasBook": "N",
+                "hasDbCrossReferences": "N",
+                "hasLabsLinks": "N",
+                "hasPDF": "Y",
+                "hasReferences": "Y",
+                "hasSuppl": "Y",
+                "hasTMAccessionNumbers": "Y",
+                "hasTextMinedTerms": "Y",
+                "id": "42543164",
+                "inEPMC": "Y",
+                "inPMC": "Y",
+                "isOpenAccess": "Y",
+                "issue": "8",
+                "journalIssn": "0006-8950; 1460-2156; ",
+                "journalTitle": "Brain",
+                "journalVolume": "149",
+                "pageInfo": "2604-2618",
+                "pmcid": "PMC13431790",
+                "pmid": "42543164",
+                "pubType": "review-article; review; journal article",
+                "pubYear": "2026",
+                "source": "MED",
+                "title": "Intron retention in health and amyotrophic lateral sclerosis.",
+                "tmAccessionTypeList": {
+                  "accessionType": [
+                    "nct",
+                    "doi"
+                  ]
+                }
+              },
+              "source": {
+                "citation": "https://europepmc.org/article/MED/42543164",
+                "source_ref": "epmc:MED:42543164",
+                "title": "Intron retention in health and amyotrophic lateral sclerosis."
+              }
+            },
+            {
+              "access": "metadata",
+              "metadata": {
+                "authorString": "Bilican S, Nabawi Y, Zhang WH, Petrovic D, Wehrmann M, Muñoz-García S, Koyuncu S, Vilchez D.",
+                "citedByCount": 3,
+                "doi": "10.1002/1873-3468.70156",
+                "firstIndexDate": "2025-09-04",
+                "firstPublicationDate": "2025-09-01",
+                "fullTextIdList": {
+                  "fullTextId": [
+                    "PMC12599624"
+                  ]
+                },
+                "hasBook": "N",
+                "hasDbCrossReferences": "N",
+                "hasLabsLinks": "Y",
+                "hasPDF": "Y",
+                "hasReferences": "Y",
+                "hasSuppl": "Y",
+                "hasTMAccessionNumbers": "Y",
+                "hasTextMinedTerms": "Y",
+                "id": "40891053",
+                "inEPMC": "Y",
+                "inPMC": "Y",
+                "isOpenAccess": "Y",
+                "issue": "21",
+                "journalIssn": "0014-5793; 1873-3468; ",
+                "journalTitle": "FEBS Lett",
+                "journalVolume": "599",
+                "pageInfo": "3047-3065",
+                "pmcid": "PMC12599624",
+                "pmid": "40891053",
+                "pubType": "brief-report; journal article",
+                "pubYear": "2025",
+                "source": "MED",
+                "title": "C9orf72 ALS-causing mutations lead to mislocalization and aggregation of nucleoporin Nup107 into stress granules.",
+                "tmAccessionTypeList": {
+                  "accessionType": [
+                    "cellosaurus",
+                    "uniprot",
+                    "doi"
+                  ]
+                }
+              },
+              "source": {
+                "citation": "https://europepmc.org/article/MED/40891053",
+                "source_ref": "epmc:MED:40891053",
+                "title": "C9orf72 ALS-causing mutations lead to mislocalization and aggregation of nucleoporin Nup107 into stress granules."
+              }
+            },
+            {
+              "access": "metadata",
+              "metadata": {
+                "authorString": "Christoforidou E, McFagan E, McLaughlin M, Hafezparast M.",
+                "citedByCount": 0,
+                "doi": "10.1042/bst20260896",
+                "firstIndexDate": "2026-07-02",
+                "firstPublicationDate": "2026-07-01",
+                "fullTextIdList": {
+                  "fullTextId": [
+                    "PMC13329289"
+                  ]
+                },
+                "hasBook": "N",
+                "hasDbCrossReferences": "N",
+                "hasLabsLinks": "N",
+                "hasPDF": "Y",
+                "hasReferences": "Y",
+                "hasSuppl": "N",
+                "hasTMAccessionNumbers": "Y",
+                "hasTextMinedTerms": "Y",
+                "id": "42383305",
+                "inEPMC": "Y",
+                "inPMC": "Y",
+                "isOpenAccess": "Y",
+                "issue": "7",
+                "journalIssn": "0300-5127; 1470-8752; ",
+                "journalTitle": "Biochem Soc Trans",
+                "journalVolume": "54",
+                "pageInfo": "901-913",
+                "pmcid": "PMC13329289",
+                "pmid": "42383305",
+                "pubType": "review-article; review; journal article",
+                "pubYear": "2026",
+                "source": "MED",
+                "title": "TDP-43 proteinopathy as a biomarker and therapeutic target in amyotrophic lateral sclerosis.",
+                "tmAccessionTypeList": {
+                  "accessionType": [
+                    "doi"
+                  ]
+                }
+              },
+              "source": {
+                "citation": "https://europepmc.org/article/MED/42383305",
+                "source_ref": "epmc:MED:42383305",
+                "title": "TDP-43 proteinopathy as a biomarker and therapeutic target in amyotrophic lateral sclerosis."
+              }
+            }
+          ],
+          "transport": "real_public_http",
+          "warnings": []
+        },
+        "model_read": false,
+        "science_validated": false
+      },
+      "applied_at": "2026-11-03T01:57:46.820079+00:00"
+    },
+    {
+      "task_id": "2e9042f8a7354503895c3b90529f2532",
+      "output": {
+        "acquisition": {
+          "error": null,
+          "executed_at": "2026-11-03T01:57:53.474291+00:00",
+          "items": [],
+          "next_cursor": null,
+          "reported_total": 0,
+          "request": {
+            "cursor": null,
+            "query": "EXT_ID:W1L1EngineeringNoSuchRecord20261103 AND SRC:MED",
+            "scope": "Europe PMC indexed publications; manual query; relevance order; no automatic expansion",
+            "source": "Europe PMC"
+          },
+          "scope_complete": true,
+          "status": "succeeded"
+        },
+        "details": {
+          "deduplicated_count": 0,
+          "model_read": false,
+          "provider": "Europe PMC",
+          "provider_request": {
+            "cursorMark": "*",
+            "internalQuery": "EXT_ID:W1L1EngineeringNoSuchRecord20261103 AND SRC:MED",
+            "pageSize": 5,
+            "queryString": "EXT_ID:W1L1EngineeringNoSuchRecord20261103 AND SRC:MED",
+            "resultType": "LITE",
+            "sort": "",
+            "synonym": false
+          },
+          "raw_response_locator": "attempt:search/body_base64#resultList.result",
+          "raw_returned_count": 0,
+          "relationships": [],
+          "sources": [],
+          "transport": "real_public_http",
+          "warnings": []
+        },
+        "model_read": false,
+        "science_validated": false
+      },
+      "applied_at": "2026-11-03T01:57:53.477777+00:00"
+    }
+  ],
+  "development_test": true,
+  "policy": {
+    "development_only": true,
+    "id": "POLICY-W1-DEMO-PROPOSED",
+    "text": "DEVELOPMENT TEST ONLY, not an approved production policy. Conceptual nonclinical research may pass. Scientific uncertainty alone is not a rejection reason. No permission for clinical or laboratory execution.",
+    "version": "w0-t4-dev-1"
+  },
+  "usage": {
+    "input_tokens": {
+      "known_total": null,
+      "unknown_attempts": 8
+    },
+    "output_tokens": {
+      "known_total": null,
+      "unknown_attempts": 8
+    },
+    "cost": {
+      "known_total": null,
+      "unknown_attempts": 8
+    },
+    "tool_units": {
+      "known_total": 6,
+      "unknown_attempts": 2
+    }
+  },
+  "science_validated": false,
+  "unimplemented": [
+    "background_research",
+    "generation",
+    "candidate_ethics",
+    "r0"
+  ]
+}

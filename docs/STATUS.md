@@ -1,4 +1,90 @@
-# 项目状态 — W0-T4
+# 项目状态 — W1-L1
+
+## 当前交付（2026-11-03，Asia/Shanghai）
+
+实际fetch核实main：`47a8a09b7730bd869843e4fc236e9a2f9f1d061f`，与用户参考一致，PR #5已合并。
+本轮独立分支 `codex/w1-l1-literature`，checkout `/private/tmp/co-scientist-w1-l1`，独立PR不合并。
+最终head以该PR及 `git rev-parse HEAD` 为准。原工作区232项用户改动、暂存区与status指纹未变。
+
+M00仍Accepted；W0/W1原件保持Proposed，W0-T4已接受修订不变。**本轮只交付W1-L1，不是完整W1-L或科学验收。**
+
+| 维度 | 实际状态 |
+|---|---|
+| 真实检索 | Europe PMC官方公共REST已接入；用户/开发者人工查询，未实现Agent规划；空结果/技术失败/部分完成/未穷尽分页分开 |
+| 实际材料获取 | core元数据/摘要、OA PMCID全文XML已实现并实测；保存实际字节、文本、定位和访问限制；图像/补充未获取 |
+| M12接入 | 已保存的completed Goal Ethics pass才可追加search/fetch任务；复核政策/Goal身份；固定Goal与旧查询不覆盖 |
+| 页面接入 | 人工查询、显式翻页、来源列表、摘要/全文、数量/游标/错误/真实历史可读；伦理结果改为易读状态和理由，原JSON折叠；刷新只读 |
+| 模型阅读 | 未实现，全部材料标“已获取、尚未解读”；没有背景发现或主张支持判定 |
+| 科学能力 | `science_validated=false`；Goal筛查仍确定性开发测试，真实公共文献获取不构成真实伦理审查/生产科学链 |
+
+实现：新增 `europe_pmc.py` / `literature_runtime.py`，沿用LiteraturePort；Store只增加小型动作索引表，
+M12只增加两命名操作条件接入；workspace增加显式API/开关，页面同步接入。未连接旧G3。
+每次HTTP经M15，保存实际请求、原始响应/错误、时间、调用关系和未知用量；无隐藏重试/跳转。
+成功响应可回放；重复request_id不重复执行；不确定发送需显式核实，不能宣称外部exactly-once。
+
+操作/官方依据/范围/来源证据见 [W1_L1_LITERATURE.md](W1_L1_LITERATURE.md)。
+选择Europe PMC是因为同一官方公共来源提供检索、core摘要和OA全文XML，无需模型或付费凭据。
+用户明确输入查询，不实现P03查询规划、P04模型阅读或后续科学方法。
+
+```sh
+cd /private/tmp/co-scientist-w1-l1
+PYTHONPATH=src python -m co_scientist_next.workspace --db runs/w1-l1-live.sqlite --port 8785 --development-test --public-literature
+```
+
+当前可操作页面 `http://127.0.0.1:8785/`；主验收固定Run：
+`http://127.0.0.1:8785/#run=9b5abf8a5ccd496d8c45ff9a6666b20e`。
+必须分别显式启用测试Goal适配器与公共文献请求；示例政策不自动成为生产政策。
+
+### 真实请求与页面证据
+
+已有ALS-GOAL开发者转述保留原问题/磷酸化条件；人工宽查询：
+`"amyotrophic lateral sclerosis" AND (nucleoporin OR "nuclear pore")`。
+未预选具体分子；查询只是宽概念入口，不声称覆盖Goal全部条件或穷尽文献。
+
+- 主验收5次显式动作、6次真实HTTP：第一页面5条/报告1781、返回预印本PPR1217875摘要2746字符、
+  返回MED42437963对应PMC13357693全文XML（展平113989字符）、第二页5条仍未穷尽、工程不存在ID查询成功0条。
+- 全文文献是review；没有认定为独立实验证据。预印本未认定同行评议或与正式版独立。
+  实际来源/许可/定位及原字节均保存；DOI不同不推断独立性。
+- 初期另4次诊断HTTP保留失败：2次EXT_ID身份lookup空记录、1次article单对象响应解析未匹配，及其首次查询。
+  修正为官方article身份接口/单对象解析。失败未删除，不改成“没有证据”；合计10次发送都有M15 Attempt。
+- 浏览器通过页面创建/保存/执行，查看摘要/全文后刷新：POST新增0，历史完全一致，无JS错误；390px无横向溢出。
+
+[浏览器报告](verification/w1-l1/browser.json)、[固定Run](verification/w1-l1/run-snapshot.json)、
+[真实请求及材料gzip](verification/w1-l1/public-acquisition.json.gz)、[初期诊断](verification/w1-l1/diagnostic-acquisition.json.gz)、
+[页面](verification/w1-l1/workspace.png)、[刷新](verification/w1-l1/after-refresh.png)、[移动](verification/w1-l1/mobile.png)。
+原始响应SHA-256可离线复核。记录不是夹具，取得不代表模型已经阅读或评价。
+
+### 实际检查
+
+macOS / Python3.11.4，复用现有Python环境，无新生产依赖；兼容conda，不强制.venv。
+浏览器验收使用临时目录Playwright1.64.0和Chromium1248。
+
+| 检查 | 结果 |
+|---|---|
+| `PYTHONPATH=src python -m pytest -q -s tests/next` | 142 passed，0 failed，0 skipped（原109 + 新33工程/获取检查） |
+| 离线响应夹具 | 明确虚构标识；空结果、HTTP失败、部分行、分页、重复结果、各访问层级、错源/空正文/abstract-only/截断、幂等/非pass阻断均通过；不冒充真实接入 |
+| 跨进程恢复 | 实际os._exit于成功HTTP保存后中断，新进程通过保存响应回放，Attempt仍1，不重新发送；原恢复测试回归通过 |
+| HTTP持久化/重启 | 真实loopback子进程服务+虚构响应夹具；POST幂等、GET不重发、重启读取通过 |
+| 真实公共接入 | 上述6次主验收+4次诊断M15发送，摘要/开放全文路径确已完成；没有付费模型 |
+| Ruff check / format | 通过；26个Python文件格式检查通过 |
+| JavaScript | node --check通过；Prettier格式化 |
+| Wheel | 构建通过；隔离从wheel加载页面资源、固定Goal门及离线获取持久化通过 |
+| 原件/工作区 | 未改原M00/W0/W1设计文件；用户232项改动指纹不变；新编文件空白检查通过 |
+
+测试输出：[tests.txt](verification/w1-l1/tests.txt)。网络错误和初期解析失败保留在诊断证据，不能靠夹具通过替代真实请求。
+
+### 已知限制、未运行及后续边界
+
+尚未实现：自动查询生成、真实Goal模型适配器/伦理分类准确性、模型阅读、知识图谱、seed readiness、候选生成、
+M03–M11科学逻辑、图像/补充获取、研究独立性/主张支持判定、全面文献覆盖；仅单进程loopback页，无远程多用户认证。
+源端结果会变化，1781只是当时provider报告；已保存材料不能等同全文全部附件或科学证据已验证。
+
+**未运行：** 付费模型/真实模型阅读、专家科学评测、完整W1-L与S01–S14科学流程、湿实验、旧G3全套本地测试、Python3.12本地回归。
+没有新增需要总控裁决的跨模块冲突。进一步科学能力需要另行授权与验收。
+
+---
+
+## W0-T4历史交付（以下按当时状态保留）
 
 ## 当前交付（2026-11-03）
 

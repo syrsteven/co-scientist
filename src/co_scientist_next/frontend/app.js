@@ -21,6 +21,9 @@ const labels = {
   adapter_not_configured: "未接入模型适配器",
   failed: "技术执行失败",
   blocked: "发送状态不确定，已阻断",
+  literature_acquired_unread: "文献请求已完成 · 尚未解读",
+  literature_incomplete: "文献获取部分完成 · 尚未解读",
+  literature_failed: "文献请求失败（不是没有证据）",
 };
 async function api(path, data) {
   const response = await fetch(
@@ -49,6 +52,7 @@ async function action(fn) {
   } finally {
     buttons.forEach((b, i) => (b.disabled = disabled[i]));
     updateActions();
+    if (state.run) await showLiterature(state.run);
   }
 }
 const lines = (id) =>
@@ -81,13 +85,18 @@ function block(title, data) {
 function updateActions() {
   el("create-run").disabled = !state.revision || state.dirty;
   const status = state.run?.run.status;
-  el("execute").disabled = status !== "ready";
-  el("recover").hidden = status !== "running";
+  el("execute").disabled =
+    status !== "ready" ||
+    state.run?.tasks.at(-1)?.module.startsWith("literature.");
+  el("recover").hidden =
+    status !== "running" ||
+    state.run?.tasks.at(-1)?.module.startsWith("literature.");
 }
 function reset() {
   state.project = null;
   state.revision = null;
   state.run = null;
+  el("literature-panel").hidden = true;
   state.dirty = false;
   location.hash = "";
   el("brief-form").reset();
@@ -114,6 +123,7 @@ async function project(id) {
   const data = await api("/api/project?id=" + encodeURIComponent(id));
   if (state.project && state.project !== id) {
     state.run = null;
+    el("literature-panel").hidden = true;
     el("run-tools").hidden = true;
     el("run-detail").textContent = "请选择此研究的固定 Run。";
     el("run-state").textContent = "未选择 Run";
@@ -219,14 +229,26 @@ async function showRun(id) {
       detail.append(goalCard(output.goal_context));
     }
     if (output.ethics) {
-      detail.append(
-        block(
-          output.ethics.completed
-            ? "完成的 Goal Ethics 决定"
-            : "执行状态：风险信息待补充",
-          output.ethics,
-        ),
-      );
+      const ethics = output.ethics;
+      const card = document.createElement("div");
+      card.className = "block ethics-readable";
+      const title = document.createElement("h3");
+      title.textContent = ethics.completed
+        ? ethics.decision === "pass"
+          ? "目标筛查：通过（pass）"
+          : "目标筛查：拒绝（reject）"
+        : "目标筛查：风险信息待补充（未形成伦理决定）";
+      const reason = document.createElement("p");
+      reason.textContent = "理由：" + ethics.rationale;
+      card.append(title, reason);
+      if (ethics.missing_information) {
+        const missing = document.createElement("p");
+        missing.textContent =
+          "待补信息：" + ethics.missing_information.join("；");
+        card.append(missing);
+      }
+      card.append(folded("原始筛查 JSON 与政策引用", ethics));
+      detail.append(card);
     }
     if (output.parse_error || output.reason)
       detail.append(block("准备 / 解析状态", output));
@@ -248,7 +270,7 @@ async function showRun(id) {
     detail.append(
       block(
         "真实待接入边界",
-        "Goal Ethics 已完成 pass；背景调研尚未接入，因此未进入 Generation，科研未完成。",
+        "Goal Ethics 已完成 pass；可以显式人工检索/获取文献。自动背景调研、模型阅读与 Generation 未接入，科研未完成。",
       ),
     );
   if (data.run.status === "blocked")
@@ -258,6 +280,7 @@ async function showRun(id) {
         "外部执行结果不确定。刷新不会重发；需后端核实并显式授权后才能重试。",
       ),
     );
+  await showLiterature(data);
   updateActions();
 }
 el("new-project").onclick = () => reset();
@@ -330,7 +353,7 @@ el("refresh").onclick = () =>
   try {
     state.config = await api("/api/config");
     el("mode").textContent = state.config.development_test
-      ? "开发测试模式 · 确定性适配器仅验证工程流程，不代表真实 Goal 制备或伦理分类能力；没有付费模型调用。"
+      ? "开发测试模式 · 确定性适配器仅验证工程流程，不代表真实 Goal 制备或伦理分类能力；没有付费模型调用。目标筛查为测试结果，文献获取可为真实请求。"
       : "真实模型适配器尚未接入 · 可以保存简报与查看记录，执行会记录未配置状态。";
     el("example-policy").hidden = !state.config.development_test;
     el("fixture-label").hidden = !state.config.development_test;
@@ -345,3 +368,210 @@ el("refresh").onclick = () =>
     el("notice").textContent = e.message;
   }
 })();
+
+function note(text, parent) {
+  const p = document.createElement("p");
+  p.textContent = text;
+  parent.append(p);
+  return p;
+}
+function litButton(text, parent, fn) {
+  const b = document.createElement("button");
+  b.textContent = text;
+  b.onclick = () => action(fn);
+  parent.append(b);
+  return b;
+}
+let pendingLiterature = null;
+async function submitLiterature(request) {
+  const run = state.run.run.id;
+  const signature = JSON.stringify({ run, request });
+  if (!pendingLiterature || pendingLiterature.signature !== signature)
+    pendingLiterature = { signature, id: crypto.randomUUID() };
+  await api("/api/literature", {
+    run_id: run,
+    request_id: pendingLiterature.id,
+    request,
+  });
+  pendingLiterature = null;
+  await project(state.project);
+  await showRun(run);
+}
+el("literature-search").onclick = () =>
+  action(() =>
+    submitLiterature({
+      kind: "search",
+      query: el("literature-query").value,
+      page_size: Number(el("literature-page-size").value),
+    }),
+  );
+async function showLiterature(data) {
+  el("literature-panel").hidden = false;
+  const passed = data.results.some(
+    (r) =>
+      r.output.ethics?.completed === true &&
+      r.output.ethics?.decision === "pass",
+  );
+  const allowed = state.config.public_literature_enabled && passed;
+  const idle = [
+    "awaiting_background",
+    "literature_acquired_unread",
+    "literature_incomplete",
+    "literature_failed",
+  ].includes(data.run.status);
+  el("literature-search").disabled = !allowed || !idle;
+  el("literature-mode").textContent = data.development_test
+    ? "目标筛查为测试结果，文献获取为真实请求（需显式操作）；不代表真实伦理审查或生产科学链。"
+    : "真实公共文献请求；未执行模型阅读。";
+  el("literature-gate").textContent = !passed
+    ? "未有保存的完成 pass，不允许进入检索。"
+    : !state.config.public_literature_enabled
+      ? "服务未启用 --public-literature；不会发出公共请求。"
+      : !idle
+        ? "存在未完成/阻断任务；新检索暂停，刷新只读取。"
+        : "可执行人工查询；每次查询、翻页和逐篇获取均保存历史。";
+  const history = await api(
+    "/api/literature?run_id=" + encodeURIComponent(data.run.id),
+  );
+  const root = el("literature-history");
+  root.replaceChildren();
+  if (!history.length) note("尚无检索记录。", root);
+  const unique = new Set();
+  for (const entry of history) {
+    const card = document.createElement("div");
+    card.className = "block literature-entry";
+    root.append(card);
+    const request = entry.request,
+      result = entry.result?.acquisition;
+    const h = document.createElement("h3");
+    h.textContent =
+      request.kind === "search"
+        ? "人工查询：" + request.query
+        : "获取材料：" + request.source_ref;
+    card.append(h);
+    note(
+      "请求 " +
+        entry.request_id +
+        " · " +
+        entry.created_at +
+        " · 任务 " +
+        entry.task_status,
+      card,
+    );
+    if (!result) {
+      note(
+        entry.error
+          ? "技术/不确定状态：" + entry.error.message
+          : "尚无已应用结果；刷新不会自动执行。",
+        card,
+      );
+      if (allowed && ["ready", "running"].includes(entry.task_status))
+        litButton("显式恢复此文献任务", card, async () => {
+          await api("/api/literature/execute", {
+            request_id: entry.request_id,
+            recover: true,
+          });
+          await showRun(data.run.id);
+        });
+      card.append(folded("实际请求与调用事实", entry));
+      continue;
+    }
+    note(
+      "执行：" + result.status + " · 已获取、尚未解读 · 科学能力未验证",
+      card,
+    );
+    if (result.error || result.limitation)
+      note("限制/错误：" + (result.error || result.limitation), card);
+    if (request.kind === "search") {
+      note(
+        "来源 Europe PMC · 人工查询 · 本页取得 " +
+          result.items.length +
+          " 篇元数据 · 报告总数 " +
+          (result.reported_total ?? "未知") +
+          " · 每页 " +
+          request.page_size +
+          " · 范围完成 " +
+          result.scope_complete,
+        card,
+      );
+      note(
+        "分页：" +
+          (request.cursor || "起始页 *") +
+          " → " +
+          (result.next_cursor || "无后继游标") +
+          "；分页未完成不表示已穷尽文献。",
+        card,
+      );
+      if (result.next_cursor) {
+        const b = litButton("显式检索下一页", card, () =>
+          submitLiterature({
+            kind: "search",
+            query: request.query,
+            cursor: result.next_cursor,
+            page_size: request.page_size,
+          }),
+        );
+        b.disabled = !allowed || !idle;
+      }
+      for (const source of result.items) {
+        unique.add(source.source_ref);
+        const item = document.createElement("div");
+        item.className = "source-card";
+        card.append(item);
+        const a = document.createElement("a");
+        a.textContent = source.title;
+        a.href = source.citation;
+        a.target = "_blank";
+        a.rel = "noreferrer";
+        item.append(a);
+        note(
+          source.source_ref + " · 当前检索结果仅元数据；不代表全文或支持某主张",
+          item,
+        );
+        for (const [label, level] of [
+          ["获取摘要", "abstract"],
+          ["尝试获取开放全文", "full_text"],
+        ]) {
+          const b = litButton(label, item, () =>
+            submitLiterature({
+              kind: "fetch",
+              source_ref: source.source_ref,
+              desired_access: level,
+            }),
+          );
+          b.disabled = !allowed || !idle;
+        }
+      }
+    } else {
+      note(
+        "实际访问层级：" +
+          result.access +
+          " · 请求层级：" +
+          request.desired_access,
+        card,
+      );
+      if (result.source)
+        note(result.source.title + " · " + result.source.citation, card);
+      if (result.text)
+        card.append(
+          folded(
+            result.access === "full_text"
+              ? "查看已取得全文文本（图像/补充未获取）"
+              : "查看已取得摘要",
+            result.text,
+          ),
+        );
+      note(
+        "定位：" +
+          (entry.result.details.text_locator ||
+            entry.result.details.metadata_locator ||
+            "无取得文本") +
+          "；补充材料未获取。",
+        card,
+      );
+    }
+    card.append(folded("完整获取事实、来源定位与实际请求", entry));
+  }
+  if (unique.size)
+    note("历史检索中去重来源数：" + unique.size + "（不表示独立研究数）", root);
+}

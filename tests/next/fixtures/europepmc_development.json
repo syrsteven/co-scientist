@@ -1,0 +1,5 @@
+{
+  "fixture_notice": "INVENTED OFFLINE RESPONSE FIXTURES ONLY. IDs/content do not identify actual research and must never be presented as real acquisition evidence.",
+  "article": {"source":"MED","id":"999001","title":"INVENTED development fixture: nucleoporin mechanism unknown","pmcid":"PMC999001","doi":"10.0000/not-a-real-doi","isOpenAccess":"Y","abstractText":"<h4>Development fixture</h4><p>Mechanism remains unknown. Not a scientific finding.</p>"},
+  "full_text": "<article><front><article-meta><article-id pub-id-type=\"pmc\">999001</article-id><title-group><article-title>INVENTED fixture</article-title></title-group><abstract><p>Not real science.</p></abstract></article-meta></front><body><sec id=\"fixture-sec\"><title>Fixture methods</title><p>Offline contract text only.</p></sec></body><back><supplementary-material href=\"fixture.zip\" /></back></article>"
+}

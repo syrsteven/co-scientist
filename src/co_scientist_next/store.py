@@ -86,6 +86,11 @@ class Store:
                 CREATE TABLE IF NOT EXISTS goal_run_config (
                     run_id TEXT PRIMARY KEY REFERENCES runs(id), config TEXT NOT NULL
                 );
+                CREATE TABLE IF NOT EXISTS literature_actions (
+                    request_id TEXT PRIMARY KEY, run_id TEXT NOT NULL REFERENCES runs(id),
+                    task_id TEXT NOT NULL UNIQUE REFERENCES tasks(id),
+                    request TEXT NOT NULL, created_at TEXT NOT NULL
+                );
                 CREATE TABLE IF NOT EXISTS execution_facts (
                     id INTEGER PRIMARY KEY, task_id TEXT NOT NULL REFERENCES tasks(id),
                     kind TEXT NOT NULL, detail TEXT NOT NULL, created_at TEXT NOT NULL
