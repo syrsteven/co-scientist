@@ -1,4 +1,81 @@
-# 项目状态 — W0-T3
+# 项目状态 — W0-T4
+
+## 当前交付（2026-11-03）
+
+PR #4 固定 head `c6f7e0949f9353bfcd9ea1d8be28daef273f8292` 复核未变，4项CI成功，
+无新增阻断、状态检查或冲突；按该SHA约束合并。合并 commit / 本轮实际起始 main：
+`aa2cc7fe0a2b12398ba71d8dcc0c75a0c230a004`。本地 main 已更新。
+独立分支 `codex/w0-t4-goal-workspace`，checkout `/private/tmp/co-scientist-w0-t4`。
+本轮新PR不合并；最终head以该PR及 `git rev-parse HEAD` 为准。
+原工作区仍在原分支/HEAD，232项用户改动、暂存区与status指纹保持一致。
+
+| 维度 | 本轮实际状态 |
+|---|---|
+| 后端 | M01 prepare_goal、M02 screen_goal最小契约/输入保留/持久化实现；确定性开发适配器；真实供应商尚未接入 |
+| M12 | 两命名操作的条件推进已接入；只有completed pass进入awaiting_background，未创建背景或Generation任务 |
+| 页面 | 创建/保存Brief、固定Run、显式执行、结果与澄清展示、刷新读取SQLite已接入 |
+| 科学验证 | `science_validated=false`；自然语言抽取、关键歧义判断、伦理分类准确性和真实模型表现未验证 |
+
+W1原7文件逐字节保存于 `design/w1-method-v0.4-proposed/`，保持Proposed；
+原ZIP及V5参考哈希见 `design/w1-v04-source-integrity.json`。
+V5只参考布局/视觉，不导入其内置案例或假候选。M00 Accepted、旧W0/真实案例原件及旧G3保持原状。
+用户已接受修订单列 [W0_T4_DECISIONS.md](W0_T4_DECISIONS.md)：P08六字段一致的采用示例、
+DIRECT/ASSUMPTION_STRUCTURED单次方式、R0明确事实错误政策（未实施）、Goal Ethics完成决定仅pass/reject。
+Candidate Ethics不改；W1整包不转Accepted。
+
+实现文件：`goal.py`、`workspace.py`、`frontend/*`；Store新增Goal/Run配置表与原子结果应用，
+Scheduler增加当前两操作的条件分支；pyproject打包页面资源。另有两组Goal/HTTP测试、浏览器脚本、
+源文件完整性记录、采用示例、决策/操作文档及实际验证记录。新运行链不依赖旧Orchestrator。
+
+启动（兼容现有Python/conda，不强制新环境，无新生产依赖）：
+
+```sh
+PYTHONPATH=src python -m co_scientist_next.workspace --db runs/goal-workspace.sqlite --port 8784 --development-test
+```
+
+交付时已启动页面 http://127.0.0.1:8784/ ，实际数据库 `runs/w0-t4-live.sqlite`。
+显式开发模式和政策示例需主动启用；不带开发参数不会连接真实模型或加载默认政策。
+操作/适配边界详见 [W0_T4_WORKSPACE.md](W0_T4_WORKSPACE.md)。
+
+### 本轮实际检查
+
+环境：macOS、Python3.11.4，使用已有 `/Users/lemintea/Documents/co-scientist/.venv/bin/python`；
+Playwright1.64.0仅装入临时工具目录，实际Chromium1248，未添加生产浏览器依赖。
+
+| 检查 | 结果 |
+|---|---|
+| `PYTHONPATH=src python -m pytest -q -s tests/next` | 109 passed，0 failed，0 skipped；含原80项回归和29项新增工程检查 |
+| 跨进程恢复 | 实际os._exit中断于prepare成功调用保存后；不同PID恢复，prepare发送1次、screen1次；另含原恢复/不确定发送回归 |
+| HTTP持久化/恢复 | 子进程服务重启可读原Run；未完成运行GET/启动不执行，显式POST才恢复，保存成功调用不重发 |
+| 浏览器真实页面操作 | pass/reject/澄清/风险信息缺失/无效输出/技术失败/缺政策；刷新新增POST为0，草稿更新不改固定Run，无页面JS错误 |
+| 布局 | 桌面和390px移动截图；移动无横向溢出 |
+| Ruff check / format | 通过；22个Python文件格式通过 |
+| JavaScript语法 | node --check通过 |
+| 原附件一致性 | ZIP SHA与7文件逐字节比对通过；V5参考SHA匹配 |
+| Wheel | 构建成功；隔离从wheel加载3页面资源并完成开发Goal切片 |
+| 空白检查 | 新编文件通过；原附件Markdown原有行尾空格原样保留 |
+
+测试输出：[w0-t4-tests.txt](verification/w0-t4-tests.txt)；
+页面报告：[w0-t4-browser.json](verification/w0-t4-browser.json)，
+[桌面](verification/w0-t4-workspace.png)、[固定Run](verification/w0-t4-fixed-run-after-edit.png)、
+[移动](verification/w0-t4-mobile.png)。HTTP最初受沙箱禁止绑定loopback，授权本地主机端口后实际重跑通过。
+
+### 剩余能力和限制
+
+没有真实API/付费模型调用；真实适配器、生产安全政策、背景调研、Generation、Candidate Ethics、R0、
+M03–M11科学实现均未接入。工程替身只复制结构化条件/返回固定情景，不能证明科研或伦理能力。
+缺信息/政策、无效输入输出、技术失败为执行状态，不是第三种完成伦理决定；科学未知不自动拒绝。
+原问题保守原样保存，真实自然语言条件分类和关键歧义有效性待真实适配器及专家确认。
+仅单进程loopback页面，无远程/多用户认证；刷新不自动恢复。不确定外部发送需明确核实/授权，
+不承诺外部exactly-once。缺政策/澄清等已停止Run需要以修订输入/政策创建新Run。
+
+**未运行：** 真实模型能力/伦理分类科学评测、专家盲评、湿实验、完整S01–S14科学流程、
+旧G3全套本地测试、Python3.12本地回归。无新增需要总控裁决的跨模块冲突；
+生产政策和科学有效性仍须另行审批/评测。
+
+---
+
+## W0-T3历史交付（以下按当时状态保留）
 
 更新：2026-11-02，Asia/Shanghai。本轮为公开真实开发案例采用、来源核对和 M01/M02 实施提案，
 **没有实施 M01/M02 生产科学逻辑，没有执行科学模型评测或付费候选生成。**

@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width,initial-scale=1" />
+    <title>Co-Scientist · 研究工作区</title>
+    <link rel="stylesheet" href="/app.css" />
+  </head>
+  <body>
+    <aside>
+      <div class="brand">
+        <span class="mark">C</span>
+        <div>Co-Scientist<small>研究工作区 · W0-T4</small></div>
+      </div>
+      <button id="new-project" class="primary">＋ 新建研究</button>
+      <h3>已保存研究</h3>
+      <nav id="projects"></nav>
+      <div class="sidebar-note">
+        Goal 制备与目标筛查<br />背景调研与生成尚未接入
+      </div>
+    </aside>
+    <main>
+      <header>
+        <div>
+          <span class="eyebrow">RESEARCH WORKSPACE</span>
+          <h1>让研究问题有一个清晰的起点</h1>
+          <p>保存简报，保留原始条件，查看固定运行的目标与筛查记录。</p>
+        </div>
+        <button id="refresh">刷新已保存数据</button>
+      </header>
+      <div id="mode" role="status" class="mode"></div>
+      <p id="notice" role="alert"></p>
+      <div class="layout">
+        <section class="panel">
+          <div class="section-heading">
+            <h2>研究简报草稿</h2>
+            <span id="revision-badge" class="badge">尚未保存</span>
+          </div>
+          <p class="muted">编辑会保存新版本，不改变已创建 Run 的输入。</p>
+          <form id="brief-form">
+            <label
+              >研究名称<input
+                id="name"
+                required
+                placeholder="为研究命名" /></label
+            ><label
+              >原始研究问题<textarea
+                id="question"
+                required
+                rows="5"
+                placeholder="完整保留您想研究的问题"
+              ></textarea>
+            </label>
+            <div class="fields">
+              <label
+                >明确硬约束（每行一项）<textarea
+                  id="constraints"
+                  rows="3"
+                  placeholder="必须保留的条件"
+                ></textarea></label
+              ><label
+                >研究偏好（每行一项）<textarea
+                  id="preferences"
+                  rows="3"
+                  placeholder="希望优先考虑的方向"
+                ></textarea>
+              </label>
+            </div>
+            <label>用户背景<textarea id="background" rows="3"></textarea></label
+            ><label>拟议用途（未指定可留空）<input id="intended-use" /></label
+            ><label
+              >用户材料引用（每行一项，本轮不获取正文）<textarea
+                id="materials"
+                rows="2"
+              ></textarea></label
+            ><button class="primary" type="submit">保存简报版本</button>
+          </form>
+          <div class="divider"></div>
+          <h2>创建固定 Run</h2>
+          <p class="muted">
+            使用左侧已保存版本；编辑后请先保存。政策必须显式传入，缺少政策不形成伦理决定。
+          </p>
+          <div class="fields">
+            <label>政策标识<input id="policy-id" /></label
+            ><label>政策版本<input id="policy-version" /></label>
+          </div>
+          <label>政策文本<textarea id="policy-text" rows="4"></textarea></label
+          ><button id="example-policy" hidden>填入开发示例政策</button>
+          <label id="fixture-label" hidden
+            >开发测试情景<select id="scenario">
+              <option value="pass">固定 pass</option>
+              <option value="reject">固定 reject</option>
+              <option value="clarification">关键歧义待澄清</option>
+              <option value="risk_information">风险信息待补充</option>
+              <option value="invalid_output">筛查输出无效</option>
+              <option value="technical_failure">已确认技术失败</option>
+              <option value="uncertain_send">发送结果不确定</option>
+            </select></label
+          ><button id="create-run" disabled>创建固定 Run</button>
+        </section>
+        <section>
+          <div class="panel">
+            <div class="section-heading">
+              <h2>固定运行</h2>
+              <span class="badge" id="run-state">未选择 Run</span>
+            </div>
+            <p class="muted">
+              右侧来自持久化记录。刷新只读取，不执行、不重发、不恢复。
+            </p>
+            <div id="runs" class="runs"></div>
+            <div id="run-tools" hidden>
+              <button id="execute" class="primary">执行当前切片</button
+              ><button id="recover" hidden>确认恢复中断运行</button>
+            </div>
+            <div id="run-detail" class="empty">
+              保存简报并创建 Run 后，查看真实记录。
+            </div>
+          </div>
+          <div class="panel boundary">
+            <span class="eyebrow">CAPABILITY BOUNDARY</span>
+            <h2>本轮到此为止</h2>
+            <p>
+              完成的 pass
+              仅能到达“等待背景调研接入”。背景调研、Generation、Candidate Ethics
+              和 R0 均未实施，不会显示候选、排名或科研完成。
+            </p>
+            <strong>科学有效性与伦理分类准确性：未验证</strong>
+          </div>
+        </section>
+      </div>
+    </main>
+    <script src="/app.js" defer></script>
+  </body>
+</html>
