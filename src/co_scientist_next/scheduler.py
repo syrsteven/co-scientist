@@ -50,6 +50,12 @@ class Scheduler:
                 store.submit_result(
                     task["id"], result.output, stop_status=stop, goal_context=context
                 )
+            elif task["module"] in ("literature.search.v1", "literature.fetch.v1"):
+                from .literature_runtime import literature_route
+
+                store.submit_result(
+                    task["id"], result.output, stop_status=literature_route(result.output)
+                )
             else:
                 store.submit_result(task["id"], result.output)
         except Exception as exc:  # noqa: BLE001 -- module boundary persists failure facts

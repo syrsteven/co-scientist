@@ -6,14 +6,25 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 from importlib.resources import files
 from urllib.parse import parse_qs, urlsplit
 
+from .europe_pmc import public_http
 from .goal import DEVELOPMENT_POLICY, DevelopmentAdapter, GoalSlice, validate_brief
+from .literature_runtime import LiteratureService
 from .store import Store
 
 
-def make_server(store, *, port=0, development_test=False):
+def make_server(
+    store,
+    *,
+    port=0,
+    development_test=False,
+    public_literature=False,
+    literature_transport=public_http,
+):
     service = GoalSlice(
         store, DevelopmentAdapter() if development_test else None, development_test=development_test
     )
+
+    literature = LiteratureService(store, enabled=public_literature, transport=literature_transport)
 
     class Handler(BaseHTTPRequestHandler):
         def log_message(self, *_):
@@ -67,6 +78,7 @@ def make_server(store, *, port=0, development_test=False):
                         {
                             "development_test": development_test,
                             "real_adapter_connected": False,
+                            "public_literature_enabled": public_literature,
                             "example_policy": DEVELOPMENT_POLICY if development_test else None,
                         },
                     )
@@ -94,6 +106,24 @@ def make_server(store, *, port=0, development_test=False):
                             "runs": runs,
                         },
                     )
+                elif path == "/api/literature/response":
+                    attempt = store.one(
+                        """SELECT p.* FROM attempts p JOIN literature_actions a
+                        ON a.task_id=p.task_id WHERE p.id=?""",
+                        (parse_qs(parsed.query)["attempt_id"][0],),
+                    )
+                    self.reply(
+                        200,
+                        {
+                            **attempt,
+                            "request": json.loads(attempt["request"]),
+                            "response": json.loads(attempt["response"])
+                            if attempt["response"]
+                            else None,
+                        },
+                    )
+                elif path == "/api/literature":
+                    self.reply(200, literature.history(parse_qs(parsed.query)["run_id"][0]))
                 elif path == "/api/run":
                     self.reply(200, service.snapshot(parse_qs(parsed.query)["id"][0]))
                 else:
@@ -132,8 +162,18 @@ def make_server(store, *, port=0, development_test=False):
                     self.reply(201, {"run_id": run})
                 elif path == "/api/execute":
                     # POST is explicit. Loading /api/run does not reach this operation.
+                    if store.tasks(data["run_id"])[-1]["module"].startswith("literature."):
+                        raise ValueError("Use the explicit literature action recovery endpoint")
                     service.execute(data["run_id"], recover=data.get("recover") is True)
                     self.reply(200, service.snapshot(data["run_id"]))
+                elif path == "/api/literature":
+                    action = literature.submit(data["run_id"], data["request_id"], data["request"])
+                    self.reply(200, literature.execute(action["request_id"]))
+                elif path == "/api/literature/execute":
+                    self.reply(
+                        200,
+                        literature.execute(data["request_id"], recover=data.get("recover") is True),
+                    )
                 else:
                     self.reply(404, {"error": "Not found"})
             except (KeyError, ValueError, TypeError) as exc:
@@ -151,9 +191,19 @@ def main():
         action="store_true",
         help="Explicit deterministic fixtures; NOT scientific validation",
     )
+    parser.add_argument(
+        "--public-literature",
+        action="store_true",
+        help="Enable explicit real public Europe PMC requests; no models",
+    )
     args = parser.parse_args()
     with Store(args.db) as store:
-        server = make_server(store, port=args.port, development_test=args.development_test)
+        server = make_server(
+            store,
+            port=args.port,
+            development_test=args.development_test,
+            public_literature=args.public_literature,
+        )
         # No store.recover() here. Restart and refresh are observational until explicit POST.
         print(
             f"http://127.0.0.1:{server.server_port} | development_test={args.development_test} | real_adapter_connected=False",

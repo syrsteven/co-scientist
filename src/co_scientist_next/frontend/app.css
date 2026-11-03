@@ -273,3 +273,18 @@ select:focus-visible {
     font-size: 24px;
   }
 }
+
+.source-card {
+  border-left: 3px solid var(--teal, #17636a);
+  padding: 12px;
+  margin: 12px 0;
+  overflow-wrap: anywhere;
+}
+.literature-entry {
+  overflow-wrap: anywhere;
+}
+.literature-entry pre {
+  max-height: 440px;
+  overflow: auto;
+  white-space: pre-wrap;
+}

@@ -1,0 +1,19 @@
+{
+  "run_id": "9b5abf8a5ccd496d8c45ff9a6666b20e",
+  "goal_screening": "deterministic_development_fixture",
+  "literature": "real_public_http",
+  "manual_query": "\"amyotrophic lateral sclerosis\" AND (nucleoporin OR \"nuclear pore\")",
+  "first_page_count": 5,
+  "reported_total": 1781,
+  "pagination_complete": false,
+  "abstract_source": "epmc:PPR:PPR1217875",
+  "full_text_source": "epmc:MED:42437963",
+  "full_text_access": "full_text",
+  "actions": 5,
+  "actual_http_sends": 6,
+  "refresh_added_posts": 0,
+  "saved_history_unchanged": true,
+  "science_validated": false,
+  "model_read": false,
+  "page_errors": []
+}

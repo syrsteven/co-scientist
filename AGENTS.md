@@ -9,6 +9,10 @@
   Proposed M01/M02 plan. W0-T4 separately authorizes only Goal preparation, binary
   Goal Ethics, narrow conditional advancement and its persisted local page.
   Read docs/W0_T4_DECISIONS.md for accepted overrides; W1 originals stay Proposed.
+  W1-L1 separately authorizes explicit human-query Europe PMC search/fetch only
+  after a saved completed Goal Ethics pass; see docs/W1_L1_LITERATURE.md.
+  Development Goal screening plus real public acquisition is not real ethical
+  review or a production scientific chain. No model reading/readiness/generation.
 - For W0 real cases read `docs/W0_REAL_CASES.md`. Raw casebooks and reviewer
   expected/critical_failures/assessment must never be sent to tested models. Use
   the explicit data export; source paraphrases, original facts and author model
