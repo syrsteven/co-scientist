@@ -1,0 +1,15 @@
+{
+  "ethics": {
+    "completed": true,
+    "decision": "pass",
+    "limitations": [
+      "非生产政策审查，不批准临床或实验执行。"
+    ],
+    "policy_refs": [
+      "POLICY-W1-DEMO-PROPOSED@w0-t4-dev-1"
+    ],
+    "rationale": "开发测试适配器的固定情景结果，不代表真实伦理分类准确性。",
+    "target_scope": "development fixture only"
+  },
+  "execution_status": "screened"
+}

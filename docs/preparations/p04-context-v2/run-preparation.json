@@ -1,0 +1,34 @@
+{
+  "project_id": "def2c9881bdd4fe690c06a3ecea15acf",
+  "brief_revision_id": "997d55886d634f289612ba79e1755f16",
+  "run_id": "cea909fe8a004010b1896df1c1d98e02",
+  "database": "runs/p04-v2-prepared.sqlite",
+  "goal_ethics_mode": "development_fixture",
+  "reading_executed": false,
+  "baseline_commit": "87668c8ee84a52aa3109830cd7dbef02d0a32f28",
+  "prompt_version": "w1-l2-p04-context-v2",
+  "run_status": "literature_acquired_unread",
+  "model_config": {
+    "provider": "openai",
+    "endpoint": "https://api.openai.com/v1/chat/completions",
+    "model": "gpt-6.1-sol",
+    "parameters": {
+      "reasoning_effort": "high",
+      "max_completion_tokens": 32768,
+      "response_format": {
+        "type": "json_object"
+      }
+    },
+    "max_request_bytes": 64000,
+    "timeout_seconds": 600
+  },
+  "model_key_read": false,
+  "model_calls_authorized": false,
+  "model_requests_executed": 0,
+  "reading_records": 0,
+  "readiness_records": 0,
+  "seed_records": 0,
+  "public_request_count": 5,
+  "development_goal_attempts": 2,
+  "science_validated": false
+}

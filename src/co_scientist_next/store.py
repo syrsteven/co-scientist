@@ -107,6 +107,16 @@ class Store:
                     kind TEXT NOT NULL, detail TEXT NOT NULL, created_at TEXT NOT NULL
                 );
             """)
+            # Existing pending/completed background actions used the v1 prompt.
+            # Add identity only; never rewrite old requests, responses or results.
+            columns = {
+                row["name"] for row in self.db.execute("PRAGMA table_info(background_actions)")
+            }
+            if "prompt_version" not in columns:
+                self.db.execute(
+                    "ALTER TABLE background_actions ADD COLUMN prompt_version TEXT NOT NULL DEFAULT 'w1-l2-p03-p07-v1'"
+                )
+                self.db.commit()
         except BaseException:
             if hasattr(self, "db"):
                 self.db.close()

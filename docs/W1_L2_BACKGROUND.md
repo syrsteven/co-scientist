@@ -146,3 +146,11 @@ python scripts/w1_l2_browser.py --url http://127.0.0.1:8786 --run-id YOUR_RUN_ID
 
 真实供应商网络/计费/模型语义表现、专家科学审阅、开放/定向质量比较、科学有效性、P08及后续链均未验证。
 本轮不合并；没有新增需要总控改变M00规则的跨模块冲突。
+
+## P04 context-v2 后续准备（2026-11-04）
+
+新P04任务使用`w1-l2-p04-context-v2`，历史v1消息与原始输出保留；不更改P03/P05–P07方法或输出Schema。
+按实验保留摘要/Highlights/In Brief互补情境，缺失限定当前视图，忠实保留作者报告关系强度，独立证据限度单列。
+新增action.prompt_version固定任务版本；老库仅追加身份列、默认原v1，旧pending/成功调用恢复仍用旧消息。
+[新Brief/Run、两份实际来源材料、待执行配置与启动命令](preparations/p04-context-v2/README.md)。
+该独立新库未含旧替身阅读/ready结果，没有本轮P04或P05–P07调用；Goal/Ethics仍为开发测试，不代表真实伦理审查。

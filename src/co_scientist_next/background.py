@@ -4,7 +4,14 @@ import hashlib
 import json
 import re
 
-from .background_ops import PROMPT_VERSION, PROMPTS, SYSTEM, parse_output, text
+from .background_ops import (
+    PROMPTS,
+    SYSTEM,
+    operation_prompt,
+    operation_prompt_version,
+    parse_output,
+    text,
+)
 from .contracts import ModuleResult
 from .literature_runtime import LiteratureService
 from .scheduler import Registry, Scheduler
@@ -355,10 +362,10 @@ class BackgroundService:
             )
         return value
 
-    def messages(self, operation, payload):
+    def messages(self, operation, payload, *, version=None):
         return [
             {"role": "system", "content": SYSTEM},
-            {"role": "developer", "content": PROMPTS[operation]},
+            {"role": "developer", "content": operation_prompt(operation, version)},
             {"role": "user", "content": encode(payload)},
         ]
 
@@ -433,7 +440,7 @@ class BackgroundService:
             self.store._create_task(run_id, step, None)
             task = self.store.one("SELECT id FROM tasks WHERE run_id=? AND step=?", (run_id, step))
             self.store.db.execute(
-                "INSERT INTO background_actions VALUES(?,?,?,?,?,?,?,?,?)",
+                "INSERT INTO background_actions (request_id,run_id,task_id,operation,seed_id,request,input,config,created_at,prompt_version) VALUES(?,?,?,?,?,?,?,?,?,?)",
                 (
                     request_id,
                     run_id,
@@ -444,6 +451,7 @@ class BackgroundService:
                     encode(payload),
                     encode(config),
                     now(),
+                    operation_prompt_version(operation),
                 ),
             )
         return self.store.one("SELECT * FROM background_actions WHERE request_id=?", (request_id,))
@@ -645,6 +653,7 @@ class BackgroundService:
         config = json.loads(action["config"])
         base = {
             "operation": operation,
+            "prompt_version": action["prompt_version"],
             "binding": {
                 "run_id": inputs.run_id,
                 "goal_ref": inputs.goal_context_ref,
@@ -676,11 +685,11 @@ class BackgroundService:
                         "reason": "No changed source/reading/packet content, query coverage or specificity; do not repeat model check or infer scientific rejection",
                     }
                 )
-        messages = self.messages(operation, payload)
+        messages = self.messages(operation, payload, version=action["prompt_version"])
         actual = self.adapter.request(messages)
         model_request = {
             "operation": operation,
-            "prompt_version": PROMPT_VERSION,
+            "prompt_version": action["prompt_version"],
             "messages": messages,
             "actual_request": actual,
             "model_config": config,
@@ -708,7 +717,7 @@ class BackgroundService:
                 self.store.fact(
                     inputs.task_id,
                     "background_parse_error",
-                    {"prompt_version": PROMPT_VERSION, "error": str(exc)},
+                    {"prompt_version": action["prompt_version"], "error": str(exc)},
                 )
             return ModuleResult(
                 {**base, "background_status": "invalid_output", "parse_error": str(exc)}
@@ -784,6 +793,7 @@ class BackgroundService:
             "seeds": self.seeds(run_id),
             "materials": materials,
             "current_model_config": self.config(),
+            "current_prompt_versions": {op: operation_prompt_version(op) for op in OPERATIONS},
             "science_validated": False,
             "real_adapter_attempts_recorded": sum(
                 len(a["attempts"]) for a in actions if a["config"]["execution_mode"] == "real_model"
