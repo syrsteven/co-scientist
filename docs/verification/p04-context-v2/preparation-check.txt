@@ -1,0 +1,1 @@
+Verified clean new Run, two bound views, five saved public sends, P04 v2 exports; model sends=0, no readings/seeds/readiness, science_validated=false

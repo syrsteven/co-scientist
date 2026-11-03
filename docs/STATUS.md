@@ -1,5 +1,32 @@
 # 项目状态 — W1-L2
 
+## P04 context-v2 与独立新Run准备（2026-11-04）
+
+实际起点main：`87668c8ee84a52aa3109830cd7dbef02d0a32f28`；独立分支`codex/p04-context-preparation`。
+代码/准备数据commit：`776b202383ab47d112d5d4e95bc76c023a05014f`；后续提交仅STATUS/验证记录，独立PR不合并。
+
+| 维度 | 本轮实际状态 |
+|---|---|
+| P04 | 新版本w1-l2-p04-context-v2；按实验保留Abstract/Highlights/In Brief互补情境；缺失限定当前视图；忠实保留作者诱导/相关措辞，限制单列；原字段区分来源报告/作者解释/模型外推/未建立关系 |
+| 历史兼容 | 每个action固定版本；老库仅追加身份列，原v1文字保留，不重写请求/响应/结果；跨进程成功回放不重发测试通过 |
+| 新Brief/Run | 新Project/Revision/Run、独立库；原科学问题及两项约束保留，新背景移除“仅检索、不执行阅读”；旧Brief/Run和原试跑文件未变 |
+| Goal/伦理 | 新Run仍用明确开发模式Goal/Goal Ethics替身与示例政策，不是真实制备/伦理审查，不作为生产默认 |
+| 实际材料 | 重新取得首次预印本2746字符摘要对照（与原文相同）；另取PMID35112738/PMC9016352开放全文125363字符，显式选Results小节[33770,41370)共7600字符；保留完整所得内容、未选范围与原始响应 |
+| 来源边界 | 新增材料为条件依赖的无效应/作者限制对照，不是ANXA11播种研究的直接反驳、独立复现或核孔蛋白磷酸化证据；CCBY4许可及作者/DOI保留 |
+| 实际发送 | 本轮5次真实公共发送（人工身份查询2、metadata2、fulltext1）均经M15；无隐藏重试；新库另有2个本地Goal开发替身Attempt，不能计真实模型调用 |
+| 模型与科学模块 | **0次模型请求**，新库P04阅读/seed/readiness/背景动作均0；未在该Run执行P05–P07、P08、Candidate Ethics或R0；新Prompt模型遵从性及科学表现未验证，science_validated=false |
+| 待执行配置 | gpt-6.1-sol/high/max_completion_tokens32768/JSON object，无temperature，timeout_seconds600；不读模型凭据/不授权；不自动使用替身 |
+| 页面 | 已显示新Prompt版本、材料片段/范围、未授权无凭据模式及Goal测试声明；IAB刷新实测仍读取已存数据，阅读/真实模型Attempt为0，无浏览器错误 |
+| 检查 | 在代码commit776b202上新系统**203 passed、0 failed、0 skipped**（原197+新6），含本地HTTP与跨进程恢复；Ruff/7文件format/JS语法/独立包校验通过 |
+
+[准备包/恢复/页面与待执行命令](preparations/p04-context-v2/README.md) ·
+[来源/选择/范围清单](preparations/p04-context-v2/material-manifest.json) ·
+[验证证据](verification/p04-context-v2/RESULTS.md)。
+本轮不进行真实P04试跑，不把工程检查或Codex选材当科学验收；独立专家审阅、新Prompt真实模型效果、本机Python3.12及旧G3全套回归均**未运行**。
+原工作区232项改动与暂存指纹保持不变。原M00 Accepted及W1 Proposed状态不改变；不直接合并本轮PR。
+
+## 以下为PR #8及更早的历史交付记录
+
 ## 首次真实P04：初审与独立PR交付（2026-11-03）
 
 基线main重新fetch核实为 `e705953818feb866dddfcb8093fbc6230e02978f`。
