@@ -56,6 +56,12 @@ class Scheduler:
                 store.submit_result(
                     task["id"], result.output, stop_status=literature_route(result.output)
                 )
+            elif task["module"].startswith("background."):
+                from .background import background_route
+
+                store.submit_result(
+                    task["id"], result.output, stop_status=background_route(result.output)
+                )
             else:
                 store.submit_result(task["id"], result.output)
         except Exception as exc:  # noqa: BLE001 -- module boundary persists failure facts

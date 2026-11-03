@@ -52,13 +52,74 @@ class LiteratureService:
         )
         return run
 
-    def submit(self, run_id, request_id, request):
+    def submit(self, run_id, request_id, request, *, background_context=None):
         if not self.enabled:
             raise ValueError("Public literature access was not explicitly enabled at startup")
         run = self.passed_goal(run_id)
         if not isinstance(request_id, str) or not re.fullmatch(r"[A-Za-z0-9_-]{8,100}", request_id):
             raise ValueError("A stable request_id is required for idempotent explicit submission")
         payload = self.validate(request)
+        if payload["kind"] == "search" and request.get("parent_search_id"):
+            parent = next(
+                (a for a in self.history(run_id) if a["request_id"] == request["parent_search_id"]),
+                None,
+            )
+            previous = ((parent or {}).get("result") or {}).get("acquisition", {})
+            if (
+                not parent
+                or parent["request"]["kind"] != "search"
+                or parent["request"]["query"] != payload["query"]
+                or not payload["cursor"]
+                or previous.get("next_cursor") != payload["cursor"]
+            ):
+                raise ValueError("Continuation must bind the actual parent query/cursor")
+            payload["parent_search_id"] = request["parent_search_id"]
+            background_context = parent["request"].get("background_context")
+        if payload["kind"] == "fetch":
+            matches = [
+                a
+                for a in self.history(run_id)
+                if a["request"]["kind"] == "search"
+                and any(
+                    i["source_ref"] == payload["source_ref"]
+                    for i in (a.get("result") or {}).get("acquisition", {}).get("items", [])
+                )
+            ]
+            if request.get("search_request_id"):
+                matches = [a for a in matches if a["request_id"] == request["search_request_id"]]
+                payload["search_request_id"] = request["search_request_id"]
+            else:
+                matches = [
+                    a
+                    for a in matches
+                    if not a["request"].get("background_context", {}).get("seed_id")
+                ]
+            if not matches:
+                raise ValueError(
+                    "Fetch source must bind this Run's search history; select parent for seed material"
+                )
+            background_context = matches[0]["request"].get("background_context")
+        if background_context:
+            plan = self.store.one(
+                """SELECT a.*,r.output FROM background_actions a JOIN results r ON r.task_id=a.task_id
+                WHERE a.request_id=? AND a.run_id=? AND a.operation='P03'""",
+                (background_context["plan_ref"], run_id),
+            )
+            output = json.loads(plan["output"])
+            if (
+                plan["seed_id"] != background_context.get("seed_id")
+                or output.get("background_status") != "saved"
+            ):
+                raise ValueError("Query plan context mismatch")
+            if (
+                payload["kind"] == "search"
+                and output["artifact"]["queries"][background_context["query_index"]]["query"]
+                != payload["query"]
+            ):
+                raise ValueError("Executed query must equal selected saved plan")
+            payload["background_context"] = background_context
+            if payload["kind"] == "search":
+                payload["query_origin"] = "model_planned_user_executed"
         old = self.store.rows("SELECT * FROM literature_actions WHERE request_id=?", (request_id,))
         if old:
             if old[0]["run_id"] != run_id or old[0]["request"] != encode(payload):
@@ -69,6 +130,10 @@ class LiteratureService:
             "literature_acquired_unread",
             "literature_incomplete",
             "literature_failed",
+            "background_saved",
+            "background_problem",
+            "awaiting_generation",
+            "background_no_progress",
         ):
             raise ValueError(
                 "Run has an unfinished/blocked action; resolve explicitly before a new request"

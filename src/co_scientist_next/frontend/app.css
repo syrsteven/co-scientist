@@ -288,3 +288,11 @@ select:focus-visible {
   overflow: auto;
   white-space: pre-wrap;
 }
+#background-panel pre {
+  max-height: 420px;
+  overflow: auto;
+  white-space: pre-wrap;
+}
+#background-panel {
+  overflow-wrap: anywhere;
+}

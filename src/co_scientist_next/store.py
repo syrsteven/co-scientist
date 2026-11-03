@@ -91,6 +91,17 @@ class Store:
                     task_id TEXT NOT NULL UNIQUE REFERENCES tasks(id),
                     request TEXT NOT NULL, created_at TEXT NOT NULL
                 );
+                CREATE TABLE IF NOT EXISTS material_views (
+                    id TEXT PRIMARY KEY, run_id TEXT NOT NULL REFERENCES runs(id),
+                    acquisition_task_id TEXT NOT NULL REFERENCES tasks(id),
+                    content TEXT NOT NULL, created_at TEXT NOT NULL
+                );
+                CREATE TABLE IF NOT EXISTS background_actions (
+                    request_id TEXT PRIMARY KEY, run_id TEXT NOT NULL REFERENCES runs(id),
+                    task_id TEXT NOT NULL UNIQUE REFERENCES tasks(id), operation TEXT NOT NULL,
+                    seed_id TEXT, request TEXT NOT NULL, input TEXT NOT NULL,
+                    config TEXT NOT NULL, created_at TEXT NOT NULL
+                );
                 CREATE TABLE IF NOT EXISTS execution_facts (
                     id INTEGER PRIMARY KEY, task_id TEXT NOT NULL REFERENCES tasks(id),
                     kind TEXT NOT NULL, detail TEXT NOT NULL, created_at TEXT NOT NULL

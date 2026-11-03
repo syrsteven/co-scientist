@@ -6,6 +6,7 @@ const state = {
   run: null,
   config: null,
   dirty: false,
+  busy: false,
 };
 const labels = {
   ready: "已保存，待显式执行",
@@ -24,6 +25,10 @@ const labels = {
   literature_acquired_unread: "文献请求已完成 · 尚未解读",
   literature_incomplete: "文献获取部分完成 · 尚未解读",
   literature_failed: "文献请求失败（不是没有证据）",
+  background_saved: "背景步骤已保存 · 未生成候选",
+  background_problem: "背景准备/执行问题",
+  background_no_progress: "无新资料，已停止重复检查",
+  awaiting_generation: "seed 已 ready · 等待生成能力",
 };
 async function api(path, data) {
   const response = await fetch(
@@ -41,6 +46,8 @@ async function api(path, data) {
   return result;
 }
 async function action(fn) {
+  if (state.busy) return;
+  state.busy = true;
   el("notice").textContent = "";
   const buttons = [...document.querySelectorAll("button")];
   const disabled = buttons.map((b) => b.disabled);
@@ -50,9 +57,13 @@ async function action(fn) {
   } catch (e) {
     el("notice").textContent = e.message;
   } finally {
+    state.busy = false;
     buttons.forEach((b, i) => (b.disabled = disabled[i]));
     updateActions();
-    if (state.run) await showLiterature(state.run);
+    if (state.run) {
+      await showLiterature(state.run);
+      await showBackground(state.run);
+    }
   }
 }
 const lines = (id) =>
@@ -87,16 +98,19 @@ function updateActions() {
   const status = state.run?.run.status;
   el("execute").disabled =
     status !== "ready" ||
-    state.run?.tasks.at(-1)?.module.startsWith("literature.");
+    state.run?.tasks.at(-1)?.module.startsWith("literature.") ||
+    state.run?.tasks.at(-1)?.module.startsWith("background.");
   el("recover").hidden =
     status !== "running" ||
-    state.run?.tasks.at(-1)?.module.startsWith("literature.");
+    state.run?.tasks.at(-1)?.module.startsWith("literature.") ||
+    state.run?.tasks.at(-1)?.module.startsWith("background.");
 }
 function reset() {
   state.project = null;
   state.revision = null;
   state.run = null;
   el("literature-panel").hidden = true;
+  el("background-panel").hidden = true;
   state.dirty = false;
   location.hash = "";
   el("brief-form").reset();
@@ -124,6 +138,7 @@ async function project(id) {
   if (state.project && state.project !== id) {
     state.run = null;
     el("literature-panel").hidden = true;
+    el("background-panel").hidden = true;
     el("run-tools").hidden = true;
     el("run-detail").textContent = "请选择此研究的固定 Run。";
     el("run-state").textContent = "未选择 Run";
@@ -270,7 +285,7 @@ async function showRun(id) {
     detail.append(
       block(
         "真实待接入边界",
-        "Goal Ethics 已完成 pass；可以显式人工检索/获取文献。自动背景调研、模型阅读与 Generation 未接入，科研未完成。",
+        "Goal Ethics 已完成 pass；可以显式检索/获取和执行 P03–P07 背景准备。模型表现仍需审阅，Generation 未接入，科研未完成。",
       ),
     );
   if (data.run.status === "blocked")
@@ -281,6 +296,7 @@ async function showRun(id) {
       ),
     );
   await showLiterature(data);
+  await showBackground(data);
   updateActions();
 }
 el("new-project").onclick = () => reset();
@@ -353,8 +369,8 @@ el("refresh").onclick = () =>
   try {
     state.config = await api("/api/config");
     el("mode").textContent = state.config.development_test
-      ? "开发测试模式 · 确定性适配器仅验证工程流程，不代表真实 Goal 制备或伦理分类能力；没有付费模型调用。目标筛查为测试结果，文献获取可为真实请求。"
-      : "真实模型适配器尚未接入 · 可以保存简报与查看记录，执行会记录未配置状态。";
+      ? "开发测试模式 · Goal 制备和伦理筛查为确定性测试结果；文献与背景模型调用分别显式配置。实际执行标识和用量见各记录，不代表真实伦理审查。"
+      : "Goal 模型适配器未配置 · 背景阅读的供应商配置与执行标识另见下方；没有默认替身。";
     el("example-policy").hidden = !state.config.development_test;
     el("fixture-label").hidden = !state.config.development_test;
     await projects();
@@ -418,6 +434,10 @@ async function showLiterature(data) {
     "literature_acquired_unread",
     "literature_incomplete",
     "literature_failed",
+    "background_saved",
+    "background_problem",
+    "background_no_progress",
+    "awaiting_generation",
   ].includes(data.run.status);
   el("literature-search").disabled = !allowed || !idle;
   el("literature-mode").textContent = data.development_test
@@ -508,6 +528,7 @@ async function showLiterature(data) {
             kind: "search",
             query: request.query,
             cursor: result.next_cursor,
+            parent_search_id: entry.request_id,
             page_size: request.page_size,
           }),
         );
@@ -536,6 +557,7 @@ async function showLiterature(data) {
             submitLiterature({
               kind: "fetch",
               source_ref: source.source_ref,
+              search_request_id: entry.request_id,
               desired_access: level,
             }),
           );
