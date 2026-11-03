@@ -493,3 +493,221 @@ def test_saved_browser_evidence_preserves_actual_inputs_and_no_real_calls():
         "source_discovery_capabilities",
         "generic_search_constraints",
     }
+
+
+class RefinedReadingFixture(DevelopmentReadingAdapter):
+    """Changed fixture interpretations of unchanged text, not real model reading."""
+
+    def __init__(self):
+        super().__init__()
+        self.reading_revision = 0
+        self.packet_revision = 0
+
+    def __call__(self, request):
+        from co_scientist_next.contracts import CallResponse
+        from co_scientist_next.store import encode
+
+        response = super().__call__(request)
+        value = json.loads(response.output["raw_response"])
+        if request["operation"] == "P04" and self.reading_revision:
+            value["finding_cards"][0]["endpoint"] = (
+                "OFFLINE fixture newly extracted measured endpoint"
+            )
+            value["finding_cards"][0]["not_established"] = [
+                "OFFLINE fixture newly identified inference limit"
+            ]
+        if request["operation"] == "P05" and self.packet_revision:
+            value["competing_explanations"] = ["OFFLINE fixture newly preserved competing context"]
+        return CallResponse({"raw_response": encode(value), "fixture": True})
+
+
+def readiness(service, run, seed, prepared, scenario="retrieve_more"):
+    return perform(
+        service,
+        run,
+        "P07",
+        {
+            "seed_id": seed["id"],
+            "packet_ref": prepared["request_id"],
+            "requested_specificity": "exploratory relationship",
+            "fixture_scenario": scenario,
+        },
+    )
+
+
+def legacy_progress_hash(store, action):
+    """Existing PR7 results have the old source-only digest; retain their facts."""
+    result = {**action["result"], "progress_fingerprint": "legacy-source-only-v1-digest"}
+    with store.db:
+        store.db.execute(
+            "UPDATE results SET output=? WHERE task_id=?", (json.dumps(result), action["task_id"])
+        )
+
+
+def test_rereading_same_source_with_new_findings_allows_p07_reassessment(flow):
+    store, run, service, view, _ = flow
+    service.adapter = RefinedReadingFixture()
+    seed = seeds(flow)[0]
+    before = packet(flow, seed)
+    previous = readiness(service, run, seed, before)
+    assert previous["result"]["artifact"]["decision"] == "retrieve_more"
+    service.adapter.reading_revision = 1
+    after = packet(flow, seed)
+    assert (
+        before["result"]["artifact"]["source_views"] == after["result"]["artifact"]["source_views"]
+    )
+    assert any(
+        c["endpoint"].endswith("newly extracted measured endpoint")
+        for r in after["result"]["artifact"]["retained_contexts"]
+        for c in r["finding_cards"]
+    )
+    attempts = len(store.rows("SELECT * FROM attempts"))
+    reassessed = readiness(service, run, seed, after, "ready")
+    assert reassessed["result"]["background_status"] == "saved"
+    assert reassessed["result"]["artifact"]["decision"] == "ready"
+    assert len(store.rows("SELECT * FROM attempts")) == attempts + 1
+    assert next(v for v in service.views(run) if v["id"] == view["id"])["text"] == view["text"]
+
+
+def test_changed_synthesis_without_new_source_also_allows_p07(flow):
+    store, run, service, _, _ = flow
+    service.adapter = RefinedReadingFixture()
+    seed = seeds(flow)[0]
+    before = packet(flow, seed)
+    readiness(service, run, seed, before)
+    service.adapter.packet_revision = 1
+    after = perform(service, run, "P05", {"seed_id": seed["id"]})
+    attempts = len(store.rows("SELECT * FROM attempts"))
+    reassessed = readiness(service, run, seed, after)
+    assert reassessed["result"]["background_status"] == "saved"
+    assert len(store.rows("SELECT * FROM attempts")) == attempts + 1
+
+
+@pytest.mark.parametrize("repeat_reading", [False, True])
+def test_identical_packet_or_duplicate_reading_new_ids_is_still_no_progress(flow, repeat_reading):
+    store, run, service, view, _ = flow
+    seed = seeds(flow)[0]
+    before = packet(flow, seed)
+    previous = readiness(service, run, seed, before)
+    legacy_progress_hash(store, previous)
+    if repeat_reading:
+        copy = service.create_view(run, view["acquisition_task_id"])
+        assert copy["id"] != view["id"] and copy["text"] == view["text"]
+        perform(service, run, "P04", {"view_id": copy["id"], "seed_id": seed["id"]})
+    after = perform(service, run, "P05", {"seed_id": seed["id"]})
+    assert before["request_id"] != after["request_id"]
+    attempts = len(store.rows("SELECT * FROM attempts"))
+    unchanged = readiness(service, run, seed, after)
+    assert unchanged["result"]["background_status"] == "no_progress"
+    assert len(store.rows("SELECT * FROM attempts")) == attempts
+
+
+def test_only_identity_and_clock_changes_do_not_change_preparation_content(flow):
+    import copy
+
+    _, run, service, _, _ = flow
+    seed = seeds(flow)[0]
+    prepared = packet(flow, seed)
+    original = service.build_input(
+        run,
+        "P07",
+        {
+            "seed_id": seed["id"],
+            "packet_ref": prepared["request_id"],
+            "requested_specificity": "conceptual relationship",
+        },
+    )
+    card = original["packet"]["retained_contexts"][0]["finding_cards"][0]
+    reading_ref = original["packet"]["retained_contexts"][0]["record_ref"]
+    query_ref = original["executed_search_records"][0]["record_ref"]
+    original["packet"]["knowledge_edges"] = [
+        {
+            "kind": "observation",
+            "description": f"Fixture [{card['id']}] from [{reading_ref}] and [{query_ref}]",
+            "finding_refs": [card["id"]],
+        }
+    ]
+    renamed = copy.deepcopy(original)
+    ids = {prepared["request_id"], seed["id"]}
+    ids.update(v["id"] for v in original["packet"]["source_views"])
+    ids.update(r["record_ref"] for r in original["packet"]["retained_contexts"])
+    ids.update(c["id"] for r in original["packet"]["retained_contexts"] for c in r["finding_cards"])
+    ids.update(s["record_ref"] for s in original["executed_search_records"])
+    mapping = {ref: "new-transient-" + str(i) for i, ref in enumerate(sorted(ids))}
+
+    def rename(value):
+        if isinstance(value, str):
+            for old, new in mapping.items():
+                value = value.replace(old, new)
+            return value
+        if isinstance(value, list):
+            return [rename(v) for v in value]
+        if isinstance(value, dict):
+            return {mapping.get(k, k): rename(v) for k, v in value.items()}
+        return value
+
+    renamed = rename(renamed)
+    renamed["packet"]["created_at"] = "2099-01-01"
+    for v in renamed["packet"]["source_views"]:
+        v["created_at"] = "2099-01-01"
+    for r in renamed["packet"]["retained_contexts"]:
+        r["created_at"] = "2099-01-01"
+        r["finding_cards"].reverse()
+    for s in renamed["executed_search_records"]:
+        s["result"]["executed_at"] = "2099-01-01"
+    assert service.progress(original) == service.progress(renamed)
+
+
+def test_new_reading_on_directed_seed_does_not_advance_open_sibling(flow):
+    store, run, service, _, _ = flow
+    service.adapter = RefinedReadingFixture()
+    first, _, opened = seeds(flow)
+    first_packet = packet(flow, first)
+    sibling_packet = packet(flow, opened)
+    readiness(service, run, first, first_packet)
+    sibling_previous = readiness(service, run, opened, sibling_packet)
+    assert sibling_previous["result"]["background_status"] == "saved"
+    service.adapter.reading_revision = 1
+    changed_packet = packet(flow, first)
+    assert readiness(service, run, first, changed_packet)["result"]["background_status"] == "saved"
+    rebuilt_sibling = perform(service, run, "P05", {"seed_id": opened["id"]})
+    assert "newly extracted measured endpoint" not in json.dumps(rebuilt_sibling["input"])
+    attempts = len(store.rows("SELECT * FROM attempts"))
+    assert (
+        readiness(service, run, opened, rebuilt_sibling)["result"]["background_status"]
+        == "no_progress"
+    )
+    assert len(store.rows("SELECT * FROM attempts")) == attempts
+
+
+def test_progress_preserves_background_relationship_to_finding_content(flow):
+    import copy
+
+    _, run, service, _, _ = flow
+    service.adapter = RefinedReadingFixture()
+    seed = seeds(flow)[0]
+    packet(flow, seed)
+    service.adapter.reading_revision = 1
+    prepared = packet(flow, seed)
+    payload = service.build_input(
+        run,
+        "P07",
+        {
+            "seed_id": seed["id"],
+            "packet_ref": prepared["request_id"],
+            "requested_specificity": "conceptual relationship",
+        },
+    )
+    cards = [c for r in payload["packet"]["retained_contexts"] for c in r["finding_cards"]]
+    before = next(c for c in cards if c["endpoint"] == "Unknown in fixture")
+    after = next(c for c in cards if c["endpoint"].endswith("newly extracted measured endpoint"))
+    payload["packet"]["knowledge_edges"] = [
+        {
+            "kind": "observation",
+            "description": "Same relationship text",
+            "finding_refs": [before["id"]],
+        }
+    ]
+    rewired = copy.deepcopy(payload)
+    rewired["packet"]["knowledge_edges"][0]["finding_refs"] = [after["id"]]
+    assert service.progress(payload) != service.progress(rewired)

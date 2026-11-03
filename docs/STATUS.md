@@ -1,6 +1,23 @@
 # 项目状态 — W1-L2
 
-## 当前交付（2026-11-03，Asia/Shanghai）
+## PR #7 总控复现修正（2026-11-03）
+
+修正起始head：`43ca215b0e7f7ac19b353ca4107d728e1449398f`；继续同分支/PR，不合并。
+原进展指纹只含材料/查询，遗漏了阅读和背景综合的实质变化，可能把补充阅读后的P07错误判成no_progress。
+现以内容规范化P04卡片/待读请求、P05概览/竞争解释/关系及依据/限制/选择，与原文/查询/具体程度一起比较；
+临时引用映射成对应内容并去重，不把新ID、时间戳或重复记录计作进展。不同Run/seed范围保持隔离。
+历史P07按已保存input重算新指纹，历史结果不改写，无数据迁移；新记录标记p07-preparation-content-v2。
+页面提示已同步。新增回归覆盖同原文有效重读、仅综合更新、重复阅读/重建包、ID/时钟变化和seed隔离。
+本轮无真实付费模型调用、无新公共检索、无P08/Candidate Ethics/R0或科学验收扩展。
+限制：比较结构化内容，不判断科学价值；自然语言同义改写可能触发重评。
+本次检查：183 passed、0 failed、0 skipped（原176 + 新7），背景专项23项通过；
+Ruff/33文件format、两JS语法、Wheel构建和新编文件空白检查通过，用户232项改动指纹未变。
+页面实测以旧版P07已保存输入作相同内容检查，v2返回no_progress且无新Attempt（13→13）；刷新0 POST，无JS错误。
+记录见 [progress-fix-tests.txt](verification/w1-l2/progress-fix-tests.txt)、
+[页面检查](verification/w1-l2/progress-fix-browser.json)及[提示截图](verification/w1-l2/progress-fix-no-progress.png)。
+未运行真实模型/付费调用、专家科学审阅及Python3.12本地回归；原科学未验证状态不变。
+
+## 原W1-L2交付（2026-11-03，Asia/Shanghai，以下保留原验证记录）
 
 重新fetch核实main / 起始commit：`cb3f79f987e6c14a6f8d2c5475868f17414f7a96`，PR #6已合并。
 独立分支 `codex/w1-l2-reading`，checkout `/private/tmp/co-scientist-w1-l2`；独立PR，不直接合并。

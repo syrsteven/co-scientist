@@ -469,32 +469,167 @@ class BackgroundService:
         return self.snapshot(action["run_id"])
 
     def progress(self, payload):
-        searches = [
-            {
-                "query": s["query"],
-                "scope": s["scope"],
+        """Content of P07 preparation, not storage identity or scientific validity.
+
+        Resolve caller-assigned references before de-duplicating. Source identities,
+        access/context limits, interpretations and their associations remain facts;
+        new Task/view/finding IDs and clocks are not new information.
+        """
+
+        def content_set(values):
+            return sorted({encode(value) for value in values})
+
+        def search_content(record):
+            result = record["result"]
+            return {
+                "query": record["query"],
+                "scope": record["scope"],
                 "result": {
-                    k: s["result"][k]
-                    for k in ("items", "reported_total", "scope_complete", "status")
-                },
+                    **{k: result[k] for k in ("reported_total", "scope_complete", "status")},
+                    "items": content_set(result["items"]),
+                }
+                if result and result["status"] == "succeeded"
+                else {"status": result["status"] if result else None},
             }
-            for s in payload["executed_search_records"]
-            if s["result"] and s["result"]["status"] == "succeeded"
-        ]
-        views = [
+
+        def searches(records):
+            return content_set(
+                search_content(record)
+                for record in records
+                if record["result"] and record["result"]["status"] == "succeeded"
+            )
+
+        packet = payload["packet"]
+        views = {
+            view["id"]: {
+                k: view.get(k)
+                for k in (
+                    "source_ref",
+                    "source_version",
+                    "locator",
+                    "text",
+                    "access",
+                    "representation",
+                    "character_range",
+                    "original_characters",
+                    "original_text_sha256",
+                    "cropped",
+                    "not_read_ranges",
+                    "selection_reason",
+                    "access_limitations",
+                    "images_seen",
+                    "supplements_seen",
+                )
+            }
+            for view in packet["source_views"]
+        }
+        refs = {ref: "view:" + digest(value) for ref, value in views.items()}
+        refs.update(
             {
-                "source": v["source_ref"],
-                "version": v["source_version"],
-                "text": v["text"],
-                "access": v["access"],
+                record["record_ref"]: "search:" + digest(search_content(record))
+                for record in packet["executed_search_history"] + payload["executed_search_records"]
             }
-            for v in payload["packet"]["source_views"]
-        ]
-        # IDs/timestamps/repeated searches are not new information.
+        )
+
+        def referenced_text(value):
+            # Also normalize explicit references embedded in model prose. Do not
+            # rewrite the obtained source text or stable bibliographic identifiers.
+            for ref in sorted(refs, key=len, reverse=True):
+                value = value.replace(ref, refs[ref])
+            return value
+
+        cards = {}
+        for reading in packet["retained_contexts"]:
+            for card in reading["finding_cards"]:
+                canonical = {
+                    k: card[k]
+                    for k in (
+                        "source_ref",
+                        "source_version",
+                        "source_locator",
+                        "access",
+                        "representation",
+                        "biological_context",
+                        "intervention_comparator",
+                        "endpoint",
+                        "reported_observation",
+                        "author_interpretation",
+                        "supporting_quote",
+                        "negative_state",
+                        "images_seen",
+                        "supplements_seen",
+                    )
+                }
+                for field in (
+                    "biological_context",
+                    "intervention_comparator",
+                    "endpoint",
+                    "reported_observation",
+                    "author_interpretation",
+                ):
+                    canonical[field] = referenced_text(card[field])
+                canonical.update(
+                    {
+                        k: content_set(
+                            v if k == "negative_quotes" else referenced_text(v) for v in card[k]
+                        )
+                        for k in (
+                            "negative_findings",
+                            "negative_quotes",
+                            "not_established",
+                            "transfer_assumptions",
+                        )
+                    }
+                )
+                canonical["source_view"] = "view:" + digest(views[card["source_view_ref"]])
+                cards[card["id"]] = canonical
+        refs.update({ref: "finding:" + digest(value) for ref, value in cards.items()})
+        readings = {}
+        for reading in packet["retained_contexts"]:
+            readings[reading["record_ref"]] = {
+                "source_view": "view:" + digest(views[reading["source_view_id"]]),
+                "finding_cards": content_set(
+                    cards[card["id"]] for card in reading["finding_cards"]
+                ),
+                "targeted_reading_requests": content_set(
+                    referenced_text(v) for v in reading["targeted_reading_requests"]
+                ),
+            }
+        refs.update({ref: "reading:" + digest(value) for ref, value in readings.items()})
+        selection = packet["selection_manifest"]
+        background = {
+            "mode": packet["mode"],
+            **{
+                k: content_set(referenced_text(v) for v in packet[k])
+                for k in ("overview", "competing_explanations", "unranked_questions", "limitations")
+            },
+            "finding_refs": content_set(refs[ref] for ref in packet["finding_refs"]),
+            "knowledge_edges": content_set(
+                {
+                    "kind": edge["kind"],
+                    "description": referenced_text(edge["description"]),
+                    "finding_refs": content_set(refs[ref] for ref in edge["finding_refs"]),
+                }
+                for edge in packet["knowledge_edges"]
+            ),
+            "readings": content_set(readings.values()),
+            "selection": {
+                "selected_readings": content_set(
+                    refs[ref] for ref in selection["selected_readings"]
+                ),
+                # Excluded records expose only reasons to P07, not their contents.
+                "omission_reasons": content_set(
+                    referenced_text(reason) for reason in selection["omitted_readings"].values()
+                ),
+                "cropping": selection["cropping"],
+            },
+            "executed_search_history": searches(packet["executed_search_history"]),
+        }
         return digest(
             {
-                "views": sorted({encode(v) for v in views}),
-                "searches": sorted({encode(s) for s in searches}),
+                "views": content_set(views.values()),
+                "packet": background,
+                "searches": searches(payload["executed_search_records"]),
                 "specificity": payload["requested_specificity"],
             }
         )
@@ -524,12 +659,13 @@ class BackgroundService:
         if config["execution_mode"] == "real_model" and not self.adapter.authorized:
             return ModuleResult({**base, "background_status": "model_call_not_authorized"})
         fingerprint = self.progress(payload) if operation == "P07" else None
+        if operation == "P07":
+            base["progress_fingerprint_version"] = "p07-preparation-content-v2"
         if fingerprint:
             previous = [
                 a
                 for a in self.successful(inputs.run_id, "P07")
-                if a["seed_id"] == action["seed_id"]
-                and a["result"].get("progress_fingerprint") == fingerprint
+                if a["seed_id"] == action["seed_id"] and self.progress(a["input"]) == fingerprint
             ]
             if previous:
                 return ModuleResult(
@@ -537,7 +673,7 @@ class BackgroundService:
                         **base,
                         "background_status": "no_progress",
                         "previous_readiness_ref": previous[-1]["request_id"],
-                        "reason": "No changed material/query scope/specificity; do not repeat model check or infer scientific rejection",
+                        "reason": "No changed source/reading/packet content, query coverage or specificity; do not repeat model check or infer scientific rejection",
                     }
                 )
         messages = self.messages(operation, payload)

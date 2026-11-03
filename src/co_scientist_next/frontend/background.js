@@ -6,7 +6,8 @@ const backgroundLabels = {
   model_not_configured: "模型未配置，未调用",
   model_call_not_authorized: "真实调用未获显式执行许可，未调用",
   capacity_exceeded: "容量不足，未调用；没有静默截断",
-  no_progress: "无新材料/覆盖变化，停止重复检查",
+  no_progress:
+    "原文、阅读、背景包、检索覆盖和具体程度均无内容变化，停止重复检查",
 };
 function bgOptions(id, items, label) {
   const select = el(id),

@@ -1,0 +1,16 @@
+{
+  "purpose": "PR7 corrected canonicalization compares old saved P07 input; explicit same-content check added no Attempt. Capture/refresh GET only.",
+  "run_id": "9b5abf8a5ccd496d8c45ff9a6666b20e",
+  "old_readiness_ref": "0ac074f7-e048-456b-a46b-5eabecc7bffe",
+  "new_request_id": "e3b839e8-d060-4b49-9589-0cbcf62fa0dc",
+  "result": "no_progress",
+  "fingerprint_version": "p07-preparation-content-v2",
+  "model_attempts_before": 13,
+  "model_attempts_after": 13,
+  "new_check_attempts": 0,
+  "real_vendor_calls_executed": false,
+  "public_searches_added": 0,
+  "refresh_added_posts": 0,
+  "saved_facts_unchanged_after_refresh": true,
+  "page_errors": []
+}
