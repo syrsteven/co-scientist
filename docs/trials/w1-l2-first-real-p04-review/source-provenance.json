@@ -1,0 +1,77 @@
+{
+  "status": "SINGLE_AUTHORIZED_REAL_P04_EXECUTED",
+  "baseline_commit": "e705953818feb866dddfcb8093fbc6230e02978f",
+  "run_id": "9b5abf8a5ccd496d8c45ff9a6666b20e",
+  "goal_ref": "goal-93646f710e6c468c960f6ffcb602b960",
+  "brief_revision_id": "43d70e2d907c412e9f839f48c1dccd51",
+  "view_id": "4613ac8294ed4429a34558f470833ec8",
+  "seed_id": null,
+  "source": {
+    "citation": "https://europepmc.org/article/PPR/PPR1217875",
+    "source_ref": "epmc:PPR:PPR1217875",
+    "title": "Seeded aggregation of ANXA11 induces prion-like propagation, TDP-43 co-pathology and nucleocytoplasmic transport defects"
+  },
+  "source_version": "provider version unreported; retrieved snapshot is identified by saved response hash/time, not asserted latest",
+  "publication_type": {
+    "pubType": [
+      "Preprint"
+    ]
+  },
+  "source_doi": "10.64898/2026.03.24.713853",
+  "acquisition_task_id": "bdc98f97085f4538b9fa0aa3c5ed8130",
+  "source_attempt_id": "5bf8cea903604d87a837108bbed7a3e5",
+  "source_request": {
+    "headers": {
+      "Accept": "application/json",
+      "User-Agent": "CoScientist-W1-L1/1.0 (manual development acquisition)"
+    },
+    "method": "GET",
+    "url": "https://www.ebi.ac.uk/europepmc/webservices/rest/article/PPR/PPR1217875?resultType=core&format=json"
+  },
+  "source_response_received_at": "2026-11-03T01:57:33.136402+00:00",
+  "source_response_sha256": "b53d4b9740b297a7eda0e8b3170d3cce9785297d562c0084f820b9984ed6a2d0",
+  "provider_json_locator": "$.result.abstractText",
+  "original_html_characters": 2775,
+  "obtained_text_characters": 2746,
+  "selected_character_range": [
+    0,
+    2746
+  ],
+  "selected_text_sha256": "06b544e345c80a260d04645b7fb26a0fd8c126167eb15ca69deae7edf3bb59b2",
+  "representation": "Complete saved provider abstractText, mechanical markup flattening only; includes Abstract/Highlights/In Brief text; Graphic Abstract heading is not an image view",
+  "access": "abstract",
+  "access_limitations": [
+    "No article body, Methods/Results full sections, figures, image pixels or supplementary material are included",
+    "Provider capture is a preprint; peer review/formal version/independence not established",
+    "Retrieval is not scientific reading or support for the ALS phosphorylation Goal",
+    "Prior Goal preparation/Ethics were deterministic development tests, not a genuine production ethics review"
+  ],
+  "goal_screening_mode": "development_fixture",
+  "prompt_version": "w1-l2-p03-p07-v1",
+  "actual_http_envelope_bytes": 6843,
+  "actual_http_body_bytes": 6751,
+  "credential_read": true,
+  "credential_env_to_be_supplied": "OPENAI_API_KEY",
+  "credential_readiness": "explicit OPENAI_API_KEY used only in memory for the single authorized send; never printed",
+  "paid_execution_authorized": true,
+  "real_vendor_requests_this_preparation": 0,
+  "new_model_tasks_this_preparation": 0,
+  "new_attempts_this_preparation": 0,
+  "inherited_counts_before_preparation": {
+    "tasks": 28,
+    "attempts": 27,
+    "results": 27,
+    "background_actions": 15
+  },
+  "counts_after_preparation": {
+    "tasks": 28,
+    "attempts": 27,
+    "results": 27,
+    "background_actions": 15
+  },
+  "model_reading_performance_reviewed": false,
+  "science_validated": false,
+  "real_vendor_requests_this_trial": 1,
+  "trial_request_id": "trial-p04-ppr1217875-20261103-gpt61sol-high",
+  "trial_attempt_id": "ba8d731e9ec14262ab486b358e3b7183"
+}

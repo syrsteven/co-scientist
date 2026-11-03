@@ -1,0 +1,24 @@
+{
+  "schema": "first-p04-review-export-v1",
+  "status": "Codex 初审，待独立人工复核",
+  "baseline_commit": "e705953818feb866dddfcb8093fbc6230e02978f",
+  "tested_code_commit": "796a94b497978e7010cf5f3a2ae5e0cef926085e",
+  "trial_request_id": "trial-p04-ppr1217875-20261103-gpt61sol-high",
+  "trial_attempt_id": "ba8d731e9ec14262ab486b358e3b7183",
+  "source_view_id": "4613ac8294ed4429a34558f470833ec8",
+  "real_model_calls_this_delivery": 0,
+  "previous_real_trial_attempts": 1,
+  "fixture_outputs_included": false,
+  "goal_ethics_origin": "development_fixture; not real ethical review",
+  "independent_human_science_review": "pending",
+  "science_validated": false,
+  "review_rows": 35,
+  "source_code_sha256": {
+    "src/co_scientist_next/reading_model.py": "2439bb5c142f9ef7c67f543d90623190ae9d40b48f3bfb61907f5abb9577e984",
+    "src/co_scientist_next/background_trial.py": "4b66576a02c2c5bc06dfa54d3f15c3b1ce698f30d1990a01b62d40d15beb094b",
+    "tests/next/test_reading_model.py": "fdc47f249dd097fa120ef447176fc8b334aa8823cf5405f54fbae04390194095"
+  },
+  "sha256_file": "SHA256SUMS",
+  "credentials": "Authorization header and secret values excluded; no .env/config secret file/SQLite included",
+  "raw_response_bytes_sha256": "0eaf7f9606caab0cc1158650542a54e021d7dfc4765c42f8c125d3092756cab1"
+}

@@ -1,0 +1,46 @@
+{
+  "code_commit": "796a94b497978e7010cf5f3a2ae5e0cef926085e",
+  "cwd": "/private/tmp/co-scientist-w1-l2-trial-preparation",
+  "checks": [
+    {
+      "command": [
+        "/Users/lemintea/Documents/co-scientist/.venv/bin/python",
+        "-m",
+        "ruff",
+        "check",
+        "src/co_scientist_next",
+        "tests/next",
+        "docs/trials/w1-l2-first-real-p04-review/verify_review_bundle.py"
+      ],
+      "returncode": 0,
+      "stdout": "All checks passed!\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "/Users/lemintea/Documents/co-scientist/.venv/bin/python",
+        "-m",
+        "ruff",
+        "format",
+        "--check",
+        "src/co_scientist_next/reading_model.py",
+        "src/co_scientist_next/background_trial.py",
+        "tests/next/test_reading_model.py",
+        "docs/trials/w1-l2-first-real-p04-review/verify_review_bundle.py"
+      ],
+      "returncode": 0,
+      "stdout": "4 files already formatted\n",
+      "stderr": ""
+    },
+    {
+      "command": [
+        "git",
+        "diff",
+        "--check"
+      ],
+      "returncode": 0,
+      "stdout": "",
+      "stderr": ""
+    }
+  ]
+}
