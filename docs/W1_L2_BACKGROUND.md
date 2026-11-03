@@ -58,6 +58,10 @@ PYTHONPATH=src python -m co_scientist_next.workspace \
 - 公开配置若含该密钥则拒绝；provider错误回显密钥时脱敏，并记录credential_redactions。原始字节只在无脱敏/截断时完整保留。
 - 保存最终system/developer/user消息、实际材料/裁剪、Prompt版本、请求模型/参数/端点、实际HTTP body、原始响应和可得用量。
 - 非stream、n=1、store=false；没有SDK、自动重试、重定向跟随或工具调用。未知token/费用为null，不估算成0。
+- 可显式设置timeout_seconds（1..3600秒，当前已授权试跑使用600秒），该值为urllib socket操作超时，不承诺严格总墙钟截止时间。
+  旧配置省略时仍使用90秒，且actual_request不补写默认字段：否则TaskCalls比较实际请求时会把历史成功记录误判为输入改变。
+- 保存完整provider_usage（含reasoning_tokens、缓存细项等）及finish_reason；共享Usage仅保留通用计数，费用未知仍为null。
+  max_completion_tokens包含推理和可见输出；length/空正文/不完整JSON均不保存为成功解读，不裁剪科学输入、不自动重发。
 - HTTP响应先持久化后解析；finish_reason非stop、refusal、截断或无效JSON/引用都保存执行问题，不形成科研/伦理结论。
 - 单响应技术上限4MB，超限明确标记；请求容量上限是显式字节限制，不冒充模型token窗口或用户总预算。
 
@@ -71,11 +75,14 @@ PYTHONPATH=src python -m co_scientist_next.background_trial --help
 PYTHONPATH=src python -m co_scientist_next.background_trial \
   --db runs/w1-l2-live.sqlite --run-id YOUR_RUN_ID --view-id YOUR_SAVED_VIEW_ID \
   --config /private/tmp/reading-model.json \
+  --request-id YOUR_STABLE_SINGLE_TRIAL_ID \
   --credential-env CO_SCIENTIST_READING_KEY --execute-real-call
 ```
 
 seed视图需同时传`--seed-id`。缺少执行标志在读取配置/凭据/数据库前拒绝。
-成功回放/失败不会触发自动付费重试；trial输出身份/状态/用量，原始事实留在数据库。
+成功回放/失败不会触发自动付费重试；trial输出本次Attempt身份、finish_reason、完整provider_usage及本次Attempt用量，不混入Run既有用量。
+显式--request-id用于固定本次身份；省略时保留旧CLI的随机新身份行为，不能把再次运行新身份当回放。
+已授权的一次真实P04及Codex初审见[审阅包](trials/w1-l2-first-real-p04-review/README.md)，不代表后续操作自动获授权。
 若要后续在页面使用真实适配器：显式配置`--reading-model-config`和`--credential-env`（或credential-file），
 并另传`--allow-real-model-calls`；只在用户点击操作时发送。缺配置/凭据或授权各自明确保存状态，没有开发替身回退。
 
