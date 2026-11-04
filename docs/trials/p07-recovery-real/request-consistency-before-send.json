@@ -1,0 +1,15 @@
+{
+  "same_task_id": "55bc66f3e1a44070babcf67db99b0bac",
+  "same_call_key": "model",
+  "same_target": "openai/chat/gpt-6.1-sol",
+  "same_full_call_request": true,
+  "same_http_envelope": true,
+  "same_messages": true,
+  "same_frozen_input": true,
+  "same_prompt_version": "w1-l2-p03-p07-v1",
+  "same_public_model_config": true,
+  "request_bytes": 148027,
+  "old_http_sha256": "6b65dbea236fd153993ea5126de137852c03dcaa02f7643c4d7cc5d15f3ee508",
+  "new_http_sha256": "6b65dbea236fd153993ea5126de137852c03dcaa02f7643c4d7cc5d15f3ee508",
+  "source_code_commit": "909107b7a00227e70ed11f8cff1e1ab2d4eb385a"
+}

@@ -1,0 +1,9 @@
+Python3.11.4 existing environment,no new dependencies
+Code909107b: final239tests passed(203baseline+36new);focused102passed.
+Ruff check src/co_scientist_next tests/next plus artifact verifier passed.
+Ruff format src/tests35files passed.
+Read-only DB audit: protected historical rows unchanged; old uncertain only retry_authorization updated; exact frozen action/input/config/request;new ordinal2 previous_id.
+Portable ZIP and extracted audit passed;credentials scan passed,value withheld.
+No new Run/Task/search/fetch/view,noP03/P04/P05rerun,noP08/CandidateEthics/R0.
+OldG3full/localPython3.12/browser/expert science validation NOT RUN.
+Initial Git automatic approval timed out without execution; one allowed retry succeeded before real P07 call.

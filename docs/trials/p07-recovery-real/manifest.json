@@ -1,0 +1,18 @@
+{
+  "status": "P07_SINGLE_AUTHORIZED_RETRY_SAVED_READY_ORIGINAL_UNCERTAIN_PRESERVED",
+  "main_baseline": "378475b2e5a86d1c6504138bc3992dae2c977e81",
+  "diagnostic_code_commit": "909107b7a00227e70ed11f8cff1e1ab2d4eb385a",
+  "original_trial_commit": "fcf2cf98abc8e0a2f9ada7b53a28cd81e1c93936",
+  "branch": "codex/p07-transport-recovery",
+  "task_id": "55bc66f3e1a44070babcf67db99b0bac",
+  "old_attempt_id": "0d9e7d5fd9da4bbea3ddc42608e0c184",
+  "new_attempt_id": "a283b83163334165a902a00362b49c2d",
+  "new_attempts": 1,
+  "new_runs_or_tasks": 0,
+  "new_searches_or_fetches": 0,
+  "decision": "ready",
+  "original_status": "uncertain",
+  "original_usage": null,
+  "science_validated": false,
+  "independent_human_review_completed": false
+}

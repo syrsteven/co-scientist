@@ -1,0 +1,25 @@
+{
+  "database_mode": "ro",
+  "original_protected_rows_unchanged": {
+    "background_actions": 10,
+    "tasks": 22,
+    "attempts": 23,
+    "results": 22,
+    "literature_actions": 10,
+    "material_views": 5,
+    "goal_contexts": 1,
+    "brief_revisions": 1
+  },
+  "frozen_background_action_unchanged": true,
+  "attempt_exports_match_database": true,
+  "saved_result_matches_database": true,
+  "new_attempt_count": 1,
+  "new_task_count": 0,
+  "new_search_or_fetch_count": 0,
+  "old_attempt_only_retry_authorization_changed": true,
+  "old_status": "uncertain",
+  "old_usage_unknown": true,
+  "new_status": "succeeded",
+  "decision": "ready",
+  "science_validated": false
+}
