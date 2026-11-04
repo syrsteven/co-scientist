@@ -1,0 +1,49 @@
+{
+  "status": "科学初审未开展：没有返回候选；Codex仅作工程事实核对",
+  "review_created_after_execution_stopped": true,
+  "science_validated": false,
+  "method_comparison": "not_possible;DIRECT no response,ASSUMPTION_STRUCTURED not executed;no method preference inferred",
+  "criteria": [
+    {
+      "criterion": "核心主张和新因果桥接",
+      "assessment": "not_assessable",
+      "reason": "No candidate response available; no scientific conclusion"
+    },
+    {
+      "criterion": "来源报告/作者解释/猜想区分",
+      "assessment": "not_assessable",
+      "reason": "No candidate response available; no scientific conclusion"
+    },
+    {
+      "criterion": "ready具体程度与用户约束",
+      "assessment": "not_assessable",
+      "reason": "No candidate response available; no scientific conclusion"
+    },
+    {
+      "criterion": "位点/激酶/研究结论/参数虚构",
+      "assessment": "not_assessable",
+      "reason": "No candidate response available; no scientific conclusion"
+    },
+    {
+      "criterion": "区分竞争解释的预测",
+      "assessment": "not_assessable",
+      "reason": "No candidate response available; no scientific conclusion"
+    },
+    {
+      "criterion": "有效干预/测量下的证伪与非显著区别",
+      "assessment": "not_assessable",
+      "reason": "No candidate response available; no scientific conclusion"
+    },
+    {
+      "criterion": "阴性/情境/跨体系限制保留",
+      "assessment": "not_assessable",
+      "reason": "No candidate response available; no scientific conclusion"
+    }
+  ],
+  "technical_findings": [
+    "Current six-field input/messages/Prompt/config matched reviewed exports.",
+    "Scientific inputs equal apart from mode/candidate identity; second call was not sent.",
+    "REMOTE_DISCONNECTED in request_open;provider execution/billing unknown.",
+    "No candidate/finish_reason/raw response/usage;do not call it invalid JSON or scientific rejection."
+  ]
+}

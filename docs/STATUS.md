@@ -1,5 +1,18 @@
 # 项目状态 — P08最小生成切片
 
+## 真实P08试跑：DIRECT不确定停止（2026-11-04）
+
+基线main db37b47598c167d586b743f51f6a078e3c2b0cf6；独立结果分支codex/p08-real-trial-review，不合并；应用/Prompt/历史结果不改。
+原真实Run cea909fe8a004010b1896df1c1d98e02，同ready/固定packet；两方式完整预检与已验收导出一致，145327/145357字节，无裁剪、无评审/兄弟候选。
+仅发起DIRECT一次：Taskc1119e1ab4ed431daca848c01811fc37，Attempt5ad8cea64b1146c7bf2eb80e194e0798，uncertain，Run blocked；安全诊断http_protocol/request_open/REMOTE_DISCONNECTED。
+没有HTTP响应/finish_reason/usage/候选，消耗及费用未知，不能记0或科学否定。ASSUMPTION_STRUCTURED按失败即停止未提交/未发送，无重试/修复/模型切换。
+配置gpt-6.1-sol/high/32768/JSON object、无temperature、600秒、262144上限不变。记录起止时间跨度9132.451296秒异常长；socket超时不是整次deadline，未存单调计时，根因待核；本轮不改代码。
+[完整请求、不确定调用和审阅无法开展说明](trials/p08-real/README.md)。科学初审7项均无法评估，无两种输出可比较，不推断方法优劣，science_validated=false。
+原库单处执行；历史Task/Attempt/Result/背景/文献/视图/Goal/Brief/执行事实行哈希保持；无前序重跑、新检索、Candidate Ethics/R0或任何其他下游。
+页面以无凭据/未授权模式读取原库，显示uncertain及禁用生成按钮，刷新后仍1动作/1Attempt，无假候选。[页面及只读核对](verification/p08-real)。
+本轮执行离线导出/哈希/容量/任务库存/原库审计/页面只读检查；未重跑267项工程回归、旧G3、本机Python3.12或科学/专家验收。原工作区232项改动保护。
+以下历史保持原文。
+
 ## P08最小单次生成切片（2026-11-04）
 
 实际起点main5eba330d593a10c711c8b2737bd4180ea5d8ccaa；独立分支codex/p08-minimal-generation，PR保持未合并。原工作区232项改动/暂存指纹不变。

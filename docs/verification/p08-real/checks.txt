@@ -1,0 +1,10 @@
+Application main db37b475 unchanged.
+Initial approved preparation verify.py passed,exact input/messages/Prompt/config matched,145327/145357bytes within262144.
+Original canonical DB only; prior Task/Attempt/Result/Goal/Brief/material/history hashes unchanged.
+One DIRECT Attemptuncertain;no response/usage/candidate;no retry/no secondTask/no alternateDBsend.
+Portable artifact and unpacked audits passed;credential scan passed(value withheld).
+Ruff check/format only new artifact verifier passed.
+IAB originalRun persistedblocked/uncertain,submitdisabled,GETreload no secondsend,console errors/warnings0.
+Original232file workspace/index/status fingerprint verified.
+267engineering regression,oldG3,localPython3.12,science/expert review NOT RUN this round.
+No CandidateEthics/R0 or other downstream execution.

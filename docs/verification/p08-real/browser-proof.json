@@ -1,0 +1,14 @@
+{
+  "browser": "CUA IAB, original canonical Run",
+  "page_server_model_credentials_loaded": false,
+  "page_server_real_calls_authorized": false,
+  "generation_records": 1,
+  "model_attempts": 1,
+  "successful_candidates": 0,
+  "status": "blocked/uncertain",
+  "submit_button_enabled": false,
+  "refresh_did_not_send_or_create_task": true,
+  "errors_warnings": [],
+  "screenshot": "blocked.jpg",
+  "no_fake_candidate": true
+}

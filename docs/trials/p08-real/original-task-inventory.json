@@ -1,0 +1,8 @@
+{
+  "canonical_db": "/private/tmp/co-scientist-p04-v2/runs/p04-v2-prepared.sqlite",
+  "run_id": "cea909fe8a004010b1896df1c1d98e02",
+  "existing_generation_actions": [],
+  "generation_table_present": false,
+  "database_mode": "ro",
+  "model_sends": 0
+}

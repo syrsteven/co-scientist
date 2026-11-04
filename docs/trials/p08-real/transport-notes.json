@@ -1,0 +1,15 @@
+{
+  "recorded_started_at": "2026-11-04T10:03:07.776095+00:00",
+  "recorded_finished_at": "2026-11-04T12:35:20.227391+00:00",
+  "recorded_timestamp_span_seconds": 9132.451296,
+  "configured_timeout_seconds": 600,
+  "diagnostic": {
+    "category": "http_protocol",
+    "code": "REMOTE_DISCONNECTED",
+    "phase": "request_open"
+  },
+  "interpretation": "request_open covers send/wait for response headers; REMOTE_DISCONNECTED does not show provider execution/billing. urllib timeout is a socket-operation timeout, not an independent end-to-end deadline. No monotonic clock recorded; timestamp span is not proof of root cause.",
+  "configuration_changed": false,
+  "retries": 0,
+  "new_model_attempts_total": 1
+}

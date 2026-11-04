@@ -1,0 +1,9 @@
+{
+  "request_id": "p08-real-assumption-single",
+  "candidate_id": "planned-p08-assumption_structured",
+  "status": "not_executed",
+  "new_attempts": 0,
+  "reason": "Stopped after DIRECT uncertain per user instruction; preflight export only, no task/Attempt created",
+  "usage": null,
+  "not_a_scientific_result": true
+}

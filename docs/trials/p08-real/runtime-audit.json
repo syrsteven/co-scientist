@@ -1,0 +1,40 @@
+{
+  "database_mode": "ro",
+  "run_id": "cea909fe8a004010b1896df1c1d98e02",
+  "generation_actions": [
+    "p08-real-direct-single"
+  ],
+  "model_attempts_new": 1,
+  "successful_generation_count": 0,
+  "candidate_count": 0,
+  "assumption_task_created": false,
+  "assumption_new_sends": 0,
+  "new_queries_or_acquisitions": 0,
+  "protected_original_rows_unchanged": {
+    "tasks": 23,
+    "attempts": 25,
+    "results": 23,
+    "background_actions": 11,
+    "generation_actions": 0,
+    "literature_actions": 10,
+    "material_views": 5,
+    "goal_contexts": 1,
+    "brief_revisions": 1,
+    "execution_facts": 50
+  },
+  "latest_state": "blocked",
+  "diagnostic": {
+    "category": "http_protocol",
+    "code": "REMOTE_DISCONNECTED",
+    "phase": "request_open"
+  },
+  "usage": {
+    "cost": null,
+    "input_tokens": null,
+    "output_tokens": null,
+    "tool_units": null
+  },
+  "history_not_reclassified": true,
+  "request_export_matches_m15": true,
+  "science_validated": false
+}

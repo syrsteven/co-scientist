@@ -1,0 +1,37 @@
+{
+  "request_id": "p08-real-direct-single",
+  "candidate_id": "planned-p08-direct",
+  "mode": "DIRECT",
+  "task_id": "c1119e1ab4ed431daca848c01811fc37",
+  "task_status": "blocked",
+  "result_status": null,
+  "candidate_status": null,
+  "prompt_version": "w1-p08-single-v1",
+  "attempt_count": 1,
+  "attempt_id": "5ad8cea64b1146c7bf2eb80e194e0798",
+  "attempt_status": "uncertain",
+  "http_status": null,
+  "finish_reason": null,
+  "provider_usage": null,
+  "shared_usage": {
+    "cost": null,
+    "input_tokens": null,
+    "output_tokens": null,
+    "tool_units": null
+  },
+  "previous_success_read_locally": false,
+  "request_matches_reviewed_export": true,
+  "protected_original_rows": {
+    "tasks": 23,
+    "attempts": 25,
+    "results": 23,
+    "background_actions": 11,
+    "generation_actions": 0,
+    "literature_actions": 10,
+    "material_views": 5,
+    "goal_contexts": 1,
+    "brief_revisions": 1,
+    "execution_facts": 50
+  },
+  "science_validated": false
+}

@@ -1,0 +1,1 @@
+Verified hashes,exact approved six-field inputs,one uncertain DIRECT with unknown usage,no retry/candidate/second task,protected historical-row audit,and no unsupported scientific comparison.

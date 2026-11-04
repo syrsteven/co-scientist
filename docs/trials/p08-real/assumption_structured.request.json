@@ -1,0 +1,7 @@
+{
+  "seed_id": "seed-f87361b21b4f44609dedfa2ac9afc7bc-0",
+  "readiness_ref": "directed-seed-p07-readiness-single",
+  "packet_ref": "directed-seed-p05-packet-single",
+  "mode": "ASSUMPTION_STRUCTURED",
+  "candidate_id": "planned-p08-assumption_structured"
+}

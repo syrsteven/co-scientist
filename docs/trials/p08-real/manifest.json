@@ -1,0 +1,19 @@
+{
+  "status": "DIRECT_UNCERTAIN_STOPPED_ASSUMPTION_NOT_EXECUTED_NO_CANDIDATE",
+  "source_main": "db37b47598c167d586b743f51f6a078e3c2b0cf6",
+  "branch": "codex/p08-real-trial-review",
+  "run_id": "cea909fe8a004010b1896df1c1d98e02",
+  "task_id": "c1119e1ab4ed431daca848c01811fc37",
+  "attempt_id": "5ad8cea64b1146c7bf2eb80e194e0798",
+  "new_model_attempts": 1,
+  "new_successful_calls": 0,
+  "candidate_count": 0,
+  "second_task_created": false,
+  "retries": 0,
+  "model_switched": false,
+  "application_code_changed": false,
+  "usage": null,
+  "science_validated": false,
+  "scientific_review_completed": false,
+  "comparison_possible": false
+}
