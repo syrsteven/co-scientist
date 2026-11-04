@@ -1,3 +1,25 @@
+# 项目状态 — P08显式迁移入口
+
+## 窄范围迁移入口（2026-11-04）
+
+基线远端main `df78cc8cf37eb6671d9b4842c7fbb6e04f6ff76d`；独立分支 `codex/p08-explicit-migration`，提交PR保持未合并。
+原工作区232项改动保留；原真实库仅SQLite只读预览，无迁移/新Task/新Attempt/模型请求，未读取模型凭据。
+
+| 维度 | 本轮事实 |
+|---|---|
+| 迁移预览 | 原Task/双uncertain Attempts、行/冻结请求哈希、新配置/消息/输入哈希、原/新候选关系、可能重复执行/收费及store=true风险；CLI mode=ro不初始化schema |
+| 原子创建 | 重新校验预览及四项显式确认后，同Run一次事务创建唯一后继Task、身份预留、迁移和确认事实；源唯一约束/重复同预览幂等，事务提交前后进程退出测试通过；创建不联网 |
+| 专属放行 | 只允许该后继Task在每次继续时核对源记录哈希后豁免指定旧Attempts；不全局解锁，不改旧uncertain/错误/请求/未知用量；其他未解决调用仍阻断 |
+| 执行/恢复 | 迁移不带付费授权；后继另行显式同意并要求已配置/授权适配器。沿用Responses ID持久化/同ID查询，首次无ID uncertain不自动重发；跨进程只GET、已成功不重提交 |
+| 页面 | 只读预览/四项确认、原旧记录/后继关联/未运行状态、另行执行授权；IAB实际操作→创建→刷新保留，新Task0 Attempts/执行按钮禁用；独立夹具非真实Run |
+| 真实交付 | 原Task和双Attempts只读预览、完整未发送新请求及SHA256在preparations/p08-explicit-migration；原库前后哈希一致。仅候选身份改为planned-p08-direct-responses，科学Prompt/六字段其余内容不改 |
+| 验证 | 最终328 passed、0 failed/skipped（301原有+27新增）；7项HTTP均获准运行；Ruff/47文件format、JS、源Prompt/准备包未改及导出哈希检查通过 |
+| 真实/科学边界 | 真实迁移0、真实模型请求0、无ASSUMPTION_STRUCTURED或下游真实科学执行；science_validated=false。仅工程离线夹具，不扩大科学/伦理验收 |
+
+[短实施说明与命令](P08_EXPLICIT_MIGRATION.md) · [真实只读预览/新请求](preparations/p08-explicit-migration) · [测试/页面证据](verification/p08-explicit-migration/RESULTS.md)。
+尚未执行真实迁移/真实Responses链、未审阅生成表现/科学有效性；本机Python3.12、旧G3全套、专家评审未运行。
+原M00/W1设计状态不变。以下历史状态原文保留。
+
 # 项目状态 — Responses 后台传输修复
 
 ## 独立传输可靠性修复（2026-11-04）

@@ -1,0 +1,52 @@
+planned-p08-direct
+
+候选身份：planned-p08-direct · 方式：DIRECT
+
+调用状态：发送不确定，已停止；不自动重发 · 结果未完成
+
+执行标识：real_model · 固定Prompt：w1-p08-single-v1
+
+seed：seed-1b925dbfc80548d1a8306cc38f3228cd-0 · 背景包：background-006 · readiness：background-007
+
+没有已保存的远端任务 ID；提交结果不确定，不能作为正在远端执行显示。
+
+技术状态：Unresolved Attempt 7a7f0f8f94df4042a0105f5e2e4be8a9
+
+Attempt 4896ac9f77bd4348a7be33fb404d1a2e · uncertain · 用量：{"cost": null, "input_tokens": null, "output_tokens": null, "tool_units": null}（null为未知）
+
+查看保存的实际请求 / 原始响应
+
+Attempt 7a7f0f8f94df4042a0105f5e2e4be8a9 · uncertain · 用量：{"cost": null, "input_tokens": null, "output_tokens": null, "tool_units": null}（null为未知）
+
+查看保存的实际请求 / 原始响应
+
+迁移关联：原 Task 7372b56886334674aa1ce3d484b362a4 → 后继 Task eac98b8652884008a90e7a7493b3a3fa。旧两次调用仍 uncertain，可能已执行/收费。
+
+原历史记录保留；后继任务另列，不代表旧调用已解决。
+
+尚未授予本后继任务付费执行授权。
+
+迁移确认、身份替代与来源哈希
+固定输入、配置和来源关联
+planned-p08-direct-responses
+
+候选身份：planned-p08-direct-responses · 方式：DIRECT
+
+调用状态：已保存待显式执行 · 结果未完成
+
+执行标识：real_model · 固定Prompt：w1-p08-single-v1
+
+seed：seed-1b925dbfc80548d1a8306cc38f3228cd-0 · 背景包：background-006 · readiness：background-007
+
+Responses 后台 · store=true；供应商存储保留按已确认配置执行，未知费用不记0。
+
+迁移关联：原 Task 7372b56886334674aa1ce3d484b362a4 → 后继 Task eac98b8652884008a90e7a7493b3a3fa。旧两次调用仍 uncertain，可能已执行/收费。
+
+后继任务已创建，模型尚未运行；迁移本身不联网。
+
+尚未授予本后继任务付费执行授权。
+
+迁移确认、身份替代与来源哈希
+另行接受此后继任务的付费执行风险；迁移创建未包含本授权
+另行授权并执行此后继任务（可能收费）
+固定输入、配置和来源关联

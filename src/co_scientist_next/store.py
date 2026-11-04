@@ -108,6 +108,14 @@ class Store:
                     request TEXT NOT NULL, input TEXT NOT NULL, binding TEXT NOT NULL,
                     config TEXT NOT NULL, prompt_version TEXT NOT NULL
                 );
+                CREATE TABLE IF NOT EXISTS generation_migrations (
+                    id TEXT PRIMARY KEY, run_id TEXT NOT NULL REFERENCES runs(id),
+                    source_task_id TEXT NOT NULL UNIQUE REFERENCES tasks(id),
+                    successor_task_id TEXT NOT NULL UNIQUE REFERENCES tasks(id),
+                    preview TEXT NOT NULL, preview_hash TEXT NOT NULL,
+                    confirmation TEXT NOT NULL, created_at TEXT NOT NULL,
+                    execution_authorization TEXT
+                );
                 CREATE TABLE IF NOT EXISTS remote_generations (
                     task_id TEXT PRIMARY KEY REFERENCES tasks(id),
                     response_id TEXT NOT NULL UNIQUE, status TEXT NOT NULL,

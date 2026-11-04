@@ -1,0 +1,10 @@
+{
+  "database_sha256_unchanged": true,
+  "source_task_unchanged": true,
+  "source_action_unchanged": true,
+  "both_uncertain_attempts_unchanged": true,
+  "migration_table_not_created_in_original_db": true,
+  "real_migration_count": 0,
+  "model_requests": 0,
+  "model_credentials_read": false
+}

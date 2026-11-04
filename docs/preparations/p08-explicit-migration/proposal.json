@@ -1,0 +1,12 @@
+{
+  "source_task_id": "c1119e1ab4ed431daca848c01811fc37",
+  "source_attempt_ids": [
+    "5ad8cea64b1146c7bf2eb80e194e0798",
+    "86948ac23ee2477cac992b24f6016796"
+  ],
+  "seed_id": "seed-f87361b21b4f44609dedfa2ac9afc7bc-0",
+  "packet_ref": "directed-seed-p05-packet-single",
+  "readiness_ref": "directed-seed-p07-readiness-single",
+  "request_id": "planned-p08-responses-migration-single",
+  "candidate_id": "planned-p08-direct-responses"
+}

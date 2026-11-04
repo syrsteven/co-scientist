@@ -11,6 +11,7 @@ from .background import BackgroundService
 from .background_ops import DevelopmentReadingAdapter
 from .europe_pmc import public_http
 from .generation import GenerationService
+from .generation_migration import MigrationService
 from .generation_ops import DevelopmentGenerationAdapter
 from .goal import DEVELOPMENT_POLICY, DevelopmentAdapter, GoalSlice, validate_brief
 from .literature_runtime import LiteratureService
@@ -225,12 +226,36 @@ def make_server(
                     self.reply(
                         201, {"request_id": saved["request_id"], "task_id": saved["task_id"]}
                     )
+                elif path in (
+                    "/api/generation/migration/preview",
+                    "/api/generation/migration/confirm",
+                ):
+                    if not getattr(generation.adapter, "background_responses", False):
+                        raise ValueError("Explicit Responses configuration required for migration")
+                    migration = MigrationService(store, generation.adapter.config)
+                    if path.endswith("/preview"):
+                        self.reply(200, migration.preview(data["run_id"], data["request"]))
+                    else:
+                        self.reply(
+                            201,
+                            migration.confirm(
+                                data["run_id"],
+                                data["request"],
+                                data["preview_hash"],
+                                data["acknowledgements"],
+                            ),
+                        )
                 elif path == "/api/generation/query":
                     self.reply(200, generation.query_remote(data["request_id"]))
                 elif path == "/api/generation/execute":
                     self.reply(
                         200,
-                        generation.execute(data["request_id"], recover=data.get("recover") is True),
+                        generation.execute(
+                            data["request_id"],
+                            recover=data.get("recover") is True,
+                            authorize_migrated_execution=data.get("authorize_migrated_execution")
+                            is True,
+                        ),
                     )
                 elif path == "/api/background/execute":
                     self.reply(
@@ -290,7 +315,7 @@ def main():
     )
     parser.add_argument(
         "--generation-responses-config",
-        help="Separate explicit P08 Responses background profile; no migration/fallback",
+        help="Separate explicit P08 Responses background profile; no implicit migration/fallback",
     )
     parser.add_argument(
         "--reading-model-config", help="Public explicit OpenAI model/endpoint/parameters JSON"
