@@ -1,0 +1,292 @@
+{
+  "artifact": {
+    "finding_cards": [
+      {
+        "access": "full_text",
+        "author_interpretation": "The authors' overall interpretation is that C-terminal TDP-43 hyperphosphorylation is not primarily responsible for cytosolic mislocalization in disease, while explicitly allowing effects in other cell types.",
+        "biological_context": "HeLa cells with endogenous TDP-43 silenced by siRNAs, followed by transient expression of siRNA-resistant myc-TDP-43 constructs; localization assessed after 24 hours, as described in the Figure EV4 caption.",
+        "endpoint": "Steady-state intracellular localization assessed by immunostaining.",
+        "id": "finding-f8cf38bfaf564f93a51f5b4b17aeefeb-0",
+        "images_seen": false,
+        "intervention_comparator": "TDP-43 Wt, phosphomimetic 12D and the 12A comparison variant.",
+        "negative_findings": [
+          "In this HeLa localization experiment, the authors report no alteration of nuclear localization with the phosphomimetic substitutions; all three tested variants remained predominantly nuclear."
+        ],
+        "negative_quotes": [
+          "All three TDP‐43 variants showed a predominantly nuclear steady‐state localization"
+        ],
+        "negative_state": "reported_in_view",
+        "not_established": [
+          "Localization after authentic, site-specific phosphorylation rather than amino-acid substitution is not reported in the current view.",
+          "Nucleoporin phosphorylation, ALS causation and localization outcomes in disease-relevant neural cells are not reported in the current view."
+        ],
+        "reported_observation": "Authors report that all three variants showed predominantly nuclear steady-state localization.",
+        "representation": "excerpt of JATS XML saved; flattened article text, not a scientific interpretation",
+        "source_locator": "attempt:fulltext/body_base64#/article",
+        "source_ref": "epmc:MED:35112738",
+        "source_version": "provider version unreported",
+        "source_view_ref": "876e76bb00f84e928a89cbea813dacad",
+        "supplements_seen": false,
+        "supporting_quote": "All three TDP‐43 variants showed a predominantly nuclear steady‐state localization",
+        "transfer_assumptions": [
+          "Transfer to authentic phosphorylation requires the substitutions to reproduce its relevant effects.",
+          "Transfer beyond this HeLa expression and depletion context requires additional context-specific evidence."
+        ]
+      },
+      {
+        "access": "full_text",
+        "author_interpretation": "The authors interpret these results as showing that the tested C-terminal phosphomimetic substitutions do not impair TDP-43 nuclear import. They explicitly state that effects on intracellular transport in other cell types cannot be excluded.",
+        "biological_context": "Hormone-inducible live-cell nuclear-import reporter assay within the subsection's cellular experiments. TDP-43 variants were fused to tandem EGFP and two glucocorticoid-receptor hormone-binding domains. The caption reports a 50-minute time course, three independent replicates and at least 42 cells per condition.",
+        "endpoint": "Reporter nuclear-import kinetics, quantified through cytoplasmic fluorescence.",
+        "id": "finding-f8cf38bfaf564f93a51f5b4b17aeefeb-1",
+        "images_seen": false,
+        "intervention_comparator": "Dexamethasone-triggered import of reporters containing Wt, 12D or 12A TDP-43.",
+        "negative_findings": [
+          "No difference in import rate was reported among Wt, 12D and 12A under the tested hormone-inducible reporter conditions."
+        ],
+        "negative_quotes": [
+          "We examined reporters containing the different TDP‐43 variants (Wt, 12D, 12A) and found that their import rates were indistinguishable"
+        ],
+        "negative_state": "reported_in_view",
+        "not_established": [
+          "General nuclear-pore permeability, transport of other cargos and nucleoporin phosphorylation are not reported in the current view.",
+          "Statistical equivalence bounds and transport outcomes under ALS-associated conditions are not reported in the current view."
+        ],
+        "reported_observation": "Authors report that nuclear-import rates of the three TDP-43 reporter variants were indistinguishable.",
+        "representation": "excerpt of JATS XML saved; flattened article text, not a scientific interpretation",
+        "source_locator": "attempt:fulltext/body_base64#/article",
+        "source_ref": "epmc:MED:35112738",
+        "source_version": "provider version unreported",
+        "source_view_ref": "876e76bb00f84e928a89cbea813dacad",
+        "supplements_seen": false,
+        "supporting_quote": "We examined reporters containing the different TDP‐43 variants (Wt, 12D, 12A) and found that their import rates were indistinguishable",
+        "transfer_assumptions": [
+          "Applying this result to endogenous TDP-43 transport requires the hormone-inducible fusion reporter to preserve the relevant import behavior.",
+          "Applying it to nucleoporin phosphorylation would require a separately demonstrated relationship; it cannot be substituted for this TDP-43 result."
+        ]
+      },
+      {
+        "access": "full_text",
+        "author_interpretation": "The authors interpret the result as indicating that hyperphosphorylated TDP-43 can normally bind its own 3′UTR and autoregulate its levels. The measured cellular endpoint here is endogenous protein downregulation; RNA binding is addressed separately by EMSA.",
+        "biological_context": "Transient expression of myc-TDP-43 variants in HeLa cells; the Figure 4 caption specifies 48 hours of expression followed by Western blotting.",
+        "endpoint": "Downregulation of endogenous TDP-43 as an autoregulatory readout.",
+        "id": "finding-f8cf38bfaf564f93a51f5b4b17aeefeb-2",
+        "images_seen": false,
+        "intervention_comparator": "Expression of Wt, 12D or 12A TDP-43, comparing their effects on endogenous TDP-43 levels.",
+        "negative_findings": [
+          "No impairment of this autoregulatory readout was reported for 12D or 12A relative to Wt in the transient HeLa expression experiment."
+        ],
+        "negative_quotes": [
+          "However, endogenous TDP‐43 was downregulated to the same degree by all three myc‐TDP‐43 variants"
+        ],
+        "negative_state": "reported_in_view",
+        "not_established": [
+          "Direct cellular 3′UTR occupancy in this experiment is not reported in the current view.",
+          "Autoregulation under authentic phosphorylation, chronic disease conditions or nucleoporin perturbation is not reported in the current view."
+        ],
+        "reported_observation": "Authors report that all three variants downregulated endogenous TDP-43 to the same degree.",
+        "representation": "excerpt of JATS XML saved; flattened article text, not a scientific interpretation",
+        "source_locator": "attempt:fulltext/body_base64#/article",
+        "source_ref": "epmc:MED:35112738",
+        "source_version": "provider version unreported",
+        "source_view_ref": "876e76bb00f84e928a89cbea813dacad",
+        "supplements_seen": false,
+        "supporting_quote": "However, endogenous TDP‐43 was downregulated to the same degree by all three myc‐TDP‐43 variants",
+        "transfer_assumptions": [
+          "Generalization requires this expression-based autoregulatory readout to represent the relevant endogenous regulatory setting."
+        ]
+      },
+      {
+        "access": "full_text",
+        "author_interpretation": "The authors describe the binding result as consistent with preserved TDP-43 autoregulation.",
+        "biological_context": "In vitro electrophoretic mobility shift assay using recombinant TDP-43–MBP–His6 variants and RNA containing the TDP-43 autoregulatory binding site.",
+        "endpoint": "Formation of TDP-43–RNA complexes in EMSA.",
+        "id": "finding-f8cf38bfaf564f93a51f5b4b17aeefeb-3",
+        "images_seen": false,
+        "intervention_comparator": "Recombinant Wt, 12D and 12A TDP-43 tested against the autoregulatory RNA substrate.",
+        "negative_findings": [
+          "No impairment of binding to the tested autoregulatory RNA was reported for 12D or 12A relative to Wt in this recombinant-protein assay."
+        ],
+        "negative_quotes": [
+          "All TDP‐43 variants form TDP‐43‐RNA complexes equally well."
+        ],
+        "negative_state": "reported_in_view",
+        "not_established": [
+          "Binding constants, cellular RNA occupancy and effects on other RNA sequences are not reported in the current view.",
+          "A relationship between this binding endpoint and nucleoporin phosphorylation or ALS causation is not reported in the current view."
+        ],
+        "reported_observation": "Authors report that all three variants formed complexes with the autoregulatory RNA equally well.",
+        "representation": "excerpt of JATS XML saved; flattened article text, not a scientific interpretation",
+        "source_locator": "attempt:fulltext/body_base64#/article",
+        "source_ref": "epmc:MED:35112738",
+        "source_version": "provider version unreported",
+        "source_view_ref": "876e76bb00f84e928a89cbea813dacad",
+        "supplements_seen": false,
+        "supporting_quote": "All TDP‐43 variants form TDP‐43‐RNA complexes equally well.",
+        "transfer_assumptions": [
+          "Transfer to cellular regulation requires recombinant fusion-protein binding to reflect the relevant intracellular interactions."
+        ]
+      },
+      {
+        "access": "full_text",
+        "author_interpretation": "The authors present this result as additional support for preserved RNA-binding function of the tested variants.",
+        "biological_context": "In vitro EMSA using recombinant TDP-43–MBP–His6 variants and synthetic (UG)12 RNA. This substrate is distinct from the autoregulatory RNA substrate described in the preceding card.",
+        "endpoint": "Binding to the synthetic UG-rich RNA substrate.",
+        "id": "finding-f8cf38bfaf564f93a51f5b4b17aeefeb-4",
+        "images_seen": false,
+        "intervention_comparator": "Recombinant Wt, 12D and 12A TDP-43 tested against synthetic (UG)12 RNA.",
+        "negative_findings": [
+          "No alteration of UG-rich RNA binding was reported for the tested phosphomimetic substitutions in this EMSA context."
+        ],
+        "negative_quotes": [
+          "Phosphomimetic substitutions do not alter nuclear localization, UG‐rich RNA binding and autoregulation of TDP‐43"
+        ],
+        "negative_state": "reported_in_view",
+        "not_established": [
+          "Binding behavior across other RNA sequences and RNA-processing events is not reported in the current view.",
+          "Binding under authentic site-specific phosphorylation is not reported in the current view."
+        ],
+        "reported_observation": "Authors report comparable RNA binding among Wt, 12D and 12A for the synthetic (UG)12 substrate.",
+        "representation": "excerpt of JATS XML saved; flattened article text, not a scientific interpretation",
+        "source_locator": "attempt:fulltext/body_base64#/article",
+        "source_ref": "epmc:MED:35112738",
+        "source_version": "provider version unreported",
+        "source_view_ref": "876e76bb00f84e928a89cbea813dacad",
+        "supplements_seen": false,
+        "supporting_quote": "recombinant TDP‐43 Wt, 12D and 12A showed comparable RNA binding in electrophoretic mobility shift assays (EMSAs) with\nin vitro\ntranscribed RNA comprised of the autoregulatory TDP‐43 binding site (Fig\n4D\n) or synthetic (UG)\n12\nRNA",
+        "transfer_assumptions": [
+          "A synthetic UG-repeat substrate cannot be assumed to represent all cellular RNA targets without additional evidence."
+        ]
+      },
+      {
+        "access": "full_text",
+        "author_interpretation": "The authors interpret these results as showing normal splicing-regulatory function of phosphomimetic TDP-43 for the tested targets, while explicitly not excluding effects on other RNA targets or processing events.",
+        "biological_context": "HeLa cells subjected to siRNA-mediated depletion of endogenous TDP-43 and re-expression of siRNA-resistant myc-TDP-43 variants; splicing analyzed by RT-PCR.",
+        "endpoint": "SKAR exon 3 and Bim exon 3 splice isoforms, reported as two targets in the same rescue setup.",
+        "id": "finding-f8cf38bfaf564f93a51f5b4b17aeefeb-5",
+        "images_seen": false,
+        "intervention_comparator": "Endogenous TDP-43 silencing versus the nonsilenced condition, followed by rescue with Wt, 12D or 12A.",
+        "negative_findings": [
+          "The authors report no impairment of restoration of the tested SKAR and Bim splicing endpoints by phosphomimetic 12D; 12A also restored these endpoints."
+        ],
+        "negative_quotes": [
+          "These splicing alterations can be rescued by re‐expression of TDP‐43 Wt, but also 12D or 12A variants, demonstrating that phosphomimetic TDP‐43 is fully competent in regulation splicing of these TDP‐43 splice targets."
+        ],
+        "negative_state": "reported_in_view",
+        "not_established": [
+          "Transcriptome-wide preservation of splicing, effects on other RNA targets and disease-relevant neural-cell splicing outcomes are not reported in the current view.",
+          "A nucleoporin-phosphorylation mechanism for these splice changes is not reported in the current view."
+        ],
+        "reported_observation": "Authors report that endogenous TDP-43 silencing leads to altered SKAR and Bim splice isoforms, and that exon 3 splicing for both targets was fully restored by each of the three re-expressed variants.",
+        "representation": "excerpt of JATS XML saved; flattened article text, not a scientific interpretation",
+        "source_locator": "attempt:fulltext/body_base64#/article",
+        "source_ref": "epmc:MED:35112738",
+        "source_version": "provider version unreported",
+        "source_view_ref": "876e76bb00f84e928a89cbea813dacad",
+        "supplements_seen": false,
+        "supporting_quote": "Silencing of endogenous TDP‐43 by siRNA leads to altered splice isoforms of\nSKAR\nand\nBim\n(second vs first lane). These splicing alterations can be rescued by re‐expression of TDP‐43 Wt, but also 12D or 12A variants, demonstrating that phosphomimetic TDP‐43 is fully competent in regulation splicing of these TDP‐43 splice targets.",
+        "transfer_assumptions": [
+          "Extension beyond SKAR and Bim requires target-specific evidence.",
+          "Extension from depletion-and-re-expression rescue to endogenous disease conditions requires additional evidence."
+        ]
+      },
+      {
+        "access": "full_text",
+        "author_interpretation": "The authors emphasize this system as avoiding high overexpression and providing homogeneous expression levels, extending their localization observation beyond transient HeLa expression.",
+        "biological_context": "Stable inducible Flp-In U2OS cell lines expressing Wt, 12D or 12A myc-TDP-43 after overnight doxycycline addition. For the localization images, endogenous TDP-43 was silenced with siRNAs.",
+        "endpoint": "Nuclear localization assessed in the cellular imaging experiment.",
+        "id": "finding-f8cf38bfaf564f93a51f5b4b17aeefeb-6",
+        "images_seen": false,
+        "intervention_comparator": "Doxycycline-induced expression of the three variants in the stable U2OS system.",
+        "negative_findings": [
+          "No abnormal nuclear localization was reported for the tested variants in the stable U2OS localization context."
+        ],
+        "negative_quotes": [
+          "Normal nuclear localization and autoregulation of TDP‐43 were also replicated"
+        ],
+        "negative_state": "reported_in_view",
+        "not_established": [
+          "Quantitative nuclear-to-cytoplasmic localization ratios and between-variant localization statistics are not reported in the current view.",
+          "Nuclear-import kinetics in this stable U2OS experiment are not reported in the current view; the separate import-reporter result cannot be assigned to this setup."
+        ],
+        "reported_observation": "Authors report replication of normal nuclear localization in the stable inducible U2OS system.",
+        "representation": "excerpt of JATS XML saved; flattened article text, not a scientific interpretation",
+        "source_locator": "attempt:fulltext/body_base64#/article",
+        "source_ref": "epmc:MED:35112738",
+        "source_version": "provider version unreported",
+        "source_view_ref": "876e76bb00f84e928a89cbea813dacad",
+        "supplements_seen": false,
+        "supporting_quote": "Normal nuclear localization and autoregulation of TDP‐43 were also replicated in a cellular system that avoids high overexpression and has homogenous expression levels",
+        "transfer_assumptions": [
+          "Transfer to neural cells or disease states requires evidence beyond replication in these two cellular expression contexts."
+        ]
+      },
+      {
+        "access": "full_text",
+        "author_interpretation": "The authors regard this result as supporting preserved autoregulation in a system with less overexpression and more homogeneous expression than the transient-expression setup.",
+        "biological_context": "Stable inducible Flp-In U2OS cell lines expressing Wt, 12D or 12A myc-TDP-43 after overnight doxycycline addition. The Figure EV4 caption reports four independent replicates for autoregulation, with endogenous TDP-43 levels normalized to the Wt noninduced condition.",
+        "endpoint": "Endogenous TDP-43 expression as an autoregulatory readout.",
+        "id": "finding-f8cf38bfaf564f93a51f5b4b17aeefeb-7",
+        "images_seen": false,
+        "intervention_comparator": "Doxycycline-induced versus noninduced expression within the respective variant cell lines.",
+        "negative_findings": [
+          "The authors report preserved autoregulation for the tested variants in the stable U2OS system."
+        ],
+        "negative_quotes": [
+          "Normal nuclear localization and autoregulation of TDP‐43 were also replicated"
+        ],
+        "negative_state": "reported_in_view",
+        "not_established": [
+          "Equal autoregulatory effect sizes among U2OS variants and explicit between-variant statistical comparisons are not reported in the current view.",
+          "The endogenous-siRNA condition specified for the U2OS localization images is not established here as the condition for the separate autoregulation measurement.",
+          "A connection to nucleoporin phosphorylation or ALS causation is not reported in the current view."
+        ],
+        "reported_observation": "Authors report replication of normal TDP-43 autoregulation in stable inducible U2OS cells. The caption describes comparisons between noninduced and induced conditions; it does not provide numerical effect sizes in this text.",
+        "representation": "excerpt of JATS XML saved; flattened article text, not a scientific interpretation",
+        "source_locator": "attempt:fulltext/body_base64#/article",
+        "source_ref": "epmc:MED:35112738",
+        "source_version": "provider version unreported",
+        "source_view_ref": "876e76bb00f84e928a89cbea813dacad",
+        "supplements_seen": false,
+        "supporting_quote": "Normal nuclear localization and autoregulation of TDP‐43 were also replicated",
+        "transfer_assumptions": [
+          "Transfer requires the stable inducible expression response to represent the relevant endogenous regulatory context."
+        ]
+      }
+    ],
+    "source_view_id": "876e76bb00f84e928a89cbea813dacad",
+    "targeted_reading_requests": [
+      "Request the Abstract, Highlights and In Brief, if present, and the remaining Results text to retain additional systems, conditions and conflicting findings. These sections are not reported in the current view.",
+      "Request the relevant Methods and construct descriptions for the identities of the 12D/12A substitution sites, reporter cell identity, expression levels and quantitative assay details; these details are not reported in the current view.",
+      "Request any supplied records directly addressing authentic phosphorylation, nucleoporin phosphorylation, ALS-relevant neural contexts or disease endpoints. Those relationships are not reported in the current view and cannot be inferred from TDP-43 substitution assays.",
+      "Request the actual figure files, source data and relevant supplementary records for the reported localization, import, binding and RNA-regulation assays. Their contents were not accessed through this flattened text view."
+    ]
+  },
+  "background_status": "saved",
+  "binding": {
+    "goal_ref": "goal-38a4a7a321d54c1eb475b9c7646930f0",
+    "run_id": "cea909fe8a004010b1896df1c1d98e02",
+    "seed_id": null
+  },
+  "execution_mode": "real_model",
+  "model_config": {
+    "credential_configured": true,
+    "endpoint": "https://api.openai.com/v1/chat/completions",
+    "execution_mode": "real_model",
+    "max_request_bytes": 64000,
+    "model": "gpt-6.1-sol",
+    "parameters": {
+      "max_completion_tokens": 32768,
+      "reasoning_effort": "high",
+      "response_format": {
+        "type": "json_object"
+      }
+    },
+    "provider": "openai",
+    "timeout_seconds": 600
+  },
+  "operation": "P04",
+  "progress_fingerprint": null,
+  "prompt_version": "w1-l2-p04-context-v2",
+  "science_validated": false
+}

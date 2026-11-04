@@ -1,0 +1,66 @@
+{
+  "materials": [
+    {
+      "name": "control",
+      "source": {
+        "citation": "https://europepmc.org/article/PPR/PPR1217875",
+        "source_ref": "epmc:PPR:PPR1217875",
+        "title": "Seeded aggregation of ANXA11 induces prion-like propagation, TDP-43 co-pathology and nucleocytoplasmic transport defects"
+      },
+      "source_version": "provider version unreported",
+      "doi": "10.64898/2026.03.24.713853",
+      "pmcid": null,
+      "pub_type": {
+        "pubType": [
+          "Preprint"
+        ]
+      },
+      "first_publication_date": "2026-03-26",
+      "provider_license": null,
+      "representation": "complete obtained provider abstract, markup flattened; not full text",
+      "character_range": [
+        0,
+        2746
+      ],
+      "view_id": "75bf96a0e25b4e6aa10e54f6781a5382",
+      "jats_section_id": null,
+      "authors": "Luo H, Zheng H, Lu Y, Liu C, Zhang K, Duan S, Zhang H, Zhang Y, Song Y, Wang T, Liu H, Zhang N, Xia Z, Xu Y.",
+      "journal": null,
+      "publication_year": "2026"
+    },
+    {
+      "name": "complement",
+      "source": {
+        "citation": "https://europepmc.org/article/MED/35112738",
+        "source_ref": "epmc:MED:35112738",
+        "title": "Disease-linked TDP-43 hyperphosphorylation suppresses TDP-43 condensation and aggregation."
+      },
+      "source_version": "provider version unreported",
+      "doi": "10.15252/embj.2021108443",
+      "pmcid": "PMC9016352",
+      "pub_type": {
+        "pubType": [
+          "research-article",
+          "Journal Article"
+        ]
+      },
+      "first_publication_date": "2022-02-03",
+      "provider_license": "cc by",
+      "representation": "excerpt of JATS XML saved; flattened article text, not a scientific interpretation",
+      "character_range": [
+        33770,
+        41370
+      ],
+      "view_id": "876e76bb00f84e928a89cbea813dacad",
+      "jats_section_id": "embj2021108443-sec-0010",
+      "authors": "Gruijs da Silva LA, Simonetti F, Hutten S, Riemenschneider H, Sternburg EL, Pietrek LM, Gebel J, Dötsch V, Edbauer D, Hummer G, Stelzl LS, Dormann D.",
+      "journal": "The EMBO journal",
+      "publication_year": "2022",
+      "copyright_and_license": "© 2022 The Authors. Published under the terms of the CC BY 4.0 licensehttps://creativecommons.org/licenses/by/4.0/This is an open access article under the terms of the http://creativecommons.org/licenses/by/4.0/ License, which permits use, distribution and reproduction in any medium, provided the original work is properly cited.",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/",
+      "modification_notice": "XML mechanically flattened with the existing adapter; only the explicitly declared Results subsection selected; captions are text, image pixels not viewed"
+    }
+  ],
+  "full_preparation_provenance": "https://github.com/syrsteven/co-scientist/tree/793041e67cc5abee8a3d315c35251e9c3ed5161d/docs/preparations/p04-context-v2",
+  "new_acquisition_this_call": false
+}

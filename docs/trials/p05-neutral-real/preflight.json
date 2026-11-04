@@ -1,0 +1,22 @@
+{
+  "source_commit": "d66051418192e66d900a36d5773623010668ec8b",
+  "run_id": "cea909fe8a004010b1896df1c1d98e02",
+  "database": "/private/tmp/co-scientist-p04-v2/runs/p04-v2-prepared.sqlite",
+  "prompt_version": "w1-l2-p03-p07-v1",
+  "mode": "NEUTRAL_ORIENTATION",
+  "reading_count": 2,
+  "finding_count": 15,
+  "source_view_count": 2,
+  "source_characters": [
+    2746,
+    7600
+  ],
+  "omitted_readings": {},
+  "http_body_bytes": 52164,
+  "actual_request_envelope_bytes": 52256,
+  "configured_limit_bytes": 64000,
+  "capacity_passed": true,
+  "credentials_read": false,
+  "model_sends": 0,
+  "review_materials_supplied": false
+}

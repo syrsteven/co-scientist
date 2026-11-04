@@ -1,0 +1,1 @@
+Verified 35 hashes; 15 unmodified cards, 2 complete views, one P05 Attempt, raw usage/refs and 13 review rows; no execution. science_validated=false

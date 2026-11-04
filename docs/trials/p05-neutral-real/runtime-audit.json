@@ -1,0 +1,28 @@
+{
+  "counts_after": {
+    "runs": 1,
+    "tasks": 9,
+    "attempts": 10,
+    "material_views": 2,
+    "background_actions": 3
+  },
+  "run_id": "cea909fe8a004010b1896df1c1d98e02",
+  "background_operations": [
+    "P04",
+    "P04",
+    "P05"
+  ],
+  "p04_preservation_sha256_before": "acbbce9200bb69ae4408fc2c01bad14477e3d500ea41b7df5ac17ae2df8d06b0",
+  "p04_preservation_sha256_after": "acbbce9200bb69ae4408fc2c01bad14477e3d500ea41b7df5ac17ae2df8d06b0",
+  "p04_rows_changed": false,
+  "finding_refs": 15,
+  "knowledge_edges": 14,
+  "source_view_count": 2,
+  "no_omissions": true,
+  "backend_retains_all_source_cards": true,
+  "backend_retains_selected_source_views": true,
+  "p05_attempt_count": 1,
+  "started_at": "2026-11-04T01:13:20.028758+00:00",
+  "finished_at": "2026-11-04T01:14:26.799493+00:00",
+  "science_validated": false
+}

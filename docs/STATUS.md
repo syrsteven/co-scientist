@@ -1,5 +1,21 @@
 # 项目状态 — W1-L2
 
+## 单次真实P05中性背景综合（2026-11-04）
+
+基于真实P04结果d66051418192e66d900a36d5773623010668ec8b，独立结果分支codex/p05-neutral-trial-review；应用代码不改，不合并main。
+原Run cea909fe8a004010b1896df1c1d98e02，两份真实P04的15卡及两视图完整进入P05，未混替身/手工修卡/Codex评审。
+既有Prompt w1-l2-p03-p07-v1，NEUTRAL_ORIENTATION；实际request envelope52256字节<64000，无删减或提高容量。
+固定p05-neutral-15cards-single，Attempt120e5978efdd40479c0a161c6a91aa60；1次新请求，HTTP200/stop，完整JSON，saved；无重试/切模型。
+模型gpt-6.1-sol/high/32768/JSON object，无temperature、600秒。输入12685、输出4529（含reasoning512）、total17214，费用未知/null。
+
+[原始结果、完整usage、引用与审阅包](trials/p05-neutral-real/README.md)。模型15finding引用、14类型关系；后端原样附回15卡与视图，机械保留不等于语义正确。
+13项Codex初审待独立人工复核：主要阴性/条件/对象区别保留、未写成直接互相反驳或15项独立研究；
+R02再次弱化作者诱导措辞，R01假设角色/逐条引用有结构边界，R08/R10说明原P04问题仍在保留数据层，叙述未直接重复不等于数据已修复。
+P04 action/task/attempt/result前后哈希一致，未改原卡。背景动作仅P04/P04/P05；无P06/P07/P08/Candidate Ethics/R0，无新检索。
+Goal/Ethics仍为开发替身，不是真实伦理审查；science_validated=false，未做独立专家验收或稳定纠错验证。
+本轮只读运行审计、输入/原始字节/usage/引用/审阅定位/包哈希及解压核对通过；应用代码不改，未重跑203项工程回归。
+原工作区232项改动/暂存指纹保持不变。下列为更早阶段历史。
+
 ## P04 v2 真实试跑及离线初审（2026-11-04）
 
 起点main378475b2e5a86d1c6504138bc3992dae2c977e81；独立结果分支codex/p04-v2-trial-review，应用代码不改，不合并main。

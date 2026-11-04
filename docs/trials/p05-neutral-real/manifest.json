@@ -1,0 +1,22 @@
+{
+  "status": "ONE_P05_NEUTRAL_RESULT_SAVED_CODEX_INITIAL_REVIEW_ONLY",
+  "source_commit": "d66051418192e66d900a36d5773623010668ec8b",
+  "application_baseline": "378475b2e5a86d1c6504138bc3992dae2c977e81",
+  "delivery_branch": "codex/p05-neutral-trial-review",
+  "run_id": "cea909fe8a004010b1896df1c1d98e02",
+  "request_id": "p05-neutral-15cards-single",
+  "attempt_id": "120e5978efdd40479c0a161c6a91aa60",
+  "prompt_version": "w1-l2-p03-p07-v1",
+  "new_model_requests": 1,
+  "new_search_requests": 0,
+  "source_cards": 15,
+  "source_views": 2,
+  "request_bytes": 52256,
+  "cap_bytes": 64000,
+  "cropping_or_omissions_added": false,
+  "p04_records_changed": false,
+  "application_code_changed": false,
+  "science_validated": false,
+  "review": "Codex 初审，待独立人工复核",
+  "independent_human_review_completed": false
+}

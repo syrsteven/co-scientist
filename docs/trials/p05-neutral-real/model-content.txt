@@ -1,0 +1,163 @@
+{
+  "operation": "OrientationPacket",
+  "overview": [
+    "本包仅综合两份已选阅读记录及两次已执行的精确标识符检索，保留核孔蛋白磷酸化问题，不预选具体核孔蛋白、实验模型或研究条件，也不将背景关联转写为 ALS 的因果解释。",
+    "ANXA11 文献的摘要视图报告相分离、纤维形成、播种传播、TDP-43 病理转化，以及聚集相关的核孔与运输表型。这些结果来自不同或未明确说明的实验背景；患者脑异源丝状结构则是摘要引述的既往研究，不能与该文细胞实验合并。",
+    "互补文献的已读结果小节报告：在所测试的 TDP-43 Wt、12D、12A 条件下，核定位、核输入、自调节、两类 RNA 底物结合及两个剪接靶标的功能未见所述损害。该结果限制了将 TDP-43 磷酸化笼统等同于运输或 RNA 功能障碍的解释，但不直接检验核孔蛋白磷酸化，也不否定其他细胞或疾病条件下的效应。"
+  ],
+  "finding_refs": [
+    "finding-f49335ad41a946f9aed8103f53f328ca-0",
+    "finding-f49335ad41a946f9aed8103f53f328ca-1",
+    "finding-f49335ad41a946f9aed8103f53f328ca-2",
+    "finding-f49335ad41a946f9aed8103f53f328ca-3",
+    "finding-f49335ad41a946f9aed8103f53f328ca-4",
+    "finding-f49335ad41a946f9aed8103f53f328ca-5",
+    "finding-f49335ad41a946f9aed8103f53f328ca-6",
+    "finding-f8cf38bfaf564f93a51f5b4b17aeefeb-0",
+    "finding-f8cf38bfaf564f93a51f5b4b17aeefeb-1",
+    "finding-f8cf38bfaf564f93a51f5b4b17aeefeb-2",
+    "finding-f8cf38bfaf564f93a51f5b4b17aeefeb-3",
+    "finding-f8cf38bfaf564f93a51f5b4b17aeefeb-4",
+    "finding-f8cf38bfaf564f93a51f5b4b17aeefeb-5",
+    "finding-f8cf38bfaf564f93a51f5b4b17aeefeb-6",
+    "finding-f8cf38bfaf564f93a51f5b4b17aeefeb-7"
+  ],
+  "competing_explanations": [
+    "ANXA11 聚集相关的核孔蛋白分布改变、mRNA 输出受损及神经元毒性，可以容许核孔改变参与损伤、随损伤发生，或与其他改变并行出现等不同解释；当前摘要未提供足以区分这些解释的时序或干预结果。",
+    "TDP-43 过度磷酸化与聚集共同出现，并不区分该修饰参与病理过程、属于下游反应或仅伴随出现。互补记录中磷酸模拟变体保留所测功能，限制了“该修饰本身普遍足以造成这些功能损害”的解释，但不能据此认定其具有保护作用。",
+    "两份材料的表面张力可能来自不同体系和处理：ANXA11 纤维相关病理背景与 TDP-43 氨基酸替换实验不同，所测终点也不同。尤其 mRNA 输出与 TDP-43 报告蛋白核输入不可互换，现有结果不能视为同一实验条件下的直接矛盾。",
+    "TurboID 的邻近富集可以与局部空间重排相容，但不能单独区分直接结合、隔离、功能丧失或磷酸化介导的变化；这些机制均未由所读视图建立。"
+  ],
+  "unranked_questions": [
+    "在保留核孔蛋白磷酸化这一问题、且不预选分子的前提下，是否存在直接测量该修饰及其位点、变化方向和发生时间的记录？",
+    "核孔蛋白磷酸化若有变化，与聚集、核孔蛋白重新分布、mRNA 输出改变及细胞损伤之间分别具有怎样的时间关系？现有材料是否报告区分必要性、充分性或并行变化的干预与救援？",
+    "ANXA11 相变、播种传播、TDP-43 转化、TurboID 和神经元表型各自采用什么体系、处理、对照和时间条件？哪些终点确实来自同批细胞或可比较的条件？",
+    "核孔相关变化影响的是 mRNA 输出、特定蛋白输入、其他货物运输，还是更一般的屏障性质？这些终点能否在同一背景下分别核对？",
+    "TDP-43 磷酸模拟替换与真实、位点特异性磷酸化之间有哪些已报告的一致或不一致结果？所测功能保留能否转移到其他 RNA 靶标、细胞类型或疾病相关背景？",
+    "未读正文、图像、源数据及补充材料中，是否报告无效应、不一致结果、适用条件限制或与摘要概括不同的结果？"
+  ],
+  "knowledge_edges": [
+    {
+      "kind": "observation",
+      "description": "摘要引述既往冷冻电镜研究在患者脑中观察到 ANXA11–TDP-43 异源丝状结构；当前视图未提供患者分组、样本量或原始结构数据，该观察不是后述细胞播种实验。",
+      "finding_refs": [
+        "finding-f49335ad41a946f9aed8103f53f328ca-0"
+      ]
+    },
+    {
+      "kind": "observation",
+      "description": "作者报告 ANXA11 发生液液相分离并经液固相变形成淀粉样纤维；当前摘要未说明具体制备、浓度、时程及测量条件，也未报告核孔蛋白磷酸化对此过程的影响。",
+      "finding_refs": [
+        "finding-f49335ad41a946f9aed8103f53f328ca-1"
+      ]
+    },
+    {
+      "kind": "observation",
+      "description": "人 iPSC 来源神经元中报告了 ANXA11 纤维的自模板播种和细胞间传播；Highlights 另报告 SH-SY5Y 细胞中的同型播种与传播。两种背景分别保留，不能把神经元核孔表型或毒性自动归给 SH-SY5Y 实验。",
+      "finding_refs": [
+        "finding-f49335ad41a946f9aed8103f53f328ca-2",
+        "finding-f49335ad41a946f9aed8103f53f328ca-3"
+      ]
+    },
+    {
+      "kind": "observation",
+      "description": "摘要报告 ANXA11 纤维处理相关实验中出现 TDP-43 过度磷酸化、去污剂不溶性组分积累及胞质聚集。具体实验体系、磷酸化位点、时间顺序及救援结果未报告；这里的磷酸化对象是 TDP-43，而非核孔蛋白。",
+      "finding_refs": [
+        "finding-f49335ad41a946f9aed8103f53f328ca-4"
+      ]
+    },
+    {
+      "kind": "observation",
+      "description": "TurboID 分析报告 ANXA11 聚集体邻近蛋白质组中核孔复合体及核质运输因子呈聚集依赖性富集。具体蛋白、比较组和统计量未在摘要中给出；邻近富集不等于直接结合、功能损害或修饰变化。",
+      "finding_refs": [
+        "finding-f49335ad41a946f9aed8103f53f328ca-5"
+      ]
+    },
+    {
+      "kind": "observation",
+      "description": "iPSC 来源神经元中，ANXA11 聚集与核膜异常、核孔蛋白分布改变、mRNA 输出受损和进行性毒性相关。当前视图未建立这些终点的先后顺序、同细胞对应关系或因果链，也未报告核孔蛋白身份及其磷酸化状态。",
+      "finding_refs": [
+        "finding-f49335ad41a946f9aed8103f53f328ca-6"
+      ]
+    },
+    {
+      "kind": "author_interpretation",
+      "description": "ANXA11 文献作者将播种传播概括为朊样性质，并将共同病理及核孔运输表型组织为 ANXA11 相关 ALS/FTD 的机制框架。这是作者解释，不能替代尚缺的核孔蛋白磷酸化测量或跨体系验证。",
+      "finding_refs": [
+        "finding-f49335ad41a946f9aed8103f53f328ca-2",
+        "finding-f49335ad41a946f9aed8103f53f328ca-3",
+        "finding-f49335ad41a946f9aed8103f53f328ca-4",
+        "finding-f49335ad41a946f9aed8103f53f328ca-5",
+        "finding-f49335ad41a946f9aed8103f53f328ca-6"
+      ]
+    },
+    {
+      "kind": "observation",
+      "description": "HeLa 细胞内源 TDP-43 被 siRNA 沉默并重表达相应构建体后，24 小时定位检测显示 Wt、12D、12A 均主要位于细胞核；该实验未报告磷酸模拟替换导致核定位改变。",
+      "finding_refs": [
+        "finding-f8cf38bfaf564f93a51f5b4b17aeefeb-0"
+      ]
+    },
+    {
+      "kind": "observation",
+      "description": "激素诱导的融合报告蛋白实验中，Wt、12D、12A 的核输入速率被报告为不可区分。该结果来自 50 分钟观察、三次独立重复及每条件至少 42 个细胞；它不等于一般核孔通透性或其他货物运输正常，也未提供统计等效界限。",
+      "finding_refs": [
+        "finding-f8cf38bfaf564f93a51f5b4b17aeefeb-1"
+      ]
+    },
+    {
+      "kind": "observation",
+      "description": "HeLa 瞬时表达 48 小时后，三种 TDP-43 变体对内源 TDP-43 的下调程度被报告为相同，未见所测自调节读出受损。该蛋白水平读出不是细胞内 3′UTR 占据的直接测量。",
+      "finding_refs": [
+        "finding-f8cf38bfaf564f93a51f5b4b17aeefeb-2"
+      ]
+    },
+    {
+      "kind": "observation",
+      "description": "重组融合蛋白 EMSA 中，Wt、12D、12A 对自调节 RNA 底物形成复合物的能力被报告为相当，对另一种合成 (UG)12 RNA 底物的结合也相当。两个底物分别保留；这些无损害结果不能扩展为所有细胞 RNA 靶标均不受影响。",
+      "finding_refs": [
+        "finding-f8cf38bfaf564f93a51f5b4b17aeefeb-3",
+        "finding-f8cf38bfaf564f93a51f5b4b17aeefeb-4"
+      ]
+    },
+    {
+      "kind": "observation",
+      "description": "HeLa 内源 TDP-43 沉默改变了 SKAR 和 Bim 的外显子 3 剪接；重表达 Wt、12D 或 12A 均被报告可恢复这两个终点，未见 12D 救援功能受损。该结果不建立转录组范围的剪接功能保留。",
+      "finding_refs": [
+        "finding-f8cf38bfaf564f93a51f5b4b17aeefeb-5"
+      ]
+    },
+    {
+      "kind": "observation",
+      "description": "稳定诱导 U2OS 系统在过夜多西环素诱导后复现了正常核定位及自调节。定位实验的内源沉默条件不能自动赋给独立的自调节测量；当前文本也未提供各变体自调节效应量相等的比较，或该系统中的核输入动力学。",
+      "finding_refs": [
+        "finding-f8cf38bfaf564f93a51f5b4b17aeefeb-6",
+        "finding-f8cf38bfaf564f93a51f5b4b17aeefeb-7"
+      ]
+    },
+    {
+      "kind": "author_interpretation",
+      "description": "互补文献作者据所测结果认为，TDP-43 C 端过度磷酸化并非疾病中胞质错位或 RNA 调控功能受损的主要原因，同时明确不排除其他细胞类型、RNA 靶标或加工事件中的效应。其结论不能直接转用为核孔蛋白磷酸化的结论。",
+      "finding_refs": [
+        "finding-f8cf38bfaf564f93a51f5b4b17aeefeb-0",
+        "finding-f8cf38bfaf564f93a51f5b4b17aeefeb-1",
+        "finding-f8cf38bfaf564f93a51f5b4b17aeefeb-2",
+        "finding-f8cf38bfaf564f93a51f5b4b17aeefeb-3",
+        "finding-f8cf38bfaf564f93a51f5b4b17aeefeb-4",
+        "finding-f8cf38bfaf564f93a51f5b4b17aeefeb-5",
+        "finding-f8cf38bfaf564f93a51f5b4b17aeefeb-6",
+        "finding-f8cf38bfaf564f93a51f5b4b17aeefeb-7"
+      ]
+    }
+  ],
+  "limitations": [
+    "检索记录 p04-v2-human-search-control 与 p04-v2-human-search-complement 均执行成功，各自精确标识符查询返回一条记录、无后续游标。其 scope_complete 仅适用于这两条 Europe PMC 查询，不代表 ALS、核孔蛋白或磷酸化主题检索完整。本包未执行额外检索。",
+    "选择清单纳入 p04-v2-control-single 和 p04-v2-complement-single，未列出被省略的阅读记录；但文献内部存在明确访问和裁剪边界，并非两篇全文均已阅读。",
+    "视图 75bf96a0e25b4e6aa10e54f6781a5382 覆盖字符 [0,2746]，为完整取得的扁平化 Abstract、Highlights、In Brief，未裁剪；完整取得的是摘要表示，不是正文。三个部分的重复概括未作独立实验计数。",
+    "视图 876e76bb00f84e928a89cbea813dacad 仅覆盖原始 125363 字符中的 [33770,41370]；[0,33770] 和 [41370,125363] 未读。所读内容为结果小节及文字图注，不能依据论文标题推断未读的凝聚或聚集实验结果。",
+    "两份视图均未查看图像像素或补充材料；文字图注提及的源数据不等于已经访问源数据。来源版本均未报告，ANXA11 来源为所供 PPR 记录，不能由此假定其后续版本或审稿状态。",
+    "ANXA11 卡片中的空阴性结果数组仅表示当前视图未报告阴性实验结果，不表示没有阴性结果。互补记录的无损害结果则必须保留在各自构建体、细胞、底物、时程及测量终点范围内。",
+    "当前材料没有直接建立核孔蛋白磷酸化、相关调控因子及其与运输障碍或 ALS 的关系。TDP-43 磷酸化、磷酸模拟替换、核孔蛋白分布和核孔蛋白磷酸化是不同对象或终点，不能相互替代。",
+    "患者脑结构背景、SH-SY5Y、iPSC 来源神经元、HeLa、U2OS、融合报告蛋白和体外 EMSA 之间的转移均需额外对应证据；本包不建立跨体系因果链，不声称新颖性或科学验证。调用方仍保留全部原始卡片，本综合不替代原始记录。"
+  ]
+}
