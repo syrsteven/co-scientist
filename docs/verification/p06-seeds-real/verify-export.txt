@@ -1,0 +1,1 @@
+Verified SHA256, exact requests/raw responses/usage, one bound seed per call, OPEN isolation, anchor quotes and saved runtime audit. Science not validated.

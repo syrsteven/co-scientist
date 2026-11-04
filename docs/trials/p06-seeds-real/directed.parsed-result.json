@@ -1,0 +1,55 @@
+{
+  "artifact": {
+    "limitations": [
+      "当前材料未建立核孔蛋白磷酸化变化是否存在、涉及哪些位点及其与 ALS 的关系；上述问题不预设变化方向、致病作用或保护作用。",
+      "互补记录在所测条件下报告 TDP-43 变体的核定位、核输入、自调节、两类 RNA 底物结合及两个剪接靶标功能未见所述损害；这些结果不等于一般核孔功能正常，也不能转用为核孔蛋白磷酸化的结论。ANXA11 摘要未报告阴性实验结果，不代表不存在阴性结果。",
+      "ANXA11 相关聚集背景与 TDP-43 替换实验的体系、处理及终点不同；mRNA 输出和融合报告蛋白核输入不可互换，现有结果不构成同条件下的直接矛盾。TurboID 邻近富集也不能单独证明直接结合、隔离或修饰变化。",
+      "ANXA11 来源仅取得摘要、Highlights 和 In Brief；互补来源仅阅读正文字符区间 [33770,41370]，其余正文未读。两份来源均未查看图像、补充材料或图注所指的源数据。",
+      "本次仅依据所供记录提出探索问题，未执行额外检索或实验。已有两次精确标识符检索不代表主题检索完整；问题的新颖性、干预可行性及科学有效性均未获验证。"
+    ],
+    "seeds": [
+      {
+        "execution_mode": "real_model",
+        "goal_ref": "goal-38a4a7a321d54c1eb475b9c7646930f0",
+        "id": "seed-f87361b21b4f44609dedfa2ac9afc7bc-0",
+        "kind": "directed",
+        "known_anchor_refs": [
+          "finding-f49335ad41a946f9aed8103f53f328ca-6",
+          "finding-f49335ad41a946f9aed8103f53f328ca-4",
+          "finding-f8cf38bfaf564f93a51f5b4b17aeefeb-1"
+        ],
+        "orientation_ref": "p05-neutral-15cards-single",
+        "question": "在不预选具体核孔蛋白或实验模型的前提下，若检测到核孔蛋白磷酸化变化，能否通过时序比较及针对该修饰的选择性干预，区分其参与 mRNA 输出障碍、属于细胞损伤后的反应，或与运输障碍和损伤并行变化？",
+        "run_id": "cea909fe8a004010b1896df1c1d98e02",
+        "unresolved_relationship": "所供记录报告了聚集相关的核孔蛋白分布改变、mRNA 输出受损及神经元毒性，但未直接测量核孔蛋白磷酸化，也未建立这些终点的先后或因果关系。TDP-43 磷酸模拟变体的核输入无损害结果针对不同对象和运输终点，不能直接解决这一关系。"
+      }
+    ]
+  },
+  "background_status": "saved",
+  "binding": {
+    "goal_ref": "goal-38a4a7a321d54c1eb475b9c7646930f0",
+    "run_id": "cea909fe8a004010b1896df1c1d98e02",
+    "seed_id": null
+  },
+  "execution_mode": "real_model",
+  "model_config": {
+    "credential_configured": true,
+    "endpoint": "https://api.openai.com/v1/chat/completions",
+    "execution_mode": "real_model",
+    "max_request_bytes": 65536,
+    "model": "gpt-6.1-sol",
+    "parameters": {
+      "max_completion_tokens": 32768,
+      "reasoning_effort": "high",
+      "response_format": {
+        "type": "json_object"
+      }
+    },
+    "provider": "openai",
+    "timeout_seconds": 600
+  },
+  "operation": "P06_DIRECTED",
+  "progress_fingerprint": null,
+  "prompt_version": "w1-l2-p03-p07-v1",
+  "science_validated": false
+}

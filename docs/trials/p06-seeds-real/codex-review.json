@@ -1,0 +1,103 @@
+{
+  "status": "Codex 初审，待独立人工复核",
+  "authored_after_both_calls": true,
+  "science_validated": false,
+  "rows": [
+    {
+      "id": "R01",
+      "topic": "探索问题而非候选答案",
+      "operation": "directed",
+      "json_pointer": "/questions/0/question",
+      "actual_output": "在不预选具体核孔蛋白或实验模型的前提下，若检测到核孔蛋白磷酸化变化，能否通过时序比较及针对该修饰的选择性干预，区分其参与 mRNA 输出障碍、属于细胞损伤后的反应，或与运输障碍和损伤并行变化？",
+      "codex_initial_assessment": "条件性提出时序/干预如何区分原因、损伤后反应和并行变化；未预写某分子通路为答案。检验方法本身可行性尚未验证。",
+      "independent_human_review": "pending"
+    },
+    {
+      "id": "R02",
+      "topic": "核孔蛋白磷酸化目标与不预选约束",
+      "operation": "directed",
+      "json_pointer": "/questions/0/question",
+      "actual_output": "在不预选具体核孔蛋白或实验模型的前提下，若检测到核孔蛋白磷酸化变化，能否通过时序比较及针对该修饰的选择性干预，区分其参与 mRNA 输出障碍、属于细胞损伤后的反应，或与运输障碍和损伤并行变化？",
+      "codex_initial_assessment": "明确核孔蛋白磷酸化，且不预选具体核孔蛋白或实验模型；未把TDP-43磷酸化当核孔蛋白磷酸化。ALS未在问题句逐字重复，但由绑定的原Goal及限制保留；单句单独使用可能丢失疾病边界。",
+      "independent_human_review": "pending"
+    },
+    {
+      "id": "R03",
+      "topic": "定向锚点的实际支持范围",
+      "operation": "directed",
+      "json_pointer": "/questions/0/known_anchor_refs",
+      "actual_output": [
+        "finding-f49335ad41a946f9aed8103f53f328ca-6",
+        "finding-f49335ad41a946f9aed8103f53f328ca-4",
+        "finding-f8cf38bfaf564f93a51f5b4b17aeefeb-1"
+      ],
+      "codex_initial_assessment": "三锚点支持相关表型、TDP-43作者诱导报告、另一体系的核输入阴性背景；均不直接证明核孔蛋白磷酸化存在或因果作用。第4卡只为TDP-43对象辨别提供间接背景，不证明修饰与mRNA输出连接。逐条原文与范围见directed-anchor-evidence.json。",
+      "independent_human_review": "pending"
+    },
+    {
+      "id": "R04",
+      "topic": "来源报告/解释/外推",
+      "operation": "directed",
+      "json_pointer": "/questions/0/unresolved_relationship",
+      "actual_output": "所供记录报告了聚集相关的核孔蛋白分布改变、mRNA 输出受损及神经元毒性，但未直接测量核孔蛋白磷酸化，也未建立这些终点的先后或因果关系。TDP-43 磷酸模拟变体的核输入无损害结果针对不同对象和运输终点，不能直接解决这一关系。",
+      "codex_initial_assessment": "将聚集相关表型称为报告，明确核孔蛋白磷酸化未直接测量，时序与因果未建立；这里应限定为所供视图，不能推广成全球文献空白。",
+      "independent_human_review": "pending"
+    },
+    {
+      "id": "R05",
+      "topic": "阴性与跨体系限制",
+      "operation": "directed",
+      "json_pointer": "/limitations",
+      "actual_output": [
+        "当前材料未建立核孔蛋白磷酸化变化是否存在、涉及哪些位点及其与 ALS 的关系；上述问题不预设变化方向、致病作用或保护作用。",
+        "互补记录在所测条件下报告 TDP-43 变体的核定位、核输入、自调节、两类 RNA 底物结合及两个剪接靶标功能未见所述损害；这些结果不等于一般核孔功能正常，也不能转用为核孔蛋白磷酸化的结论。ANXA11 摘要未报告阴性实验结果，不代表不存在阴性结果。",
+        "ANXA11 相关聚集背景与 TDP-43 替换实验的体系、处理及终点不同；mRNA 输出和融合报告蛋白核输入不可互换，现有结果不构成同条件下的直接矛盾。TurboID 邻近富集也不能单独证明直接结合、隔离或修饰变化。",
+        "ANXA11 来源仅取得摘要、Highlights 和 In Brief；互补来源仅阅读正文字符区间 [33770,41370]，其余正文未读。两份来源均未查看图像、补充材料或图注所指的源数据。",
+        "本次仅依据所供记录提出探索问题，未执行额外检索或实验。已有两次精确标识符检索不代表主题检索完整；问题的新颖性、干预可行性及科学有效性均未获验证。"
+      ],
+      "codex_initial_assessment": "保留Wt/12D/12A的条件性阴性，区别mRNA输出与融合报告蛋白核输入、磷酸模拟与目标修饰；摘要未报告阴性不等于无阴性。未把两材料当直接相互反驳。",
+      "independent_human_review": "pending"
+    },
+    {
+      "id": "R06",
+      "topic": "OPEN是探索问题",
+      "operation": "open",
+      "json_pointer": "/questions/0/question",
+      "actual_output": "在不预选具体核孔蛋白或实验模型的前提下，核孔复合体中核孔蛋白的磷酸化是否以及如何参与 ALS 的发生或进展，哪些机制假说与可行的检验实验能够区分其因果作用、下游变化或伴随现象？",
+      "codex_initial_assessment": "保留ALS、核孔蛋白磷酸化与不预选分子/模型，未给机制答案。与原Goal接近，仍很宽泛；问题是否具有额外研究价值待专家评估。",
+      "independent_human_review": "pending"
+    },
+    {
+      "id": "R07",
+      "topic": "OPEN未知的范围歧义",
+      "operation": "open",
+      "json_pointer": "/questions/0/unresolved_relationship",
+      "actual_output": "核孔蛋白磷酸化与 ALS 相关病理过程之间的因果方向、作用条件及机制尚未建立；需要能够区分不同解释的证据，而不能用核孔蛋白分布改变或其他蛋白的磷酸化替代这一关系。",
+      "codex_initial_assessment": "“因果方向、作用条件及机制尚未建立”未在本句限定“所供概述/当前视图”；可能被误读为全球知识结论。周边限制提供范围，独立使用此字段仍需防止越界。原输出不改。",
+      "independent_human_review": "pending"
+    },
+    {
+      "id": "R08",
+      "topic": "OPEN来源和情境",
+      "operation": "open",
+      "json_pointer": "/limitations",
+      "actual_output": [
+        "本输出仅为开放检索起点，不提供机制答案，不预选分子、模型或实验条件，也不声称假说新颖或已获科学验证。",
+        "所供概述转述的视图 876e76bb00f84e928a89cbea813dacad 中，TDP-43 Wt、12D、12A 在所测核定位、核输入及 RNA 功能终点上未见所述损害；这些结果须保留在各自实验条件内，既不能替代核孔蛋白磷酸化证据，也不能推出其他条件下均无效应。",
+        "不同体系中的核孔蛋白分布、mRNA 输出与报告蛋白核输入不是可互换的终点，现有材料不建立跨体系因果链。视图 75bf96a0e25b4e6aa10e54f6781a5382 未报告阴性实验结果，不等于不存在阴性结果。",
+        "材料范围限于概述所述的两条精确标识符检索及两个有限视图：一份是摘要表示，另一份仅为正文片段；图像、补充材料及其余正文未访问。本次未执行额外检索，所列 Europe PMC 检索与获取能力不代表全文可用或主题覆盖完整。"
+      ],
+      "codex_initial_assessment": "通过概述转述视图，未声称亲读全卡/全文；限制区分两体系终点、所测阴性和未报告阴性。view ID来自允许的P05 limitations，不是从兄弟分支注入。",
+      "independent_human_review": "pending"
+    },
+    {
+      "id": "R09",
+      "topic": "OPEN输入隔离",
+      "operation": "open",
+      "json_pointer": "/questions/0/known_anchor_refs",
+      "actual_output": [],
+      "codex_initial_assessment": "空锚点数组，符合既有契约。实际输入只有四项，neutral_overview只含overview/competing_explanations/limitations；在DIRECTED完成后重建仍与执行前导出相同。没有兄弟seed、完整卡或Codex评审。共享概述包含文献方向和竞争解释，输入隔离不等于科学方向完全独立。",
+      "independent_human_review": "pending"
+    }
+  ]
+}

@@ -1,5 +1,18 @@
 # 项目状态 — W1-L2
 
+## 顺序真实P06定向与开放seed试跑（2026-11-04）
+
+基于P05结果提交1a8d612b175ed35542e4aadaf17499d2e961914c，独立结果分支codex/p06-seed-trial-review；应用/Prompt不改，不合并。
+原Run与真实P05 p05-neutral-15cards-single；P06_DIRECTED→P06_OPEN各一次新请求，各生成1seed，均HTTP200/stop/saved，无重试/切模型。
+既有w1-l2-p03-p07-v1；gpt-6.1-sol/high/32768/JSON object、无temperature、600秒。
+原容量64000被DIRECTED64013字节触发；用户明确授权本次提高为65536，无删减/请求正文变化；其他上限未改。
+合计输入18203/输出2894（已含reasoning1768）/total21097；费用未知。全量usage/原始请求响应、seed绑定、9项Codex初审及可移植包见[交付说明](trials/p06-seeds-real/README.md)。
+OPEN严格四项，DIRECTED完成后实际输入仍与前置导出相同，不含兄弟seed/完整卡/评审；共享背景意味着不宣称科学方向完全独立。
+原P04/P05前后哈希一致；背景动作仅P04/P04/P05/P06_DIRECTED/P06_OPEN，无新检索/seed补资料/P07/P08/Candidate Ethics/R0。
+Codex初审待独立人工复核：问题而非机制答案；锚点仅支持研究背景；OPEN“尚未建立”字段未就地限定当前概述，DIRECTED单句未逐字重复ALS，需要上下文绑定；原输出不改。
+首次沙箱回归199通过/4项HTTP因端口权限失败，审批后全量203通过、0失败/跳过。导出/哈希/来源定位/只读DB审计通过；未运行浏览器、旧G3全量、独立专家或科学验证。
+Goal Ethics仍开发测试；science_validated=false，不宣称ready或完整科学链通过。原工作区232项改动保护。
+
 ## 单次真实P05中性背景综合（2026-11-04）
 
 基于真实P04结果d66051418192e66d900a36d5773623010668ec8b，独立结果分支codex/p05-neutral-trial-review；应用代码不改，不合并main。

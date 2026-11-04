@@ -1,0 +1,41 @@
+{
+  "request_id": "p06-open-one-single",
+  "operation": "P06_OPEN",
+  "run_id": "cea909fe8a004010b1896df1c1d98e02",
+  "prompt_version": "w1-l2-p03-p07-v1",
+  "task_id": "0857eed597034cc4b63ecda95e0e6ebe",
+  "task_status": "succeeded",
+  "result_status": "saved",
+  "attempt_count": 1,
+  "attempt_id": "4f5c31932e1b4b58ab85877ca8efdc0b",
+  "attempt_status": "succeeded",
+  "http_status": 200,
+  "finish_reason": "stop",
+  "provider_usage": {
+    "completion_tokens": 1447,
+    "completion_tokens_details": {
+      "accepted_prediction_tokens": 0,
+      "audio_tokens": 0,
+      "reasoning_tokens": 956,
+      "rejected_prediction_tokens": 0
+    },
+    "prompt_tokens": 1753,
+    "prompt_tokens_details": {
+      "audio_tokens": 0,
+      "cache_write_tokens": 1750,
+      "cached_tokens": 0
+    },
+    "total_tokens": 3200
+  },
+  "shared_usage": {
+    "cost": null,
+    "input_tokens": 1753,
+    "output_tokens": 1447,
+    "tool_units": null
+  },
+  "seed_count": 1,
+  "previous_success_read_locally": false,
+  "source_p04_p05_unchanged": true,
+  "input_matches_pre_directed_export": true,
+  "science_validated": false
+}

@@ -1,0 +1,15 @@
+{
+  "status": "TWO_REAL_P06_SEEDS_SAVED_CODEX_INITIAL_REVIEW_ONLY",
+  "source_commit": "1a8d612b175ed35542e4aadaf17499d2e961914c",
+  "application_main_baseline": "378475b2e5a86d1c6504138bc3992dae2c977e81",
+  "delivery_branch": "codex/p06-seed-trial-review",
+  "run_id": "cea909fe8a004010b1896df1c1d98e02",
+  "orientation_ref": "p05-neutral-15cards-single",
+  "new_model_requests": 2,
+  "seed_count_each": 1,
+  "new_search_requests": 0,
+  "application_code_changed": false,
+  "original_p04_p05_changed": false,
+  "science_validated": false,
+  "independent_human_review_completed": false
+}

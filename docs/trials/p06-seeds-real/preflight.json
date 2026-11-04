@@ -1,0 +1,41 @@
+{
+  "run_id": "cea909fe8a004010b1896df1c1d98e02",
+  "orientation_ref": "p05-neutral-15cards-single",
+  "requested_seed_count_each": 1,
+  "existing_p06_actions": [],
+  "steps": [
+    {
+      "operation": "P06_DIRECTED",
+      "request_id": "p06-directed-one-single",
+      "prompt_version": "w1-l2-p03-p07-v1",
+      "input_keys": [
+        "goal_context",
+        "neutral_orientation",
+        "requested_count",
+        "source_discovery_capabilities"
+      ],
+      "http_body_bytes": 63921,
+      "actual_request_envelope_bytes": 64013,
+      "max_request_bytes": 64000,
+      "capacity_passed": false
+    },
+    {
+      "operation": "P06_OPEN",
+      "request_id": "p06-open-one-single",
+      "prompt_version": "w1-l2-p03-p07-v1",
+      "input_keys": [
+        "goal_context",
+        "neutral_overview",
+        "source_discovery_capabilities",
+        "generic_search_constraints"
+      ],
+      "http_body_bytes": 6922,
+      "actual_request_envelope_bytes": 7014,
+      "max_request_bytes": 64000,
+      "capacity_passed": true
+    }
+  ],
+  "credentials_read": false,
+  "model_sends": 0,
+  "reviews_in_input": false
+}

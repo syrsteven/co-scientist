@@ -1,0 +1,10 @@
+{
+  "reason": "DIRECTED request envelope64013 exceeds original64000 by13 bytes; no model requests sent",
+  "original_cap": 64000,
+  "proposed_cap": 65536,
+  "only_public_config_field_changed": "max_request_bytes",
+  "http_body_or_messages_changed": false,
+  "model_parameters_changed": false,
+  "approval_status": "pending_user_reply",
+  "execution_authorized_under_original_cap": false
+}

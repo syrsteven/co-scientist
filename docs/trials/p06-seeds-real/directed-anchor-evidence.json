@@ -1,0 +1,131 @@
+[
+  {
+    "finding_id": "finding-f49335ad41a946f9aed8103f53f328ca-6",
+    "p04_card": {
+      "access": "abstract",
+      "author_interpretation": "作者认为这些结果为 ANXA11 相关 ALS/FTD 发病机制提供框架；In Brief 的结尾进一步将播种组装体概括为扰乱核质运输。",
+      "biological_context": "iPSC 来源神经元中的 ANXA11 聚集相关表型。",
+      "endpoint": "核膜异常、核孔蛋白分布改变、mRNA 输出受损及进行性神经元毒性。",
+      "id": "finding-f49335ad41a946f9aed8103f53f328ca-6",
+      "images_seen": false,
+      "intervention_comparator": "ANXA11 聚集状态相关观察；具体处理、比较组及随访时间当前视图未报告。",
+      "negative_findings": [],
+      "negative_quotes": [],
+      "negative_state": "not_reported_in_view",
+      "not_established": [
+        "具体核孔蛋白身份、其磷酸化状态、核膜和核孔测量方法：当前视图未报告。",
+        "这些终点之间的时间顺序、必要性、充分性及救援结果：当前视图未报告。",
+        "不同终点是否在同一批细胞、同一处理及同一时间点测量：当前视图未报告。",
+        "原句报告的是关联，不能据此将核孔蛋白分布改变、mRNA 输出障碍和神经元毒性排列为已建立的因果链。"
+      ],
+      "reported_observation": "作者报告，在 iPSC 来源神经元中，ANXA11 聚集与核膜异常、核孔蛋白分布改变、mRNA 输出受损及进行性神经元毒性相关。Highlights 和 In Brief 另将核孔相关表型概括为核孔复合体重塑；这些摘要性重述不作为额外独立实验计数。",
+      "representation": "complete obtained provider abstract, markup flattened; not full text",
+      "source_locator": "attempt:metadata/body_base64#result.abstractText",
+      "source_ref": "epmc:PPR:PPR1217875",
+      "source_version": "provider version unreported",
+      "source_view_ref": "75bf96a0e25b4e6aa10e54f6781a5382",
+      "supplements_seen": false,
+      "supporting_quote": "Consistently, ANXA11 aggregation was associated with nuclear envelope abnormalities, altered nucleoporin distribution, impaired mRNA export, and progressive neuronal toxicity in iPSC-derived neurons.",
+      "transfer_assumptions": [
+        "将这些关联外推为 ALS 的核孔蛋白磷酸化机制，需要直接测量该修饰并建立其与运输缺陷及损伤的关系。",
+        "该文献中的分子和模型仅作为已报告背景保留，不据此预选后续研究的具体分子或实验模型。"
+      ]
+    },
+    "original_quote": "Consistently, ANXA11 aggregation was associated with nuclear envelope abnormalities, altered nucleoporin distribution, impaired mRNA export, and progressive neuronal toxicity in iPSC-derived neurons.",
+    "source_view_id": "75bf96a0e25b4e6aa10e54f6781a5382",
+    "view_characters": [
+      1212,
+      1411
+    ],
+    "obtained_text_characters": [
+      1212,
+      1411
+    ]
+  },
+  {
+    "finding_id": "finding-f49335ad41a946f9aed8103f53f328ca-4",
+    "p04_card": {
+      "access": "abstract",
+      "author_interpretation": "作者将该结果概括为 ANXA11 播种组装体诱导 TDP-43 共同病理。",
+      "biological_context": "ANXA11 纤维相关的 TDP-43 病理转化实验；具体细胞或其他实验体系当前视图未报告。",
+      "endpoint": "TDP-43 过度磷酸化、去污剂不溶性组分中积累及胞质聚集体形成。",
+      "id": "finding-f49335ad41a946f9aed8103f53f328ca-4",
+      "images_seen": false,
+      "intervention_comparator": "ANXA11 纤维；处理方式、剂量、时程及比较组当前视图未报告。",
+      "negative_findings": [],
+      "negative_quotes": [],
+      "negative_state": "not_reported_in_view",
+      "not_established": [
+        "这里报告的磷酸化对象是 TDP-43，不是核孔蛋白；核孔蛋白磷酸化测量当前视图未报告。",
+        "TDP-43 磷酸化位点、相关激酶或磷酸酶、时间顺序及干预救援结果：当前视图未报告。",
+        "作者的诱导关系在本次阅读中未获独立验证；其具体实验依据和控制条件当前视图未报告。"
+      ],
+      "reported_observation": "作者报告 ANXA11 纤维诱导 TDP-43 病理转化，包括过度磷酸化、去污剂不溶性组分中积累及胞质聚集体形成。Highlights 和 In Brief 重述该诱导关系，不另计为独立实验。",
+      "representation": "complete obtained provider abstract, markup flattened; not full text",
+      "source_locator": "attempt:metadata/body_base64#result.abstractText",
+      "source_ref": "epmc:PPR:PPR1217875",
+      "source_version": "provider version unreported",
+      "source_view_ref": "75bf96a0e25b4e6aa10e54f6781a5382",
+      "supplements_seen": false,
+      "supporting_quote": "Strikingly, ANXA11 fibrils induces pathological conversion of TDP-43, including hyperphosphorylation, accumulation in detergent-insoluble fractions, and formation of cytoplasmic aggregates.",
+      "transfer_assumptions": [
+        "将这一结果连接到核孔蛋白磷酸化问题，需要直接建立两者之间的关系，不能以 TDP-43 过度磷酸化替代核孔蛋白磷酸化。"
+      ]
+    },
+    "original_quote": "Strikingly, ANXA11 fibrils induces pathological conversion of TDP-43, including hyperphosphorylation, accumulation in detergent-insoluble fractions, and formation of cytoplasmic aggregates.",
+    "source_view_id": "75bf96a0e25b4e6aa10e54f6781a5382",
+    "view_characters": [
+      827,
+      1016
+    ],
+    "obtained_text_characters": [
+      827,
+      1016
+    ]
+  },
+  {
+    "finding_id": "finding-f8cf38bfaf564f93a51f5b4b17aeefeb-1",
+    "p04_card": {
+      "access": "full_text",
+      "author_interpretation": "The authors interpret these results as showing that the tested C-terminal phosphomimetic substitutions do not impair TDP-43 nuclear import. They explicitly state that effects on intracellular transport in other cell types cannot be excluded.",
+      "biological_context": "Hormone-inducible live-cell nuclear-import reporter assay within the subsection's cellular experiments. TDP-43 variants were fused to tandem EGFP and two glucocorticoid-receptor hormone-binding domains. The caption reports a 50-minute time course, three independent replicates and at least 42 cells per condition.",
+      "endpoint": "Reporter nuclear-import kinetics, quantified through cytoplasmic fluorescence.",
+      "id": "finding-f8cf38bfaf564f93a51f5b4b17aeefeb-1",
+      "images_seen": false,
+      "intervention_comparator": "Dexamethasone-triggered import of reporters containing Wt, 12D or 12A TDP-43.",
+      "negative_findings": [
+        "No difference in import rate was reported among Wt, 12D and 12A under the tested hormone-inducible reporter conditions."
+      ],
+      "negative_quotes": [
+        "We examined reporters containing the different TDP‐43 variants (Wt, 12D, 12A) and found that their import rates were indistinguishable"
+      ],
+      "negative_state": "reported_in_view",
+      "not_established": [
+        "General nuclear-pore permeability, transport of other cargos and nucleoporin phosphorylation are not reported in the current view.",
+        "Statistical equivalence bounds and transport outcomes under ALS-associated conditions are not reported in the current view."
+      ],
+      "reported_observation": "Authors report that nuclear-import rates of the three TDP-43 reporter variants were indistinguishable.",
+      "representation": "excerpt of JATS XML saved; flattened article text, not a scientific interpretation",
+      "source_locator": "attempt:fulltext/body_base64#/article",
+      "source_ref": "epmc:MED:35112738",
+      "source_version": "provider version unreported",
+      "source_view_ref": "876e76bb00f84e928a89cbea813dacad",
+      "supplements_seen": false,
+      "supporting_quote": "We examined reporters containing the different TDP‐43 variants (Wt, 12D, 12A) and found that their import rates were indistinguishable",
+      "transfer_assumptions": [
+        "Applying this result to endogenous TDP-43 transport requires the hormone-inducible fusion reporter to preserve the relevant import behavior.",
+        "Applying it to nucleoporin phosphorylation would require a separately demonstrated relationship; it cannot be substituted for this TDP-43 result."
+      ]
+    },
+    "original_quote": "We examined reporters containing the different TDP‐43 variants (Wt, 12D, 12A) and found that their import rates were indistinguishable",
+    "source_view_id": "876e76bb00f84e928a89cbea813dacad",
+    "view_characters": [
+      1336,
+      1470
+    ],
+    "obtained_text_characters": [
+      35106,
+      35240
+    ]
+  }
+]

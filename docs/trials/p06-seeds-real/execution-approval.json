@@ -1,0 +1,7 @@
+{
+  "approved_by": "user",
+  "scope": "Raise max_request_bytes to65536; unchanged inputs/messages/HTTP/model parameters; directed then open one request each; stop on failure",
+  "credential_environment_name": "OPENAI_API_KEY",
+  "other_limits_changed": false,
+  "g3_reference": "src/co_scientist/runtime/context_planning.py:plan_context separates transport bytes from token context, preserves science content; no G3 imports/automatic correction/retry adopted"
+}

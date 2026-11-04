@@ -1,0 +1,35 @@
+{
+  "counts": {
+    "runs": 1,
+    "tasks": 11,
+    "attempts": 12,
+    "material_views": 2,
+    "background_actions": 5
+  },
+  "background_operations": [
+    "P04",
+    "P04",
+    "P05",
+    "P06_DIRECTED",
+    "P06_OPEN"
+  ],
+  "source_before_sha256": "3ec0e3f8bfaef9c733aef9127c8363f19cca56bb50ec3cb6f23f43815ae220c7",
+  "source_after_sha256": "3ec0e3f8bfaef9c733aef9127c8363f19cca56bb50ec3cb6f23f43815ae220c7",
+  "source_p04_p05_unchanged": true,
+  "actual_attempts_match_exports": true,
+  "saved_results_match_exports": true,
+  "timing": {
+    "directed": {
+      "started_at": "2026-11-04T02:52:01.867108+00:00",
+      "finished_at": "2026-11-04T02:52:29.695739+00:00"
+    },
+    "open": {
+      "started_at": "2026-11-04T02:52:43.975259+00:00",
+      "finished_at": "2026-11-04T02:53:12.152461+00:00"
+    }
+  },
+  "strictly_sequential": true,
+  "new_model_requests": 2,
+  "new_search_requests": 0,
+  "science_validated": false
+}
