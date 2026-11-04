@@ -1,0 +1,21 @@
+{
+  "database": "independent invented offline demo, not original real Run",
+  "browser": "CUA IAB",
+  "steps": [
+    "select saved ready Run",
+    "explicit DIRECT submit",
+    "explicit ASSUMPTION_STRUCTURED submit",
+    "reload and expand saved public assumption ledger"
+  ],
+  "candidate_ids": [
+    "p08-browser-direct",
+    "p08-browser-assumption"
+  ],
+  "candidate_count": 2,
+  "p08_attempt_count": 2,
+  "real_p08_calls": 0,
+  "all_candidates_development_fixture": true,
+  "browser_error_warning_log": [],
+  "screenshot": "page-candidates.jpg",
+  "science_validated": false
+}

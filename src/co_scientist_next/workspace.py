@@ -10,6 +10,8 @@ from urllib.parse import parse_qs, urlsplit
 from .background import BackgroundService
 from .background_ops import DevelopmentReadingAdapter
 from .europe_pmc import public_http
+from .generation import GenerationService
+from .generation_ops import DevelopmentGenerationAdapter
 from .goal import DEVELOPMENT_POLICY, DevelopmentAdapter, GoalSlice, validate_brief
 from .literature_runtime import LiteratureService
 from .reading_model import OpenAIChat, load_credential
@@ -24,6 +26,7 @@ def make_server(
     public_literature=False,
     literature_transport=public_http,
     reading_adapter=None,
+    generation_adapter=None,
 ):
     service = GoalSlice(
         store, DevelopmentAdapter() if development_test else None, development_test=development_test
@@ -32,6 +35,7 @@ def make_server(
     literature = LiteratureService(store, enabled=public_literature, transport=literature_transport)
 
     background = BackgroundService(store, reading_adapter)
+    generation = GenerationService(store, generation_adapter)
 
     class Handler(BaseHTTPRequestHandler):
         def log_message(self, *_):
@@ -68,11 +72,12 @@ def make_server(
                 self.allowed_origin()
                 parsed = urlsplit(self.path)
                 path = parsed.path
-                if path in ("/", "/app.js", "/app.css", "/background.js"):
+                if path in ("/", "/app.js", "/app.css", "/background.js", "/generation.js"):
                     asset, mime = {
                         "/": ("index.html", "text/html"),
                         "/app.js": ("app.js", "text/javascript"),
                         "/background.js": ("background.js", "text/javascript"),
+                        "/generation.js": ("generation.js", "text/javascript"),
                         "/app.css": ("app.css", "text/css"),
                     }[path]
                     self.reply(
@@ -87,6 +92,7 @@ def make_server(
                             "development_test": development_test,
                             "real_adapter_connected": False,
                             "reading_model": background.config(),
+                            "generation_model": generation.config(),
                             "public_literature_enabled": public_literature,
                             "example_policy": DEVELOPMENT_POLICY if development_test else None,
                         },
@@ -114,6 +120,16 @@ def make_server(
                             ],
                             "runs": runs,
                         },
+                    )
+                elif path == "/api/generation":
+                    self.reply(200, generation.snapshot(parse_qs(parsed.query)["run_id"][0]))
+                elif path == "/api/generation/attempt":
+                    self.reply(
+                        200,
+                        store.one(
+                            "SELECT p.* FROM attempts p JOIN generation_actions a ON a.task_id=p.task_id WHERE p.id=?",
+                            (parse_qs(parsed.query)["attempt_id"][0],),
+                        ),
                     )
                 elif path == "/api/background":
                     self.reply(200, background.snapshot(parse_qs(parsed.query)["run_id"][0]))
@@ -181,7 +197,7 @@ def make_server(
                 elif path == "/api/execute":
                     # POST is explicit. Loading /api/run does not reach this operation.
                     if store.tasks(data["run_id"])[-1]["module"].startswith(
-                        ("literature.", "background.")
+                        ("literature.", "background.", "generation.")
                     ):
                         raise ValueError("Use the explicit literature action recovery endpoint")
                     service.execute(data["run_id"], recover=data.get("recover") is True)
@@ -202,6 +218,16 @@ def make_server(
                     )
                     self.reply(
                         201, {"request_id": action["request_id"], "task_id": action["task_id"]}
+                    )
+                elif path == "/api/generation":
+                    saved = generation.submit(data["run_id"], data["request_id"], data["request"])
+                    self.reply(
+                        201, {"request_id": saved["request_id"], "task_id": saved["task_id"]}
+                    )
+                elif path == "/api/generation/execute":
+                    self.reply(
+                        200,
+                        generation.execute(data["request_id"], recover=data.get("recover") is True),
                     )
                 elif path == "/api/background/execute":
                     self.reply(
@@ -255,6 +281,11 @@ def main():
         help="Explicit offline P03-P07 fixtures, not real model reading",
     )
     parser.add_argument(
+        "--development-generation",
+        action="store_true",
+        help="Explicit deterministic P08 fixture; no real model or science validation",
+    )
+    parser.add_argument(
         "--reading-model-config", help="Public explicit OpenAI model/endpoint/parameters JSON"
     )
     parser.add_argument(
@@ -303,6 +334,13 @@ def main():
             development_test=args.development_test,
             public_literature=args.public_literature,
             reading_adapter=adapter,
+            generation_adapter=(
+                DevelopmentGenerationAdapter()
+                if args.development_generation
+                else adapter
+                if args.reading_model_config
+                else None
+            ),
         )
         # No store.recover() here. Restart and refresh are observational until explicit POST.
         print(

@@ -28,7 +28,9 @@ const labels = {
   background_saved: "背景步骤已保存 · 未生成候选",
   background_problem: "背景准备/执行问题",
   background_no_progress: "无新资料，已停止重复检查",
-  awaiting_generation: "seed 已 ready · 等待生成能力",
+  awaiting_generation: "seed 已 ready · 可显式生成",
+  awaiting_candidate_ethics: "已生成 · 待 Candidate Ethics/R0",
+  generation_problem: "生成准备/执行问题（非科学否定）",
 };
 async function api(path, data) {
   const response = await fetch(
@@ -63,6 +65,7 @@ async function action(fn) {
     if (state.run) {
       await showLiterature(state.run);
       await showBackground(state.run);
+      await showGeneration(state.run);
     }
   }
 }
@@ -94,16 +97,19 @@ function block(title, data) {
   return item;
 }
 function updateActions() {
+  document.querySelectorAll("#runs button, #projects button").forEach((b) => (b.disabled = state.busy));
   el("create-run").disabled = !state.revision || state.dirty;
   const status = state.run?.run.status;
   el("execute").disabled =
     status !== "ready" ||
     state.run?.tasks.at(-1)?.module.startsWith("literature.") ||
-    state.run?.tasks.at(-1)?.module.startsWith("background.");
+    state.run?.tasks.at(-1)?.module.startsWith("background.") ||
+    state.run?.tasks.at(-1)?.module.startsWith("generation.");
   el("recover").hidden =
     status !== "running" ||
     state.run?.tasks.at(-1)?.module.startsWith("literature.") ||
-    state.run?.tasks.at(-1)?.module.startsWith("background.");
+    state.run?.tasks.at(-1)?.module.startsWith("background.") ||
+    state.run?.tasks.at(-1)?.module.startsWith("generation.");
 }
 function reset() {
   state.project = null;
@@ -111,6 +117,7 @@ function reset() {
   state.run = null;
   el("literature-panel").hidden = true;
   el("background-panel").hidden = true;
+  el("generation-panel").hidden = true;
   state.dirty = false;
   location.hash = "";
   el("brief-form").reset();
@@ -139,6 +146,7 @@ async function project(id) {
     state.run = null;
     el("literature-panel").hidden = true;
     el("background-panel").hidden = true;
+    el("generation-panel").hidden = true;
     el("run-tools").hidden = true;
     el("run-detail").textContent = "请选择此研究的固定 Run。";
     el("run-state").textContent = "未选择 Run";
@@ -285,7 +293,7 @@ async function showRun(id) {
     detail.append(
       block(
         "真实待接入边界",
-        "Goal Ethics 已完成 pass；可以显式检索/获取和执行 P03–P07 背景准备。模型表现仍需审阅，Generation 未接入，科研未完成。",
+        "Goal Ethics 已完成 pass；可以显式检索/获取和执行 P03–P07 背景准备。模型表现仍需审阅，P08需显式提交，科研未完成。",
       ),
     );
   if (data.run.status === "blocked")
@@ -297,6 +305,7 @@ async function showRun(id) {
     );
   await showLiterature(data);
   await showBackground(data);
+  await showGeneration(data);
   updateActions();
 }
 el("new-project").onclick = () => reset();

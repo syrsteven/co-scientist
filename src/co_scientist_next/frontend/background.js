@@ -233,7 +233,7 @@ async function showBackground(data) {
       note("理由：" + latest.rationale, d);
       note("允许具体程度：" + latest.allowed_specificity, d);
       if (latest.decision === "ready")
-        note("等待生成能力；不代表机制正确、新颖或已准入。", d);
+        note("可显式选择 P08 生成；不代表机制正确、新颖或已准入。", d);
       d.append(folded("待补资料与完整 readiness", latest));
     }
     el("background-seeds").append(d);

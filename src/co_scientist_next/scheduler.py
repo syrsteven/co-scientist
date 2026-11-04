@@ -56,6 +56,12 @@ class Scheduler:
                 store.submit_result(
                     task["id"], result.output, stop_status=literature_route(result.output)
                 )
+            elif task["module"] == "generation.P08":
+                from .generation import generation_route
+
+                store.submit_result(
+                    task["id"], result.output, stop_status=generation_route(result.output)
+                )
             elif task["module"].startswith("background."):
                 from .background import background_route
 

@@ -14,8 +14,12 @@
   Development Goal screening plus real public acquisition is not real ethical
   review or a production scientific chain. That slice did not include reading.
   W1-L2 separately authorizes P03–P07 background preparation and a configurable
-  real model boundary. Read docs/W1_L2_BACKGROUND.md. No automatic paid calls,
-  no P08, Candidate Ethics or R0. Fixtures do not prove real model/science quality.
+  real model boundary. Read docs/W1_L2_BACKGROUND.md. No automatic paid calls.
+  Candidate Ethics and R0 remain excluded. P08 separately authorizes the minimal
+  single-call DIRECT / ASSUMPTION_STRUCTURED generation slice; read docs/W1_P08.md.
+  Require a saved same-Run/Goal/seed/packet ready record; six-field USER input only.
+  Save immutable candidates, stop pending Candidate Ethics/R0, never auto-generate.
+  Fixtures do not prove real model/science quality.
   Open seed calls receive only Goal, neutral overview, capabilities and generic
   constraints; sibling queries/materials/seed narratives must remain isolated.
   New P04 uses w1-l2-p04-context-v2; freeze its version per action. Retain v1
