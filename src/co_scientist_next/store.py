@@ -102,6 +102,12 @@ class Store:
                     seed_id TEXT, request TEXT NOT NULL, input TEXT NOT NULL,
                     config TEXT NOT NULL, created_at TEXT NOT NULL
                 );
+                CREATE TABLE IF NOT EXISTS generation_actions (
+                    request_id TEXT PRIMARY KEY, run_id TEXT NOT NULL REFERENCES runs(id),
+                    task_id TEXT NOT NULL UNIQUE REFERENCES tasks(id), candidate_id TEXT NOT NULL UNIQUE,
+                    request TEXT NOT NULL, input TEXT NOT NULL, binding TEXT NOT NULL,
+                    config TEXT NOT NULL, prompt_version TEXT NOT NULL
+                );
                 CREATE TABLE IF NOT EXISTS execution_facts (
                     id INTEGER PRIMARY KEY, task_id TEXT NOT NULL REFERENCES tasks(id),
                     kind TEXT NOT NULL, detail TEXT NOT NULL, created_at TEXT NOT NULL

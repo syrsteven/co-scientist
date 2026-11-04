@@ -1,4 +1,22 @@
-# 项目状态 — W1-L2
+# 项目状态 — P08最小生成切片
+
+## P08最小单次生成切片（2026-11-04）
+
+实际起点main5eba330d593a10c711c8b2737bd4180ea5d8ccaa；独立分支codex/p08-minimal-generation，PR保持未合并。原工作区232项改动/暂存指纹不变。
+
+| 维度 | 本轮实际状态 |
+|---|---|
+| backend_implemented | DIRECT/ASSUMPTION_STRUCTURED两种单次方式；严格六字段固定USER、版本/配置/身份；Result内不可变候选与来源关联；必要P08局部结构/引用校验，不做科学判断 |
+| M12_integrated | 同Run/Goal/seed/固定P05包的成功ready放行；非ready/跨seed/包不匹配/最新未解决调用阻断；仅执行generation.P08，停awaiting_candidate_ethics，不创建伦理/R0任务 |
+| M15 | 复用实际消息、响应/错误、完整usage、成功回放、显式uncertain恢复；输入超限不发送不裁剪；未知不填0 |
+| frontend_integrated | ready选择/两种方式/调用方ID、显式生成、候选章节、来源/版本/状态/用量；开发模式清楚可见，刷新只读；修正异步操作后Run按钮busy复位 |
+| 实际输入 | 原真实Run只读备份导出两种未发送请求，145327/145357字节≤262144；原库字节哈希不变，未创建P08任务；无示例答案/审阅/兄弟候选 |
+| 工程验证 | 最终267通过（239+28）、0失败/跳过；Ruff/40个src/tests/example文件format、JS语法通过；跨进程成功回放、HTTP重启/待执行不自动发送、IAB两模式页面操作/展开/刷新验证通过 |
+| 执行与科学验证 | 真实模型调用0次；浏览器仅独立库2个开发候选/2个开发Attempt。science_validated=false，真实生成表现/方法优劣/科学有效性均未验证 |
+
+[实施边界、字段、运行命令和限制](W1_P08.md)；[真实背景未执行输入](preparations/p08-unexecuted)；[测试/页面证据](verification/p08)。
+原设计及已验收修订不改；原P04/P05/P07及其科学问题不改写，Goal Ethics仍为开发测试结果。
+未实现Candidate Ethics、R0、Reflection、Ranking、Evolution或完整科学Schema/平台；未运行本机Python3.12、旧G3全量、真实模型/专家评测。下列历史保持原文。
 
 ## P07同Task授权恢复与最小安全诊断（2026-11-04）
 

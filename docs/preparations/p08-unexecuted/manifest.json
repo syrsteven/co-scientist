@@ -1,0 +1,46 @@
+{
+  "source_main": "5eba330d593a10c711c8b2737bd4180ea5d8ccaa",
+  "run_id": "cea909fe8a004010b1896df1c1d98e02",
+  "seed_id": "seed-f87361b21b4f44609dedfa2ac9afc7bc-0",
+  "readiness_ref": "directed-seed-p07-readiness-single",
+  "packet_ref": "directed-seed-p05-packet-single",
+  "prompt_version": "w1-p08-single-v1",
+  "model_sends": 0,
+  "credentials_read": false,
+  "generation_tasks_created": 0,
+  "source_original_unchanged": true,
+  "source_db_sha256": "a176a62d3a94055dab0f52257d63d0199f6b996740187a518a826349823ec9d6",
+  "science_validated": false,
+  "steps": [
+    {
+      "mode": "DIRECT",
+      "actual_request_envelope_bytes": 145327,
+      "http_body_bytes": 145235,
+      "max_request_bytes": 262144,
+      "capacity_passed": true,
+      "user_fields": [
+        "actual_frozen_seed_background_packet",
+        "candidate_id_from_caller",
+        "goal_context",
+        "mode",
+        "readiness_record",
+        "seed_brief"
+      ]
+    },
+    {
+      "mode": "ASSUMPTION_STRUCTURED",
+      "actual_request_envelope_bytes": 145357,
+      "http_body_bytes": 145265,
+      "max_request_bytes": 262144,
+      "capacity_passed": true,
+      "user_fields": [
+        "actual_frozen_seed_background_packet",
+        "candidate_id_from_caller",
+        "goal_context",
+        "mode",
+        "readiness_record",
+        "seed_brief"
+      ]
+    }
+  ]
+}

@@ -10,7 +10,7 @@
     <aside>
       <div class="brand">
         <span class="mark">C</span>
-        <div>Co-Scientist<small>研究工作区 · W1-L2</small></div>
+        <div>Co-Scientist<small>研究工作区 · P08</small></div>
       </div>
       <button id="new-project" class="primary">＋ 新建研究</button>
       <h3>已保存研究</h3>
@@ -225,10 +225,26 @@
             <p>
               不会自动循环、检索或生成。重新阅读或更新背景后可再检查；只换
               ID、时间或重复保存不算进展。查询计划需逐条显式执行；ready
-              只表示可开始有依据的猜想，随后停在等待生成能力。
+              只表示可开始有依据的猜想，可显式进入 P08；不会自动生成。
             </p>
             <div id="background-seeds"></div>
             <div id="background-records"></div>
+          </div>
+          <div class="panel" id="generation-panel" hidden>
+            <span class="eyebrow">P08 · SINGLE CALL</span>
+            <h2>从固定 ready seed 生成一个候选</h2>
+            <p id="generation-mode"></p>
+            <p id="generation-prompt"></p>
+            <label>已完成 ready（固定背景包）<select id="generation-ready"></select></label>
+            <p id="generation-specificity"></p>
+            <label>单次生成方式<select id="generation-method">
+              <option value="DIRECT">DIRECT · 单次直接生成</option>
+              <option value="ASSUMPTION_STRUCTURED">ASSUMPTION_STRUCTURED · 公开科学假设清单</option>
+            </select></label>
+            <label>调用方候选身份（修改需新身份）<input id="generation-candidate-id" placeholder="留空分配新身份" /></label>
+            <button id="generation-submit" class="primary">显式提交并生成一个候选</button>
+            <p>每次仅一次生成；没有多轮辩论，也未认定任一方式更优。刷新只读取，不自动生成或重发。新候选待 Candidate Ethics/R0，非准入或科学验收。</p>
+            <div id="generation-records"></div>
           </div>
           <div class="panel boundary">
             <span class="eyebrow">CAPABILITY BOUNDARY</span>
@@ -236,7 +252,7 @@
             <p>
               完成的 pass 可进入显式文献获取与 P03–P07 逐步背景准备。
               真实模型阅读表现尚未审阅，科学有效性未验证。没有无人值守循环、知识图谱、
-              Generation、Candidate Ethics 或 R0，不显示候选、排名或科研完成。
+              Candidate Ethics 或 R0。P08只显式生成不可变候选，不显示排名或科研完成。
             </p>
             <strong>科学有效性与伦理分类准确性：未验证</strong>
           </div>
@@ -245,5 +261,6 @@
     </main>
     <script src="/app.js" defer></script>
     <script src="/background.js" defer></script>
+    <script src="/generation.js" defer></script>
   </body>
 </html>

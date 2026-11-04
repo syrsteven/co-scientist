@@ -1,0 +1,15 @@
+Baseline5eba330d593a10c711c8b2737bd4180ea5d8ccaa; existing Python3.11.4 environment.
+PYTHONPATH=src python -m pytest -q tests/next :267passed,0failed,0skipped (239baseline+28new).
+Focused log26passed is intermediate subset;1later sibling/draft test plus1HTTP included in final267.
+Ruff check src/co_scientist_next tests/next examples/next_p08_demo.py docs/preparations/p08-unexecuted/verify.py :passed
+Ruff format --check same paths :41files passed (40src/tests/example+1export verifier)
+node --check app.js/background.js/generation.js :passed
+PYTHONPATH=src python docs/preparations/p08-unexecuted/verify.py :passed
+Real saved Run exported via read-only SQLite backup;original DB SHA unchanged;0P08tasks/credentials/model sends.
+IAB actual page: explicitDIRECT+ASSUMPTION_STRUCTURED fixture submissions,2cards/2fixtureattempts,publicledger expansion,reload same cards,console errors/warnings0.
+HTTP server restart and pending action GET-only verified in final267.
+Cross-process saved-success-before-Result replay verified in final267;no duplicate external send.
+Original232dirtyfile/index/status fingerprint unchanged.
+Original design/proposed files,adopted worked example,and P07trial results unchanged in Git diff.
+Not run: real models,expert/science validation,localPython3.12,oldG3suite.
+Initial helper errors:3foreignRun fixtureID collisions corrected with existing foreign fixture;PythonPlaywright unavailable,usedCUAIAB;summary-role locator mismatch resolved with visible text,no state/data change.
