@@ -24,6 +24,10 @@ function bgOptions(id, items, label) {
 }
 function bgFields() {
   const op = el("background-operation").value;
+  el("background-prompt").textContent =
+    "当前新任务 Prompt：" + op + " · " +
+    (backgroundData?.current_prompt_versions?.[op] || "未取得版本") +
+    "；历史任务按各自固定版本展示和恢复。";
   el("background-view-label").hidden = op !== "P04";
   el("background-orientation-label").hidden = !op.startsWith("P06");
   el("background-packet-label").hidden = op !== "P07";
@@ -98,8 +102,14 @@ async function showBackground(data) {
     mode === "development_fixture"
       ? "开发阅读替身 · 工程验证。可能使用真实已取得文献，但没有真实模型阅读、科学解读审阅或科学有效性验证。"
       : mode === "real_model"
-        ? "真实适配器模式 · 仅显式执行。材料会发送到配置供应商；真实阅读表现仍需审阅。"
+        ? "真实适配器配置 · " +
+          (saved.real_calls_authorized && saved.current_model_config.credential_configured
+            ? "当前具备显式调用条件；仅点击执行才会发送，真实表现仍需审阅。"
+            : "当前未授权或未配置凭据，未发送模型请求；不回退开发替身。")
         : "真实模型未配置 · 不会自动使用开发替身。";
+  if (state.config.development_test)
+    el("background-mode").textContent +=
+      " Goal 制备/目标筛查为开发测试结果，不代表真实伦理审查。";
   el("background-config").textContent = JSON.stringify(
     {
       config: saved.current_model_config,
@@ -143,6 +153,7 @@ async function showBackground(data) {
       v.id.slice(0, 8) +
       " · " +
       v.source_ref +
+      " · " + v.access +
       " · " +
       v.character_range.join("–"),
   );
@@ -184,7 +195,7 @@ async function showBackground(data) {
       "原文视图（与模型解读分区）：" +
         view.source_ref +
         " · " +
-        view.access +
+        (view.cropped ? "全文/已取得文本的显式片段（" + view.access + "）" : view.access) +
         " · 范围 " +
         view.character_range.join("–") +
         " / " +
@@ -235,6 +246,7 @@ async function showBackground(data) {
     const h = document.createElement("h3");
     h.textContent = a.operation + " · " + (a.seed_id || "宽背景");
     d.append(h);
+    note("固定 Prompt 版本：" + a.prompt_version, d);
     const status = a.result?.background_status;
     note(
       (a.task_status === "running"

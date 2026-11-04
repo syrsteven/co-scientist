@@ -18,6 +18,8 @@
   no P08, Candidate Ethics or R0. Fixtures do not prove real model/science quality.
   Open seed calls receive only Goal, neutral overview, capabilities and generic
   constraints; sibling queries/materials/seed narratives must remain isolated.
+  New P04 uses w1-l2-p04-context-v2; freeze its version per action. Retain v1
+  messages for legacy recovery; never rewrite original requests or responses.
   Preserve immutable original views separately from model interpretations;
   missing information and technical failure are not scientific rejection.
 - For W0 real cases read `docs/W0_REAL_CASES.md`. Raw casebooks and reviewer

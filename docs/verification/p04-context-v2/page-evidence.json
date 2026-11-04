@@ -1,0 +1,26 @@
+{
+  "browser": "Codex in-app browser",
+  "url": "http://127.0.0.1:8788/#run=cea909fe8a004010b1896df1c1d98e02",
+  "actions": "open and reload only; no execution buttons clicked",
+  "observed_prompt": "当前新任务 Prompt：P04 · w1-l2-p04-context-v2；历史任务按各自固定版本展示和恢复。",
+  "observed_mode": "真实适配器配置 · 当前未授权或未配置凭据，未发送模型请求；不回退开发替身。 Goal 制备/目标筛查为开发测试结果，不代表真实伦理审查。",
+  "observed_counts": "已保存 P04 解读记录：0；真实适配器 Attempt 数：0。科学未验证。",
+  "observed_ranges": {
+    "control": [
+      0,
+      2746
+    ],
+    "complement": [
+      33770,
+      41370
+    ]
+  },
+  "browser_errors": [],
+  "persisted_counts_after_page_reload": {
+    "runs": 1,
+    "tasks": 6,
+    "attempts": 7,
+    "material_views": 2,
+    "background_actions": 0
+  }
+}
