@@ -1,0 +1,27 @@
+{
+  "operation": "P07",
+  "request_id": "directed-seed-p07-readiness-single",
+  "seed_id": "seed-f87361b21b4f44609dedfa2ac9afc7bc-0",
+  "prompt_version": "w1-l2-p03-p07-v1",
+  "request_envelope_bytes": 148027,
+  "body_bytes": 147935,
+  "max_request_bytes": 262144,
+  "capacity_passed": true,
+  "existing_success": false,
+  "task_id": "55bc66f3e1a44070babcf67db99b0bac",
+  "task_status": "blocked",
+  "result_status": null,
+  "attempt_count": 1,
+  "attempt_id": "0d9e7d5fd9da4bbea3ddc42608e0c184",
+  "attempt_status": "uncertain",
+  "http_status": null,
+  "finish_reason": null,
+  "provider_usage": null,
+  "shared_usage": {
+    "cost": null,
+    "input_tokens": null,
+    "output_tokens": null,
+    "tool_units": null
+  },
+  "science_validated": false
+}

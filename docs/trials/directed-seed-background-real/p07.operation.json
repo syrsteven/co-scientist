@@ -1,0 +1,9 @@
+{
+  "operation": "P07",
+  "request_id": "directed-seed-p07-readiness-single",
+  "request": {
+    "packet_ref": "directed-seed-p05-packet-single",
+    "requested_specificity": "在不预选核孔蛋白或模型、未把未知因果桥当已证事实的前提下，准备提出可检验的探索性机制猜想；允许机制关系仍未知，但必须保留实际锚点、情境、竞争解释与近邻研究检索范围。不要求桥接已证明，不宣称科学准入或新颖性。",
+    "seed_id": "seed-f87361b21b4f44609dedfa2ac9afc7bc-0"
+  }
+}

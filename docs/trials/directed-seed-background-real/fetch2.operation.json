@@ -1,0 +1,9 @@
+{
+  "request_id": "directed-seed-fetch-source-2",
+  "request": {
+    "kind": "fetch",
+    "source_ref": "epmc:MED:42031697",
+    "desired_access": "abstract",
+    "search_request_id": "directed-seed-search-2-page1"
+  }
+}

@@ -1,0 +1,293 @@
+{
+  "request_id": "directed-seed-search-3-page1",
+  "run_id": "cea909fe8a004010b1896df1c1d98e02",
+  "task_id": "ffda285a41b64dddacf7370900dcabad",
+  "request": {
+    "background_context": {
+      "plan_ref": "directed-seed-p03-plan-single",
+      "query_index": 2,
+      "seed_id": "seed-f87361b21b4f44609dedfa2ac9afc7bc-0"
+    },
+    "cursor": null,
+    "kind": "search",
+    "page_size": 5,
+    "query": "(TITLE_ABS:nucleoporin* OR TITLE_ABS:\"nuclear pore\") AND (TITLE_ABS:phosphorylat* OR TITLE_ABS:dephosphorylat* OR TITLE_ABS:phosphosite* OR TITLE_ABS:phosphoproteom* OR TITLE_ABS:phosphomimetic*) AND (TITLE_ABS:\"time course\" OR TITLE_ABS:\"time-course\" OR TITLE_ABS:temporal OR TITLE_ABS:longitudinal OR TITLE_ABS:rescue OR TITLE_ABS:reversib* OR TITLE_ABS:phosphomimetic* OR TITLE_ABS:phosphodeficient* OR TITLE_ABS:nonphosphorylatable OR TITLE_ABS:mutagenesis OR TITLE_ABS:kinase* OR TITLE_ABS:phosphatase* OR TITLE_ABS:inhibitor*)",
+    "query_origin": "model_planned_user_executed",
+    "scope": "Europe PMC indexed publications; manual query; relevance order; no automatic expansion",
+    "source": "Europe PMC"
+  },
+  "created_at": "2026-11-04T03:06:00.823212+00:00",
+  "task_status": "succeeded",
+  "error": null,
+  "result": {
+    "acquisition": {
+      "error": null,
+      "executed_at": "2026-11-04T03:06:03.157065+00:00",
+      "items": [
+        {
+          "citation": "https://europepmc.org/article/MED/42014410",
+          "source_ref": "epmc:MED:42014410",
+          "title": "Phosphorylation of rhizobial effector NopZ by soybean NORK promotes association with NENA and enhances nodulation."
+        },
+        {
+          "citation": "https://europepmc.org/article/MED/42271060",
+          "source_ref": "epmc:MED:42271060",
+          "title": "Mitochondria directly interact with the nuclear pore complex."
+        },
+        {
+          "citation": "https://europepmc.org/article/MED/42949956",
+          "source_ref": "epmc:MED:42949956",
+          "title": "Functional redundancy between atypical CDKs reveals a vulnerability in hepatocellular carcinoma."
+        },
+        {
+          "citation": "https://europepmc.org/article/PPR/PPR1335252",
+          "source_ref": "epmc:PPR:PPR1335252",
+          "title": "TMEM209/NPP-28 partitions PLK-1 between the nuclear envelope and nuclear interior during mitosis"
+        },
+        {
+          "citation": "https://europepmc.org/article/MED/42288007",
+          "source_ref": "epmc:MED:42288007",
+          "title": "NUP62 promotes non-small cell lung cancer progression by enhancing STAT4 nuclear translocation to upregulate CFH transcription."
+        }
+      ],
+      "next_cursor": "AoIIQFXs/Sg1NTc3MTQ2NA==",
+      "reported_total": 184,
+      "request": {
+        "cursor": null,
+        "query": "(TITLE_ABS:nucleoporin* OR TITLE_ABS:\"nuclear pore\") AND (TITLE_ABS:phosphorylat* OR TITLE_ABS:dephosphorylat* OR TITLE_ABS:phosphosite* OR TITLE_ABS:phosphoproteom* OR TITLE_ABS:phosphomimetic*) AND (TITLE_ABS:\"time course\" OR TITLE_ABS:\"time-course\" OR TITLE_ABS:temporal OR TITLE_ABS:longitudinal OR TITLE_ABS:rescue OR TITLE_ABS:reversib* OR TITLE_ABS:phosphomimetic* OR TITLE_ABS:phosphodeficient* OR TITLE_ABS:nonphosphorylatable OR TITLE_ABS:mutagenesis OR TITLE_ABS:kinase* OR TITLE_ABS:phosphatase* OR TITLE_ABS:inhibitor*)",
+        "scope": "Europe PMC indexed publications; manual query; relevance order; no automatic expansion",
+        "source": "Europe PMC"
+      },
+      "scope_complete": false,
+      "status": "succeeded"
+    },
+    "details": {
+      "deduplicated_count": 5,
+      "model_read": false,
+      "provider": "Europe PMC",
+      "provider_request": {
+        "cursorMark": "*",
+        "pageSize": 5,
+        "queryString": "(TITLE_ABS:nucleoporin* OR TITLE_ABS:\"nuclear pore\") AND (TITLE_ABS:phosphorylat* OR TITLE_ABS:dephosphorylat* OR TITLE_ABS:phosphosite* OR TITLE_ABS:phosphoproteom* OR TITLE_ABS:phosphomimetic*) AND (TITLE_ABS:\"time course\" OR TITLE_ABS:\"time-course\" OR TITLE_ABS:temporal OR TITLE_ABS:longitudinal OR TITLE_ABS:rescue OR TITLE_ABS:reversib* OR TITLE_ABS:phosphomimetic* OR TITLE_ABS:phosphodeficient* OR TITLE_ABS:nonphosphorylatable OR TITLE_ABS:mutagenesis OR TITLE_ABS:kinase* OR TITLE_ABS:phosphatase* OR TITLE_ABS:inhibitor*)",
+        "resultType": "lite",
+        "sort": "",
+        "synonym": false
+      },
+      "raw_response_locator": "attempt:search/body_base64#resultList.result",
+      "raw_returned_count": 5,
+      "relationships": [],
+      "sources": [
+        {
+          "access": "metadata",
+          "metadata": {
+            "authorString": "Lei Y, Wang Y, Bao H, Sun Y, Yuan J, Liu H, Ye Y, Xin D, Zhu H, Cao Y.",
+            "citedByCount": 0,
+            "doi": "10.1038/s41467-026-72277-z",
+            "firstIndexDate": "2026-04-22",
+            "firstPublicationDate": "2026-04-22",
+            "fullTextIdList": {
+              "fullTextId": [
+                "PMC13287723"
+              ]
+            },
+            "hasBook": "N",
+            "hasDbCrossReferences": "N",
+            "hasLabsLinks": "Y",
+            "hasPDF": "Y",
+            "hasReferences": "Y",
+            "hasSuppl": "Y",
+            "hasTMAccessionNumbers": "Y",
+            "hasTextMinedTerms": "Y",
+            "id": "42014410",
+            "inEPMC": "Y",
+            "inPMC": "Y",
+            "isOpenAccess": "Y",
+            "issue": "1",
+            "journalIssn": "2041-1723",
+            "journalTitle": "Nat Commun",
+            "journalVolume": "17",
+            "pageInfo": "5522",
+            "pmcid": "PMC13287723",
+            "pmid": "42014410",
+            "pubType": "research-article; journal article",
+            "pubYear": "2026",
+            "source": "MED",
+            "title": "Phosphorylation of rhizobial effector NopZ by soybean NORK promotes association with NENA and enhances nodulation.",
+            "tmAccessionTypeList": {
+              "accessionType": [
+                "gen"
+              ]
+            }
+          },
+          "source": {
+            "citation": "https://europepmc.org/article/MED/42014410",
+            "source_ref": "epmc:MED:42014410",
+            "title": "Phosphorylation of rhizobial effector NopZ by soybean NORK promotes association with NENA and enhances nodulation."
+          }
+        },
+        {
+          "access": "metadata",
+          "metadata": {
+            "authorString": "Menendez-Montes I, Marin-Vicente C, Mukherjee S, Ahmed MS, Gomez MJ, Anene-Nzelu CG, Lee CJM, Koslowski S, Solmonson A, Tassin T, Ali SR, Pessoa P, Elnwasany A, Lam NT, Thet S, Calvo E, Cardoso AC, Pereira AHM, Xiao F, Wang P, Mohamed A, El-Feky H, Elghamry A, Gancedo-Alonso G, Nguyen NUN, Hsu CC, Westfall AK, DeBerardinis R, Foo RS, Kinter M, Pressé S, Xing C, Szweda L, Aroumougame A, Sanchez-Cabo F, Enriquez JA, Torres M, Vazquez J, Sadek HA.",
+            "citedByCount": 5,
+            "doi": "10.1038/s41586-026-10588-3",
+            "firstIndexDate": "2026-06-11",
+            "firstPublicationDate": "2026-06-10",
+            "hasBook": "N",
+            "hasDbCrossReferences": "N",
+            "hasLabsLinks": "Y",
+            "hasPDF": "N",
+            "hasReferences": "Y",
+            "hasSuppl": "N",
+            "hasTMAccessionNumbers": "N",
+            "hasTextMinedTerms": "Y",
+            "id": "42271060",
+            "inEPMC": "N",
+            "inPMC": "N",
+            "isOpenAccess": "N",
+            "issue": "8119",
+            "journalIssn": "0028-0836; 1476-4687; ",
+            "journalTitle": "Nature",
+            "journalVolume": "654",
+            "pageInfo": "786-797",
+            "pmid": "42271060",
+            "pubType": "journal article",
+            "pubYear": "2026",
+            "source": "MED",
+            "title": "Mitochondria directly interact with the nuclear pore complex."
+          },
+          "source": {
+            "citation": "https://europepmc.org/article/MED/42271060",
+            "source_ref": "epmc:MED:42271060",
+            "title": "Mitochondria directly interact with the nuclear pore complex."
+          }
+        },
+        {
+          "access": "metadata",
+          "metadata": {
+            "authorString": "Martínez-Alonso D, Nogueira E, López-Sainz LR, Pérez AP, Villarroya-Beltri C, Garcia-Diaz A, Bonel-Pérez GC, El Bakkali A, Wakahashi S, Sánchez-Belmonte A, García-Cao I, Castillo-Sanchez J, González-Martínez J, Megias D, Sánchez J, Geley S, Muñoz J, Ortega S, Ferguson FM, Gray NS, Shields DJ, Lujambio A, de Cárcer G, Malumbres M.",
+            "citedByCount": 0,
+            "doi": "10.1073/pnas.2529474123",
+            "firstIndexDate": "2026-10-29",
+            "firstPublicationDate": "2026-10-28",
+            "hasBook": "N",
+            "hasDbCrossReferences": "N",
+            "hasLabsLinks": "N",
+            "hasPDF": "N",
+            "hasReferences": "N",
+            "hasSuppl": "N",
+            "hasTMAccessionNumbers": "N",
+            "hasTextMinedTerms": "Y",
+            "id": "42949956",
+            "inEPMC": "N",
+            "inPMC": "N",
+            "isOpenAccess": "N",
+            "issue": "44",
+            "journalIssn": "0027-8424; 1091-6490; ",
+            "journalTitle": "Proc Natl Acad Sci U S A",
+            "journalVolume": "123",
+            "pageInfo": "e2529474123",
+            "pmid": "42949956",
+            "pubType": "journal article",
+            "pubYear": "2026",
+            "source": "MED",
+            "title": "Functional redundancy between atypical CDKs reveals a vulnerability in hepatocellular carcinoma."
+          },
+          "source": {
+            "citation": "https://europepmc.org/article/MED/42949956",
+            "source_ref": "epmc:MED:42949956",
+            "title": "Functional redundancy between atypical CDKs reveals a vulnerability in hepatocellular carcinoma."
+          }
+        },
+        {
+          "access": "metadata",
+          "metadata": {
+            "authorString": "Castro VPd, Barger SR, Azamfirei R, Su TY, Green RA, Biggs RJ, Moore FEQ, Lee S, Oegema K, Lara-Gonzalez P, Bahmanyar S.",
+            "bookOrReportDetails": {
+              "publisher": "bioRxiv",
+              "yearOfPublication": 2026
+            },
+            "citedByCount": 0,
+            "doi": "10.64898/2026.10.05.752757",
+            "firstIndexDate": "2026-10-07",
+            "firstPublicationDate": "2026-10-06",
+            "hasBook": "N",
+            "hasDbCrossReferences": "N",
+            "hasLabsLinks": "N",
+            "hasPDF": "N",
+            "hasReferences": "N",
+            "hasSuppl": "N",
+            "hasTMAccessionNumbers": "N",
+            "hasTextMinedTerms": "Y",
+            "id": "PPR1335252",
+            "inEPMC": "N",
+            "inPMC": "N",
+            "isOpenAccess": "N",
+            "pubType": "preprint",
+            "pubYear": "2026",
+            "source": "PPR",
+            "title": "TMEM209/NPP-28 partitions PLK-1 between the nuclear envelope and nuclear interior during mitosis"
+          },
+          "source": {
+            "citation": "https://europepmc.org/article/PPR/PPR1335252",
+            "source_ref": "epmc:PPR:PPR1335252",
+            "title": "TMEM209/NPP-28 partitions PLK-1 between the nuclear envelope and nuclear interior during mitosis"
+          }
+        },
+        {
+          "access": "metadata",
+          "metadata": {
+            "authorString": "Wu M, Wang X, Chai Q, Cao X, Qian K, Li Y, Zhao L.",
+            "citedByCount": 0,
+            "doi": "10.1016/j.tice.2026.103691",
+            "firstIndexDate": "2026-06-16",
+            "firstPublicationDate": "2026-06-09",
+            "hasBook": "N",
+            "hasDbCrossReferences": "N",
+            "hasLabsLinks": "Y",
+            "hasPDF": "N",
+            "hasReferences": "Y",
+            "hasSuppl": "N",
+            "hasTMAccessionNumbers": "N",
+            "hasTextMinedTerms": "Y",
+            "id": "42288007",
+            "inEPMC": "N",
+            "inPMC": "N",
+            "isOpenAccess": "N",
+            "journalIssn": "0040-8166; 1532-3072; ",
+            "journalTitle": "Tissue Cell",
+            "journalVolume": "103",
+            "pageInfo": "103691",
+            "pmid": "42288007",
+            "pubType": "journal article",
+            "pubYear": "2026",
+            "source": "MED",
+            "title": "NUP62 promotes non-small cell lung cancer progression by enhancing STAT4 nuclear translocation to upregulate CFH transcription."
+          },
+          "source": {
+            "citation": "https://europepmc.org/article/MED/42288007",
+            "source_ref": "epmc:MED:42288007",
+            "title": "NUP62 promotes non-small cell lung cancer progression by enhancing STAT4 nuclear translocation to upregulate CFH transcription."
+          }
+        }
+      ],
+      "transport": "real_public_http",
+      "warnings": []
+    },
+    "model_read": false,
+    "science_validated": false
+  },
+  "attempts": [
+    {
+      "id": "1f00bd36124c4d29a2793d893509e1ad",
+      "call_key": "search",
+      "status": "succeeded",
+      "target": "Europe PMC public REST",
+      "request": "{\"headers\": {\"Accept\": \"application/json\", \"User-Agent\": \"CoScientist-W1-L1/1.0 (manual development acquisition)\"}, \"method\": \"GET\", \"url\": \"https://www.ebi.ac.uk/europepmc/webservices/rest/search?query=%28TITLE_ABS%3Anucleoporin%2A+OR+TITLE_ABS%3A%22nuclear+pore%22%29+AND+%28TITLE_ABS%3Aphosphorylat%2A+OR+TITLE_ABS%3Adephosphorylat%2A+OR+TITLE_ABS%3Aphosphosite%2A+OR+TITLE_ABS%3Aphosphoproteom%2A+OR+TITLE_ABS%3Aphosphomimetic%2A%29+AND+%28TITLE_ABS%3A%22time+course%22+OR+TITLE_ABS%3A%22time-course%22+OR+TITLE_ABS%3Atemporal+OR+TITLE_ABS%3Alongitudinal+OR+TITLE_ABS%3Arescue+OR+TITLE_ABS%3Areversib%2A+OR+TITLE_ABS%3Aphosphomimetic%2A+OR+TITLE_ABS%3Aphosphodeficient%2A+OR+TITLE_ABS%3Anonphosphorylatable+OR+TITLE_ABS%3Amutagenesis+OR+TITLE_ABS%3Akinase%2A+OR+TITLE_ABS%3Aphosphatase%2A+OR+TITLE_ABS%3Ainhibitor%2A%29&format=json&resultType=lite&pageSize=5&cursorMark=%2A&synonym=false\"}",
+      "started_at": "2026-11-04T03:06:00.827629+00:00",
+      "finished_at": "2026-11-04T03:06:03.157346+00:00",
+      "error": null,
+      "usage": "{\"cost\": null, \"input_tokens\": null, \"output_tokens\": null, \"tool_units\": 1}"
+    }
+  ]
+}

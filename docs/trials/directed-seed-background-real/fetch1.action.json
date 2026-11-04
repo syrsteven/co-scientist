@@ -1,0 +1,700 @@
+{
+  "request_id": "directed-seed-fetch-source-1",
+  "run_id": "cea909fe8a004010b1896df1c1d98e02",
+  "task_id": "a5e36381f79744519c2b1ef5e933bcc1",
+  "request": {
+    "background_context": {
+      "plan_ref": "directed-seed-p03-plan-single",
+      "query_index": 0,
+      "seed_id": "seed-f87361b21b4f44609dedfa2ac9afc7bc-0"
+    },
+    "desired_access": "abstract",
+    "kind": "fetch",
+    "query_origin": "human_selected_source",
+    "search_request_id": "directed-seed-search-1-page1",
+    "source_ref": "epmc:MED:41691309"
+  },
+  "created_at": "2026-11-04T03:06:40.917087+00:00",
+  "task_status": "succeeded",
+  "error": null,
+  "result": {
+    "acquisition": {
+      "access": "abstract",
+      "error": null,
+      "executed_at": "2026-11-04T03:06:43.473971+00:00",
+      "limitation": null,
+      "request": {
+        "desired_access": "abstract",
+        "source_ref": "epmc:MED:41691309"
+      },
+      "source": {
+        "citation": "https://europepmc.org/article/MED/41691309",
+        "source_ref": "epmc:MED:41691309",
+        "title": "Impaired nucleocytoplasmic transport in SOD1-mediated ALS."
+      },
+      "status": "succeeded",
+      "text": "BACKGROUND: Impaired nucleocytoplasmic transport (NCT) has emerged as a shared pathogenic mechanism in various neurodegenerative disorders, including amyotrophic lateral sclerosis (ALS). Although mutations in the gene encoding superoxide dismutase 1 (SOD1) account for approximately 20% of familial ALS cases, the impact of mutant SOD1 accumulation on the NCT remains unclear. METHODS: Utilizing in vitro and in vivo models, patient-derived fibroblasts, and postmortem spinal cord tissues from ALS patients with SOD1 mutations, we determined the effects of mutant SOD1 on NCT dynamics, nuclear morphology and cellular localization of transport receptors and nuclear pore components. RESULTS: Mutant SOD1 disrupts nuclear import and export trafficking, causing cytosolic accumulation of key transport regulators such as RanGAP1 and exportin 1 (XPO1). Mutant SOD1 also lowers the abundance of FG-Nups at the nuclear pore without altering nuclear circularity. Abnormal accumulation of NCT components was identified in Iba1-positive microglia, indicating a previously overlooked, non-cell-autonomous contribution to disease pathogenesis. Importantly, AAV-mediated reduction of mutant SOD1 in transgenic mice restored nuclear XPO1 localization, underscoring the causal role of mutant SOD1 in NCT abnormalities. Finally, comparable NCT perturbations were observed in patient-derived fibroblasts and in post-mortem spinal cord tissues from individuals with SOD1-ALS. CONCLUSIONS: Our results implicate NCT disruption as a shared disease mechanism between SOD1-mediated ALS and other familial and sporadic forms of ALS, adding support for targeting this pathway as an attractive therapeutic strategy in this fatal disease."
+    },
+    "details": {
+      "metadata": {
+        "abstractText": "BACKGROUND: Impaired nucleocytoplasmic transport (NCT) has emerged as a shared pathogenic mechanism in various neurodegenerative disorders, including amyotrophic lateral sclerosis (ALS). Although mutations in the gene encoding superoxide dismutase 1 (SOD1) account for approximately 20% of familial ALS cases, the impact of mutant SOD1 accumulation on the NCT remains unclear. METHODS: Utilizing in vitro and in vivo models, patient-derived fibroblasts, and postmortem spinal cord tissues from ALS patients with SOD1 mutations, we determined the effects of mutant SOD1 on NCT dynamics, nuclear morphology and cellular localization of transport receptors and nuclear pore components. RESULTS: Mutant SOD1 disrupts nuclear import and export trafficking, causing cytosolic accumulation of key transport regulators such as RanGAP1 and exportin 1 (XPO1). Mutant SOD1 also lowers the abundance of FG-Nups at the nuclear pore without altering nuclear circularity. Abnormal accumulation of NCT components was identified in Iba1-positive microglia, indicating a previously overlooked, non-cell-autonomous contribution to disease pathogenesis. Importantly, AAV-mediated reduction of mutant SOD1 in transgenic mice restored nuclear XPO1 localization, underscoring the causal role of mutant SOD1 in NCT abnormalities. Finally, comparable NCT perturbations were observed in patient-derived fibroblasts and in post-mortem spinal cord tissues from individuals with SOD1-ALS. CONCLUSIONS: Our results implicate NCT disruption as a shared disease mechanism between SOD1-mediated ALS and other familial and sporadic forms of ALS, adding support for targeting this pathway as an attractive therapeutic strategy in this fatal disease.",
+        "affiliation": "Department of Physiology and Cell Biology, Faculty of Health Sciences, Ben-Gurion University of the Negev, P.O.B. 653 84105, Beer Sheva, Israel.",
+        "authMan": "N",
+        "authorIdList": {
+          "authorId": [
+            {
+              "type": "ORCID",
+              "value": "0000-0002-1795-6653"
+            },
+            {
+              "type": "ORCID",
+              "value": "0000-0002-3058-8322"
+            },
+            {
+              "type": "ORCID",
+              "value": "0000-0002-5769-4854"
+            },
+            {
+              "type": "ORCID",
+              "value": "0009-0007-2896-6105"
+            }
+          ]
+        },
+        "authorList": {
+          "author": [
+            {
+              "authorAffiliationDetailsList": {
+                "authorAffiliation": [
+                  {
+                    "affiliation": "Department of Physiology and Cell Biology, Faculty of Health Sciences, Ben-Gurion University of the Negev, P.O.B. 653 84105, Beer Sheva, Israel."
+                  },
+                  {
+                    "affiliation": "The School of Brain Sciences and Cognition, Ben-Gurion University of the Negev, P.O.B. 653, Beer Sheva, 84105, Israel."
+                  }
+                ]
+              },
+              "firstName": "Shirel",
+              "fullName": "Argueti-Ostrovsky S",
+              "initials": "S",
+              "lastName": "Argueti-Ostrovsky"
+            },
+            {
+              "authorAffiliationDetailsList": {
+                "authorAffiliation": [
+                  {
+                    "affiliation": "Department of Neurology, the Sean M. Healey and AMG Center for ALS at Mass General, Massachusetts General Brigham, Harvard Medical School, Boston, MA, 02114, USA."
+                  },
+                  {
+                    "affiliation": "Broad Institute of Harvard University and MIT, Cambridge, MA, 02142, USA."
+                  }
+                ]
+              },
+              "authorId": {
+                "type": "ORCID",
+                "value": "0000-0002-5769-4854"
+              },
+              "firstName": "Su Min",
+              "fullName": "Lim SM",
+              "initials": "SM",
+              "lastName": "Lim"
+            },
+            {
+              "authorAffiliationDetailsList": {
+                "authorAffiliation": [
+                  {
+                    "affiliation": "Department of Neurosciences, University of California, San Diego, La Jolla, CA, 92093, USA."
+                  }
+                ]
+              },
+              "firstName": "Olubankole A",
+              "fullName": "Arogundade OA",
+              "initials": "OA",
+              "lastName": "Arogundade"
+            },
+            {
+              "authorAffiliationDetailsList": {
+                "authorAffiliation": [
+                  {
+                    "affiliation": "Department of Neurosciences, University of California, San Diego, La Jolla, CA, 92093, USA."
+                  }
+                ]
+              },
+              "firstName": "Sandra",
+              "fullName": "Diaz-Garcia S",
+              "initials": "S",
+              "lastName": "Diaz-Garcia"
+            },
+            {
+              "authorAffiliationDetailsList": {
+                "authorAffiliation": [
+                  {
+                    "affiliation": "Department of Neurosciences, University of California, San Diego, La Jolla, CA, 92093, USA."
+                  }
+                ]
+              },
+              "firstName": "Gulshan",
+              "fullName": "Yunisova G",
+              "initials": "G",
+              "lastName": "Yunisova"
+            },
+            {
+              "authorAffiliationDetailsList": {
+                "authorAffiliation": [
+                  {
+                    "affiliation": "Department of Neurosciences, University of California, San Diego, La Jolla, CA, 92093, USA."
+                  }
+                ]
+              },
+              "authorId": {
+                "type": "ORCID",
+                "value": "0009-0007-2896-6105"
+              },
+              "firstName": "Alex",
+              "fullName": "Meng A",
+              "initials": "A",
+              "lastName": "Meng"
+            },
+            {
+              "authorAffiliationDetailsList": {
+                "authorAffiliation": [
+                  {
+                    "affiliation": "Department of Neurosciences, University of California, San Diego, La Jolla, CA, 92093, USA."
+                  }
+                ]
+              },
+              "firstName": "Anita",
+              "fullName": "Hermann A",
+              "initials": "A",
+              "lastName": "Hermann"
+            },
+            {
+              "authorAffiliationDetailsList": {
+                "authorAffiliation": [
+                  {
+                    "affiliation": "Department of Neurosciences, University of California, San Diego, La Jolla, CA, 92093, USA."
+                  }
+                ]
+              },
+              "firstName": "Kailee",
+              "fullName": "Ong K",
+              "initials": "K",
+              "lastName": "Ong"
+            },
+            {
+              "authorAffiliationDetailsList": {
+                "authorAffiliation": [
+                  {
+                    "affiliation": "The Shraga Segal Department of Microbiology, Immunology and Genetics, Faculty of Health Sciences, Ben-Gurion University of the Negev, Beer Sheva, Israel."
+                  },
+                  {
+                    "affiliation": "The Regenerative Medicine and Stem Cell Research Center, Ben-Gurion University of the Negev, Beer Sheva, Israel."
+                  },
+                  {
+                    "affiliation": "National Institute for Biotechnology in the Negev, Ben-Gurion University of the Negev, Beer Sheva, Israel."
+                  }
+                ]
+              },
+              "firstName": "Ekaterina",
+              "fullName": "Eremenko E",
+              "initials": "E",
+              "lastName": "Eremenko"
+            },
+            {
+              "authorAffiliationDetailsList": {
+                "authorAffiliation": [
+                  {
+                    "affiliation": "Department of Anesthesiology, School of Medicine, University of California San Diego, San Diego, CA, USA."
+                  }
+                ]
+              },
+              "firstName": "Mariana",
+              "fullName": "Bravo-Hernandez M",
+              "initials": "M",
+              "lastName": "Bravo-Hernandez"
+            },
+            {
+              "authorAffiliationDetailsList": {
+                "authorAffiliation": [
+                  {
+                    "affiliation": "Gene Expression Laboratory and the Howard Hughes Medical Institute, Salk Institute for Biological Studies, La Jolla, CA, USA."
+                  }
+                ]
+              },
+              "firstName": "Shawn P",
+              "fullName": "Driscoll SP",
+              "initials": "SP",
+              "lastName": "Driscoll"
+            },
+            {
+              "authorAffiliationDetailsList": {
+                "authorAffiliation": [
+                  {
+                    "affiliation": "Department of Neurology, the Sean M. Healey and AMG Center for ALS at Mass General, Massachusetts General Brigham, Harvard Medical School, Boston, MA, 02114, USA."
+                  },
+                  {
+                    "affiliation": "Broad Institute of Harvard University and MIT, Cambridge, MA, 02142, USA."
+                  }
+                ]
+              },
+              "firstName": "Chao-Zong",
+              "fullName": "Lee CZ",
+              "initials": "CZ",
+              "lastName": "Lee"
+            },
+            {
+              "authorAffiliationDetailsList": {
+                "authorAffiliation": [
+                  {
+                    "affiliation": "Department of Neurology, the Sean M. Healey and AMG Center for ALS at Mass General, Massachusetts General Brigham, Harvard Medical School, Boston, MA, 02114, USA."
+                  },
+                  {
+                    "affiliation": "Broad Institute of Harvard University and MIT, Cambridge, MA, 02142, USA."
+                  }
+                ]
+              },
+              "firstName": "Xin",
+              "fullName": "Jiang X",
+              "initials": "X",
+              "lastName": "Jiang"
+            },
+            {
+              "authorAffiliationDetailsList": {
+                "authorAffiliation": [
+                  {
+                    "affiliation": "Department of Physiology and Cell Biology, Faculty of Health Sciences, Ben-Gurion University of the Negev, P.O.B. 653 84105, Beer Sheva, Israel."
+                  }
+                ]
+              },
+              "firstName": "Alexandra",
+              "fullName": "Stavsky A",
+              "initials": "A",
+              "lastName": "Stavsky"
+            },
+            {
+              "authorAffiliationDetailsList": {
+                "authorAffiliation": [
+                  {
+                    "affiliation": "Department of Physiology and Cell Biology, Faculty of Health Sciences, Ben-Gurion University of the Negev, P.O.B. 653 84105, Beer Sheva, Israel."
+                  }
+                ]
+              },
+              "authorId": {
+                "type": "ORCID",
+                "value": "0000-0002-1795-6653"
+              },
+              "firstName": "Shir",
+              "fullName": "Barel S",
+              "initials": "S",
+              "lastName": "Barel"
+            },
+            {
+              "authorAffiliationDetailsList": {
+                "authorAffiliation": [
+                  {
+                    "affiliation": "Department of Physiology and Cell Biology, Faculty of Health Sciences, Ben-Gurion University of the Negev, P.O.B. 653 84105, Beer Sheva, Israel."
+                  }
+                ]
+              },
+              "firstName": "Tom",
+              "fullName": "Shani T",
+              "initials": "T",
+              "lastName": "Shani"
+            },
+            {
+              "authorAffiliationDetailsList": {
+                "authorAffiliation": [
+                  {
+                    "affiliation": "Department of Physiology and Cell Biology, Faculty of Health Sciences, Ben-Gurion University of the Negev, P.O.B. 653 84105, Beer Sheva, Israel."
+                  }
+                ]
+              },
+              "firstName": "Joy",
+              "fullName": "Kahn J",
+              "initials": "J",
+              "lastName": "Kahn"
+            },
+            {
+              "authorAffiliationDetailsList": {
+                "authorAffiliation": [
+                  {
+                    "affiliation": "Gene Expression Laboratory and the Howard Hughes Medical Institute, Salk Institute for Biological Studies, La Jolla, CA, USA."
+                  }
+                ]
+              },
+              "firstName": "Samuel L",
+              "fullName": "Pfaff SL",
+              "initials": "SL",
+              "lastName": "Pfaff"
+            },
+            {
+              "authorAffiliationDetailsList": {
+                "authorAffiliation": [
+                  {
+                    "affiliation": "The Shraga Segal Department of Microbiology, Immunology and Genetics, Faculty of Health Sciences, Ben-Gurion University of the Negev, Beer Sheva, Israel."
+                  },
+                  {
+                    "affiliation": "The Regenerative Medicine and Stem Cell Research Center, Ben-Gurion University of the Negev, Beer Sheva, Israel."
+                  }
+                ]
+              },
+              "firstName": "Alon",
+              "fullName": "Monsonego A",
+              "initials": "A",
+              "lastName": "Monsonego"
+            },
+            {
+              "authorAffiliationDetailsList": {
+                "authorAffiliation": [
+                  {
+                    "affiliation": "Department of Anesthesiology, School of Medicine, University of California San Diego, San Diego, CA, USA."
+                  }
+                ]
+              },
+              "firstName": "Martin",
+              "fullName": "Marsala M",
+              "initials": "M",
+              "lastName": "Marsala"
+            },
+            {
+              "authorAffiliationDetailsList": {
+                "authorAffiliation": [
+                  {
+                    "affiliation": "Department of Neurosciences, University of California, San Diego, La Jolla, CA, 92093, USA."
+                  }
+                ]
+              },
+              "firstName": "John",
+              "fullName": "Ravits J",
+              "initials": "J",
+              "lastName": "Ravits"
+            },
+            {
+              "authorAffiliationDetailsList": {
+                "authorAffiliation": [
+                  {
+                    "affiliation": "Department of Neurology, the Sean M. Healey and AMG Center for ALS at Mass General, Massachusetts General Brigham, Harvard Medical School, Boston, MA, 02114, USA. clagier-tourenne@mgh.harvard.edu."
+                  },
+                  {
+                    "affiliation": "Broad Institute of Harvard University and MIT, Cambridge, MA, 02142, USA. clagier-tourenne@mgh.harvard.edu."
+                  }
+                ]
+              },
+              "authorId": {
+                "type": "ORCID",
+                "value": "0000-0002-3058-8322"
+              },
+              "firstName": "Clotilde",
+              "fullName": "Lagier-Tourenne C",
+              "initials": "C",
+              "lastName": "Lagier-Tourenne"
+            },
+            {
+              "authorAffiliationDetailsList": {
+                "authorAffiliation": [
+                  {
+                    "affiliation": "Department of Physiology and Cell Biology, Faculty of Health Sciences, Ben-Gurion University of the Negev, P.O.B. 653 84105, Beer Sheva, Israel. adriani@bgu.ac.il."
+                  },
+                  {
+                    "affiliation": "The School of Brain Sciences and Cognition, Ben-Gurion University of the Negev, P.O.B. 653, Beer Sheva, 84105, Israel. adriani@bgu.ac.il."
+                  }
+                ]
+              },
+              "firstName": "Adrian",
+              "fullName": "Israelson A",
+              "initials": "A",
+              "lastName": "Israelson"
+            }
+          ]
+        },
+        "authorString": "Argueti-Ostrovsky S, Lim SM, Arogundade OA, Diaz-Garcia S, Yunisova G, Meng A, Hermann A, Ong K, Eremenko E, Bravo-Hernandez M, Driscoll SP, Lee CZ, Jiang X, Stavsky A, Barel S, Shani T, Kahn J, Pfaff SL, Monsonego A, Marsala M, Ravits J, Lagier-Tourenne C, Israelson A.",
+        "chemicalList": {
+          "chemical": [
+            {
+              "name": "exportin 1 protein",
+              "registryNumber": "0"
+            },
+            {
+              "name": "SOD1 protein, human",
+              "registryNumber": "0"
+            },
+            {
+              "name": "Superoxide Dismutase-1",
+              "registryNumber": "EC 1.15.1.1"
+            }
+          ]
+        },
+        "citedByCount": 1,
+        "dataLinksTagsList": {
+          "dataLinkstag": [
+            "altmetrics",
+            "supporting_data"
+          ]
+        },
+        "dateOfCompletion": "2026-06-27",
+        "dateOfCreation": "2026-02-14",
+        "dateOfRevision": "2026-09-18",
+        "doi": "10.1186/s13024-026-00930-8",
+        "electronicPublicationDate": "2026-02-14",
+        "epmcAuthMan": "N",
+        "firstIndexDate": "2026-02-15",
+        "firstPublicationDate": "2026-02-14",
+        "fullTextIdList": {
+          "fullTextId": [
+            "PMC12922372"
+          ]
+        },
+        "fullTextReceivedDate": "2026-02-21",
+        "fullTextUrlList": {
+          "fullTextUrl": [
+            {
+              "availability": "Subscription required",
+              "availabilityCode": "S",
+              "documentStyle": "doi",
+              "site": "DOI",
+              "url": "https://doi.org/10.1186/s13024-026-00930-8"
+            },
+            {
+              "availability": "Open access",
+              "availabilityCode": "OA",
+              "documentStyle": "html",
+              "site": "Europe_PMC",
+              "url": "https://europepmc.org/articles/PMC12922372"
+            },
+            {
+              "availability": "Open access",
+              "availabilityCode": "OA",
+              "documentStyle": "pdf",
+              "site": "Europe_PMC",
+              "url": "https://europepmc.org/articles/PMC12922372?pdf=render"
+            }
+          ]
+        },
+        "grantsList": {
+          "grant": [
+            {
+              "acronym": "NS",
+              "agency": "NINDS NIH HHS",
+              "grantId": "R01 NS108769",
+              "orderIn": 0
+            },
+            {
+              "agency": "Binational Science Foundation",
+              "grantId": "217118",
+              "orderIn": 0
+            }
+          ]
+        },
+        "hasBook": "N",
+        "hasData": "Y",
+        "hasDbCrossReferences": "N",
+        "hasEvaluations": "N",
+        "hasLabsLinks": "Y",
+        "hasPDF": "Y",
+        "hasReferences": "Y",
+        "hasSuppl": "Y",
+        "hasTMAccessionNumbers": "Y",
+        "hasTextMinedTerms": "Y",
+        "id": "41691309",
+        "inEPMC": "Y",
+        "inPMC": "Y",
+        "isOpenAccess": "Y",
+        "journalInfo": {
+          "dateOfPublication": "2026 Feb",
+          "issue": "1",
+          "journal": {
+            "essn": "1750-1326",
+            "isoabbreviation": "Mol Neurodegener",
+            "issn": "1750-1326",
+            "medlineAbbreviation": "Mol Neurodegener",
+            "nlmid": "101266600",
+            "title": "Molecular neurodegeneration"
+          },
+          "journalIssueId": 4127574,
+          "monthOfPublication": 2,
+          "printPublicationDate": "2026-02-01",
+          "volume": "21",
+          "yearOfPublication": 2026
+        },
+        "keywordList": {
+          "keyword": [
+            "Nuclear pore complex",
+            "Neurodegeneration",
+            "ALS",
+            "Nucleocytoplasmic Transport",
+            "Nucleoporins",
+            "Rangap1",
+            "Xpo1",
+            "Misfolded Sod1"
+          ]
+        },
+        "language": "eng",
+        "license": "cc by",
+        "meshHeadingList": {
+          "meshHeading": [
+            {
+              "descriptorName": "Spinal Cord",
+              "majorTopic_YN": "N",
+              "meshQualifierList": {
+                "meshQualifier": [
+                  {
+                    "abbreviation": "ME",
+                    "majorTopic_YN": "N",
+                    "qualifierName": "metabolism"
+                  }
+                ]
+              }
+            },
+            {
+              "descriptorName": "Fibroblasts",
+              "majorTopic_YN": "N",
+              "meshQualifierList": {
+                "meshQualifier": [
+                  {
+                    "abbreviation": "ME",
+                    "majorTopic_YN": "N",
+                    "qualifierName": "metabolism"
+                  }
+                ]
+              }
+            },
+            {
+              "descriptorName": "Animals",
+              "majorTopic_YN": "N"
+            },
+            {
+              "descriptorName": "Mice, Transgenic",
+              "majorTopic_YN": "N"
+            },
+            {
+              "descriptorName": "Humans",
+              "majorTopic_YN": "N"
+            },
+            {
+              "descriptorName": "Mice",
+              "majorTopic_YN": "N"
+            },
+            {
+              "descriptorName": "Amyotrophic Lateral Sclerosis",
+              "majorTopic_YN": "Y",
+              "meshQualifierList": {
+                "meshQualifier": [
+                  {
+                    "abbreviation": "GE",
+                    "majorTopic_YN": "N",
+                    "qualifierName": "genetics"
+                  },
+                  {
+                    "abbreviation": "ME",
+                    "majorTopic_YN": "N",
+                    "qualifierName": "metabolism"
+                  },
+                  {
+                    "abbreviation": "PA",
+                    "majorTopic_YN": "N",
+                    "qualifierName": "pathology"
+                  }
+                ]
+              }
+            },
+            {
+              "descriptorName": "Active Transport, Cell Nucleus",
+              "majorTopic_YN": "Y",
+              "meshQualifierList": {
+                "meshQualifier": [
+                  {
+                    "abbreviation": "PH",
+                    "majorTopic_YN": "N",
+                    "qualifierName": "physiology"
+                  }
+                ]
+              }
+            },
+            {
+              "descriptorName": "Mutation",
+              "majorTopic_YN": "N"
+            },
+            {
+              "descriptorName": "Superoxide Dismutase-1",
+              "majorTopic_YN": "Y",
+              "meshQualifierList": {
+                "meshQualifier": [
+                  {
+                    "abbreviation": "GE",
+                    "majorTopic_YN": "N",
+                    "qualifierName": "genetics"
+                  },
+                  {
+                    "abbreviation": "ME",
+                    "majorTopic_YN": "N",
+                    "qualifierName": "metabolism"
+                  }
+                ]
+              }
+            },
+            {
+              "descriptorName": "Exportin 1 Protein",
+              "majorTopic_YN": "N"
+            }
+          ]
+        },
+        "nihAuthMan": "N",
+        "pageInfo": "14",
+        "pmcid": "PMC12922372",
+        "pmid": "41691309",
+        "pubModel": "Electronic",
+        "pubTypeList": {
+          "pubType": [
+            "Research Support, Non-U.S. Gov't",
+            "research-article",
+            "Journal Article",
+            "Research Support, N.I.H., Extramural"
+          ]
+        },
+        "pubYear": "2026",
+        "publicationStatus": "epublish",
+        "source": "MED",
+        "subsetList": {
+          "subset": [
+            {
+              "code": "IM",
+              "name": "Index Medicus"
+            }
+          ]
+        },
+        "title": "Impaired nucleocytoplasmic transport in SOD1-mediated ALS.",
+        "tmAccessionTypeList": {
+          "accessionType": [
+            "gen"
+          ]
+        }
+      },
+      "metadata_locator": "attempt:metadata/body_base64#result",
+      "model_read": false,
+      "provider": "Europe PMC",
+      "relationships": [],
+      "representation": "provider abstract, markup flattened; not full text",
+      "source": {
+        "citation": "https://europepmc.org/article/MED/41691309",
+        "source_ref": "epmc:MED:41691309",
+        "title": "Impaired nucleocytoplasmic transport in SOD1-mediated ALS."
+      },
+      "text_locator": "attempt:metadata/body_base64#result.abstractText",
+      "transport": "real_public_http"
+    },
+    "model_read": false,
+    "science_validated": false
+  },
+  "attempts": [
+    {
+      "id": "bdef6b3bf1034f12861d8bda2ec6c967",
+      "call_key": "metadata",
+      "status": "succeeded",
+      "target": "Europe PMC public REST",
+      "request": "{\"headers\": {\"Accept\": \"application/json\", \"User-Agent\": \"CoScientist-W1-L1/1.0 (manual development acquisition)\"}, \"method\": \"GET\", \"url\": \"https://www.ebi.ac.uk/europepmc/webservices/rest/article/MED/41691309?resultType=core&format=json\"}",
+      "started_at": "2026-11-04T03:06:40.921805+00:00",
+      "finished_at": "2026-11-04T03:06:43.474396+00:00",
+      "error": null,
+      "usage": "{\"cost\": null, \"input_tokens\": null, \"output_tokens\": null, \"tool_units\": 1}"
+    }
+  ]
+}

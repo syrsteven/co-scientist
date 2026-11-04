@@ -1,0 +1,8 @@
+{
+  "operation": "P04",
+  "request_id": "directed-seed-p04-source-1-single",
+  "request": {
+    "seed_id": "seed-f87361b21b4f44609dedfa2ac9afc7bc-0",
+    "view_id": "ef0d631b44e14b2abf8f10443c55d5c2"
+  }
+}

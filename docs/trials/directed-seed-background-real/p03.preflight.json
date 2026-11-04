@@ -1,0 +1,11 @@
+{
+  "operation": "P03",
+  "request_id": "directed-seed-p03-plan-single",
+  "seed_id": "seed-f87361b21b4f44609dedfa2ac9afc7bc-0",
+  "prompt_version": "w1-l2-p03-p07-v1",
+  "request_envelope_bytes": 9710,
+  "body_bytes": 9618,
+  "max_request_bytes": 262144,
+  "capacity_passed": true,
+  "existing_success": false
+}

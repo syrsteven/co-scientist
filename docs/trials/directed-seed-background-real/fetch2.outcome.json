@@ -1,0 +1,15 @@
+{
+  "request_id": "directed-seed-fetch-source-2",
+  "task_id": "a5804871fb0e4bf8af0ebf06654fbf6d",
+  "task_status": "succeeded",
+  "acquisition_status": "succeeded",
+  "reported_total": null,
+  "items": 0,
+  "scope_complete": null,
+  "next_cursor": null,
+  "access": "abstract",
+  "text_characters": 2097,
+  "error": null,
+  "attempts": 1,
+  "seed_id": "seed-f87361b21b4f44609dedfa2ac9afc7bc-0"
+}

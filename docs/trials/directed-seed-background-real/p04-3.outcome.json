@@ -1,0 +1,42 @@
+{
+  "operation": "P04",
+  "request_id": "directed-seed-p04-source-3-single",
+  "seed_id": "seed-f87361b21b4f44609dedfa2ac9afc7bc-0",
+  "prompt_version": "w1-l2-p04-context-v2",
+  "request_envelope_bytes": 7888,
+  "body_bytes": 7796,
+  "max_request_bytes": 262144,
+  "capacity_passed": true,
+  "existing_success": false,
+  "task_id": "61730f7691fd43a8a2b9c92eb6126f3b",
+  "task_status": "succeeded",
+  "result_status": "saved",
+  "attempt_count": 1,
+  "attempt_id": "628e02a2738e4dcea6105c191de1266c",
+  "attempt_status": "succeeded",
+  "http_status": 200,
+  "finish_reason": "stop",
+  "provider_usage": {
+    "completion_tokens": 4049,
+    "completion_tokens_details": {
+      "accepted_prediction_tokens": 0,
+      "audio_tokens": 0,
+      "reasoning_tokens": 877,
+      "rejected_prediction_tokens": 0
+    },
+    "prompt_tokens": 1820,
+    "prompt_tokens_details": {
+      "audio_tokens": 0,
+      "cache_write_tokens": 1817,
+      "cached_tokens": 0
+    },
+    "total_tokens": 5869
+  },
+  "shared_usage": {
+    "cost": null,
+    "input_tokens": 1820,
+    "output_tokens": 4049,
+    "tool_units": null
+  },
+  "science_validated": false
+}

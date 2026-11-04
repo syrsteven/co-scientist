@@ -1,0 +1,26 @@
+{
+  "id": "692ca660eef14f86a19318ca2e08d85b",
+  "run_id": "cea909fe8a004010b1896df1c1d98e02",
+  "goal_ref": "goal-38a4a7a321d54c1eb475b9c7646930f0",
+  "seed_id": "seed-f87361b21b4f44609dedfa2ac9afc7bc-0",
+  "acquisition_task_id": "640a1efff57a43378dafc152a7a53fa2",
+  "source_ref": "epmc:MED:28831067",
+  "source_version": "provider version unreported",
+  "locator": "attempt:metadata/body_base64#result.abstractText",
+  "access": "abstract",
+  "representation": "complete obtained provider abstract, markup flattened; not full text",
+  "character_range": [
+    0,
+    1188
+  ],
+  "original_characters": 1188,
+  "original_text_sha256": "7e4cf33840acbf18fa93f3003b6dbb9818cb16ac7476389c45596cafdaaa0c59",
+  "selection_reason": "标题涉及磷酸化调控mRNA输出，但对象为内核膜蛋白SUN1；作为邻近/竞争解释和对象边界，不将其当核孔蛋白证据。 选择已取得的完整摘要；不读取正文/图像/补充，不隐式裁剪。",
+  "cropped": false,
+  "not_read_ranges": [],
+  "text": "SUN1, a component of the LINC (Linker of Nucleoskeleton and Cytoskeleton) complex, functions in mammalian mRNA export through the NXF1-dependent pathway. It associates with mRNP complexes by direct interaction with NXF1. It also binds to the NPC through association with the nuclear pore component Nup153, which is involved in mRNA export. The SUN1-NXF1 association is at least partly regulated by a protein kinase C (PKC) which phosphorylates serine 113 (S113) in the N-terminal domain leading to reduced interaction. The phosphorylation appears to be important for the SUN1 function in nuclear mRNA export since GFP-SUN1 carrying a S113A mutation was less efficient in restoring mRNA export after SUN1 knockdown as compared to the wild type protein. By contrast, GFP-SUN1-S113D resembling the phosphorylated state allowed very efficient export of poly(A)+RNA. Furthermore, probing a possible role of the LINC complex component Nesprin-2 in this process we observed impaired mRNA export in Nesprin-2 knockdown cells. This effect might be independent of SUN1 as expression of a GFP tagged SUN-domain deficient SUN1, which no longer can interact with Nesprin-2, did not affect mRNA export.",
+  "images_seen": false,
+  "supplements_seen": false,
+  "access_limitations": "Only the obtained representation; no unseen text/figures/supplements",
+  "source_citation": "https://europepmc.org/article/MED/28831067"
+}

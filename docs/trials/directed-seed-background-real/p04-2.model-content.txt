@@ -1,0 +1,216 @@
+{
+  "operation": "background_reading",
+  "read_scope": {
+    "source_view_ref": "af80cf113c514689a5b9e25ef9f0b193",
+    "access": "abstract",
+    "character_range": [0, 2097],
+    "limitations": "仅阅读当前提供的完整获取摘要；未读取全文、图像或补充材料。以下分列不同条件与终点，不将重复摘要陈述计为独立证据。negative_findings 为空仅表示当前视图未报告无效或无变化实验。"
+  },
+  "finding_cards": [
+    {
+      "source_view_ref": "af80cf113c514689a5b9e25ef9f0b193",
+      "supporting_quote": "Transcriptomic profiling reveals that TPR depletion reshapes EGF-induced, MAPK-responsive gene expression, including altered expression of MAPK pathway components and enhanced induction of the immediate-early gene FOS.",
+      "biological_context": "细胞中的 EGF 诱导、MAPK 响应性基因表达；具体细胞类型当前视图未报告。",
+      "intervention_comparator": "TPR 耗减及 EGF 刺激；具体对照、耗减方式和刺激条件当前视图未报告。",
+      "endpoint": "转录组表达，包括 MAPK 通路组分和即时早期基因 FOS。",
+      "reported_observation": "作者报告 TPR 耗减重塑 EGF 诱导的 MAPK 响应性基因表达，包括 MAPK 通路组分表达改变及 FOS 诱导增强。摘要随后再次报告 EGF 刺激下 FOS 诱导增加；不将这一重复终点计为独立证据。",
+      "negative_findings": [],
+      "negative_quotes": [],
+      "author_interpretation": "作者据此支持 TPR 参与调节促有丝分裂信号的转录响应。",
+      "not_established": [
+        "TPR 耗减效应是否由其磷酸化变化介导，当前视图未报告。",
+        "表达变化是否涉及 mRNA 输出障碍，而非其他表达调控过程，当前视图未报告。",
+        "效应量、重复数和统计结果当前视图未报告。"
+      ],
+      "transfer_assumptions": [
+        "外推至 ALS 需要假设相关细胞中的 TPR—MAPK 表达调控关系也适用于疾病相关系统；该适用性当前视图未报告。"
+      ]
+    },
+    {
+      "source_view_ref": "af80cf113c514689a5b9e25ef9f0b193",
+      "supporting_quote": "Functionally, TPR-depleted cells exhibit increased FOS induction upon EGF stimulation and altered EGF-driven cell-cycle progression.",
+      "biological_context": "EGF 驱动的细胞周期进程；具体细胞类型当前视图未报告。",
+      "intervention_comparator": "TPR 耗减细胞接受 EGF 刺激；具体对照和时间条件当前视图未报告。",
+      "endpoint": "细胞周期进程。",
+      "reported_observation": "作者报告 TPR 耗减细胞的 EGF 驱动细胞周期进程发生改变；改变方向当前视图未报告。此处保留与 FOS 表达不同的功能终点，不推断两者存在因果关系。",
+      "negative_findings": [],
+      "negative_quotes": [],
+      "author_interpretation": "作者将该结果作为 TPR 调节促有丝分裂信号功能输出的结果。",
+      "not_established": [
+        "具体周期阶段、变化方向及其与 Ser2155 磷酸化的关系，当前视图未报告。",
+        "该细胞周期终点与神经元损伤或 ALS 的关系当前视图未报告。"
+      ],
+      "transfer_assumptions": [
+        "将促增殖细胞的周期表型转用于神经元损伤解释，需要额外的跨细胞状态适用性依据；当前视图未报告。"
+      ]
+    },
+    {
+      "source_view_ref": "af80cf113c514689a5b9e25ef9f0b193",
+      "supporting_quote": "Using a novel phospho-specific monoclonal antibody, we show that TPR is phosphorylated at Ser2155 following EGFR activation via the canonical RAS-RAF-MEK-ERK MAPK cascade, placing TPR downstream of MAPK pathway activation.",
+      "biological_context": "EGFR 激活及经典 RAS–RAF–MEK–ERK MAPK 级联；具体实验系统当前视图未报告。",
+      "intervention_comparator": "EGFR 激活条件；具体激活方式、对照及采样时间当前视图未报告。",
+      "endpoint": "磷酸化特异性单克隆抗体检测的 TPR Ser2155 磷酸化。",
+      "reported_observation": "作者报告 EGFR 激活后，TPR 经经典 RAS–RAF–MEK–ERK MAPK 级联在 Ser2155 发生磷酸化，并将 TPR 置于 MAPK 通路激活的下游。",
+      "negative_findings": [],
+      "negative_quotes": [],
+      "author_interpretation": "作者将 TPR 解释为 MAPK 响应性核因子，并在全文摘要结论中提出 NPC 相关组分微调促有丝分裂转录响应的模型。",
+      "not_established": [
+        "直接催化该位点的激酶及直接底物实验当前视图未报告。",
+        "该位点磷酸化对转录变化、mRNA 输出或细胞损伤的必要性、充分性和时序关系当前视图未报告。",
+        "抗体的具体特异性验证结果当前视图未报告。"
+      ],
+      "transfer_assumptions": [
+        "外推至 ALS 需假设疾病相关系统存在相应信号—核孔蛋白修饰联系及相关功能后果；当前视图未报告。"
+      ]
+    },
+    {
+      "source_view_ref": "af80cf113c514689a5b9e25ef9f0b193",
+      "supporting_quote": "This phosphorylation is suppressed by clinically used EGFR and BRAF inhibitors",
+      "biological_context": "TPR Ser2155 磷酸化的药理调控；具体实验系统当前视图未报告。",
+      "intervention_comparator": "临床使用的 EGFR 抑制剂条件；药物名称、剂量、对照及是否与其他处理联用当前视图未报告。",
+      "endpoint": "TPR Ser2155 磷酸化。",
+      "reported_observation": "作者报告 EGFR 抑制剂抑制该磷酸化。此卡仅保留 EGFR 抑制剂条件，不将其与 BRAF 抑制剂合并为一次联合处理。",
+      "negative_findings": [],
+      "negative_quotes": [],
+      "author_interpretation": "作者将药理抑制结果纳入 Ser2155 磷酸化反映 MAPK 通路活性的解释。",
+      "not_established": [
+        "该处理是否选择性作用于 TPR 修饰，以及是否改变 mRNA 输出或细胞损伤，当前视图未报告。",
+        "抑制程度及其是否完全消除磷酸化，当前视图未报告。"
+      ],
+      "transfer_assumptions": [
+        "将通路抑制作为核孔蛋白修饰机制检验，需要区分该修饰效应与通路其他效应；这种区分当前视图未报告。"
+      ]
+    },
+    {
+      "source_view_ref": "af80cf113c514689a5b9e25ef9f0b193",
+      "supporting_quote": "This phosphorylation is suppressed by clinically used EGFR and BRAF inhibitors",
+      "biological_context": "TPR Ser2155 磷酸化的药理调控；具体实验系统当前视图未报告。",
+      "intervention_comparator": "临床使用的 BRAF 抑制剂条件；药物名称、剂量和具体对照当前视图未报告。",
+      "endpoint": "TPR Ser2155 磷酸化。",
+      "reported_observation": "作者报告 BRAF 抑制剂抑制该磷酸化。与上一卡引用同一句摘要陈述，但保留不同药理条件，不据此推断独立重复或联合用药。",
+      "negative_findings": [],
+      "negative_quotes": [],
+      "author_interpretation": "作者将此结果纳入 Ser2155 磷酸化反映 MAPK 通路活性的解释。",
+      "not_established": [
+        "药物对该位点修饰的选择性、功能救援结果及运输终点当前视图未报告。"
+      ],
+      "transfer_assumptions": [
+        "从 BRAF 通路干预推断核孔蛋白修饰本身的功能，需要排除其他通路效应；相关区分当前视图未报告。"
+      ]
+    },
+    {
+      "source_view_ref": "af80cf113c514689a5b9e25ef9f0b193",
+      "supporting_quote": "conversely, is constitutively induced by oncogenic RAS and BRAF, indicating that Ser2155 phosphorylation reflects MAPK pathway activity.",
+      "biological_context": "致癌性 RAS 条件；具体细胞系统及 RAS 变体当前视图未报告。",
+      "intervention_comparator": "致癌性 RAS；具体构建、表达条件和对照当前视图未报告。",
+      "endpoint": "TPR Ser2155 磷酸化。",
+      "reported_observation": "作者报告致癌性 RAS 组成性诱导该磷酸化。",
+      "negative_findings": [],
+      "negative_quotes": [],
+      "author_interpretation": "作者认为 Ser2155 磷酸化反映 MAPK 通路活性。",
+      "not_established": [
+        "该修饰是否介导致癌性 RAS 的转录或其他表型，当前视图未报告。",
+        "与 mRNA 输出和 ALS 相关损伤的联系当前视图未报告。"
+      ],
+      "transfer_assumptions": [
+        "将致癌信号条件外推至非肿瘤性疾病过程，需要证明信号强度、持续时间及细胞背景具有适用性；当前视图未报告。"
+      ]
+    },
+    {
+      "source_view_ref": "af80cf113c514689a5b9e25ef9f0b193",
+      "supporting_quote": "conversely, is constitutively induced by oncogenic RAS and BRAF, indicating that Ser2155 phosphorylation reflects MAPK pathway activity.",
+      "biological_context": "致癌性 BRAF 条件；具体细胞系统及 BRAF 变体当前视图未报告。",
+      "intervention_comparator": "致癌性 BRAF；具体构建、表达条件和对照当前视图未报告。",
+      "endpoint": "TPR Ser2155 磷酸化。",
+      "reported_observation": "作者报告致癌性 BRAF 组成性诱导该磷酸化。与 RAS 条件分列，不推断二者联合处理或存在独立重复。",
+      "negative_findings": [],
+      "negative_quotes": [],
+      "author_interpretation": "作者认为 Ser2155 磷酸化反映 MAPK 通路活性。",
+      "not_established": [
+        "位点选择性干预及其对转录、运输和损伤终点的影响当前视图未报告。"
+      ],
+      "transfer_assumptions": [
+        "致癌性 BRAF 条件下的修饰响应能否代表 ALS 相关细胞过程，当前视图未报告。"
+      ]
+    },
+    {
+      "source_view_ref": "af80cf113c514689a5b9e25ef9f0b193",
+      "supporting_quote": "In vivo, CRISPR/Cas9-engineered Tpr haploinsufficient mice show changes in MAPK pathway regulatory gene expression in bulk spleen RNA-seq, consistent with findings in human cells",
+      "biological_context": "CRISPR/Cas9 构建的 Tpr 单倍剂量不足小鼠；整体脾组织 RNA-seq。",
+      "intervention_comparator": "Tpr 单倍剂量不足；具体对照基因型和取样条件当前视图未报告。",
+      "endpoint": "脾组织整体转录组中的 MAPK 通路调控基因表达。",
+      "reported_observation": "作者报告这些小鼠的脾组织整体 RNA-seq 显示 MAPK 通路调控基因表达改变，并称其与人细胞结果一致。",
+      "negative_findings": [],
+      "negative_quotes": [],
+      "author_interpretation": "作者结合脾细胞刺激结果，提出 TPR 水平与改变的 MAPK 相关转录组特征之间存在保守关联。",
+      "not_established": [
+        "整体组织表达变化是否反映细胞组成变化或细胞内调控，当前视图未报告。",
+        "小鼠中的 TPR 磷酸化、mRNA 输出和神经系统终点当前视图未报告。"
+      ],
+      "transfer_assumptions": [
+        "从脾组织及蛋白剂量变化外推至神经系统中的特定位点磷酸化，需要跨组织及跨干预类型的依据；当前视图未报告。"
+      ]
+    },
+    {
+      "source_view_ref": "af80cf113c514689a5b9e25ef9f0b193",
+      "supporting_quote": "enhanced Fos induction in splenocytes upon CD3/CD28 stimulation, together suggesting a conserved association between TPR levels and altered MAPK-related transcriptomic profiles.",
+      "biological_context": "上述 Tpr 单倍剂量不足小鼠的脾细胞接受 CD3/CD28 刺激；与 EGF 刺激细胞条件不同。",
+      "intervention_comparator": "Tpr 单倍剂量不足背景及 CD3/CD28 刺激；具体对照、剂量和时间当前视图未报告。",
+      "endpoint": "Fos 诱导。",
+      "reported_observation": "作者报告 CD3/CD28 刺激后脾细胞的 Fos 诱导增强；不将该条件改述为 EGF 刺激。",
+      "negative_findings": [],
+      "negative_quotes": [],
+      "author_interpretation": "作者将其与整体脾组织表达结果共同解释为 TPR 水平与 MAPK 相关转录组改变之间的保守关联。",
+      "not_established": [
+        "Fos 的检测层级、具体脾细胞亚群及其与 TPR 磷酸化的关系当前视图未报告。",
+        "该刺激条件下的 mRNA 输出和损伤终点当前视图未报告。"
+      ],
+      "transfer_assumptions": [
+        "免疫细胞受体刺激与 ALS 相关细胞过程不能直接等同；跨刺激及跨细胞类型适用性当前视图未报告。"
+      ]
+    },
+    {
+      "source_view_ref": "af80cf113c514689a5b9e25ef9f0b193",
+      "supporting_quote": "Finally, immunohistochemical analysis reveals elevated TPR phosphorylation in serous ovarian carcinoma",
+      "biological_context": "浆液性卵巢癌的免疫组织化学分析。",
+      "intervention_comparator": "肿瘤样本观察；“升高”所对应的具体比较样本当前视图未报告。",
+      "endpoint": "组织中的 TPR 磷酸化。",
+      "reported_observation": "作者报告浆液性卵巢癌中 TPR 磷酸化升高。",
+      "negative_findings": [],
+      "negative_quotes": [],
+      "author_interpretation": "作者指出该肿瘤类型常具有 MAPK 通路过度激活背景，并将组织结果纳入 TPR 为 MAPK 响应性核因子的总体解释。",
+      "not_established": [
+        "该组织分析的位点特异性细节、样本数量和比较基准当前视图未报告。",
+        "同一样本中 MAPK 活性与 TPR 磷酸化的逐样本关系及因果检验当前视图未报告。",
+        "mRNA 输出和 ALS 终点当前视图未报告。"
+      ],
+      "transfer_assumptions": [
+        "肿瘤组织中的磷酸化升高能否适用于 ALS 相关组织，当前视图未报告。"
+      ]
+    },
+    {
+      "source_view_ref": "af80cf113c514689a5b9e25ef9f0b193",
+      "supporting_quote": "heterogeneous phosphorylation patterns in triple-negative breast cancer, two tumor types frequently characterized by MAPK pathway hyperactivation.",
+      "biological_context": "三阴性乳腺癌的免疫组织化学分析。",
+      "intervention_comparator": "肿瘤样本观察；具体比较组和异质性所处层级当前视图未报告。",
+      "endpoint": "TPR 磷酸化模式。",
+      "reported_observation": "作者报告三阴性乳腺癌中的磷酸化模式具有异质性，而非报告所有该类样本均一致升高。",
+      "negative_findings": [],
+      "negative_quotes": [],
+      "author_interpretation": "作者指出三阴性乳腺癌常具有 MAPK 通路过度激活背景；该背景陈述不等同于每个样本均已测得过度激活。",
+      "not_established": [
+        "异质性是样本间、肿瘤内还是其他层级，以及其具体方向和分布，当前视图未报告。",
+        "磷酸化模式与 MAPK 活性、运输功能或损伤的对应关系当前视图未报告。"
+      ],
+      "transfer_assumptions": [
+        "将该结果用于其他疾病时，需要保留磷酸化模式的异质性，不能假设存在统一变化方向；ALS 中的对应模式当前视图未报告。"
+      ]
+    }
+  ],
+  "targeted_reading_requests": [
+    "若后续获准获取本研究正文与方法，核查各实验的细胞类型、比较组、时间、药物与遗传条件、磷酸化抗体特异性验证及定量结果；不将当前摘要访问扩称为全文阅读。",
+    "核查是否存在区分 TPR 蛋白耗减与 Ser2155 修饰作用的位点选择性干预，以及直接激酶、转录响应和运输终点之间的实验连接；这些细节当前视图未报告。",
+    "在不预选具体核孔蛋白或实验模型的前提下，定向检索同时测量核孔蛋白磷酸化、mRNA 输出和细胞损伤时序，并对该修饰实施选择性干预的记录，以区分参与运输障碍、损伤后反应及并行变化。",
+    "后续阅读须分别保留 EGF 刺激细胞、致癌信号条件、小鼠整体脾组织、CD3/CD28 刺激脾细胞及两类肿瘤组织的系统差异，并核查无效、反向或条件依赖结果；当前视图未报告 ALS 系统中的相应关系。"
+  ]
+}

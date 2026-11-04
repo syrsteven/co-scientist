@@ -1,5 +1,18 @@
 # 项目状态 — W1-L2
 
+## 单定向seed有界背景准备：P07不确定停止（2026-11-04）
+
+基于54253eb2e5fac2c672fe9a1461bdc851488a1331，独立结果分支codex/directed-seed-background-trial；应用/Prompt不改、不合并。
+同Run cea909fe8a004010b1896df1c1d98e02，指定seed-f87361b21b4f44609dedfa2ac9afc7bc-0；6次模型尝试，5saved+1uncertain，无重试或切模型。
+P03一次规划3查询，经LiteratureService/M15逐条显式执行首屏5条；报告总数121/9/184，均未完成分页；显式获取3篇完整摘要1714/2097/1188字符，没有新全文/图像/补充。
+P04三次各读一新视图，24新卡；复用原宽阅读15卡，P05一次保存SeedBackgroundPacket，39卡/5视图/5实际查询均完整保留，无兄弟seed或评审。
+P07一次发送后未收到响应，Task55bc66f3e1a44070babcf67db99b0bac blocked、Attempt0d9e7d5fd9da4bbea3ddc42608e0c184 uncertain，Run blocked；无finish_reason/原始响应/usage/readiness，停止不重发。不能记retrieve_more/科学否定或0消耗；约5秒本地间隔不证明600秒超时原因。
+gpt-6.1-sol/high/32768/JSON object、无temperature、600秒；沿用户此前容量授权预设262144字节，最大实际请求148027，未裁剪。已知5次usage小计61593tokens含reasoning4896；P07消耗未知，本轮最终总量/费用未知。
+[完整请求、原始结果、真实来源/选择遗漏、P07提交依据和11项初审](trials/directed-seed-background-real/README.md)；P05两处弱化作者诱导/导致措辞待人工复核，原输出不改。
+只读DB原行哈希、实际请求/原始字节/usage、39引用和阴性定位、seed隔离、额度/顺序/首屏、便携包审计通过；原工作区232项保持。
+本轮未重跑pytest203项/旧G3回归/浏览器；无代码变更，不沿用旧回归称本轮新通过。未执行额外补查、P08/Candidate Ethics/R0。
+Goal Ethics仍开发测试；science_validated=false，独立专家未审阅，P07无科学决定，完整背景准备链未完成。
+
 ## 顺序真实P06定向与开放seed试跑（2026-11-04）
 
 基于P05结果提交1a8d612b175ed35542e4aadaf17499d2e961914c，独立结果分支codex/p06-seed-trial-review；应用/Prompt不改，不合并。

@@ -1,0 +1,331 @@
+{
+  "request_id": "directed-seed-search-2-page1",
+  "run_id": "cea909fe8a004010b1896df1c1d98e02",
+  "task_id": "1a0317da737d42da8086447b8da7a336",
+  "request": {
+    "background_context": {
+      "plan_ref": "directed-seed-p03-plan-single",
+      "query_index": 1,
+      "seed_id": "seed-f87361b21b4f44609dedfa2ac9afc7bc-0"
+    },
+    "cursor": null,
+    "kind": "search",
+    "page_size": 5,
+    "query": "(TITLE_ABS:nucleoporin* OR TITLE_ABS:\"nuclear pore\") AND (TITLE_ABS:phosphorylat* OR TITLE_ABS:dephosphorylat* OR TITLE_ABS:phosphosite* OR TITLE_ABS:phosphoproteom* OR TITLE_ABS:phosphomimetic*) AND (TITLE_ABS:\"mRNA export\" OR TITLE_ABS:\"messenger RNA export\" OR TITLE_ABS:\"RNA export\" OR TITLE_ABS:\"poly(A) RNA\")",
+    "query_origin": "model_planned_user_executed",
+    "scope": "Europe PMC indexed publications; manual query; relevance order; no automatic expansion",
+    "source": "Europe PMC"
+  },
+  "created_at": "2026-11-04T03:05:39.666738+00:00",
+  "task_status": "succeeded",
+  "error": null,
+  "result": {
+    "acquisition": {
+      "error": null,
+      "executed_at": "2026-11-04T03:05:44.381168+00:00",
+      "items": [
+        {
+          "citation": "https://europepmc.org/article/PPR/PPR1217875",
+          "source_ref": "epmc:PPR:PPR1217875",
+          "title": "Seeded aggregation of ANXA11 induces prion-like propagation, TDP-43 co-pathology and nucleocytoplasmic transport defects"
+        },
+        {
+          "citation": "https://europepmc.org/article/MED/42031697",
+          "source_ref": "epmc:MED:42031697",
+          "title": "Nucleoporin TPR integrates MAPK signaling with mitogen-induced transcriptional programs."
+        },
+        {
+          "citation": "https://europepmc.org/article/MED/28831067",
+          "source_ref": "epmc:MED:28831067",
+          "title": "The function of the inner nuclear envelope protein SUN1 in mRNA export is regulated by phosphorylation."
+        },
+        {
+          "citation": "https://europepmc.org/article/MED/19106628",
+          "source_ref": "epmc:MED:19106628",
+          "title": "Nuclear phosphoinositide signaling regulates messenger RNA export."
+        },
+        {
+          "citation": "https://europepmc.org/article/MED/26317468",
+          "source_ref": "epmc:MED:26317468",
+          "title": "The Nuclear Pore-Associated TREX-2 Complex Employs Mediator to Regulate Gene Expression."
+        }
+      ],
+      "next_cursor": "AoIIP4iOgCgzNDIzNjQ2Nw==",
+      "reported_total": 9,
+      "request": {
+        "cursor": null,
+        "query": "(TITLE_ABS:nucleoporin* OR TITLE_ABS:\"nuclear pore\") AND (TITLE_ABS:phosphorylat* OR TITLE_ABS:dephosphorylat* OR TITLE_ABS:phosphosite* OR TITLE_ABS:phosphoproteom* OR TITLE_ABS:phosphomimetic*) AND (TITLE_ABS:\"mRNA export\" OR TITLE_ABS:\"messenger RNA export\" OR TITLE_ABS:\"RNA export\" OR TITLE_ABS:\"poly(A) RNA\")",
+        "scope": "Europe PMC indexed publications; manual query; relevance order; no automatic expansion",
+        "source": "Europe PMC"
+      },
+      "scope_complete": false,
+      "status": "succeeded"
+    },
+    "details": {
+      "deduplicated_count": 5,
+      "model_read": false,
+      "provider": "Europe PMC",
+      "provider_request": {
+        "cursorMark": "*",
+        "pageSize": 5,
+        "queryString": "(TITLE_ABS:nucleoporin* OR TITLE_ABS:\"nuclear pore\") AND (TITLE_ABS:phosphorylat* OR TITLE_ABS:dephosphorylat* OR TITLE_ABS:phosphosite* OR TITLE_ABS:phosphoproteom* OR TITLE_ABS:phosphomimetic*) AND (TITLE_ABS:\"mRNA export\" OR TITLE_ABS:\"messenger RNA export\" OR TITLE_ABS:\"RNA export\" OR TITLE_ABS:\"poly(A) RNA\")",
+        "resultType": "lite",
+        "sort": "",
+        "synonym": false
+      },
+      "raw_response_locator": "attempt:search/body_base64#resultList.result",
+      "raw_returned_count": 5,
+      "relationships": [],
+      "sources": [
+        {
+          "access": "metadata",
+          "metadata": {
+            "authorString": "Luo H, Zheng H, Lu Y, Liu C, Zhang K, Duan S, Zhang H, Zhang Y, Song Y, Wang T, Liu H, Zhang N, Xia Z, Xu Y.",
+            "bookOrReportDetails": {
+              "publisher": "bioRxiv",
+              "yearOfPublication": 2026
+            },
+            "citedByCount": 0,
+            "doi": "10.64898/2026.03.24.713853",
+            "firstIndexDate": "2026-05-19",
+            "firstPublicationDate": "2026-03-26",
+            "hasBook": "N",
+            "hasDbCrossReferences": "N",
+            "hasLabsLinks": "Y",
+            "hasPDF": "N",
+            "hasReferences": "N",
+            "hasSuppl": "N",
+            "hasTMAccessionNumbers": "N",
+            "hasTextMinedTerms": "Y",
+            "id": "PPR1217875",
+            "inEPMC": "N",
+            "inPMC": "N",
+            "isOpenAccess": "N",
+            "pubType": "preprint",
+            "pubYear": "2026",
+            "source": "PPR",
+            "title": "Seeded aggregation of ANXA11 induces prion-like propagation, TDP-43 co-pathology and nucleocytoplasmic transport defects"
+          },
+          "source": {
+            "citation": "https://europepmc.org/article/PPR/PPR1217875",
+            "source_ref": "epmc:PPR:PPR1217875",
+            "title": "Seeded aggregation of ANXA11 induces prion-like propagation, TDP-43 co-pathology and nucleocytoplasmic transport defects"
+          }
+        },
+        {
+          "access": "metadata",
+          "metadata": {
+            "authorString": "Liu J, Zheng Y, Xiong Y, Ma R, Lin Z, Lin H, Andújar-Sánchez M, Bartkova J, Liu J, Foiani M, Bartek J, Kosar M.",
+            "citedByCount": 0,
+            "doi": "10.1038/s41419-026-08760-8",
+            "firstIndexDate": "2026-04-25",
+            "firstPublicationDate": "2026-04-24",
+            "fullTextIdList": {
+              "fullTextId": [
+                "PMC13109368"
+              ]
+            },
+            "hasBook": "N",
+            "hasDbCrossReferences": "N",
+            "hasLabsLinks": "Y",
+            "hasPDF": "Y",
+            "hasReferences": "Y",
+            "hasSuppl": "Y",
+            "hasTMAccessionNumbers": "Y",
+            "hasTextMinedTerms": "Y",
+            "id": "42031697",
+            "inEPMC": "Y",
+            "inPMC": "Y",
+            "isOpenAccess": "Y",
+            "issue": "1",
+            "journalIssn": "2041-4889",
+            "journalTitle": "Cell Death Dis",
+            "journalVolume": "17",
+            "pageInfo": "400",
+            "pmcid": "PMC13109368",
+            "pmid": "42031697",
+            "pubType": "research-article; journal article",
+            "pubYear": "2026",
+            "source": "MED",
+            "title": "Nucleoporin TPR integrates MAPK signaling with mitogen-induced transcriptional programs.",
+            "tmAccessionTypeList": {
+              "accessionType": [
+                "gen",
+                "ensembl",
+                "hpa"
+              ]
+            }
+          },
+          "source": {
+            "citation": "https://europepmc.org/article/MED/42031697",
+            "source_ref": "epmc:MED:42031697",
+            "title": "Nucleoporin TPR integrates MAPK signaling with mitogen-induced transcriptional programs."
+          }
+        },
+        {
+          "access": "metadata",
+          "metadata": {
+            "authorString": "Li P, Stumpf M, Müller R, Eichinger L, Glöckner G, Noegel AA.",
+            "citedByCount": 15,
+            "doi": "10.1038/s41598-017-08837-7",
+            "firstIndexDate": "2017-08-23",
+            "firstPublicationDate": "2017-08-22",
+            "fullTextIdList": {
+              "fullTextId": [
+                "PMC5567243"
+              ]
+            },
+            "hasBook": "N",
+            "hasDbCrossReferences": "N",
+            "hasLabsLinks": "Y",
+            "hasPDF": "Y",
+            "hasReferences": "Y",
+            "hasSuppl": "N",
+            "hasTMAccessionNumbers": "Y",
+            "hasTextMinedTerms": "Y",
+            "id": "28831067",
+            "inEPMC": "Y",
+            "inPMC": "Y",
+            "isOpenAccess": "Y",
+            "issue": "1",
+            "journalIssn": "2045-2322",
+            "journalTitle": "Sci Rep",
+            "journalVolume": "7",
+            "pageInfo": "9157",
+            "pmcid": "PMC5567243",
+            "pmid": "28831067",
+            "pubType": "research support, non-u.s. gov't; research-article; journal article",
+            "pubYear": "2017",
+            "source": "MED",
+            "title": "The function of the inner nuclear envelope protein SUN1 in mRNA export is regulated by phosphorylation.",
+            "tmAccessionTypeList": {
+              "accessionType": [
+                "gen",
+                "biosample",
+                "uniprot"
+              ]
+            }
+          },
+          "source": {
+            "citation": "https://europepmc.org/article/MED/28831067",
+            "source_ref": "epmc:MED:28831067",
+            "title": "The function of the inner nuclear envelope protein SUN1 in mRNA export is regulated by phosphorylation."
+          }
+        },
+        {
+          "access": "metadata",
+          "metadata": {
+            "authorString": "Okada M, Ye K.",
+            "citedByCount": 35,
+            "doi": "10.4161/rna.6.1.7439",
+            "firstIndexDate": "2010-01-16",
+            "firstPublicationDate": "2009-01-19",
+            "fullTextIdList": {
+              "fullTextId": [
+                "PMC3704435"
+              ]
+            },
+            "hasBook": "N",
+            "hasDbCrossReferences": "N",
+            "hasLabsLinks": "N",
+            "hasPDF": "Y",
+            "hasReferences": "Y",
+            "hasSuppl": "N",
+            "hasTMAccessionNumbers": "N",
+            "hasTextMinedTerms": "Y",
+            "id": "19106628",
+            "inEPMC": "Y",
+            "inPMC": "Y",
+            "isOpenAccess": "N",
+            "issue": "1",
+            "journalIssn": "1547-6286; 1555-8584; ",
+            "journalTitle": "RNA Biol",
+            "journalVolume": "6",
+            "pageInfo": "12-16",
+            "pmcid": "PMC3704435",
+            "pmid": "19106628",
+            "pubType": "other; review; journal article; research support, n.i.h., extramural",
+            "pubYear": "2009",
+            "source": "MED",
+            "title": "Nuclear phosphoinositide signaling regulates messenger RNA export."
+          },
+          "source": {
+            "citation": "https://europepmc.org/article/MED/19106628",
+            "source_ref": "epmc:MED:19106628",
+            "title": "Nuclear phosphoinositide signaling regulates messenger RNA export."
+          }
+        },
+        {
+          "access": "metadata",
+          "metadata": {
+            "authorString": "Schneider M, Hellerschmied D, Schubert T, Amlacher S, Vinayachandran V, Reja R, Pugh BF, Clausen T, Köhler A.",
+            "citedByCount": 109,
+            "dbCrossReferenceList": {
+              "dbName": [
+                "EMBL"
+              ]
+            },
+            "doi": "10.1016/j.cell.2015.07.059",
+            "firstIndexDate": "2015-08-30",
+            "firstPublicationDate": "2015-08-01",
+            "fullTextIdList": {
+              "fullTextId": [
+                "PMC4644235"
+              ]
+            },
+            "hasBook": "N",
+            "hasDbCrossReferences": "Y",
+            "hasLabsLinks": "Y",
+            "hasPDF": "N",
+            "hasReferences": "Y",
+            "hasSuppl": "Y",
+            "hasTMAccessionNumbers": "Y",
+            "hasTextMinedTerms": "Y",
+            "id": "26317468",
+            "inEPMC": "Y",
+            "inPMC": "Y",
+            "isOpenAccess": "Y",
+            "issue": "5",
+            "journalIssn": "0092-8674; 1097-4172; ",
+            "journalTitle": "Cell",
+            "journalVolume": "162",
+            "pageInfo": "1016-1028",
+            "pmcid": "PMC4644235",
+            "pmid": "26317468",
+            "pubType": "research support, non-u.s. gov't; research-article; journal article; research support, n.i.h., extramural",
+            "pubYear": "2015",
+            "source": "MED",
+            "title": "The Nuclear Pore-Associated TREX-2 Complex Employs Mediator to Regulate Gene Expression.",
+            "tmAccessionTypeList": {
+              "accessionType": [
+                "pdb"
+              ]
+            }
+          },
+          "source": {
+            "citation": "https://europepmc.org/article/MED/26317468",
+            "source_ref": "epmc:MED:26317468",
+            "title": "The Nuclear Pore-Associated TREX-2 Complex Employs Mediator to Regulate Gene Expression."
+          }
+        }
+      ],
+      "transport": "real_public_http",
+      "warnings": []
+    },
+    "model_read": false,
+    "science_validated": false
+  },
+  "attempts": [
+    {
+      "id": "d9a7e19f42964081bc6bda1ed54ba397",
+      "call_key": "search",
+      "status": "succeeded",
+      "target": "Europe PMC public REST",
+      "request": "{\"headers\": {\"Accept\": \"application/json\", \"User-Agent\": \"CoScientist-W1-L1/1.0 (manual development acquisition)\"}, \"method\": \"GET\", \"url\": \"https://www.ebi.ac.uk/europepmc/webservices/rest/search?query=%28TITLE_ABS%3Anucleoporin%2A+OR+TITLE_ABS%3A%22nuclear+pore%22%29+AND+%28TITLE_ABS%3Aphosphorylat%2A+OR+TITLE_ABS%3Adephosphorylat%2A+OR+TITLE_ABS%3Aphosphosite%2A+OR+TITLE_ABS%3Aphosphoproteom%2A+OR+TITLE_ABS%3Aphosphomimetic%2A%29+AND+%28TITLE_ABS%3A%22mRNA+export%22+OR+TITLE_ABS%3A%22messenger+RNA+export%22+OR+TITLE_ABS%3A%22RNA+export%22+OR+TITLE_ABS%3A%22poly%28A%29+RNA%22%29&format=json&resultType=lite&pageSize=5&cursorMark=%2A&synonym=false\"}",
+      "started_at": "2026-11-04T03:05:39.670456+00:00",
+      "finished_at": "2026-11-04T03:05:44.381371+00:00",
+      "error": null,
+      "usage": "{\"cost\": null, \"input_tokens\": null, \"output_tokens\": null, \"tool_units\": 1}"
+    }
+  ]
+}

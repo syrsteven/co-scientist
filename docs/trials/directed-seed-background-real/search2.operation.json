@@ -1,0 +1,14 @@
+{
+  "request_id": "directed-seed-search-2-page1",
+  "request": {
+    "kind": "search",
+    "query": "(TITLE_ABS:nucleoporin* OR TITLE_ABS:\"nuclear pore\") AND (TITLE_ABS:phosphorylat* OR TITLE_ABS:dephosphorylat* OR TITLE_ABS:phosphosite* OR TITLE_ABS:phosphoproteom* OR TITLE_ABS:phosphomimetic*) AND (TITLE_ABS:\"mRNA export\" OR TITLE_ABS:\"messenger RNA export\" OR TITLE_ABS:\"RNA export\" OR TITLE_ABS:\"poly(A) RNA\")",
+    "cursor": null,
+    "page_size": 5
+  },
+  "background_context": {
+    "plan_ref": "directed-seed-p03-plan-single",
+    "query_index": 1,
+    "seed_id": "seed-f87361b21b4f44609dedfa2ac9afc7bc-0"
+  }
+}

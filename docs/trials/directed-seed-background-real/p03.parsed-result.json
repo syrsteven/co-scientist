@@ -1,0 +1,59 @@
+{
+  "artifact": {
+    "coverage_unknowns": [
+      "以上仅为 Europe PMC 查询计划，均未执行；没有新增命中数量、阴性检索结果或研究结论。",
+      "已有记录 p04-v2-human-search-control 与 p04-v2-human-search-complement 仅完成两次精确标识符查询，不能代表本主题检索完整。",
+      "所供视图 75bf96a0e25b4e6aa10e54f6781a5382 是摘要表示；876e76bb00f84e928a89cbea813dacad 仅为正文片段。现有阅读范围未直接建立核孔蛋白磷酸化及其与运输障碍、损伤的时序或因果关系。",
+      "查询不按效应方向筛选。后续需保留无效、无损害、相反结果及其测量范围；既有 TDP-43 磷酸模拟变体的核输入无损害结果不能替代核孔蛋白磷酸化或 mRNA 输出证据。",
+      "第二、三条未限定 ALS，以避免遗漏基础机制研究；非 ALS、不同细胞或不同损伤条件的结果不能直接拼接成 ALS 因果链。",
+      "标题与摘要可能不包含位点、时间点、选择性干预或阴性结果；第三条的方法关键词也可能漏检使用其他表述的研究。磷酸模拟替换不等同于直接测量内源磷酸化。",
+      "可获取摘要及可用的开放获取 XML；图像与补充材料不可访问，其他全文是否可获取尚未知。仅有摘要可能不足以核查时序、干预特异性和实验可行性。",
+      "未设置年份、语言、物种或实验模型限制，也未预选具体核孔蛋白。Europe PMC 的索引范围及本计划均不足以支持全球不存在相关研究或假说具有新颖性的结论。"
+    ],
+    "executed": false,
+    "queries": [
+      {
+        "query": "(TITLE_ABS:\"amyotrophic lateral sclerosis\" OR TITLE_ABS:ALS OR TITLE_ABS:\"motor neuron disease\") AND (TITLE_ABS:nucleoporin* OR TITLE_ABS:\"nuclear pore\")",
+        "question": "广域定位：ALS 相关文献如何研究核孔蛋白与核孔改变，是否涉及磷酸化、运输障碍及细胞损伤？",
+        "why": "从疾病与核孔概念出发，不预选具体分子或模型。先定位研究语境，不强制摘要包含磷酸化或时序术语；这属于主题定位，不能替代对本种子所缺因果信息的检索。"
+      },
+      {
+        "query": "(TITLE_ABS:nucleoporin* OR TITLE_ABS:\"nuclear pore\") AND (TITLE_ABS:phosphorylat* OR TITLE_ABS:dephosphorylat* OR TITLE_ABS:phosphosite* OR TITLE_ABS:phosphoproteom* OR TITLE_ABS:phosphomimetic*) AND (TITLE_ABS:\"mRNA export\" OR TITLE_ABS:\"messenger RNA export\" OR TITLE_ABS:\"RNA export\" OR TITLE_ABS:\"poly(A) RNA\")",
+        "question": "聚焦缺口：是否有直接连接核孔蛋白磷酸化与 mRNA 输出的研究，且能提供修饰、输出障碍和损伤的先后信息？",
+        "why": "围绕尚未测量的修饰与指定运输终点检索，不用蛋白核输入替代 mRNA 输出。不限定 ALS 或实验模型，以容纳机制研究；时序、损伤终点及其疾病适用性需随后逐篇核查。"
+      },
+      {
+        "query": "(TITLE_ABS:nucleoporin* OR TITLE_ABS:\"nuclear pore\") AND (TITLE_ABS:phosphorylat* OR TITLE_ABS:dephosphorylat* OR TITLE_ABS:phosphosite* OR TITLE_ABS:phosphoproteom* OR TITLE_ABS:phosphomimetic*) AND (TITLE_ABS:\"time course\" OR TITLE_ABS:\"time-course\" OR TITLE_ABS:temporal OR TITLE_ABS:longitudinal OR TITLE_ABS:rescue OR TITLE_ABS:reversib* OR TITLE_ABS:phosphomimetic* OR TITLE_ABS:phosphodeficient* OR TITLE_ABS:nonphosphorylatable OR TITLE_ABS:mutagenesis OR TITLE_ABS:kinase* OR TITLE_ABS:phosphatase* OR TITLE_ABS:inhibitor*)",
+        "question": "聚焦缺口：哪些时序比较或修饰干预可帮助区分核孔蛋白磷酸化参与运输障碍、继发于损伤，或与两者并行变化？",
+        "why": "寻找时间序列、可逆性、位点替换及修饰调控研究，不预设效应方向。命中后需核查是否实际测量运输与损伤，以及干预是否具有位点选择性；激酶或磷酸酶干预不能自动视为选择性因果检验。"
+      }
+    ]
+  },
+  "background_status": "saved",
+  "binding": {
+    "goal_ref": "goal-38a4a7a321d54c1eb475b9c7646930f0",
+    "run_id": "cea909fe8a004010b1896df1c1d98e02",
+    "seed_id": "seed-f87361b21b4f44609dedfa2ac9afc7bc-0"
+  },
+  "execution_mode": "real_model",
+  "model_config": {
+    "credential_configured": true,
+    "endpoint": "https://api.openai.com/v1/chat/completions",
+    "execution_mode": "real_model",
+    "max_request_bytes": 262144,
+    "model": "gpt-6.1-sol",
+    "parameters": {
+      "max_completion_tokens": 32768,
+      "reasoning_effort": "high",
+      "response_format": {
+        "type": "json_object"
+      }
+    },
+    "provider": "openai",
+    "timeout_seconds": 600
+  },
+  "operation": "P03",
+  "progress_fingerprint": null,
+  "prompt_version": "w1-l2-p03-p07-v1",
+  "science_validated": false
+}

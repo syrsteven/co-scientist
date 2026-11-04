@@ -1,0 +1,244 @@
+{
+  "artifact": {
+    "finding_cards": [
+      {
+        "access": "abstract",
+        "author_interpretation": "作者将 SUN1 置于 NXF1 依赖性 mRNA 输出通路中。",
+        "biological_context": "哺乳动物的 NXF1 依赖性 mRNA 输出；SUN1 被描述为 LINC 复合体组分。具体细胞类型当前视图未报告。",
+        "endpoint": "mRNA 输出通路及 SUN1 与 NXF1、mRNP 复合体的相互作用。",
+        "id": "finding-61730f7691fd43a8a2b9c92eb6126f3b-0",
+        "images_seen": false,
+        "intervention_comparator": "这两项陈述对应的干预与比较条件当前视图未报告。",
+        "negative_findings": [],
+        "negative_quotes": [],
+        "negative_state": "not_reported_in_view",
+        "not_established": [
+          "当前视图未报告这些陈述对应的具体实验、定量结果及时间顺序。",
+          "当前视图未报告 ALS 或神经元损伤实验。",
+          "可访问材料仅为取得的完整摘要；正文、图像、补充材料、Highlights 和 In Brief 当前视图未报告。"
+        ],
+        "reported_observation": "作者报告 SUN1 通过 NXF1 依赖性通路参与哺乳动物 mRNA 输出，并通过与 NXF1 直接相互作用而关联于 mRNP 复合体。",
+        "representation": "complete obtained provider abstract, markup flattened; not full text",
+        "source_locator": "attempt:metadata/body_base64#result.abstractText",
+        "source_ref": "epmc:MED:28831067",
+        "source_version": "provider version unreported",
+        "source_view_ref": "692ca660eef14f86a19318ca2e08d85b",
+        "supplements_seen": false,
+        "supporting_quote": "SUN1, a component of the LINC (Linker of Nucleoskeleton and Cytoskeleton) complex, functions in mammalian mRNA export through the NXF1-dependent pathway. It associates with mRNP complexes by direct interaction with NXF1.",
+        "transfer_assumptions": [
+          "将该通路联系用于 ALS 问题，需要另行检验其是否适用于相关生物学情境；当前视图未报告这种适用性。"
+        ]
+      },
+      {
+        "access": "abstract",
+        "author_interpretation": "作者将 Nup153 描述为 SUN1 联系 NPC 的途径。",
+        "biological_context": "SUN1 与核孔复合体及核孔组分 Nup153 的联系。",
+        "endpoint": "SUN1 与 NPC 的结合及其与 Nup153 的关联。",
+        "id": "finding-61730f7691fd43a8a2b9c92eb6126f3b-1",
+        "images_seen": false,
+        "intervention_comparator": "具体干预与比较条件当前视图未报告。",
+        "negative_findings": [],
+        "negative_quotes": [],
+        "negative_state": "not_reported_in_view",
+        "not_established": [
+          "当前视图未报告 Nup153 的磷酸化测量或磷酸化干预。",
+          "当前视图未报告 SUN1–Nup153 关联是否受下述 SUN1 S113 磷酸化调节。"
+        ],
+        "reported_observation": "作者报告 SUN1 通过与 Nup153 关联而结合 NPC，并指出 Nup153 参与 mRNA 输出。",
+        "representation": "complete obtained provider abstract, markup flattened; not full text",
+        "source_locator": "attempt:metadata/body_base64#result.abstractText",
+        "source_ref": "epmc:MED:28831067",
+        "source_version": "provider version unreported",
+        "source_view_ref": "692ca660eef14f86a19318ca2e08d85b",
+        "supplements_seen": false,
+        "supporting_quote": "It also binds to the NPC through association with the nuclear pore component Nup153, which is involved in mRNA export.",
+        "transfer_assumptions": [
+          "不能把 SUN1 的磷酸化结果直接替代为核孔蛋白磷酸化结果；二者之间的修饰调控关系需要另行建立。"
+        ]
+      },
+      {
+        "access": "abstract",
+        "author_interpretation": "作者提出 SUN1–NXF1 关联至少部分受该磷酸化调控。",
+        "biological_context": "SUN1 N 端 S113 位点与 SUN1–NXF1 相互作用；具体实验系统当前视图未报告。",
+        "endpoint": "SUN1 S113 磷酸化及 SUN1–NXF1 相互作用强度。",
+        "id": "finding-61730f7691fd43a8a2b9c92eb6126f3b-2",
+        "images_seen": false,
+        "intervention_comparator": "涉及 PKC 对 SUN1 S113 的磷酸化；具体激酶处理、对照及测量方法当前视图未报告。",
+        "negative_findings": [],
+        "negative_quotes": [],
+        "negative_state": "not_reported_in_view",
+        "not_established": [
+          "当前视图未报告 PKC 亚型、磷酸化检测细节、效应量或时序。",
+          "当前视图未报告该相互作用降低与细胞损伤之间的关系，也未报告核孔蛋白自身的磷酸化。"
+        ],
+        "reported_observation": "作者报告 PKC 磷酸化 SUN1 N 端 S113，导致 SUN1–NXF1 相互作用降低；作者将该关联表述为至少部分受 PKC 调节。",
+        "representation": "complete obtained provider abstract, markup flattened; not full text",
+        "source_locator": "attempt:metadata/body_base64#result.abstractText",
+        "source_ref": "epmc:MED:28831067",
+        "source_version": "provider version unreported",
+        "source_view_ref": "692ca660eef14f86a19318ca2e08d85b",
+        "supplements_seen": false,
+        "supporting_quote": "The SUN1-NXF1 association is at least partly regulated by a protein kinase C (PKC) which phosphorylates serine 113 (S113) in the N-terminal domain leading to reduced interaction.",
+        "transfer_assumptions": [
+          "将这一结果用于核孔蛋白磷酸化问题，需要区分核孔邻近蛋白的修饰与核孔蛋白自身的修饰。",
+          "不能仅凭结合降低推定 mRNA 输出必然降低；输出终点需与其具体处理条件分别核对。"
+        ]
+      },
+      {
+        "access": "abstract",
+        "author_interpretation": "作者认为该结果提示磷酸化似乎对 SUN1 的核 mRNA 输出功能重要。",
+        "biological_context": "SUN1 敲低后的 mRNA 输出恢复实验；具体细胞类型当前视图未报告。",
+        "endpoint": "SUN1 敲低后 mRNA 输出的恢复效率。",
+        "id": "finding-61730f7691fd43a8a2b9c92eb6126f3b-3",
+        "images_seen": false,
+        "intervention_comparator": "携带 S113A 突变的 GFP-SUN1 与野生型蛋白比较。",
+        "negative_findings": [
+          "在 SUN1 敲低后的恢复条件下，S113A 相对野生型的恢复效率较低；这不是完全不能恢复或无效的报告。"
+        ],
+        "negative_quotes": [
+          "GFP-SUN1 carrying a S113A mutation was less efficient in restoring mRNA export after SUN1 knockdown as compared to the wild type protein."
+        ],
+        "negative_state": "reported_in_view",
+        "not_established": [
+          "当前视图未报告恢复幅度、表达量匹配、统计结果或该突变的其他影响。",
+          "当前视图未报告核孔蛋白磷酸化、细胞损伤与输出障碍的时间先后。"
+        ],
+        "reported_observation": "作者报告，在 SUN1 敲低后，GFP-SUN1 S113A 恢复 mRNA 输出的效率低于野生型蛋白。",
+        "representation": "complete obtained provider abstract, markup flattened; not full text",
+        "source_locator": "attempt:metadata/body_base64#result.abstractText",
+        "source_ref": "epmc:MED:28831067",
+        "source_version": "provider version unreported",
+        "source_view_ref": "692ca660eef14f86a19318ca2e08d85b",
+        "supplements_seen": false,
+        "supporting_quote": "The phosphorylation appears to be important for the SUN1 function in nuclear mRNA export since GFP-SUN1 carrying a S113A mutation was less efficient in restoring mRNA export after SUN1 knockdown as compared to the wild type protein.",
+        "transfer_assumptions": [
+          "若据此解释磷酸化功能，需要另行确认突变表型能够代表相应修饰变化，而非其他突变效应。",
+          "该恢复实验不能直接转用于其他蛋白或 ALS 情境。"
+        ]
+      },
+      {
+        "access": "abstract",
+        "author_interpretation": "作者将 S113D 描述为类似磷酸化状态的变体。",
+        "biological_context": "表达 GFP-SUN1-S113D 的条件；该句未单独交代是否也处于 SUN1 敲低背景。",
+        "endpoint": "poly(A)+RNA 输出。",
+        "id": "finding-61730f7691fd43a8a2b9c92eb6126f3b-4",
+        "images_seen": false,
+        "intervention_comparator": "GFP-SUN1-S113D；作者以“By contrast”承接前述 S113A 结果，但具体实验配对和定量比较当前视图未报告。",
+        "negative_findings": [],
+        "negative_quotes": [],
+        "negative_state": "not_reported_in_view",
+        "not_established": [
+          "当前视图未报告该变体是否完全再现真实磷酸化的结构或动力学效应。",
+          "当前视图未报告其相对野生型的定量效应，亦未明确该句的敲低背景。",
+          "当前视图未报告同一 S113D 条件下的 SUN1–NXF1 结合测量。"
+        ],
+        "reported_observation": "作者报告，类似磷酸化状态的 GFP-SUN1-S113D 允许 poly(A)+RNA 非常高效地输出。",
+        "representation": "complete obtained provider abstract, markup flattened; not full text",
+        "source_locator": "attempt:metadata/body_base64#result.abstractText",
+        "source_ref": "epmc:MED:28831067",
+        "source_version": "provider version unreported",
+        "source_view_ref": "692ca660eef14f86a19318ca2e08d85b",
+        "supplements_seen": false,
+        "supporting_quote": "By contrast, GFP-SUN1-S113D resembling the phosphorylated state allowed very efficient export of poly(A)+RNA.",
+        "transfer_assumptions": [
+          "不能将 S113D 的输出表型直接等同于内源性磷酸化的全部作用。",
+          "不能未经条件核对，就将这一输出结果与前述 PKC 结合结果视为同一实验中的配对终点。"
+        ]
+      },
+      {
+        "access": "abstract",
+        "author_interpretation": "作者以该实验探查 Nesprin-2 在这一过程中的可能作用。",
+        "biological_context": "Nesprin-2 敲低细胞；Nesprin-2 被描述为 LINC 复合体组分。具体细胞类型当前视图未报告。",
+        "endpoint": "mRNA 输出。",
+        "id": "finding-61730f7691fd43a8a2b9c92eb6126f3b-5",
+        "images_seen": false,
+        "intervention_comparator": "Nesprin-2 敲低；具体对照条件当前视图未报告。",
+        "negative_findings": [],
+        "negative_quotes": [],
+        "negative_state": "not_reported_in_view",
+        "not_established": [
+          "当前视图未报告敲低程度、输出受损幅度、救援实验或时间顺序。",
+          "当前视图未报告该表型由 SUN1 S113 磷酸化变化介导。"
+        ],
+        "reported_observation": "作者报告在 Nesprin-2 敲低细胞中观察到 mRNA 输出受损。",
+        "representation": "complete obtained provider abstract, markup flattened; not full text",
+        "source_locator": "attempt:metadata/body_base64#result.abstractText",
+        "source_ref": "epmc:MED:28831067",
+        "source_version": "provider version unreported",
+        "source_view_ref": "692ca660eef14f86a19318ca2e08d85b",
+        "supplements_seen": false,
+        "supporting_quote": "Furthermore, probing a possible role of the LINC complex component Nesprin-2 in this process we observed impaired mRNA export in Nesprin-2 knockdown cells.",
+        "transfer_assumptions": [
+          "Nesprin-2 敲低是与 SUN1 位点变体不同的干预，不能合并为同一实验或同一修饰机制。"
+        ]
+      },
+      {
+        "access": "abstract",
+        "author_interpretation": "作者据此推测，前述 Nesprin-2 敲低对 mRNA 输出的影响可能独立于 SUN1；其措辞为可能，而非确定。",
+        "biological_context": "表达 GFP 标记、缺失 SUN 结构域的 SUN1；该变体被描述为不能再与 Nesprin-2 相互作用。具体细胞背景当前视图未报告。",
+        "endpoint": "mRNA 输出；变体与 Nesprin-2 的相互作用能力作为作者提供的背景。",
+        "id": "finding-61730f7691fd43a8a2b9c92eb6126f3b-6",
+        "images_seen": false,
+        "intervention_comparator": "表达该 SUN1 缺失变体；对照、内源性 SUN1 状态及是否伴随 Nesprin-2 敲低当前视图未报告。",
+        "negative_findings": [
+          "在表达 GFP 标记、缺失 SUN 结构域的 SUN1 的条件下，作者报告 mRNA 输出未受影响；具体比较条件与检测灵敏度当前视图未报告。"
+        ],
+        "negative_quotes": [
+          "expression of a GFP tagged SUN-domain deficient SUN1, which no longer can interact with Nesprin-2, did not affect mRNA export."
+        ],
+        "negative_state": "reported_in_view",
+        "not_established": [
+          "当前视图未报告足以确立 SUN1 独立性的实验细节。",
+          "当前视图未报告该缺失变体在所有条件下均无作用，也未报告其能否恢复 Nesprin-2 敲低表型。",
+          "当前视图未报告此无影响结果涉及核孔蛋白磷酸化。"
+        ],
+        "reported_observation": "作者报告，该缺失变体不能再与 Nesprin-2 相互作用，而表达该变体未影响 mRNA 输出。",
+        "representation": "complete obtained provider abstract, markup flattened; not full text",
+        "source_locator": "attempt:metadata/body_base64#result.abstractText",
+        "source_ref": "epmc:MED:28831067",
+        "source_version": "provider version unreported",
+        "source_view_ref": "692ca660eef14f86a19318ca2e08d85b",
+        "supplements_seen": false,
+        "supporting_quote": "This effect might be independent of SUN1 as expression of a GFP tagged SUN-domain deficient SUN1, which no longer can interact with Nesprin-2, did not affect mRNA export.",
+        "transfer_assumptions": [
+          "不能将 Nesprin-2 敲低表型直接归因于 SUN1–Nesprin-2 结合丧失。",
+          "该无影响结果需保留其具体构建体和输出终点边界，不能推广为 LINC 复合体整体与输出无关。"
+        ]
+      }
+    ],
+    "source_view_id": "692ca660eef14f86a19318ca2e08d85b",
+    "targeted_reading_requests": [
+      "请求读取本文可获取的方法与结果段落，核对各实验的细胞背景、对照和时间点，尤其是 S113D 是否处于 SUN1 敲低背景，以及 SUN 结构域缺失变体是否与 Nesprin-2 敲低组合使用；这些细节当前视图未报告。",
+      "请求读取 SUN1 S113 磷酸化、SUN1–NXF1 结合及 mRNA 输出各自的检测与干预结果，核对这些终点是否在相同条件下测量，避免把摘要中的不同实验拼接为一条已建立的因果链。",
+      "请求读取 Nesprin-2 敲低与 SUN 结构域缺失变体的完整结果，保留输出受损与输出未受影响两种结果，并核对作者关于 SUN1 独立性的限定。",
+      "围绕核孔蛋白磷酸化问题另行检索直接测量该修饰、mRNA 输出及损伤时序，或选择性干预该修饰的记录；不预选具体核孔蛋白或实验模型。本视图的磷酸化对象为 SUN1，不能替代所需的核孔蛋白证据。"
+    ]
+  },
+  "background_status": "saved",
+  "binding": {
+    "goal_ref": "goal-38a4a7a321d54c1eb475b9c7646930f0",
+    "run_id": "cea909fe8a004010b1896df1c1d98e02",
+    "seed_id": "seed-f87361b21b4f44609dedfa2ac9afc7bc-0"
+  },
+  "execution_mode": "real_model",
+  "model_config": {
+    "credential_configured": true,
+    "endpoint": "https://api.openai.com/v1/chat/completions",
+    "execution_mode": "real_model",
+    "max_request_bytes": 262144,
+    "model": "gpt-6.1-sol",
+    "parameters": {
+      "max_completion_tokens": 32768,
+      "reasoning_effort": "high",
+      "response_format": {
+        "type": "json_object"
+      }
+    },
+    "provider": "openai",
+    "timeout_seconds": 600
+  },
+  "operation": "P04",
+  "progress_fingerprint": null,
+  "prompt_version": "w1-l2-p04-context-v2",
+  "science_validated": false
+}

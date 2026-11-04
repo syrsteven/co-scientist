@@ -1,0 +1,8 @@
+{
+  "operation": "P03",
+  "request_id": "directed-seed-p03-plan-single",
+  "request": {
+    "seed_id": "seed-f87361b21b4f44609dedfa2ac9afc7bc-0",
+    "query_count": 3
+  }
+}

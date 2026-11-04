@@ -1,0 +1,14 @@
+{
+  "request_id": "directed-seed-search-3-page1",
+  "request": {
+    "kind": "search",
+    "query": "(TITLE_ABS:nucleoporin* OR TITLE_ABS:\"nuclear pore\") AND (TITLE_ABS:phosphorylat* OR TITLE_ABS:dephosphorylat* OR TITLE_ABS:phosphosite* OR TITLE_ABS:phosphoproteom* OR TITLE_ABS:phosphomimetic*) AND (TITLE_ABS:\"time course\" OR TITLE_ABS:\"time-course\" OR TITLE_ABS:temporal OR TITLE_ABS:longitudinal OR TITLE_ABS:rescue OR TITLE_ABS:reversib* OR TITLE_ABS:phosphomimetic* OR TITLE_ABS:phosphodeficient* OR TITLE_ABS:nonphosphorylatable OR TITLE_ABS:mutagenesis OR TITLE_ABS:kinase* OR TITLE_ABS:phosphatase* OR TITLE_ABS:inhibitor*)",
+    "cursor": null,
+    "page_size": 5
+  },
+  "background_context": {
+    "plan_ref": "directed-seed-p03-plan-single",
+    "query_index": 2,
+    "seed_id": "seed-f87361b21b4f44609dedfa2ac9afc7bc-0"
+  }
+}

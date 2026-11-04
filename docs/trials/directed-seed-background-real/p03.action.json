@@ -1,0 +1,233 @@
+{
+  "request_id": "directed-seed-p03-plan-single",
+  "run_id": "cea909fe8a004010b1896df1c1d98e02",
+  "task_id": "235dc5d2921d40c7b7e173ce766c8569",
+  "operation": "P03",
+  "seed_id": "seed-f87361b21b4f44609dedfa2ac9afc7bc-0",
+  "request": {
+    "query_count": 3,
+    "seed_id": "seed-f87361b21b4f44609dedfa2ac9afc7bc-0"
+  },
+  "input": {
+    "executed_search_history": [
+      {
+        "execution_status": "succeeded",
+        "intent": "broad_orientation",
+        "query": "EXT_ID:PPR1217875 AND SRC:PPR",
+        "record_ref": "p04-v2-human-search-control",
+        "result": {
+          "error": null,
+          "executed_at": "2026-11-03T18:02:24.347167+00:00",
+          "items": [
+            {
+              "citation": "https://europepmc.org/article/PPR/PPR1217875",
+              "source_ref": "epmc:PPR:PPR1217875",
+              "title": "Seeded aggregation of ANXA11 induces prion-like propagation, TDP-43 co-pathology and nucleocytoplasmic transport defects"
+            }
+          ],
+          "next_cursor": null,
+          "reported_total": 1,
+          "request": {
+            "cursor": null,
+            "query": "EXT_ID:PPR1217875 AND SRC:PPR",
+            "scope": "Europe PMC indexed publications; manual query; relevance order; no automatic expansion",
+            "source": "Europe PMC"
+          },
+          "scope_complete": true,
+          "status": "succeeded"
+        },
+        "scope": "Europe PMC indexed publications; manual query; relevance order; no automatic expansion",
+        "seed_id": null
+      },
+      {
+        "execution_status": "succeeded",
+        "intent": "broad_orientation",
+        "query": "EXT_ID:35112738 AND SRC:MED",
+        "record_ref": "p04-v2-human-search-complement",
+        "result": {
+          "error": null,
+          "executed_at": "2026-11-03T18:02:28.210386+00:00",
+          "items": [
+            {
+              "citation": "https://europepmc.org/article/MED/35112738",
+              "source_ref": "epmc:MED:35112738",
+              "title": "Disease-linked TDP-43 hyperphosphorylation suppresses TDP-43 condensation and aggregation."
+            }
+          ],
+          "next_cursor": null,
+          "reported_total": 1,
+          "request": {
+            "cursor": null,
+            "query": "EXT_ID:35112738 AND SRC:MED",
+            "scope": "Europe PMC indexed publications; manual query; relevance order; no automatic expansion",
+            "source": "Europe PMC"
+          },
+          "scope_complete": true,
+          "status": "succeeded"
+        },
+        "scope": "Europe PMC indexed publications; manual query; relevance order; no automatic expansion",
+        "seed_id": null
+      }
+    ],
+    "generic_search_constraints": {
+      "no_auto_execution": true,
+      "query_count": 3
+    },
+    "goal_context": {
+      "brief_revision_id": "997d55886d634f289612ba79e1755f16",
+      "clarification_questions": [],
+      "clarification_required": false,
+      "hard_requirements": [
+        {
+          "input_locator": "explicit_constraints[0]",
+          "supporting_span": "保留核孔蛋白磷酸化问题",
+          "text": "保留核孔蛋白磷酸化问题"
+        },
+        {
+          "input_locator": "explicit_constraints[1]",
+          "supporting_span": "不预选具体分子或实验模型",
+          "text": "不预选具体分子或实验模型"
+        }
+      ],
+      "intended_use": "非临床文献检索开发验证",
+      "material_manifest": [],
+      "optional_interpretations": [],
+      "original_question": "针对核孔复合体中某核孔蛋白的磷酸化，提出解释导致 ALS 的关键因素或过程的新假说；详细说明作用机制，并给出可行的检验实验。",
+      "preferences": [],
+      "prepared_question": "针对核孔复合体中某核孔蛋白的磷酸化，提出解释导致 ALS 的关键因素或过程的新假说；详细说明作用机制，并给出可行的检验实验。",
+      "supplied_background": "采用既有 ALS Goal 的开发者转述，非原文逐字引用。",
+      "unspecified_details": [
+        "测试适配器不补充未指定的分子、模型或实验条件；原始问题中的条件始终有效。"
+      ]
+    },
+    "neutral_overview": {
+      "competing_explanations": [
+        "ANXA11 聚集相关的核孔蛋白分布改变、mRNA 输出受损及神经元毒性，可以容许核孔改变参与损伤、随损伤发生，或与其他改变并行出现等不同解释；当前摘要未提供足以区分这些解释的时序或干预结果。",
+        "TDP-43 过度磷酸化与聚集共同出现，并不区分该修饰参与病理过程、属于下游反应或仅伴随出现。互补记录中磷酸模拟变体保留所测功能，限制了“该修饰本身普遍足以造成这些功能损害”的解释，但不能据此认定其具有保护作用。",
+        "两份材料的表面张力可能来自不同体系和处理：ANXA11 纤维相关病理背景与 TDP-43 氨基酸替换实验不同，所测终点也不同。尤其 mRNA 输出与 TDP-43 报告蛋白核输入不可互换，现有结果不能视为同一实验条件下的直接矛盾。",
+        "TurboID 的邻近富集可以与局部空间重排相容，但不能单独区分直接结合、隔离、功能丧失或磷酸化介导的变化；这些机制均未由所读视图建立。"
+      ],
+      "limitations": [
+        "检索记录 p04-v2-human-search-control 与 p04-v2-human-search-complement 均执行成功，各自精确标识符查询返回一条记录、无后续游标。其 scope_complete 仅适用于这两条 Europe PMC 查询，不代表 ALS、核孔蛋白或磷酸化主题检索完整。本包未执行额外检索。",
+        "选择清单纳入 p04-v2-control-single 和 p04-v2-complement-single，未列出被省略的阅读记录；但文献内部存在明确访问和裁剪边界，并非两篇全文均已阅读。",
+        "视图 75bf96a0e25b4e6aa10e54f6781a5382 覆盖字符 [0,2746]，为完整取得的扁平化 Abstract、Highlights、In Brief，未裁剪；完整取得的是摘要表示，不是正文。三个部分的重复概括未作独立实验计数。",
+        "视图 876e76bb00f84e928a89cbea813dacad 仅覆盖原始 125363 字符中的 [33770,41370]；[0,33770] 和 [41370,125363] 未读。所读内容为结果小节及文字图注，不能依据论文标题推断未读的凝聚或聚集实验结果。",
+        "两份视图均未查看图像像素或补充材料；文字图注提及的源数据不等于已经访问源数据。来源版本均未报告，ANXA11 来源为所供 PPR 记录，不能由此假定其后续版本或审稿状态。",
+        "ANXA11 卡片中的空阴性结果数组仅表示当前视图未报告阴性实验结果，不表示没有阴性结果。互补记录的无损害结果则必须保留在各自构建体、细胞、底物、时程及测量终点范围内。",
+        "当前材料没有直接建立核孔蛋白磷酸化、相关调控因子及其与运输障碍或 ALS 的关系。TDP-43 磷酸化、磷酸模拟替换、核孔蛋白分布和核孔蛋白磷酸化是不同对象或终点，不能相互替代。",
+        "患者脑结构背景、SH-SY5Y、iPSC 来源神经元、HeLa、U2OS、融合报告蛋白和体外 EMSA 之间的转移均需额外对应证据；本包不建立跨体系因果链，不声称新颖性或科学验证。调用方仍保留全部原始卡片，本综合不替代原始记录。"
+      ],
+      "overview": [
+        "本包仅综合两份已选阅读记录及两次已执行的精确标识符检索，保留核孔蛋白磷酸化问题，不预选具体核孔蛋白、实验模型或研究条件，也不将背景关联转写为 ALS 的因果解释。",
+        "ANXA11 文献的摘要视图报告相分离、纤维形成、播种传播、TDP-43 病理转化，以及聚集相关的核孔与运输表型。这些结果来自不同或未明确说明的实验背景；患者脑异源丝状结构则是摘要引述的既往研究，不能与该文细胞实验合并。",
+        "互补文献的已读结果小节报告：在所测试的 TDP-43 Wt、12D、12A 条件下，核定位、核输入、自调节、两类 RNA 底物结合及两个剪接靶标的功能未见所述损害。该结果限制了将 TDP-43 磷酸化笼统等同于运输或 RNA 功能障碍的解释，但不直接检验核孔蛋白磷酸化，也不否定其他细胞或疾病条件下的效应。"
+      ]
+    },
+    "seed_brief": {
+      "id": "seed-f87361b21b4f44609dedfa2ac9afc7bc-0",
+      "kind": "directed",
+      "known_anchor_refs": [
+        "finding-f49335ad41a946f9aed8103f53f328ca-6",
+        "finding-f49335ad41a946f9aed8103f53f328ca-4",
+        "finding-f8cf38bfaf564f93a51f5b4b17aeefeb-1"
+      ],
+      "question": "在不预选具体核孔蛋白或实验模型的前提下，若检测到核孔蛋白磷酸化变化，能否通过时序比较及针对该修饰的选择性干预，区分其参与 mRNA 输出障碍、属于细胞损伤后的反应，或与运输障碍和损伤并行变化？",
+      "unresolved_relationship": "所供记录报告了聚集相关的核孔蛋白分布改变、mRNA 输出受损及神经元毒性，但未直接测量核孔蛋白磷酸化，也未建立这些终点的先后或因果关系。TDP-43 磷酸模拟变体的核输入无损害结果针对不同对象和运输终点，不能直接解决这一关系。"
+    },
+    "source_discovery_capabilities": {
+      "fetch": "abstract/OA XML where available",
+      "images": false,
+      "provider": "Europe PMC",
+      "search": "explicit query, cursor, metadata",
+      "supplements": false
+    }
+  },
+  "config": {
+    "credential_configured": true,
+    "endpoint": "https://api.openai.com/v1/chat/completions",
+    "execution_mode": "real_model",
+    "max_request_bytes": 262144,
+    "model": "gpt-6.1-sol",
+    "parameters": {
+      "max_completion_tokens": 32768,
+      "reasoning_effort": "high",
+      "response_format": {
+        "type": "json_object"
+      }
+    },
+    "provider": "openai",
+    "timeout_seconds": 600
+  },
+  "created_at": "2026-11-04T03:04:08.566954+00:00",
+  "prompt_version": "w1-l2-p03-p07-v1",
+  "task_status": "succeeded",
+  "error": null,
+  "result": {
+    "artifact": {
+      "coverage_unknowns": [
+        "以上仅为 Europe PMC 查询计划，均未执行；没有新增命中数量、阴性检索结果或研究结论。",
+        "已有记录 p04-v2-human-search-control 与 p04-v2-human-search-complement 仅完成两次精确标识符查询，不能代表本主题检索完整。",
+        "所供视图 75bf96a0e25b4e6aa10e54f6781a5382 是摘要表示；876e76bb00f84e928a89cbea813dacad 仅为正文片段。现有阅读范围未直接建立核孔蛋白磷酸化及其与运输障碍、损伤的时序或因果关系。",
+        "查询不按效应方向筛选。后续需保留无效、无损害、相反结果及其测量范围；既有 TDP-43 磷酸模拟变体的核输入无损害结果不能替代核孔蛋白磷酸化或 mRNA 输出证据。",
+        "第二、三条未限定 ALS，以避免遗漏基础机制研究；非 ALS、不同细胞或不同损伤条件的结果不能直接拼接成 ALS 因果链。",
+        "标题与摘要可能不包含位点、时间点、选择性干预或阴性结果；第三条的方法关键词也可能漏检使用其他表述的研究。磷酸模拟替换不等同于直接测量内源磷酸化。",
+        "可获取摘要及可用的开放获取 XML；图像与补充材料不可访问，其他全文是否可获取尚未知。仅有摘要可能不足以核查时序、干预特异性和实验可行性。",
+        "未设置年份、语言、物种或实验模型限制，也未预选具体核孔蛋白。Europe PMC 的索引范围及本计划均不足以支持全球不存在相关研究或假说具有新颖性的结论。"
+      ],
+      "executed": false,
+      "queries": [
+        {
+          "query": "(TITLE_ABS:\"amyotrophic lateral sclerosis\" OR TITLE_ABS:ALS OR TITLE_ABS:\"motor neuron disease\") AND (TITLE_ABS:nucleoporin* OR TITLE_ABS:\"nuclear pore\")",
+          "question": "广域定位：ALS 相关文献如何研究核孔蛋白与核孔改变，是否涉及磷酸化、运输障碍及细胞损伤？",
+          "why": "从疾病与核孔概念出发，不预选具体分子或模型。先定位研究语境，不强制摘要包含磷酸化或时序术语；这属于主题定位，不能替代对本种子所缺因果信息的检索。"
+        },
+        {
+          "query": "(TITLE_ABS:nucleoporin* OR TITLE_ABS:\"nuclear pore\") AND (TITLE_ABS:phosphorylat* OR TITLE_ABS:dephosphorylat* OR TITLE_ABS:phosphosite* OR TITLE_ABS:phosphoproteom* OR TITLE_ABS:phosphomimetic*) AND (TITLE_ABS:\"mRNA export\" OR TITLE_ABS:\"messenger RNA export\" OR TITLE_ABS:\"RNA export\" OR TITLE_ABS:\"poly(A) RNA\")",
+          "question": "聚焦缺口：是否有直接连接核孔蛋白磷酸化与 mRNA 输出的研究，且能提供修饰、输出障碍和损伤的先后信息？",
+          "why": "围绕尚未测量的修饰与指定运输终点检索，不用蛋白核输入替代 mRNA 输出。不限定 ALS 或实验模型，以容纳机制研究；时序、损伤终点及其疾病适用性需随后逐篇核查。"
+        },
+        {
+          "query": "(TITLE_ABS:nucleoporin* OR TITLE_ABS:\"nuclear pore\") AND (TITLE_ABS:phosphorylat* OR TITLE_ABS:dephosphorylat* OR TITLE_ABS:phosphosite* OR TITLE_ABS:phosphoproteom* OR TITLE_ABS:phosphomimetic*) AND (TITLE_ABS:\"time course\" OR TITLE_ABS:\"time-course\" OR TITLE_ABS:temporal OR TITLE_ABS:longitudinal OR TITLE_ABS:rescue OR TITLE_ABS:reversib* OR TITLE_ABS:phosphomimetic* OR TITLE_ABS:phosphodeficient* OR TITLE_ABS:nonphosphorylatable OR TITLE_ABS:mutagenesis OR TITLE_ABS:kinase* OR TITLE_ABS:phosphatase* OR TITLE_ABS:inhibitor*)",
+          "question": "聚焦缺口：哪些时序比较或修饰干预可帮助区分核孔蛋白磷酸化参与运输障碍、继发于损伤，或与两者并行变化？",
+          "why": "寻找时间序列、可逆性、位点替换及修饰调控研究，不预设效应方向。命中后需核查是否实际测量运输与损伤，以及干预是否具有位点选择性；激酶或磷酸酶干预不能自动视为选择性因果检验。"
+        }
+      ]
+    },
+    "background_status": "saved",
+    "binding": {
+      "goal_ref": "goal-38a4a7a321d54c1eb475b9c7646930f0",
+      "run_id": "cea909fe8a004010b1896df1c1d98e02",
+      "seed_id": "seed-f87361b21b4f44609dedfa2ac9afc7bc-0"
+    },
+    "execution_mode": "real_model",
+    "model_config": {
+      "credential_configured": true,
+      "endpoint": "https://api.openai.com/v1/chat/completions",
+      "execution_mode": "real_model",
+      "max_request_bytes": 262144,
+      "model": "gpt-6.1-sol",
+      "parameters": {
+        "max_completion_tokens": 32768,
+        "reasoning_effort": "high",
+        "response_format": {
+          "type": "json_object"
+        }
+      },
+      "provider": "openai",
+      "timeout_seconds": 600
+    },
+    "operation": "P03",
+    "progress_fingerprint": null,
+    "prompt_version": "w1-l2-p03-p07-v1",
+    "science_validated": false
+  },
+  "attempts": [
+    {
+      "id": "ac8c337f12634c5a9200eeb3d57f027f",
+      "status": "succeeded",
+      "usage": "{\"cost\": null, \"input_tokens\": 2533, \"output_tokens\": 2058, \"tool_units\": null}",
+      "started_at": "2026-11-04T03:04:08.571936+00:00",
+      "finished_at": "2026-11-04T03:04:49.285042+00:00"
+    }
+  ]
+}

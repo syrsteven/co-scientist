@@ -1,0 +1,13 @@
+{
+  "max_model_calls": 6,
+  "p03": 1,
+  "max_queries": 3,
+  "first_page_only": true,
+  "max_new_sources_and_p04": 3,
+  "p05": 1,
+  "p07": 1,
+  "no_retries": true,
+  "source_commit": "54253eb2e5fac2c672fe9a1461bdc851488a1331",
+  "byte_cap": 262144,
+  "capacity_rationale": "User previously explicitly authorized adjusting other configuration limits to avoid repeated small byte-cap issues. Explicit262144 for cumulative source/cards/search envelopes; no model parameters changed; no cropping; token context not inferred from bytes. Oversize still stops."
+}

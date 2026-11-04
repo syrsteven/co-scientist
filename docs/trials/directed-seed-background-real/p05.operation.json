@@ -1,0 +1,15 @@
+{
+  "operation": "P05",
+  "request_id": "directed-seed-p05-packet-single",
+  "request": {
+    "reading_refs": [
+      "p04-v2-control-single",
+      "p04-v2-complement-single",
+      "directed-seed-p04-source-1-single",
+      "directed-seed-p04-source-2-single",
+      "directed-seed-p04-source-3-single"
+    ],
+    "omitted_readings": {},
+    "seed_id": "seed-f87361b21b4f44609dedfa2ac9afc7bc-0"
+  }
+}

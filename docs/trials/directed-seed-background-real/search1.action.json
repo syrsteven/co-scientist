@@ -1,0 +1,322 @@
+{
+  "request_id": "directed-seed-search-1-page1",
+  "run_id": "cea909fe8a004010b1896df1c1d98e02",
+  "task_id": "d809b835334644ba9c10094869543a9f",
+  "request": {
+    "background_context": {
+      "plan_ref": "directed-seed-p03-plan-single",
+      "query_index": 0,
+      "seed_id": "seed-f87361b21b4f44609dedfa2ac9afc7bc-0"
+    },
+    "cursor": null,
+    "kind": "search",
+    "page_size": 5,
+    "query": "(TITLE_ABS:\"amyotrophic lateral sclerosis\" OR TITLE_ABS:ALS OR TITLE_ABS:\"motor neuron disease\") AND (TITLE_ABS:nucleoporin* OR TITLE_ABS:\"nuclear pore\")",
+    "query_origin": "model_planned_user_executed",
+    "scope": "Europe PMC indexed publications; manual query; relevance order; no automatic expansion",
+    "source": "Europe PMC"
+  },
+  "created_at": "2026-11-04T03:05:09.494529+00:00",
+  "task_status": "succeeded",
+  "error": null,
+  "result": {
+    "acquisition": {
+      "error": null,
+      "executed_at": "2026-11-04T03:05:12.358821+00:00",
+      "items": [
+        {
+          "citation": "https://europepmc.org/article/PPR/PPR1223302",
+          "source_ref": "epmc:PPR:PPR1223302",
+          "title": "Novel single molecule imaging approaches reveal structure-function alterations to the nuclear pore complex in early  <i>C9ORF72</i>  -associated TDP-43 proteinopathy"
+        },
+        {
+          "citation": "https://europepmc.org/article/PPR/PPR1219488",
+          "source_ref": "epmc:PPR:PPR1219488",
+          "title": "C9ORF72-derived polyGR polypeptides disrupt passive nucleocytoplasmic transport by tuning protein affinity for the nuclear pore barrier"
+        },
+        {
+          "citation": "https://europepmc.org/article/MED/41691309",
+          "source_ref": "epmc:MED:41691309",
+          "title": "Impaired nucleocytoplasmic transport in SOD1-mediated ALS."
+        },
+        {
+          "citation": "https://europepmc.org/article/PPR/PPR1217875",
+          "source_ref": "epmc:PPR:PPR1217875",
+          "title": "Seeded aggregation of ANXA11 induces prion-like propagation, TDP-43 co-pathology and nucleocytoplasmic transport defects"
+        },
+        {
+          "citation": "https://europepmc.org/article/MED/42312942",
+          "source_ref": "epmc:MED:42312942",
+          "title": "Enterovirus D68 2A protease causes nuclear pore complex dysfunction and independently contributes to motor neuron toxicity."
+        }
+      ],
+      "next_cursor": "AoIIQLNjBCg1NTc5ODI3OA==",
+      "reported_total": 121,
+      "request": {
+        "cursor": null,
+        "query": "(TITLE_ABS:\"amyotrophic lateral sclerosis\" OR TITLE_ABS:ALS OR TITLE_ABS:\"motor neuron disease\") AND (TITLE_ABS:nucleoporin* OR TITLE_ABS:\"nuclear pore\")",
+        "scope": "Europe PMC indexed publications; manual query; relevance order; no automatic expansion",
+        "source": "Europe PMC"
+      },
+      "scope_complete": false,
+      "status": "succeeded"
+    },
+    "details": {
+      "deduplicated_count": 5,
+      "model_read": false,
+      "provider": "Europe PMC",
+      "provider_request": {
+        "cursorMark": "*",
+        "pageSize": 5,
+        "queryString": "(TITLE_ABS:\"amyotrophic lateral sclerosis\" OR TITLE_ABS:ALS OR TITLE_ABS:\"motor neuron disease\") AND (TITLE_ABS:nucleoporin* OR TITLE_ABS:\"nuclear pore\")",
+        "resultType": "lite",
+        "sort": "",
+        "synonym": false
+      },
+      "raw_response_locator": "attempt:search/body_base64#resultList.result",
+      "raw_returned_count": 5,
+      "relationships": [],
+      "sources": [
+        {
+          "access": "metadata",
+          "metadata": {
+            "authorString": "Lee S, Mizielinska S.",
+            "bookOrReportDetails": {
+              "publisher": "bioRxiv",
+              "yearOfPublication": 2026
+            },
+            "citedByCount": 0,
+            "doi": "10.64898/2026.02.17.706337",
+            "firstIndexDate": "2026-05-19",
+            "firstPublicationDate": "2026-02-18",
+            "fullTextIdList": {
+              "fullTextId": [
+                "PPR1223302"
+              ]
+            },
+            "hasBook": "N",
+            "hasDbCrossReferences": "N",
+            "hasLabsLinks": "N",
+            "hasPDF": "Y",
+            "hasReferences": "Y",
+            "hasSuppl": "Y",
+            "hasTMAccessionNumbers": "Y",
+            "hasTextMinedTerms": "Y",
+            "id": "PPR1223302",
+            "inEPMC": "Y",
+            "inPMC": "N",
+            "isOpenAccess": "Y",
+            "pubType": "preprint",
+            "pubYear": "2026",
+            "source": "PPR",
+            "title": "Novel single molecule imaging approaches reveal structure-function alterations to the nuclear pore complex in early  <i>C9ORF72</i>  -associated TDP-43 proteinopathy",
+            "tmAccessionTypeList": {
+              "accessionType": [
+                "doi"
+              ]
+            }
+          },
+          "source": {
+            "citation": "https://europepmc.org/article/PPR/PPR1223302",
+            "source_ref": "epmc:PPR:PPR1223302",
+            "title": "Novel single molecule imaging approaches reveal structure-function alterations to the nuclear pore complex in early  <i>C9ORF72</i>  -associated TDP-43 proteinopathy"
+          }
+        },
+        {
+          "access": "metadata",
+          "metadata": {
+            "authorString": "Solomon DA, Emenecker RJ, Salcher-Konrad M, Konstantinidou SM, Houghton OH, Wycherley E, Lee S, O’Brien NL, Alcalde J, Cabaço IL, Ruepp M, Schmidt HB, Holehouse AS, Mizielinska S.",
+            "bookOrReportDetails": {
+              "publisher": "bioRxiv",
+              "yearOfPublication": 2026
+            },
+            "citedByCount": 0,
+            "doi": "10.64898/2026.03.16.711670",
+            "firstIndexDate": "2026-05-19",
+            "firstPublicationDate": "2026-03-17",
+            "fullTextIdList": {
+              "fullTextId": [
+                "PPR1219488"
+              ]
+            },
+            "hasBook": "N",
+            "hasDbCrossReferences": "N",
+            "hasLabsLinks": "Y",
+            "hasPDF": "Y",
+            "hasReferences": "Y",
+            "hasSuppl": "Y",
+            "hasTMAccessionNumbers": "Y",
+            "hasTextMinedTerms": "Y",
+            "id": "PPR1219488",
+            "inEPMC": "Y",
+            "inPMC": "N",
+            "isOpenAccess": "Y",
+            "pubType": "preprint",
+            "pubYear": "2026",
+            "source": "PPR",
+            "title": "C9ORF72-derived polyGR polypeptides disrupt passive nucleocytoplasmic transport by tuning protein affinity for the nuclear pore barrier",
+            "tmAccessionTypeList": {
+              "accessionType": [
+                "uniprot"
+              ]
+            }
+          },
+          "source": {
+            "citation": "https://europepmc.org/article/PPR/PPR1219488",
+            "source_ref": "epmc:PPR:PPR1219488",
+            "title": "C9ORF72-derived polyGR polypeptides disrupt passive nucleocytoplasmic transport by tuning protein affinity for the nuclear pore barrier"
+          }
+        },
+        {
+          "access": "metadata",
+          "metadata": {
+            "authorString": "Argueti-Ostrovsky S, Lim SM, Arogundade OA, Diaz-Garcia S, Yunisova G, Meng A, Hermann A, Ong K, Eremenko E, Bravo-Hernandez M, Driscoll SP, Lee CZ, Jiang X, Stavsky A, Barel S, Shani T, Kahn J, Pfaff SL, Monsonego A, Marsala M, Ravits J, Lagier-Tourenne C, Israelson A.",
+            "citedByCount": 1,
+            "doi": "10.1186/s13024-026-00930-8",
+            "firstIndexDate": "2026-02-15",
+            "firstPublicationDate": "2026-02-14",
+            "fullTextIdList": {
+              "fullTextId": [
+                "PMC12922372"
+              ]
+            },
+            "hasBook": "N",
+            "hasDbCrossReferences": "N",
+            "hasLabsLinks": "Y",
+            "hasPDF": "Y",
+            "hasReferences": "Y",
+            "hasSuppl": "Y",
+            "hasTMAccessionNumbers": "Y",
+            "hasTextMinedTerms": "Y",
+            "id": "41691309",
+            "inEPMC": "Y",
+            "inPMC": "Y",
+            "isOpenAccess": "Y",
+            "issue": "1",
+            "journalIssn": "1750-1326",
+            "journalTitle": "Mol Neurodegener",
+            "journalVolume": "21",
+            "pageInfo": "14",
+            "pmcid": "PMC12922372",
+            "pmid": "41691309",
+            "pubType": "research support, non-u.s. gov't; research-article; journal article; research support, n.i.h., extramural",
+            "pubYear": "2026",
+            "source": "MED",
+            "title": "Impaired nucleocytoplasmic transport in SOD1-mediated ALS.",
+            "tmAccessionTypeList": {
+              "accessionType": [
+                "gen"
+              ]
+            }
+          },
+          "source": {
+            "citation": "https://europepmc.org/article/MED/41691309",
+            "source_ref": "epmc:MED:41691309",
+            "title": "Impaired nucleocytoplasmic transport in SOD1-mediated ALS."
+          }
+        },
+        {
+          "access": "metadata",
+          "metadata": {
+            "authorString": "Luo H, Zheng H, Lu Y, Liu C, Zhang K, Duan S, Zhang H, Zhang Y, Song Y, Wang T, Liu H, Zhang N, Xia Z, Xu Y.",
+            "bookOrReportDetails": {
+              "publisher": "bioRxiv",
+              "yearOfPublication": 2026
+            },
+            "citedByCount": 0,
+            "doi": "10.64898/2026.03.24.713853",
+            "firstIndexDate": "2026-05-19",
+            "firstPublicationDate": "2026-03-26",
+            "hasBook": "N",
+            "hasDbCrossReferences": "N",
+            "hasLabsLinks": "Y",
+            "hasPDF": "N",
+            "hasReferences": "N",
+            "hasSuppl": "N",
+            "hasTMAccessionNumbers": "N",
+            "hasTextMinedTerms": "Y",
+            "id": "PPR1217875",
+            "inEPMC": "N",
+            "inPMC": "N",
+            "isOpenAccess": "N",
+            "pubType": "preprint",
+            "pubYear": "2026",
+            "source": "PPR",
+            "title": "Seeded aggregation of ANXA11 induces prion-like propagation, TDP-43 co-pathology and nucleocytoplasmic transport defects"
+          },
+          "source": {
+            "citation": "https://europepmc.org/article/PPR/PPR1217875",
+            "source_ref": "epmc:PPR:PPR1217875",
+            "title": "Seeded aggregation of ANXA11 induces prion-like propagation, TDP-43 co-pathology and nucleocytoplasmic transport defects"
+          }
+        },
+        {
+          "access": "metadata",
+          "metadata": {
+            "authorString": "Zinn KM, McLaren MW, Imai MT, Jayaram MM, Rothstein JD, Elrick MJ.",
+            "citedByCount": 1,
+            "doi": "10.7554/elife.108672",
+            "firstIndexDate": "2026-06-19",
+            "firstPublicationDate": "2026-06-18",
+            "fullTextIdList": {
+              "fullTextId": [
+                "PMC13278737"
+              ]
+            },
+            "hasBook": "N",
+            "hasDbCrossReferences": "N",
+            "hasLabsLinks": "Y",
+            "hasPDF": "Y",
+            "hasReferences": "Y",
+            "hasSuppl": "Y",
+            "hasTMAccessionNumbers": "Y",
+            "hasTextMinedTerms": "Y",
+            "id": "42312942",
+            "inEPMC": "Y",
+            "inPMC": "Y",
+            "isOpenAccess": "Y",
+            "journalIssn": "2050-084x",
+            "journalTitle": "Elife",
+            "journalVolume": "14",
+            "pageInfo": "RP108672",
+            "pmcid": "PMC13278737",
+            "pmid": "42312942",
+            "pubType": "research-article; journal article",
+            "pubYear": "2026",
+            "source": "MED",
+            "title": "Enterovirus D68 2A protease causes nuclear pore complex dysfunction and independently contributes to motor neuron toxicity.",
+            "tmAccessionTypeList": {
+              "accessionType": [
+                "gen",
+                "cellosaurus",
+                "hpa"
+              ]
+            }
+          },
+          "source": {
+            "citation": "https://europepmc.org/article/MED/42312942",
+            "source_ref": "epmc:MED:42312942",
+            "title": "Enterovirus D68 2A protease causes nuclear pore complex dysfunction and independently contributes to motor neuron toxicity."
+          }
+        }
+      ],
+      "transport": "real_public_http",
+      "warnings": []
+    },
+    "model_read": false,
+    "science_validated": false
+  },
+  "attempts": [
+    {
+      "id": "a3b3d86e94414f03a9ea8e9902de3e96",
+      "call_key": "search",
+      "status": "succeeded",
+      "target": "Europe PMC public REST",
+      "request": "{\"headers\": {\"Accept\": \"application/json\", \"User-Agent\": \"CoScientist-W1-L1/1.0 (manual development acquisition)\"}, \"method\": \"GET\", \"url\": \"https://www.ebi.ac.uk/europepmc/webservices/rest/search?query=%28TITLE_ABS%3A%22amyotrophic+lateral+sclerosis%22+OR+TITLE_ABS%3AALS+OR+TITLE_ABS%3A%22motor+neuron+disease%22%29+AND+%28TITLE_ABS%3Anucleoporin%2A+OR+TITLE_ABS%3A%22nuclear+pore%22%29&format=json&resultType=lite&pageSize=5&cursorMark=%2A&synonym=false\"}",
+      "started_at": "2026-11-04T03:05:09.497762+00:00",
+      "finished_at": "2026-11-04T03:05:12.359007+00:00",
+      "error": null,
+      "usage": "{\"cost\": null, \"input_tokens\": null, \"output_tokens\": null, \"tool_units\": 1}"
+    }
+  ]
+}

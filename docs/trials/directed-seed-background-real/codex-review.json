@@ -1,0 +1,1013 @@
+{
+  "status": "Codex 初审，待独立人工复核",
+  "science_validated": false,
+  "authored_after_all_six_attempts": true,
+  "p07_has_no_response_or_decision": true,
+  "rows": [
+    {
+      "id": "R01",
+      "topic": "研究关系查询，不预选答案",
+      "actual_model_fields": [
+        {
+          "step": "p03",
+          "json_pointer": "/queries",
+          "value": [
+            {
+              "query": "(TITLE_ABS:\"amyotrophic lateral sclerosis\" OR TITLE_ABS:ALS OR TITLE_ABS:\"motor neuron disease\") AND (TITLE_ABS:nucleoporin* OR TITLE_ABS:\"nuclear pore\")",
+              "question": "广域定位：ALS 相关文献如何研究核孔蛋白与核孔改变，是否涉及磷酸化、运输障碍及细胞损伤？",
+              "why": "从疾病与核孔概念出发，不预选具体分子或模型。先定位研究语境，不强制摘要包含磷酸化或时序术语；这属于主题定位，不能替代对本种子所缺因果信息的检索。"
+            },
+            {
+              "query": "(TITLE_ABS:nucleoporin* OR TITLE_ABS:\"nuclear pore\") AND (TITLE_ABS:phosphorylat* OR TITLE_ABS:dephosphorylat* OR TITLE_ABS:phosphosite* OR TITLE_ABS:phosphoproteom* OR TITLE_ABS:phosphomimetic*) AND (TITLE_ABS:\"mRNA export\" OR TITLE_ABS:\"messenger RNA export\" OR TITLE_ABS:\"RNA export\" OR TITLE_ABS:\"poly(A) RNA\")",
+              "question": "聚焦缺口：是否有直接连接核孔蛋白磷酸化与 mRNA 输出的研究，且能提供修饰、输出障碍和损伤的先后信息？",
+              "why": "围绕尚未测量的修饰与指定运输终点检索，不用蛋白核输入替代 mRNA 输出。不限定 ALS 或实验模型，以容纳机制研究；时序、损伤终点及其疾病适用性需随后逐篇核查。"
+            },
+            {
+              "query": "(TITLE_ABS:nucleoporin* OR TITLE_ABS:\"nuclear pore\") AND (TITLE_ABS:phosphorylat* OR TITLE_ABS:dephosphorylat* OR TITLE_ABS:phosphosite* OR TITLE_ABS:phosphoproteom* OR TITLE_ABS:phosphomimetic*) AND (TITLE_ABS:\"time course\" OR TITLE_ABS:\"time-course\" OR TITLE_ABS:temporal OR TITLE_ABS:longitudinal OR TITLE_ABS:rescue OR TITLE_ABS:reversib* OR TITLE_ABS:phosphomimetic* OR TITLE_ABS:phosphodeficient* OR TITLE_ABS:nonphosphorylatable OR TITLE_ABS:mutagenesis OR TITLE_ABS:kinase* OR TITLE_ABS:phosphatase* OR TITLE_ABS:inhibitor*)",
+              "question": "聚焦缺口：哪些时序比较或修饰干预可帮助区分核孔蛋白磷酸化参与运输障碍、继发于损伤，或与两者并行变化？",
+              "why": "寻找时间序列、可逆性、位点替换及修饰调控研究，不预设效应方向。命中后需核查是否实际测量运输与损伤，以及干预是否具有位点选择性；激酶或磷酸酶干预不能自动视为选择性因果检验。"
+            }
+          ]
+        },
+        {
+          "step": "p03",
+          "json_pointer": "/coverage_unknowns",
+          "value": [
+            "以上仅为 Europe PMC 查询计划，均未执行；没有新增命中数量、阴性检索结果或研究结论。",
+            "已有记录 p04-v2-human-search-control 与 p04-v2-human-search-complement 仅完成两次精确标识符查询，不能代表本主题检索完整。",
+            "所供视图 75bf96a0e25b4e6aa10e54f6781a5382 是摘要表示；876e76bb00f84e928a89cbea813dacad 仅为正文片段。现有阅读范围未直接建立核孔蛋白磷酸化及其与运输障碍、损伤的时序或因果关系。",
+            "查询不按效应方向筛选。后续需保留无效、无损害、相反结果及其测量范围；既有 TDP-43 磷酸模拟变体的核输入无损害结果不能替代核孔蛋白磷酸化或 mRNA 输出证据。",
+            "第二、三条未限定 ALS，以避免遗漏基础机制研究；非 ALS、不同细胞或不同损伤条件的结果不能直接拼接成 ALS 因果链。",
+            "标题与摘要可能不包含位点、时间点、选择性干预或阴性结果；第三条的方法关键词也可能漏检使用其他表述的研究。磷酸模拟替换不等同于直接测量内源磷酸化。",
+            "可获取摘要及可用的开放获取 XML；图像与补充材料不可访问，其他全文是否可获取尚未知。仅有摘要可能不足以核查时序、干预特异性和实验可行性。",
+            "未设置年份、语言、物种或实验模型限制，也未预选具体核孔蛋白。Europe PMC 的索引范围及本计划均不足以支持全球不存在相关研究或假说具有新颖性的结论。"
+          ]
+        }
+      ],
+      "source_evidence": [],
+      "codex_initial_assessment": "3条查询从ALS/核孔、修饰与mRNA输出、时序和干预出发，未指定某分子就是答案；后两条未限定ALS，保留机制邻近研究但引入体系迁移风险。查询未按效应正负筛选，不等于主动找到全部阴性研究。",
+      "independent_human_review": "pending"
+    },
+    {
+      "id": "R02",
+      "topic": "ALS情境与核圆度阴性",
+      "actual_model_fields": [
+        {
+          "step": "p04-1",
+          "json_pointer": "/finding_cards/1",
+          "value": {
+            "source_view_ref": "ef0d631b44e14b2abf8f10443c55d5c2",
+            "supporting_quote": "Mutant SOD1 also lowers the abundance of FG-Nups at the nuclear pore without altering nuclear circularity.",
+            "biological_context": "突变 SOD1 背景下的核孔 FG-Nups 丰度及核形态分析；对应的具体模型、细胞类型及两项测量是否来自同一实验，当前视图未报告。",
+            "intervention_comparator": "突变 SOD1 相关比较；具体对照、表达水平、处理时间和测量条件当前视图未报告。",
+            "endpoint": "核孔处 FG-Nups 丰度；核圆度。",
+            "reported_observation": "作者报告突变 SOD1 降低核孔处 FG-Nups 的丰度，同时未改变核圆度。",
+            "negative_findings": [
+              "在所报告的突变 SOD1 相关分析中，核圆度未改变；具体测试系统、比较对照、时间和检测条件当前视图未报告。这一无变化结果仅对应核圆度，不能扩展为所有核形态指标均无变化。"
+            ],
+            "negative_quotes": [
+              "without altering nuclear circularity."
+            ],
+            "author_interpretation": "针对 FG-Nups 丰度降低而核圆度不变的单独机制解释，当前视图未报告。",
+            "not_established": [
+              "具体 FG-Nups 身份、磷酸化位点和修饰水平当前视图未报告。",
+              "核孔处丰度降低是否代表总蛋白减少、重定位或其他过程，当前视图未报告。",
+              "FG-Nups 丰度变化与运输障碍、细胞损伤之间的时序及因果关系，当前视图未建立。"
+            ],
+            "transfer_assumptions": [
+              "不能将核孔处 FG-Nups 丰度降低等同于核孔蛋白磷酸化变化。",
+              "若用于分析修饰与损伤的关系，需要区分核孔组分变化与核圆度这一形态终点。"
+            ]
+          }
+        },
+        {
+          "step": "p04-1",
+          "json_pointer": "/finding_cards/3",
+          "value": {
+            "source_view_ref": "ef0d631b44e14b2abf8f10443c55d5c2",
+            "supporting_quote": "Importantly, AAV-mediated reduction of mutant SOD1 in transgenic mice restored nuclear XPO1 localization, underscoring the causal role of mutant SOD1 in NCT abnormalities.",
+            "biological_context": "转基因小鼠中的 AAV 干预；品系、年龄、靶组织和靶细胞当前视图未报告。",
+            "intervention_comparator": "AAV 介导降低突变 SOD1；具体载体、对照组、剂量、时程和降低幅度当前视图未报告。",
+            "endpoint": "XPO1 的核内定位。",
+            "reported_observation": "作者报告，在转基因小鼠中通过 AAV 降低突变 SOD1，恢复了 XPO1 的核内定位。",
+            "negative_findings": [],
+            "negative_quotes": [],
+            "author_interpretation": "作者认为这一恢复结果强调了突变 SOD1 在核质运输异常中的因果作用。",
+            "not_established": [
+              "该结果是否同时恢复核输入、核输出、mRNA 输出或 FG-Nups 丰度，当前视图未报告。",
+              "运动神经元存活、疾病表型和核孔蛋白磷酸化是否改善，当前视图未报告。",
+              "该干预不是当前视图所报告的核孔蛋白磷酸化选择性干预，不能据此建立该修饰的因果作用。"
+            ],
+            "transfer_assumptions": [
+              "将降低突变 SOD1 后的定位恢复用于解释核孔蛋白磷酸化，需要额外区分上游致病蛋白减少的广泛效应与修饰本身的作用。"
+            ]
+          }
+        }
+      ],
+      "source_evidence": [
+        {
+          "reading_ref": "directed-seed-p04-source-1-single",
+          "finding_id": "finding-c24e29a61d8a4b999f29c45aa9906729-1",
+          "source_ref": "epmc:MED:41691309",
+          "source_view_id": "ef0d631b44e14b2abf8f10443c55d5c2",
+          "source_citation": "https://europepmc.org/article/MED/41691309",
+          "access": "abstract",
+          "cropped": false,
+          "source_version": "provider version unreported",
+          "quote": "Mutant SOD1 also lowers the abundance of FG-Nups at the nuclear pore without altering nuclear circularity.",
+          "view_characters": [
+            850,
+            956
+          ],
+          "obtained_text_characters": [
+            850,
+            956
+          ],
+          "negative_quotes": [
+            {
+              "quote": "without altering nuclear circularity.",
+              "view_characters": [
+                919,
+                956
+              ]
+            }
+          ],
+          "reported_observation": "作者报告突变 SOD1 降低核孔处 FG-Nups 的丰度，同时未改变核圆度。",
+          "author_interpretation": "针对 FG-Nups 丰度降低而核圆度不变的单独机制解释，当前视图未报告。",
+          "not_established": [
+            "具体 FG-Nups 身份、磷酸化位点和修饰水平当前视图未报告。",
+            "核孔处丰度降低是否代表总蛋白减少、重定位或其他过程，当前视图未报告。",
+            "FG-Nups 丰度变化与运输障碍、细胞损伤之间的时序及因果关系，当前视图未建立。"
+          ],
+          "transfer_assumptions": [
+            "不能将核孔处 FG-Nups 丰度降低等同于核孔蛋白磷酸化变化。",
+            "若用于分析修饰与损伤的关系，需要区分核孔组分变化与核圆度这一形态终点。"
+          ]
+        },
+        {
+          "reading_ref": "directed-seed-p04-source-1-single",
+          "finding_id": "finding-c24e29a61d8a4b999f29c45aa9906729-3",
+          "source_ref": "epmc:MED:41691309",
+          "source_view_id": "ef0d631b44e14b2abf8f10443c55d5c2",
+          "source_citation": "https://europepmc.org/article/MED/41691309",
+          "access": "abstract",
+          "cropped": false,
+          "source_version": "provider version unreported",
+          "quote": "Importantly, AAV-mediated reduction of mutant SOD1 in transgenic mice restored nuclear XPO1 localization, underscoring the causal role of mutant SOD1 in NCT abnormalities.",
+          "view_characters": [
+            1134,
+            1305
+          ],
+          "obtained_text_characters": [
+            1134,
+            1305
+          ],
+          "negative_quotes": [],
+          "reported_observation": "作者报告，在转基因小鼠中通过 AAV 降低突变 SOD1，恢复了 XPO1 的核内定位。",
+          "author_interpretation": "作者认为这一恢复结果强调了突变 SOD1 在核质运输异常中的因果作用。",
+          "not_established": [
+            "该结果是否同时恢复核输入、核输出、mRNA 输出或 FG-Nups 丰度，当前视图未报告。",
+            "运动神经元存活、疾病表型和核孔蛋白磷酸化是否改善，当前视图未报告。",
+            "该干预不是当前视图所报告的核孔蛋白磷酸化选择性干预，不能据此建立该修饰的因果作用。"
+          ],
+          "transfer_assumptions": [
+            "将降低突变 SOD1 后的定位恢复用于解释核孔蛋白磷酸化，需要额外区分上游致病蛋白减少的广泛效应与修饰本身的作用。"
+          ]
+        }
+      ],
+      "codex_initial_assessment": "保留核圆度未变与AAV降低突变SOD1后XPO1定位恢复。没有把定位恢复扩大为mRNA输出、FG-Nups、神经元存活或磷酸化恢复；多种体内外/患者体系不强行逐一配对。作者声称SOD1的因果角色，仍需独立复核其实验依据。",
+      "independent_human_review": "pending"
+    },
+    {
+      "id": "R03",
+      "topic": "核孔蛋白修饰与功能干预不能互换",
+      "actual_model_fields": [
+        {
+          "step": "p04-2",
+          "json_pointer": "/finding_cards/0",
+          "value": {
+            "source_view_ref": "af80cf113c514689a5b9e25ef9f0b193",
+            "supporting_quote": "Transcriptomic profiling reveals that TPR depletion reshapes EGF-induced, MAPK-responsive gene expression, including altered expression of MAPK pathway components and enhanced induction of the immediate-early gene FOS.",
+            "biological_context": "细胞中的 EGF 诱导、MAPK 响应性基因表达；具体细胞类型当前视图未报告。",
+            "intervention_comparator": "TPR 耗减及 EGF 刺激；具体对照、耗减方式和刺激条件当前视图未报告。",
+            "endpoint": "转录组表达，包括 MAPK 通路组分和即时早期基因 FOS。",
+            "reported_observation": "作者报告 TPR 耗减重塑 EGF 诱导的 MAPK 响应性基因表达，包括 MAPK 通路组分表达改变及 FOS 诱导增强。摘要随后再次报告 EGF 刺激下 FOS 诱导增加；不将这一重复终点计为独立证据。",
+            "negative_findings": [],
+            "negative_quotes": [],
+            "author_interpretation": "作者据此支持 TPR 参与调节促有丝分裂信号的转录响应。",
+            "not_established": [
+              "TPR 耗减效应是否由其磷酸化变化介导，当前视图未报告。",
+              "表达变化是否涉及 mRNA 输出障碍，而非其他表达调控过程，当前视图未报告。",
+              "效应量、重复数和统计结果当前视图未报告。"
+            ],
+            "transfer_assumptions": [
+              "外推至 ALS 需要假设相关细胞中的 TPR—MAPK 表达调控关系也适用于疾病相关系统；该适用性当前视图未报告。"
+            ]
+          }
+        },
+        {
+          "step": "p04-2",
+          "json_pointer": "/finding_cards/2",
+          "value": {
+            "source_view_ref": "af80cf113c514689a5b9e25ef9f0b193",
+            "supporting_quote": "Using a novel phospho-specific monoclonal antibody, we show that TPR is phosphorylated at Ser2155 following EGFR activation via the canonical RAS-RAF-MEK-ERK MAPK cascade, placing TPR downstream of MAPK pathway activation.",
+            "biological_context": "EGFR 激活及经典 RAS–RAF–MEK–ERK MAPK 级联；具体实验系统当前视图未报告。",
+            "intervention_comparator": "EGFR 激活条件；具体激活方式、对照及采样时间当前视图未报告。",
+            "endpoint": "磷酸化特异性单克隆抗体检测的 TPR Ser2155 磷酸化。",
+            "reported_observation": "作者报告 EGFR 激活后，TPR 经经典 RAS–RAF–MEK–ERK MAPK 级联在 Ser2155 发生磷酸化，并将 TPR 置于 MAPK 通路激活的下游。",
+            "negative_findings": [],
+            "negative_quotes": [],
+            "author_interpretation": "作者将 TPR 解释为 MAPK 响应性核因子，并在全文摘要结论中提出 NPC 相关组分微调促有丝分裂转录响应的模型。",
+            "not_established": [
+              "直接催化该位点的激酶及直接底物实验当前视图未报告。",
+              "该位点磷酸化对转录变化、mRNA 输出或细胞损伤的必要性、充分性和时序关系当前视图未报告。",
+              "抗体的具体特异性验证结果当前视图未报告。"
+            ],
+            "transfer_assumptions": [
+              "外推至 ALS 需假设疾病相关系统存在相应信号—核孔蛋白修饰联系及相关功能后果；当前视图未报告。"
+            ]
+          }
+        },
+        {
+          "step": "p04-2",
+          "json_pointer": "/finding_cards/8",
+          "value": {
+            "source_view_ref": "af80cf113c514689a5b9e25ef9f0b193",
+            "supporting_quote": "enhanced Fos induction in splenocytes upon CD3/CD28 stimulation, together suggesting a conserved association between TPR levels and altered MAPK-related transcriptomic profiles.",
+            "biological_context": "上述 Tpr 单倍剂量不足小鼠的脾细胞接受 CD3/CD28 刺激；与 EGF 刺激细胞条件不同。",
+            "intervention_comparator": "Tpr 单倍剂量不足背景及 CD3/CD28 刺激；具体对照、剂量和时间当前视图未报告。",
+            "endpoint": "Fos 诱导。",
+            "reported_observation": "作者报告 CD3/CD28 刺激后脾细胞的 Fos 诱导增强；不将该条件改述为 EGF 刺激。",
+            "negative_findings": [],
+            "negative_quotes": [],
+            "author_interpretation": "作者将其与整体脾组织表达结果共同解释为 TPR 水平与 MAPK 相关转录组改变之间的保守关联。",
+            "not_established": [
+              "Fos 的检测层级、具体脾细胞亚群及其与 TPR 磷酸化的关系当前视图未报告。",
+              "该刺激条件下的 mRNA 输出和损伤终点当前视图未报告。"
+            ],
+            "transfer_assumptions": [
+              "免疫细胞受体刺激与 ALS 相关细胞过程不能直接等同；跨刺激及跨细胞类型适用性当前视图未报告。"
+            ]
+          }
+        }
+      ],
+      "source_evidence": [
+        {
+          "reading_ref": "directed-seed-p04-source-2-single",
+          "finding_id": "finding-b8a3fb022bee44afa29c341c2b9115d7-0",
+          "source_ref": "epmc:MED:42031697",
+          "source_view_id": "af80cf113c514689a5b9e25ef9f0b193",
+          "source_citation": "https://europepmc.org/article/MED/42031697",
+          "access": "abstract",
+          "cropped": false,
+          "source_version": "provider version unreported",
+          "quote": "Transcriptomic profiling reveals that TPR depletion reshapes EGF-induced, MAPK-responsive gene expression, including altered expression of MAPK pathway components and enhanced induction of the immediate-early gene FOS.",
+          "view_characters": [
+            469,
+            687
+          ],
+          "obtained_text_characters": [
+            469,
+            687
+          ],
+          "negative_quotes": [],
+          "reported_observation": "作者报告 TPR 耗减重塑 EGF 诱导的 MAPK 响应性基因表达，包括 MAPK 通路组分表达改变及 FOS 诱导增强。摘要随后再次报告 EGF 刺激下 FOS 诱导增加；不将这一重复终点计为独立证据。",
+          "author_interpretation": "作者据此支持 TPR 参与调节促有丝分裂信号的转录响应。",
+          "not_established": [
+            "TPR 耗减效应是否由其磷酸化变化介导，当前视图未报告。",
+            "表达变化是否涉及 mRNA 输出障碍，而非其他表达调控过程，当前视图未报告。",
+            "效应量、重复数和统计结果当前视图未报告。"
+          ],
+          "transfer_assumptions": [
+            "外推至 ALS 需要假设相关细胞中的 TPR—MAPK 表达调控关系也适用于疾病相关系统；该适用性当前视图未报告。"
+          ]
+        },
+        {
+          "reading_ref": "directed-seed-p04-source-2-single",
+          "finding_id": "finding-b8a3fb022bee44afa29c341c2b9115d7-2",
+          "source_ref": "epmc:MED:42031697",
+          "source_view_id": "af80cf113c514689a5b9e25ef9f0b193",
+          "source_citation": "https://europepmc.org/article/MED/42031697",
+          "access": "abstract",
+          "cropped": false,
+          "source_version": "provider version unreported",
+          "quote": "Using a novel phospho-specific monoclonal antibody, we show that TPR is phosphorylated at Ser2155 following EGFR activation via the canonical RAS-RAF-MEK-ERK MAPK cascade, placing TPR downstream of MAPK pathway activation.",
+          "view_characters": [
+            821,
+            1043
+          ],
+          "obtained_text_characters": [
+            821,
+            1043
+          ],
+          "negative_quotes": [],
+          "reported_observation": "作者报告 EGFR 激活后，TPR 经经典 RAS–RAF–MEK–ERK MAPK 级联在 Ser2155 发生磷酸化，并将 TPR 置于 MAPK 通路激活的下游。",
+          "author_interpretation": "作者将 TPR 解释为 MAPK 响应性核因子，并在全文摘要结论中提出 NPC 相关组分微调促有丝分裂转录响应的模型。",
+          "not_established": [
+            "直接催化该位点的激酶及直接底物实验当前视图未报告。",
+            "该位点磷酸化对转录变化、mRNA 输出或细胞损伤的必要性、充分性和时序关系当前视图未报告。",
+            "抗体的具体特异性验证结果当前视图未报告。"
+          ],
+          "transfer_assumptions": [
+            "外推至 ALS 需假设疾病相关系统存在相应信号—核孔蛋白修饰联系及相关功能后果；当前视图未报告。"
+          ]
+        },
+        {
+          "reading_ref": "directed-seed-p04-source-2-single",
+          "finding_id": "finding-b8a3fb022bee44afa29c341c2b9115d7-8",
+          "source_ref": "epmc:MED:42031697",
+          "source_view_id": "af80cf113c514689a5b9e25ef9f0b193",
+          "source_citation": "https://europepmc.org/article/MED/42031697",
+          "access": "abstract",
+          "cropped": false,
+          "source_version": "provider version unreported",
+          "quote": "enhanced Fos induction in splenocytes upon CD3/CD28 stimulation, together suggesting a conserved association between TPR levels and altered MAPK-related transcriptomic profiles.",
+          "view_characters": [
+            1449,
+            1626
+          ],
+          "obtained_text_characters": [
+            1449,
+            1626
+          ],
+          "negative_quotes": [],
+          "reported_observation": "作者报告 CD3/CD28 刺激后脾细胞的 Fos 诱导增强；不将该条件改述为 EGF 刺激。",
+          "author_interpretation": "作者将其与整体脾组织表达结果共同解释为 TPR 水平与 MAPK 相关转录组改变之间的保守关联。",
+          "not_established": [
+            "Fos 的检测层级、具体脾细胞亚群及其与 TPR 磷酸化的关系当前视图未报告。",
+            "该刺激条件下的 mRNA 输出和损伤终点当前视图未报告。"
+          ],
+          "transfer_assumptions": [
+            "免疫细胞受体刺激与 ALS 相关细胞过程不能直接等同；跨刺激及跨细胞类型适用性当前视图未报告。"
+          ]
+        }
+      ],
+      "codex_initial_assessment": "TPR位点磷酸化、TPR耗减转录效应、脾细胞CD3/CD28刺激分别保留；不把CD3/CD28改成EGF，也不把耗减等同于修饰选择性干预。摘要不能直接支撑ALS或mRNA输出因果链。",
+      "independent_human_review": "pending"
+    },
+    {
+      "id": "R04",
+      "topic": "SUN1修饰对象、模拟与限定阴性",
+      "actual_model_fields": [
+        {
+          "step": "p04-3",
+          "json_pointer": "/finding_cards/2",
+          "value": {
+            "source_view_ref": "692ca660eef14f86a19318ca2e08d85b",
+            "supporting_quote": "The SUN1-NXF1 association is at least partly regulated by a protein kinase C (PKC) which phosphorylates serine 113 (S113) in the N-terminal domain leading to reduced interaction.",
+            "biological_context": "SUN1 N 端 S113 位点与 SUN1–NXF1 相互作用；具体实验系统当前视图未报告。",
+            "intervention_comparator": "涉及 PKC 对 SUN1 S113 的磷酸化；具体激酶处理、对照及测量方法当前视图未报告。",
+            "endpoint": "SUN1 S113 磷酸化及 SUN1–NXF1 相互作用强度。",
+            "reported_observation": "作者报告 PKC 磷酸化 SUN1 N 端 S113，导致 SUN1–NXF1 相互作用降低；作者将该关联表述为至少部分受 PKC 调节。",
+            "negative_findings": [],
+            "negative_quotes": [],
+            "author_interpretation": "作者提出 SUN1–NXF1 关联至少部分受该磷酸化调控。",
+            "not_established": [
+              "当前视图未报告 PKC 亚型、磷酸化检测细节、效应量或时序。",
+              "当前视图未报告该相互作用降低与细胞损伤之间的关系，也未报告核孔蛋白自身的磷酸化。"
+            ],
+            "transfer_assumptions": [
+              "将这一结果用于核孔蛋白磷酸化问题，需要区分核孔邻近蛋白的修饰与核孔蛋白自身的修饰。",
+              "不能仅凭结合降低推定 mRNA 输出必然降低；输出终点需与其具体处理条件分别核对。"
+            ]
+          }
+        },
+        {
+          "step": "p04-3",
+          "json_pointer": "/finding_cards/3",
+          "value": {
+            "source_view_ref": "692ca660eef14f86a19318ca2e08d85b",
+            "supporting_quote": "The phosphorylation appears to be important for the SUN1 function in nuclear mRNA export since GFP-SUN1 carrying a S113A mutation was less efficient in restoring mRNA export after SUN1 knockdown as compared to the wild type protein.",
+            "biological_context": "SUN1 敲低后的 mRNA 输出恢复实验；具体细胞类型当前视图未报告。",
+            "intervention_comparator": "携带 S113A 突变的 GFP-SUN1 与野生型蛋白比较。",
+            "endpoint": "SUN1 敲低后 mRNA 输出的恢复效率。",
+            "reported_observation": "作者报告，在 SUN1 敲低后，GFP-SUN1 S113A 恢复 mRNA 输出的效率低于野生型蛋白。",
+            "negative_findings": [
+              "在 SUN1 敲低后的恢复条件下，S113A 相对野生型的恢复效率较低；这不是完全不能恢复或无效的报告。"
+            ],
+            "negative_quotes": [
+              "GFP-SUN1 carrying a S113A mutation was less efficient in restoring mRNA export after SUN1 knockdown as compared to the wild type protein."
+            ],
+            "author_interpretation": "作者认为该结果提示磷酸化似乎对 SUN1 的核 mRNA 输出功能重要。",
+            "not_established": [
+              "当前视图未报告恢复幅度、表达量匹配、统计结果或该突变的其他影响。",
+              "当前视图未报告核孔蛋白磷酸化、细胞损伤与输出障碍的时间先后。"
+            ],
+            "transfer_assumptions": [
+              "若据此解释磷酸化功能，需要另行确认突变表型能够代表相应修饰变化，而非其他突变效应。",
+              "该恢复实验不能直接转用于其他蛋白或 ALS 情境。"
+            ]
+          }
+        },
+        {
+          "step": "p04-3",
+          "json_pointer": "/finding_cards/4",
+          "value": {
+            "source_view_ref": "692ca660eef14f86a19318ca2e08d85b",
+            "supporting_quote": "By contrast, GFP-SUN1-S113D resembling the phosphorylated state allowed very efficient export of poly(A)+RNA.",
+            "biological_context": "表达 GFP-SUN1-S113D 的条件；该句未单独交代是否也处于 SUN1 敲低背景。",
+            "intervention_comparator": "GFP-SUN1-S113D；作者以“By contrast”承接前述 S113A 结果，但具体实验配对和定量比较当前视图未报告。",
+            "endpoint": "poly(A)+RNA 输出。",
+            "reported_observation": "作者报告，类似磷酸化状态的 GFP-SUN1-S113D 允许 poly(A)+RNA 非常高效地输出。",
+            "negative_findings": [],
+            "negative_quotes": [],
+            "author_interpretation": "作者将 S113D 描述为类似磷酸化状态的变体。",
+            "not_established": [
+              "当前视图未报告该变体是否完全再现真实磷酸化的结构或动力学效应。",
+              "当前视图未报告其相对野生型的定量效应，亦未明确该句的敲低背景。",
+              "当前视图未报告同一 S113D 条件下的 SUN1–NXF1 结合测量。"
+            ],
+            "transfer_assumptions": [
+              "不能将 S113D 的输出表型直接等同于内源性磷酸化的全部作用。",
+              "不能未经条件核对，就将这一输出结果与前述 PKC 结合结果视为同一实验中的配对终点。"
+            ]
+          }
+        },
+        {
+          "step": "p04-3",
+          "json_pointer": "/finding_cards/6",
+          "value": {
+            "source_view_ref": "692ca660eef14f86a19318ca2e08d85b",
+            "supporting_quote": "This effect might be independent of SUN1 as expression of a GFP tagged SUN-domain deficient SUN1, which no longer can interact with Nesprin-2, did not affect mRNA export.",
+            "biological_context": "表达 GFP 标记、缺失 SUN 结构域的 SUN1；该变体被描述为不能再与 Nesprin-2 相互作用。具体细胞背景当前视图未报告。",
+            "intervention_comparator": "表达该 SUN1 缺失变体；对照、内源性 SUN1 状态及是否伴随 Nesprin-2 敲低当前视图未报告。",
+            "endpoint": "mRNA 输出；变体与 Nesprin-2 的相互作用能力作为作者提供的背景。",
+            "reported_observation": "作者报告，该缺失变体不能再与 Nesprin-2 相互作用，而表达该变体未影响 mRNA 输出。",
+            "negative_findings": [
+              "在表达 GFP 标记、缺失 SUN 结构域的 SUN1 的条件下，作者报告 mRNA 输出未受影响；具体比较条件与检测灵敏度当前视图未报告。"
+            ],
+            "negative_quotes": [
+              "expression of a GFP tagged SUN-domain deficient SUN1, which no longer can interact with Nesprin-2, did not affect mRNA export."
+            ],
+            "author_interpretation": "作者据此推测，前述 Nesprin-2 敲低对 mRNA 输出的影响可能独立于 SUN1；其措辞为可能，而非确定。",
+            "not_established": [
+              "当前视图未报告足以确立 SUN1 独立性的实验细节。",
+              "当前视图未报告该缺失变体在所有条件下均无作用，也未报告其能否恢复 Nesprin-2 敲低表型。",
+              "当前视图未报告此无影响结果涉及核孔蛋白磷酸化。"
+            ],
+            "transfer_assumptions": [
+              "不能将 Nesprin-2 敲低表型直接归因于 SUN1–Nesprin-2 结合丧失。",
+              "该无影响结果需保留其具体构建体和输出终点边界，不能推广为 LINC 复合体整体与输出无关。"
+            ]
+          }
+        }
+      ],
+      "source_evidence": [
+        {
+          "reading_ref": "directed-seed-p04-source-3-single",
+          "finding_id": "finding-61730f7691fd43a8a2b9c92eb6126f3b-2",
+          "source_ref": "epmc:MED:28831067",
+          "source_view_id": "692ca660eef14f86a19318ca2e08d85b",
+          "source_citation": "https://europepmc.org/article/MED/28831067",
+          "access": "abstract",
+          "cropped": false,
+          "source_version": "provider version unreported",
+          "quote": "The SUN1-NXF1 association is at least partly regulated by a protein kinase C (PKC) which phosphorylates serine 113 (S113) in the N-terminal domain leading to reduced interaction.",
+          "view_characters": [
+            340,
+            518
+          ],
+          "obtained_text_characters": [
+            340,
+            518
+          ],
+          "negative_quotes": [],
+          "reported_observation": "作者报告 PKC 磷酸化 SUN1 N 端 S113，导致 SUN1–NXF1 相互作用降低；作者将该关联表述为至少部分受 PKC 调节。",
+          "author_interpretation": "作者提出 SUN1–NXF1 关联至少部分受该磷酸化调控。",
+          "not_established": [
+            "当前视图未报告 PKC 亚型、磷酸化检测细节、效应量或时序。",
+            "当前视图未报告该相互作用降低与细胞损伤之间的关系，也未报告核孔蛋白自身的磷酸化。"
+          ],
+          "transfer_assumptions": [
+            "将这一结果用于核孔蛋白磷酸化问题，需要区分核孔邻近蛋白的修饰与核孔蛋白自身的修饰。",
+            "不能仅凭结合降低推定 mRNA 输出必然降低；输出终点需与其具体处理条件分别核对。"
+          ]
+        },
+        {
+          "reading_ref": "directed-seed-p04-source-3-single",
+          "finding_id": "finding-61730f7691fd43a8a2b9c92eb6126f3b-3",
+          "source_ref": "epmc:MED:28831067",
+          "source_view_id": "692ca660eef14f86a19318ca2e08d85b",
+          "source_citation": "https://europepmc.org/article/MED/28831067",
+          "access": "abstract",
+          "cropped": false,
+          "source_version": "provider version unreported",
+          "quote": "The phosphorylation appears to be important for the SUN1 function in nuclear mRNA export since GFP-SUN1 carrying a S113A mutation was less efficient in restoring mRNA export after SUN1 knockdown as compared to the wild type protein.",
+          "view_characters": [
+            519,
+            751
+          ],
+          "obtained_text_characters": [
+            519,
+            751
+          ],
+          "negative_quotes": [
+            {
+              "quote": "GFP-SUN1 carrying a S113A mutation was less efficient in restoring mRNA export after SUN1 knockdown as compared to the wild type protein.",
+              "view_characters": [
+                614,
+                751
+              ]
+            }
+          ],
+          "reported_observation": "作者报告，在 SUN1 敲低后，GFP-SUN1 S113A 恢复 mRNA 输出的效率低于野生型蛋白。",
+          "author_interpretation": "作者认为该结果提示磷酸化似乎对 SUN1 的核 mRNA 输出功能重要。",
+          "not_established": [
+            "当前视图未报告恢复幅度、表达量匹配、统计结果或该突变的其他影响。",
+            "当前视图未报告核孔蛋白磷酸化、细胞损伤与输出障碍的时间先后。"
+          ],
+          "transfer_assumptions": [
+            "若据此解释磷酸化功能，需要另行确认突变表型能够代表相应修饰变化，而非其他突变效应。",
+            "该恢复实验不能直接转用于其他蛋白或 ALS 情境。"
+          ]
+        },
+        {
+          "reading_ref": "directed-seed-p04-source-3-single",
+          "finding_id": "finding-61730f7691fd43a8a2b9c92eb6126f3b-4",
+          "source_ref": "epmc:MED:28831067",
+          "source_view_id": "692ca660eef14f86a19318ca2e08d85b",
+          "source_citation": "https://europepmc.org/article/MED/28831067",
+          "access": "abstract",
+          "cropped": false,
+          "source_version": "provider version unreported",
+          "quote": "By contrast, GFP-SUN1-S113D resembling the phosphorylated state allowed very efficient export of poly(A)+RNA.",
+          "view_characters": [
+            752,
+            861
+          ],
+          "obtained_text_characters": [
+            752,
+            861
+          ],
+          "negative_quotes": [],
+          "reported_observation": "作者报告，类似磷酸化状态的 GFP-SUN1-S113D 允许 poly(A)+RNA 非常高效地输出。",
+          "author_interpretation": "作者将 S113D 描述为类似磷酸化状态的变体。",
+          "not_established": [
+            "当前视图未报告该变体是否完全再现真实磷酸化的结构或动力学效应。",
+            "当前视图未报告其相对野生型的定量效应，亦未明确该句的敲低背景。",
+            "当前视图未报告同一 S113D 条件下的 SUN1–NXF1 结合测量。"
+          ],
+          "transfer_assumptions": [
+            "不能将 S113D 的输出表型直接等同于内源性磷酸化的全部作用。",
+            "不能未经条件核对，就将这一输出结果与前述 PKC 结合结果视为同一实验中的配对终点。"
+          ]
+        },
+        {
+          "reading_ref": "directed-seed-p04-source-3-single",
+          "finding_id": "finding-61730f7691fd43a8a2b9c92eb6126f3b-6",
+          "source_ref": "epmc:MED:28831067",
+          "source_view_id": "692ca660eef14f86a19318ca2e08d85b",
+          "source_citation": "https://europepmc.org/article/MED/28831067",
+          "access": "abstract",
+          "cropped": false,
+          "source_version": "provider version unreported",
+          "quote": "This effect might be independent of SUN1 as expression of a GFP tagged SUN-domain deficient SUN1, which no longer can interact with Nesprin-2, did not affect mRNA export.",
+          "view_characters": [
+            1018,
+            1188
+          ],
+          "obtained_text_characters": [
+            1018,
+            1188
+          ],
+          "negative_quotes": [
+            {
+              "quote": "expression of a GFP tagged SUN-domain deficient SUN1, which no longer can interact with Nesprin-2, did not affect mRNA export.",
+              "view_characters": [
+                1062,
+                1188
+              ]
+            }
+          ],
+          "reported_observation": "作者报告，该缺失变体不能再与 Nesprin-2 相互作用，而表达该变体未影响 mRNA 输出。",
+          "author_interpretation": "作者据此推测，前述 Nesprin-2 敲低对 mRNA 输出的影响可能独立于 SUN1；其措辞为可能，而非确定。",
+          "not_established": [
+            "当前视图未报告足以确立 SUN1 独立性的实验细节。",
+            "当前视图未报告该缺失变体在所有条件下均无作用，也未报告其能否恢复 Nesprin-2 敲低表型。",
+            "当前视图未报告此无影响结果涉及核孔蛋白磷酸化。"
+          ],
+          "transfer_assumptions": [
+            "不能将 Nesprin-2 敲低表型直接归因于 SUN1–Nesprin-2 结合丧失。",
+            "该无影响结果需保留其具体构建体和输出终点边界，不能推广为 LINC 复合体整体与输出无关。"
+          ]
+        }
+      ],
+      "codex_initial_assessment": "SUN1不是核孔蛋白，不能将SUN1-S113或Nup153关联当作Nup153磷酸化。S113A较弱恢复并非完全无效；S113D是模拟不是内源真实修饰。SUN域缺失条件无影响不能推导LINC整体无关。negative_findings中包含较弱恢复这一不利结果，不应误作零效应。",
+      "independent_human_review": "pending"
+    },
+    {
+      "id": "R05",
+      "topic": "P05再次弱化作者报告诱导措辞",
+      "actual_model_fields": [
+        {
+          "step": "p05",
+          "json_pointer": "/knowledge_edges/2",
+          "value": {
+            "kind": "observation",
+            "description": "ANXA11 摘要报告纤维相关的 TDP-43 过度磷酸化、不溶性组分积累和胞质聚集，具体实验体系未明确；这里的修饰对象是 TDP-43。另一个 TurboID 实验报告聚集依赖的 NPC 和运输因子邻近富集，但没有建立直接结合、隔离、功能丧失或磷酸化变化。",
+            "finding_refs": [
+              "finding-f49335ad41a946f9aed8103f53f328ca-4",
+              "finding-f49335ad41a946f9aed8103f53f328ca-5"
+            ]
+          }
+        }
+      ],
+      "source_evidence": [
+        {
+          "reading_ref": "p04-v2-control-single",
+          "finding_id": "finding-f49335ad41a946f9aed8103f53f328ca-4",
+          "source_ref": "epmc:PPR:PPR1217875",
+          "source_view_id": "75bf96a0e25b4e6aa10e54f6781a5382",
+          "source_citation": "https://europepmc.org/article/PPR/PPR1217875",
+          "access": "abstract",
+          "cropped": false,
+          "source_version": "provider version unreported",
+          "quote": "Strikingly, ANXA11 fibrils induces pathological conversion of TDP-43, including hyperphosphorylation, accumulation in detergent-insoluble fractions, and formation of cytoplasmic aggregates.",
+          "view_characters": [
+            827,
+            1016
+          ],
+          "obtained_text_characters": [
+            827,
+            1016
+          ],
+          "negative_quotes": [],
+          "reported_observation": "作者报告 ANXA11 纤维诱导 TDP-43 病理转化，包括过度磷酸化、去污剂不溶性组分中积累及胞质聚集体形成。Highlights 和 In Brief 重述该诱导关系，不另计为独立实验。",
+          "author_interpretation": "作者将该结果概括为 ANXA11 播种组装体诱导 TDP-43 共同病理。",
+          "not_established": [
+            "这里报告的磷酸化对象是 TDP-43，不是核孔蛋白；核孔蛋白磷酸化测量当前视图未报告。",
+            "TDP-43 磷酸化位点、相关激酶或磷酸酶、时间顺序及干预救援结果：当前视图未报告。",
+            "作者的诱导关系在本次阅读中未获独立验证；其具体实验依据和控制条件当前视图未报告。"
+          ],
+          "transfer_assumptions": [
+            "将这一结果连接到核孔蛋白磷酸化问题，需要直接建立两者之间的关系，不能以 TDP-43 过度磷酸化替代核孔蛋白磷酸化。"
+          ]
+        }
+      ],
+      "codex_initial_assessment": "原文及P04明确报告ANXA11 fibrils induces TDP-43转换；P05改为“纤维相关的…”而省略诱导报告，仍有弱化原意问题。独立证据不足应另列，不应改变作者声称；原P04/P05输出保持不变。",
+      "independent_human_review": "pending"
+    },
+    {
+      "id": "R06",
+      "topic": "P05把导致相互作用降低转成伴随",
+      "actual_model_fields": [
+        {
+          "step": "p05",
+          "json_pointer": "/knowledge_edges/13",
+          "value": {
+            "kind": "observation",
+            "description": "SUN1 摘要报告 PKC 对 S113 的磷酸化伴随 SUN1–NXF1 相互作用降低；SUN1 敲低后，S113A 恢复输出的效率低于野生型，但不是完全无恢复；S113D 则被描述为允许高效 poly(A)+RNA 输出，其敲低背景和相对野生型的定量差异未明确。结合降低与高效输出均须保留，不能据此采用“结合越强、输出越好”的单调解释，也不能未经核对将其视为同条件配对终点。",
+            "finding_refs": [
+              "finding-61730f7691fd43a8a2b9c92eb6126f3b-2",
+              "finding-61730f7691fd43a8a2b9c92eb6126f3b-3",
+              "finding-61730f7691fd43a8a2b9c92eb6126f3b-4"
+            ]
+          }
+        }
+      ],
+      "source_evidence": [
+        {
+          "reading_ref": "directed-seed-p04-source-3-single",
+          "finding_id": "finding-61730f7691fd43a8a2b9c92eb6126f3b-2",
+          "source_ref": "epmc:MED:28831067",
+          "source_view_id": "692ca660eef14f86a19318ca2e08d85b",
+          "source_citation": "https://europepmc.org/article/MED/28831067",
+          "access": "abstract",
+          "cropped": false,
+          "source_version": "provider version unreported",
+          "quote": "The SUN1-NXF1 association is at least partly regulated by a protein kinase C (PKC) which phosphorylates serine 113 (S113) in the N-terminal domain leading to reduced interaction.",
+          "view_characters": [
+            340,
+            518
+          ],
+          "obtained_text_characters": [
+            340,
+            518
+          ],
+          "negative_quotes": [],
+          "reported_observation": "作者报告 PKC 磷酸化 SUN1 N 端 S113，导致 SUN1–NXF1 相互作用降低；作者将该关联表述为至少部分受 PKC 调节。",
+          "author_interpretation": "作者提出 SUN1–NXF1 关联至少部分受该磷酸化调控。",
+          "not_established": [
+            "当前视图未报告 PKC 亚型、磷酸化检测细节、效应量或时序。",
+            "当前视图未报告该相互作用降低与细胞损伤之间的关系，也未报告核孔蛋白自身的磷酸化。"
+          ],
+          "transfer_assumptions": [
+            "将这一结果用于核孔蛋白磷酸化问题，需要区分核孔邻近蛋白的修饰与核孔蛋白自身的修饰。",
+            "不能仅凭结合降低推定 mRNA 输出必然降低；输出终点需与其具体处理条件分别核对。"
+          ]
+        }
+      ],
+      "codex_initial_assessment": "原文PKC磷酸化SUN1 S113 “leading to reduced interaction”，P04保留作者报告导致，P05改为“伴随…降低”，弱化方向。其后区分S113A部分恢复/S113D模拟及非配对终点是合理限制，但不能替代忠实转述原文。",
+      "independent_human_review": "pending"
+    },
+    {
+      "id": "R07",
+      "topic": "阴性、条件与竞争解释",
+      "actual_model_fields": [
+        {
+          "step": "p05",
+          "json_pointer": "/overview/3",
+          "value": "TDP-43 阅读中的多项无损害结果约束了“磷酸化必然损害运输或 RNA 功能”的概括，但其对象、磷酸模拟方式、细胞背景和核输入终点均不同于本种子问题。所供材料未共同建立 ALS 背景中的核孔蛋白磷酸化、mRNA 输出、损伤时序及修饰选择性干预之间的关系。"
+        },
+        {
+          "step": "p05",
+          "json_pointer": "/knowledge_edges/4",
+          "value": {
+            "kind": "observation",
+            "description": "TDP-43 Wt、12D 和 12A 在内源蛋白耗减后的 HeLa 定位实验中均主要位于细胞核；激素诱导融合报告系统中，三者在所测 50 分钟内的核输入速率无可辨差异。稳定诱导 U2OS 系统也报告正常核定位，但不能把另一实验的输入动力学结果赋给该 U2OS 定位实验。这些无差异报告不等于已建立统计等效。",
+            "finding_refs": [
+              "finding-f8cf38bfaf564f93a51f5b4b17aeefeb-0",
+              "finding-f8cf38bfaf564f93a51f5b4b17aeefeb-1",
+              "finding-f8cf38bfaf564f93a51f5b4b17aeefeb-6"
+            ]
+          }
+        },
+        {
+          "step": "p05",
+          "json_pointer": "/knowledge_edges/6",
+          "value": {
+            "kind": "observation",
+            "description": "SOD1 摘要报告核输入和核输出受扰，以及 RanGAP1、XPO1 的胞质积累；各终点对应的具体系统未逐一说明。摘要还报告核孔处 FG-Nups 丰度降低，但核圆度未改变。核圆度无变化不能扩展为全部核形态正常，也不能与 ANXA11 的核膜异常合并成同条件下的矛盾。",
+            "finding_refs": [
+              "finding-c24e29a61d8a4b999f29c45aa9906729-0",
+              "finding-c24e29a61d8a4b999f29c45aa9906729-1"
+            ]
+          }
+        },
+        {
+          "step": "p05",
+          "json_pointer": "/knowledge_edges/14",
+          "value": {
+            "kind": "observation",
+            "description": "Nesprin-2 敲低被报告损害 mRNA 输出；另一个条件下，表达不能再与 Nesprin-2 相互作用的 SUN 结构域缺失 SUN1 未影响输出。后者不能扩展为 LINC 整体与输出无关，也未被说明能够恢复 Nesprin-2 敲低表型。",
+            "finding_refs": [
+              "finding-61730f7691fd43a8a2b9c92eb6126f3b-5",
+              "finding-61730f7691fd43a8a2b9c92eb6126f3b-6"
+            ]
+          }
+        },
+        {
+          "step": "p05",
+          "json_pointer": "/competing_explanations",
+          "value": [
+            "待区分的可能性之一是：核孔蛋白磷酸化变化参与 mRNA 输出异常；但已读 ALS 记录未测量这一修饰，不能从聚集、分布改变或邻近富集推定其作用。",
+            "另一可能性是：磷酸化变化属于细胞损伤后的反应，或是运输压力下的适应性反应，而非输出障碍的起始事件。所供记录没有提供足以区分这些情况的共同时间序列。",
+            "磷酸化、运输异常与损伤也可能是共同上游变化的并行结果。TPR 在其他情境中响应 MAPK 信号，说明修饰可以反映通路活动；这不证明 ALS 中存在相同连接。",
+            "运输读数可能涉及核孔组分丰度或重定位、运输调节因子定位、核膜相关过程，而不依赖核孔蛋白磷酸化。SOD1 与 ANXA11 阅读支持保留这些不同过程，但未分离它们的贡献。",
+            "表达量或 RNA 分布变化可能涉及转录、RNA 调控或 NPC 邻近因子，而不只涉及核孔通道本身。TPR 的转录响应与 SUN1 的输出相关结果提供不同背景，不能拼接为同一机制。",
+            "表型可能具有细胞类型、刺激条件及运输终点特异性。小胶质细胞中的运输组分积累、培养神经元的 mRNA 输出异常，以及非神经细胞中 TDP-43 核输入无差异，不能互相替代或据此排除对方。"
+          ]
+        }
+      ],
+      "source_evidence": [
+        {
+          "reading_ref": "directed-seed-p04-source-1-single",
+          "finding_id": "finding-c24e29a61d8a4b999f29c45aa9906729-1",
+          "source_ref": "epmc:MED:41691309",
+          "source_view_id": "ef0d631b44e14b2abf8f10443c55d5c2",
+          "source_citation": "https://europepmc.org/article/MED/41691309",
+          "access": "abstract",
+          "cropped": false,
+          "source_version": "provider version unreported",
+          "quote": "Mutant SOD1 also lowers the abundance of FG-Nups at the nuclear pore without altering nuclear circularity.",
+          "view_characters": [
+            850,
+            956
+          ],
+          "obtained_text_characters": [
+            850,
+            956
+          ],
+          "negative_quotes": [
+            {
+              "quote": "without altering nuclear circularity.",
+              "view_characters": [
+                919,
+                956
+              ]
+            }
+          ],
+          "reported_observation": "作者报告突变 SOD1 降低核孔处 FG-Nups 的丰度，同时未改变核圆度。",
+          "author_interpretation": "针对 FG-Nups 丰度降低而核圆度不变的单独机制解释，当前视图未报告。",
+          "not_established": [
+            "具体 FG-Nups 身份、磷酸化位点和修饰水平当前视图未报告。",
+            "核孔处丰度降低是否代表总蛋白减少、重定位或其他过程，当前视图未报告。",
+            "FG-Nups 丰度变化与运输障碍、细胞损伤之间的时序及因果关系，当前视图未建立。"
+          ],
+          "transfer_assumptions": [
+            "不能将核孔处 FG-Nups 丰度降低等同于核孔蛋白磷酸化变化。",
+            "若用于分析修饰与损伤的关系，需要区分核孔组分变化与核圆度这一形态终点。"
+          ]
+        },
+        {
+          "reading_ref": "directed-seed-p04-source-3-single",
+          "finding_id": "finding-61730f7691fd43a8a2b9c92eb6126f3b-6",
+          "source_ref": "epmc:MED:28831067",
+          "source_view_id": "692ca660eef14f86a19318ca2e08d85b",
+          "source_citation": "https://europepmc.org/article/MED/28831067",
+          "access": "abstract",
+          "cropped": false,
+          "source_version": "provider version unreported",
+          "quote": "This effect might be independent of SUN1 as expression of a GFP tagged SUN-domain deficient SUN1, which no longer can interact with Nesprin-2, did not affect mRNA export.",
+          "view_characters": [
+            1018,
+            1188
+          ],
+          "obtained_text_characters": [
+            1018,
+            1188
+          ],
+          "negative_quotes": [
+            {
+              "quote": "expression of a GFP tagged SUN-domain deficient SUN1, which no longer can interact with Nesprin-2, did not affect mRNA export.",
+              "view_characters": [
+                1062,
+                1188
+              ]
+            }
+          ],
+          "reported_observation": "作者报告，该缺失变体不能再与 Nesprin-2 相互作用，而表达该变体未影响 mRNA 输出。",
+          "author_interpretation": "作者据此推测，前述 Nesprin-2 敲低对 mRNA 输出的影响可能独立于 SUN1；其措辞为可能，而非确定。",
+          "not_established": [
+            "当前视图未报告足以确立 SUN1 独立性的实验细节。",
+            "当前视图未报告该缺失变体在所有条件下均无作用，也未报告其能否恢复 Nesprin-2 敲低表型。",
+            "当前视图未报告此无影响结果涉及核孔蛋白磷酸化。"
+          ],
+          "transfer_assumptions": [
+            "不能将 Nesprin-2 敲低表型直接归因于 SUN1–Nesprin-2 结合丧失。",
+            "该无影响结果需保留其具体构建体和输出终点边界，不能推广为 LINC 复合体整体与输出无关。"
+          ]
+        }
+      ],
+      "codex_initial_assessment": "保留TDP-43条件性无损害、核圆度不变及SUN域缺失无影响，并将继发、并行、其他运输过程列作待核可能性；没有把5来源拼接成同体系直接反驳。第4边对HeLa/U2OS作了额外分离，但原宽卡已有情境归属风险，逐项体系正确性仍需独立人工对照原文，不能据此声称已全面修复。",
+      "independent_human_review": "pending"
+    },
+    {
+      "id": "R08",
+      "topic": "来源报告、作者解释、类比和假设",
+      "actual_model_fields": [
+        {
+          "step": "p05",
+          "json_pointer": "/knowledge_edges/15",
+          "value": {
+            "kind": "author_interpretation",
+            "description": "作者解释分别包括：将 ANXA11 的播种和传播称为朊样性质；将 SOD1 中的小胶质细胞观察解释为非细胞自主性贡献，并提出运输紊乱可能是多种 ALS 背景的共同机制；认为所测 TDP-43 C 端磷酸模拟不主要造成误定位或 RNA 功能受损，但明确不排除其他细胞和 RNA 靶标；认为 Nesprin-2 敲低的输出效应可能独立于 SUN1。这些解释不等于本次综合建立了相应机制。",
+            "finding_refs": [
+              "finding-f49335ad41a946f9aed8103f53f328ca-2",
+              "finding-c24e29a61d8a4b999f29c45aa9906729-0",
+              "finding-c24e29a61d8a4b999f29c45aa9906729-2",
+              "finding-f8cf38bfaf564f93a51f5b4b17aeefeb-1",
+              "finding-f8cf38bfaf564f93a51f5b4b17aeefeb-5",
+              "finding-61730f7691fd43a8a2b9c92eb6126f3b-6"
+            ]
+          }
+        },
+        {
+          "step": "p05",
+          "json_pointer": "/knowledge_edges/16",
+          "value": {
+            "kind": "analogy",
+            "description": "TPR 提供非 ALS 情境中的核孔蛋白信号响应修饰实例；SUN1 提供邻近核孔的蛋白修饰与输出相关实例；TDP-43 提供特定磷酸模拟条件下未出现输入或 RNA 功能损害的实例。三者只能帮助界定问题和迁移边界，不能替代 ALS 中核孔蛋白磷酸化与 mRNA 输出关系的直接记录，也不据此预选分子或模型。",
+            "finding_refs": [
+              "finding-b8a3fb022bee44afa29c341c2b9115d7-2",
+              "finding-61730f7691fd43a8a2b9c92eb6126f3b-2",
+              "finding-61730f7691fd43a8a2b9c92eb6126f3b-3",
+              "finding-61730f7691fd43a8a2b9c92eb6126f3b-4",
+              "finding-f8cf38bfaf564f93a51f5b4b17aeefeb-1"
+            ]
+          }
+        },
+        {
+          "step": "p05",
+          "json_pointer": "/knowledge_edges/17",
+          "value": {
+            "kind": "hypothesis",
+            "description": "本种子的未决关系保留为并列可能性：若发现核孔蛋白磷酸化变化，它可能参与输出异常、发生于损伤之后，或与运输和损伤并行。现有聚集相关表型、非选择性上游干预和其他对象的磷酸模拟结果不能区分这些可能性；时序与修饰选择性问题仍待直接记录回答。",
+            "finding_refs": [
+              "finding-f49335ad41a946f9aed8103f53f328ca-6",
+              "finding-c24e29a61d8a4b999f29c45aa9906729-3",
+              "finding-b8a3fb022bee44afa29c341c2b9115d7-3",
+              "finding-b8a3fb022bee44afa29c341c2b9115d7-4",
+              "finding-f8cf38bfaf564f93a51f5b4b17aeefeb-1"
+            ]
+          }
+        }
+      ],
+      "source_evidence": [
+        {
+          "reading_ref": "directed-seed-p04-source-1-single",
+          "finding_id": "finding-c24e29a61d8a4b999f29c45aa9906729-2",
+          "source_ref": "epmc:MED:41691309",
+          "source_view_id": "ef0d631b44e14b2abf8f10443c55d5c2",
+          "source_citation": "https://europepmc.org/article/MED/41691309",
+          "access": "abstract",
+          "cropped": false,
+          "source_version": "provider version unreported",
+          "quote": "Abnormal accumulation of NCT components was identified in Iba1-positive microglia, indicating a previously overlooked, non-cell-autonomous contribution to disease pathogenesis.",
+          "view_characters": [
+            957,
+            1133
+          ],
+          "obtained_text_characters": [
+            957,
+            1133
+          ],
+          "negative_quotes": [],
+          "reported_observation": "作者报告在 Iba1 阳性小胶质细胞中发现核质运输组分异常积累。",
+          "author_interpretation": "作者认为该观察提示此前被忽视的非细胞自主性致病贡献。",
+          "not_established": [
+            "此处异常积累的具体组分、亚细胞位置和运输功能读数，当前视图未报告。",
+            "小胶质细胞变化通过何种途径影响神经元，以及是否进行了细胞类型选择性干预，当前视图未报告。",
+            "该观察与核孔蛋白磷酸化的关系，当前视图未报告。"
+          ],
+          "transfer_assumptions": [
+            "不能将小胶质细胞中的观察直接当作神经元内的同一事件；非细胞自主性机制及其与磷酸化的联系需要分别检验。"
+          ]
+        },
+        {
+          "reading_ref": "directed-seed-p04-source-3-single",
+          "finding_id": "finding-61730f7691fd43a8a2b9c92eb6126f3b-5",
+          "source_ref": "epmc:MED:28831067",
+          "source_view_id": "692ca660eef14f86a19318ca2e08d85b",
+          "source_citation": "https://europepmc.org/article/MED/28831067",
+          "access": "abstract",
+          "cropped": false,
+          "source_version": "provider version unreported",
+          "quote": "Furthermore, probing a possible role of the LINC complex component Nesprin-2 in this process we observed impaired mRNA export in Nesprin-2 knockdown cells.",
+          "view_characters": [
+            862,
+            1017
+          ],
+          "obtained_text_characters": [
+            862,
+            1017
+          ],
+          "negative_quotes": [],
+          "reported_observation": "作者报告在 Nesprin-2 敲低细胞中观察到 mRNA 输出受损。",
+          "author_interpretation": "作者以该实验探查 Nesprin-2 在这一过程中的可能作用。",
+          "not_established": [
+            "当前视图未报告敲低程度、输出受损幅度、救援实验或时间顺序。",
+            "当前视图未报告该表型由 SUN1 S113 磷酸化变化介导。"
+          ],
+          "transfer_assumptions": [
+            "Nesprin-2 敲低是与 SUN1 位点变体不同的干预，不能合并为同一实验或同一修饰机制。"
+          ]
+        }
+      ],
+      "codex_initial_assessment": "18关系中15observation、1author_interpretation、1analogy、1hypothesis；类型分开有助审阅，不代表标签内每句话都已独立确认。并列机制关系作为待区分猜想，没有给候选答案或预选分子。39卡是记录，不是39篇独立研究。",
+      "independent_human_review": "pending"
+    },
+    {
+      "id": "R09",
+      "topic": "检索覆盖与材料范围",
+      "actual_model_fields": [
+        {
+          "step": "p05",
+          "json_pointer": "/limitations",
+          "value": [
+            "选择清单包含全部 5 条所供阅读记录，omitted_readings 为空；全部 39 个原始卡片 ID 均列于 finding_refs。综合不替代原卡片，调用方仍保留全部原卡片及其条件限定。",
+            "覆盖与裁剪均按所供视图处理，没有隐式截断：ANXA11 视图为完整取得的 Abstract、Highlights、In Brief 文本，范围 [0,2746]；SOD1、TPR、SUN1 分别为完整取得的摘要，范围 [0,1714]、[0,2097]、[0,1188]。完整取得摘要不等于取得全文。",
+            "TDP-43 仅阅读原始 125363 字符文本中的 [33770,41370]，即相关 Results 小节及文字图注；[0,33770] 和 [41370,125363] 未读。不能从文章标题推定未选部分关于凝聚或聚集的实验结果，也不能把该摘录称为整篇全文阅读。",
+            "所有视图均未查看图像像素或补充材料；文字图注中的图像描述和在线源数据提示不表示已访问这些文件。来源版本均未报告；ANXA11 来源标识为 PPR，不据此补充未提供的版本或审稿状态信息。",
+            "已执行搜索仅限所供 Europe PMC 手动查询。两条精确 ID 检索各返回 1 项且该查询范围完整；三条定向检索分别报告 121、9、184 项，但各仅供应首页 5 项，均仍有下一页游标。不能把这些首页当作系统覆盖，也不能把未显示记录或未读命中当作阴性研究。",
+            "第三条定向检索首页含植物、肿瘤和有丝分裂等情境，不能直接作为 ALS 机制材料；其他搜索命中若未形成所供阅读记录，本次不综合其科学结论。尚未执行的 targeted_reading_requests 仅是后续阅读请求，不是已完成的检索或实验。",
+            "空的阴性结果数组只表示当前视图未报告阴性实验。明确报告的核圆度不变、TDP-43 多项无损害结果、SUN1 缺失变体输出无变化、S113A 相对较弱恢复及肿瘤磷酸化异质性均保留，且不超出各自条件推广。",
+            "邻近富集、核孔处丰度、蛋白分布、核圆度、核膜异常、蛋白核输入和 mRNA 输出不是可互换终点。磷酸模拟不等于真实位点磷酸化，蛋白耗减或通路抑制也不等于修饰选择性干预；不同疾病背景、组织和细胞类型之间的迁移关系尚未建立。",
+            "本包不提供 ALS 因果答案，不宣称提出了经验证的机制、实验可行性或全局新颖性；具体分子和模型仅作为已读文献背景保留，不构成后续选择。"
+          ]
+        }
+      ],
+      "source_evidence": [],
+      "codex_initial_assessment": "明确两旧精确ID与三新主题查询区别、每条只首5项及未取页、摘要和Results片段范围、未读图像补充。第三查询首页并未形成新阅读，不能将其未选命中当阴性。已读记录未建立某关系只能限于这些视图，不能变成全球没有证据。全文本来可否访问与本轮未取得是两回事。",
+      "independent_human_review": "pending"
+    },
+    {
+      "id": "R10",
+      "topic": "P07无决定，技术不确定不等于科学否定",
+      "actual_model_fields": [],
+      "source_evidence": [],
+      "actual_call_state": {
+        "task_status": "blocked",
+        "attempt_status": "uncertain",
+        "attempt_id": "0d9e7d5fd9da4bbea3ddc42608e0c184",
+        "provider_response": null,
+        "finish_reason": null,
+        "usage": null,
+        "readiness_decision": null,
+        "safe_recorded_error": "Model send outcome uncertain; credential details withheld",
+        "diagnosis": "No raw network cause retained by adapter; cannot establish timeout, rejection, provider execution, or zero consumption. Recorded interval about5seconds despite configured600seconds.",
+        "recovery": "Preserve uncertain attempt. No retry/recover/model switch. Any later resolution requires explicit authorization and evidence; do not count as scientific negative."
+      },
+      "codex_initial_assessment": "没有收到原始响应/finish_reason/usage，无法审阅任何P07结论或判据。完整P07输入及39锚点依据可追溯，但不补造ready/retrieve_more/unable_to_prepare，也不据此认定背景不足；未自动重试。",
+      "independent_human_review": "pending"
+    },
+    {
+      "id": "R11",
+      "topic": "输入隔离和原事实保护",
+      "actual_model_fields": [],
+      "source_evidence": [],
+      "codex_initial_assessment": "5个成功任务和P07实际输入均绑定同一seed；P05仅2条宽阅读+3条本seed阅读，无兄弟OPENseed、其问题或Codex评审。原Task/Attempt/Result/Goal/Brief/视图等行哈希逐一保持。评审在所有发送之后生成；输入隔离不是方向完全独立或科学有效证明。",
+      "independent_human_review": "pending"
+    }
+  ]
+}

@@ -1,0 +1,13 @@
+{
+  "known_successful_calls": 5,
+  "known_usage_subtotal": {
+    "prompt_tokens": 38348,
+    "completion_tokens": 23245,
+    "total_tokens": 61593
+  },
+  "known_reasoning_tokens": 4896,
+  "p07_usage": null,
+  "total_round_usage": "unknown: P07 send uncertain, no provider response",
+  "cost": null,
+  "reasoning_included_in_completion_tokens": true
+}

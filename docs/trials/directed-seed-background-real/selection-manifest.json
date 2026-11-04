@@ -1,0 +1,233 @@
+{
+  "selection_basis": "operator selection of actual first-page metadata before new P04; title relevance not scientific evidence appraisal",
+  "new_access_requested": "complete provider abstracts only; no fulltext/figures/supplement fetch in this bounded round",
+  "selected": [
+    {
+      "slot": 1,
+      "source_ref": "epmc:MED:41691309",
+      "parent_search": "directed-seed-search-1-page1",
+      "reason": "ALS中另一病理背景的核质运输研究；作为机制与疾病情境的对照，不预设SOD1为答案。"
+    },
+    {
+      "slot": 2,
+      "source_ref": "epmc:MED:42031697",
+      "parent_search": "directed-seed-search-2-page1",
+      "reason": "标题直接涉及核孔蛋白与信号响应，核查实际修饰和运输终点是否相连；不能由标题推出mRNA输出或ALS因果。"
+    },
+    {
+      "slot": 3,
+      "source_ref": "epmc:MED:28831067",
+      "parent_search": "directed-seed-search-2-page1",
+      "reason": "标题涉及磷酸化调控mRNA输出，但对象为内核膜蛋白SUN1；作为邻近/竞争解释和对象边界，不将其当核孔蛋白证据。"
+    }
+  ],
+  "returned_sources": [
+    {
+      "citation": "https://europepmc.org/article/PPR/PPR1223302",
+      "source_ref": "epmc:PPR:PPR1223302",
+      "title": "Novel single molecule imaging approaches reveal structure-function alterations to the nuclear pore complex in early  <i>C9ORF72</i>  -associated TDP-43 proteinopathy",
+      "appearances": [
+        {
+          "query_index": 0,
+          "page": 1,
+          "rank": 1
+        }
+      ],
+      "selected": false,
+      "reason": "本轮限3来源，按当前标题可见信息优先直接关系、ALS情境及邻近mRNA输出对象；此项未获取/阅读，未判断其科学支持或反证。第三查询首5条含不同体系/终点，未穷尽或排除。"
+    },
+    {
+      "citation": "https://europepmc.org/article/PPR/PPR1219488",
+      "source_ref": "epmc:PPR:PPR1219488",
+      "title": "C9ORF72-derived polyGR polypeptides disrupt passive nucleocytoplasmic transport by tuning protein affinity for the nuclear pore barrier",
+      "appearances": [
+        {
+          "query_index": 0,
+          "page": 1,
+          "rank": 2
+        }
+      ],
+      "selected": false,
+      "reason": "本轮限3来源，按当前标题可见信息优先直接关系、ALS情境及邻近mRNA输出对象；此项未获取/阅读，未判断其科学支持或反证。第三查询首5条含不同体系/终点，未穷尽或排除。"
+    },
+    {
+      "citation": "https://europepmc.org/article/MED/41691309",
+      "source_ref": "epmc:MED:41691309",
+      "title": "Impaired nucleocytoplasmic transport in SOD1-mediated ALS.",
+      "appearances": [
+        {
+          "query_index": 0,
+          "page": 1,
+          "rank": 3
+        }
+      ],
+      "selected": true,
+      "reason": "ALS中另一病理背景的核质运输研究；作为机制与疾病情境的对照，不预设SOD1为答案。"
+    },
+    {
+      "citation": "https://europepmc.org/article/PPR/PPR1217875",
+      "source_ref": "epmc:PPR:PPR1217875",
+      "title": "Seeded aggregation of ANXA11 induces prion-like propagation, TDP-43 co-pathology and nucleocytoplasmic transport defects",
+      "appearances": [
+        {
+          "query_index": 0,
+          "page": 1,
+          "rank": 4
+        },
+        {
+          "query_index": 1,
+          "page": 1,
+          "rank": 1
+        }
+      ],
+      "selected": false,
+      "reason": "已取得并完成宽背景P04，复用原记录，不重复获取/阅读。"
+    },
+    {
+      "citation": "https://europepmc.org/article/MED/42312942",
+      "source_ref": "epmc:MED:42312942",
+      "title": "Enterovirus D68 2A protease causes nuclear pore complex dysfunction and independently contributes to motor neuron toxicity.",
+      "appearances": [
+        {
+          "query_index": 0,
+          "page": 1,
+          "rank": 5
+        }
+      ],
+      "selected": false,
+      "reason": "本轮限3来源，按当前标题可见信息优先直接关系、ALS情境及邻近mRNA输出对象；此项未获取/阅读，未判断其科学支持或反证。第三查询首5条含不同体系/终点，未穷尽或排除。"
+    },
+    {
+      "citation": "https://europepmc.org/article/MED/42031697",
+      "source_ref": "epmc:MED:42031697",
+      "title": "Nucleoporin TPR integrates MAPK signaling with mitogen-induced transcriptional programs.",
+      "appearances": [
+        {
+          "query_index": 1,
+          "page": 1,
+          "rank": 2
+        }
+      ],
+      "selected": true,
+      "reason": "标题直接涉及核孔蛋白与信号响应，核查实际修饰和运输终点是否相连；不能由标题推出mRNA输出或ALS因果。"
+    },
+    {
+      "citation": "https://europepmc.org/article/MED/28831067",
+      "source_ref": "epmc:MED:28831067",
+      "title": "The function of the inner nuclear envelope protein SUN1 in mRNA export is regulated by phosphorylation.",
+      "appearances": [
+        {
+          "query_index": 1,
+          "page": 1,
+          "rank": 3
+        }
+      ],
+      "selected": true,
+      "reason": "标题涉及磷酸化调控mRNA输出，但对象为内核膜蛋白SUN1；作为邻近/竞争解释和对象边界，不将其当核孔蛋白证据。"
+    },
+    {
+      "citation": "https://europepmc.org/article/MED/19106628",
+      "source_ref": "epmc:MED:19106628",
+      "title": "Nuclear phosphoinositide signaling regulates messenger RNA export.",
+      "appearances": [
+        {
+          "query_index": 1,
+          "page": 1,
+          "rank": 4
+        }
+      ],
+      "selected": false,
+      "reason": "本轮限3来源，按当前标题可见信息优先直接关系、ALS情境及邻近mRNA输出对象；此项未获取/阅读，未判断其科学支持或反证。第三查询首5条含不同体系/终点，未穷尽或排除。"
+    },
+    {
+      "citation": "https://europepmc.org/article/MED/26317468",
+      "source_ref": "epmc:MED:26317468",
+      "title": "The Nuclear Pore-Associated TREX-2 Complex Employs Mediator to Regulate Gene Expression.",
+      "appearances": [
+        {
+          "query_index": 1,
+          "page": 1,
+          "rank": 5
+        }
+      ],
+      "selected": false,
+      "reason": "本轮限3来源，按当前标题可见信息优先直接关系、ALS情境及邻近mRNA输出对象；此项未获取/阅读，未判断其科学支持或反证。第三查询首5条含不同体系/终点，未穷尽或排除。"
+    },
+    {
+      "citation": "https://europepmc.org/article/MED/42014410",
+      "source_ref": "epmc:MED:42014410",
+      "title": "Phosphorylation of rhizobial effector NopZ by soybean NORK promotes association with NENA and enhances nodulation.",
+      "appearances": [
+        {
+          "query_index": 2,
+          "page": 1,
+          "rank": 1
+        }
+      ],
+      "selected": false,
+      "reason": "本轮限3来源，按当前标题可见信息优先直接关系、ALS情境及邻近mRNA输出对象；此项未获取/阅读，未判断其科学支持或反证。第三查询首5条含不同体系/终点，未穷尽或排除。"
+    },
+    {
+      "citation": "https://europepmc.org/article/MED/42271060",
+      "source_ref": "epmc:MED:42271060",
+      "title": "Mitochondria directly interact with the nuclear pore complex.",
+      "appearances": [
+        {
+          "query_index": 2,
+          "page": 1,
+          "rank": 2
+        }
+      ],
+      "selected": false,
+      "reason": "本轮限3来源，按当前标题可见信息优先直接关系、ALS情境及邻近mRNA输出对象；此项未获取/阅读，未判断其科学支持或反证。第三查询首5条含不同体系/终点，未穷尽或排除。"
+    },
+    {
+      "citation": "https://europepmc.org/article/MED/42949956",
+      "source_ref": "epmc:MED:42949956",
+      "title": "Functional redundancy between atypical CDKs reveals a vulnerability in hepatocellular carcinoma.",
+      "appearances": [
+        {
+          "query_index": 2,
+          "page": 1,
+          "rank": 3
+        }
+      ],
+      "selected": false,
+      "reason": "本轮限3来源，按当前标题可见信息优先直接关系、ALS情境及邻近mRNA输出对象；此项未获取/阅读，未判断其科学支持或反证。第三查询首5条含不同体系/终点，未穷尽或排除。"
+    },
+    {
+      "citation": "https://europepmc.org/article/PPR/PPR1335252",
+      "source_ref": "epmc:PPR:PPR1335252",
+      "title": "TMEM209/NPP-28 partitions PLK-1 between the nuclear envelope and nuclear interior during mitosis",
+      "appearances": [
+        {
+          "query_index": 2,
+          "page": 1,
+          "rank": 4
+        }
+      ],
+      "selected": false,
+      "reason": "本轮限3来源，按当前标题可见信息优先直接关系、ALS情境及邻近mRNA输出对象；此项未获取/阅读，未判断其科学支持或反证。第三查询首5条含不同体系/终点，未穷尽或排除。"
+    },
+    {
+      "citation": "https://europepmc.org/article/MED/42288007",
+      "source_ref": "epmc:MED:42288007",
+      "title": "NUP62 promotes non-small cell lung cancer progression by enhancing STAT4 nuclear translocation to upregulate CFH transcription.",
+      "appearances": [
+        {
+          "query_index": 2,
+          "page": 1,
+          "rank": 5
+        }
+      ],
+      "selected": false,
+      "reason": "本轮限3来源，按当前标题可见信息优先直接关系、ALS情境及邻近mRNA输出对象；此项未获取/阅读，未判断其科学支持或反证。第三查询首5条含不同体系/终点，未穷尽或排除。"
+    }
+  ],
+  "pagination_omission": "All later result pages intentionally not requested under user limit; no claim of closest-study completeness",
+  "reused_readings": [
+    "p04-v2-control-single",
+    "p04-v2-complement-single"
+  ],
+  "unread_fulltexts": "Not acquired in this round; no hidden excerpts or text truncation"
+}

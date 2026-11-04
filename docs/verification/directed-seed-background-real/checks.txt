@@ -1,0 +1,9 @@
+Read-only DB audit: all original row hashes preserved; exported attempts/results match DB.
+5successful+1uncertain model attempts; no retry;3search+3fetch successful.
+Ruff check src/co_scientist_next tests/next docs/trials/directed-seed-background-real: passed
+Ruff format --check same paths:37files passed
+Artifact credential scan: passed,value withheld
+pytest tests/next: NOT RUN this round (application code unchanged)
+G3 regression/browser/expert science validation: NOT RUN
+Local helper errors: initial literature export hash-key mismatch corrected by reading saved success only;2premature Store preflights rejected by active-runtime lock,no tasks/sends.
+P07uncertain: no response/usage/decision; preserved blocked state, no recovery/resend.

@@ -1,0 +1,66 @@
+{
+  "goal_context": {
+    "brief_revision_id": "997d55886d634f289612ba79e1755f16",
+    "clarification_questions": [],
+    "clarification_required": false,
+    "hard_requirements": [
+      {
+        "input_locator": "explicit_constraints[0]",
+        "supporting_span": "保留核孔蛋白磷酸化问题",
+        "text": "保留核孔蛋白磷酸化问题"
+      },
+      {
+        "input_locator": "explicit_constraints[1]",
+        "supporting_span": "不预选具体分子或实验模型",
+        "text": "不预选具体分子或实验模型"
+      }
+    ],
+    "intended_use": "非临床文献检索开发验证",
+    "material_manifest": [],
+    "optional_interpretations": [],
+    "original_question": "针对核孔复合体中某核孔蛋白的磷酸化，提出解释导致 ALS 的关键因素或过程的新假说；详细说明作用机制，并给出可行的检验实验。",
+    "preferences": [],
+    "prepared_question": "针对核孔复合体中某核孔蛋白的磷酸化，提出解释导致 ALS 的关键因素或过程的新假说；详细说明作用机制，并给出可行的检验实验。",
+    "supplied_background": "采用既有 ALS Goal 的开发者转述，非原文逐字引用。",
+    "unspecified_details": [
+      "测试适配器不补充未指定的分子、模型或实验条件；原始问题中的条件始终有效。"
+    ]
+  },
+  "source_view": {
+    "access": "abstract",
+    "access_limitations": "Only the obtained representation; no unseen text/figures/supplements",
+    "acquisition_task_id": "640a1efff57a43378dafc152a7a53fa2",
+    "character_range": [
+      0,
+      1188
+    ],
+    "cropped": false,
+    "goal_ref": "goal-38a4a7a321d54c1eb475b9c7646930f0",
+    "id": "692ca660eef14f86a19318ca2e08d85b",
+    "images_seen": false,
+    "locator": "attempt:metadata/body_base64#result.abstractText",
+    "not_read_ranges": [],
+    "original_characters": 1188,
+    "original_text_sha256": "7e4cf33840acbf18fa93f3003b6dbb9818cb16ac7476389c45596cafdaaa0c59",
+    "representation": "complete obtained provider abstract, markup flattened; not full text",
+    "run_id": "cea909fe8a004010b1896df1c1d98e02",
+    "seed_id": "seed-f87361b21b4f44609dedfa2ac9afc7bc-0",
+    "selection_reason": "标题涉及磷酸化调控mRNA输出，但对象为内核膜蛋白SUN1；作为邻近/竞争解释和对象边界，不将其当核孔蛋白证据。 选择已取得的完整摘要；不读取正文/图像/补充，不隐式裁剪。",
+    "source_citation": "https://europepmc.org/article/MED/28831067",
+    "source_ref": "epmc:MED:28831067",
+    "source_version": "provider version unreported",
+    "supplements_seen": false,
+    "text": "SUN1, a component of the LINC (Linker of Nucleoskeleton and Cytoskeleton) complex, functions in mammalian mRNA export through the NXF1-dependent pathway. It associates with mRNP complexes by direct interaction with NXF1. It also binds to the NPC through association with the nuclear pore component Nup153, which is involved in mRNA export. The SUN1-NXF1 association is at least partly regulated by a protein kinase C (PKC) which phosphorylates serine 113 (S113) in the N-terminal domain leading to reduced interaction. The phosphorylation appears to be important for the SUN1 function in nuclear mRNA export since GFP-SUN1 carrying a S113A mutation was less efficient in restoring mRNA export after SUN1 knockdown as compared to the wild type protein. By contrast, GFP-SUN1-S113D resembling the phosphorylated state allowed very efficient export of poly(A)+RNA. Furthermore, probing a possible role of the LINC complex component Nesprin-2 in this process we observed impaired mRNA export in Nesprin-2 knockdown cells. This effect might be independent of SUN1 as expression of a GFP tagged SUN-domain deficient SUN1, which no longer can interact with Nesprin-2, did not affect mRNA export."
+  },
+  "seed_brief": {
+    "id": "seed-f87361b21b4f44609dedfa2ac9afc7bc-0",
+    "kind": "directed",
+    "question": "在不预选具体核孔蛋白或实验模型的前提下，若检测到核孔蛋白磷酸化变化，能否通过时序比较及针对该修饰的选择性干预，区分其参与 mRNA 输出障碍、属于细胞损伤后的反应，或与运输障碍和损伤并行变化？",
+    "unresolved_relationship": "所供记录报告了聚集相关的核孔蛋白分布改变、mRNA 输出受损及神经元毒性，但未直接测量核孔蛋白磷酸化，也未建立这些终点的先后或因果关系。TDP-43 磷酸模拟变体的核输入无损害结果针对不同对象和运输终点，不能直接解决这一关系。",
+    "known_anchor_refs": [
+      "finding-f49335ad41a946f9aed8103f53f328ca-6",
+      "finding-f49335ad41a946f9aed8103f53f328ca-4",
+      "finding-f8cf38bfaf564f93a51f5b4b17aeefeb-1"
+    ]
+  }
+}

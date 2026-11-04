@@ -1,0 +1,22 @@
+{
+  "status": "P03_P04_P05_SAVED_P07_UNCERTAIN_STOPPED_NO_READINESS_DECISION",
+  "source_commit": "54253eb2e5fac2c672fe9a1461bdc851488a1331",
+  "application_main_baseline": "378475b2e5a86d1c6504138bc3992dae2c977e81",
+  "delivery_branch": "codex/directed-seed-background-trial",
+  "run_id": "cea909fe8a004010b1896df1c1d98e02",
+  "seed_id": "seed-f87361b21b4f44609dedfa2ac9afc7bc-0",
+  "new_model_attempts": 6,
+  "successful_calls": 5,
+  "uncertain_calls": 1,
+  "new_searches": 3,
+  "new_fetches": 3,
+  "first_pages_only": true,
+  "new_source_views": 3,
+  "p05_reading_count": 5,
+  "p05_finding_count": 39,
+  "readiness_decision": null,
+  "application_code_changed": false,
+  "original_rows_changed": false,
+  "science_validated": false,
+  "independent_human_review_completed": false
+}

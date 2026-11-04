@@ -1,0 +1,511 @@
+{
+  "request_id": "directed-seed-fetch-source-3",
+  "run_id": "cea909fe8a004010b1896df1c1d98e02",
+  "task_id": "640a1efff57a43378dafc152a7a53fa2",
+  "request": {
+    "background_context": {
+      "plan_ref": "directed-seed-p03-plan-single",
+      "query_index": 1,
+      "seed_id": "seed-f87361b21b4f44609dedfa2ac9afc7bc-0"
+    },
+    "desired_access": "abstract",
+    "kind": "fetch",
+    "query_origin": "human_selected_source",
+    "search_request_id": "directed-seed-search-2-page1",
+    "source_ref": "epmc:MED:28831067"
+  },
+  "created_at": "2026-11-04T03:07:22.890727+00:00",
+  "task_status": "succeeded",
+  "error": null,
+  "result": {
+    "acquisition": {
+      "access": "abstract",
+      "error": null,
+      "executed_at": "2026-11-04T03:07:25.304644+00:00",
+      "limitation": null,
+      "request": {
+        "desired_access": "abstract",
+        "source_ref": "epmc:MED:28831067"
+      },
+      "source": {
+        "citation": "https://europepmc.org/article/MED/28831067",
+        "source_ref": "epmc:MED:28831067",
+        "title": "The function of the inner nuclear envelope protein SUN1 in mRNA export is regulated by phosphorylation."
+      },
+      "status": "succeeded",
+      "text": "SUN1, a component of the LINC (Linker of Nucleoskeleton and Cytoskeleton) complex, functions in mammalian mRNA export through the NXF1-dependent pathway. It associates with mRNP complexes by direct interaction with NXF1. It also binds to the NPC through association with the nuclear pore component Nup153, which is involved in mRNA export. The SUN1-NXF1 association is at least partly regulated by a protein kinase C (PKC) which phosphorylates serine 113 (S113) in the N-terminal domain leading to reduced interaction. The phosphorylation appears to be important for the SUN1 function in nuclear mRNA export since GFP-SUN1 carrying a S113A mutation was less efficient in restoring mRNA export after SUN1 knockdown as compared to the wild type protein. By contrast, GFP-SUN1-S113D resembling the phosphorylated state allowed very efficient export of poly(A)+RNA. Furthermore, probing a possible role of the LINC complex component Nesprin-2 in this process we observed impaired mRNA export in Nesprin-2 knockdown cells. This effect might be independent of SUN1 as expression of a GFP tagged SUN-domain deficient SUN1, which no longer can interact with Nesprin-2, did not affect mRNA export."
+    },
+    "details": {
+      "metadata": {
+        "abstractText": "SUN1, a component of the LINC (Linker of Nucleoskeleton and Cytoskeleton) complex, functions in mammalian mRNA export through the NXF1-dependent pathway. It associates with mRNP complexes by direct interaction with NXF1. It also binds to the NPC through association with the nuclear pore component Nup153, which is involved in mRNA export. The SUN1-NXF1 association is at least partly regulated by a protein kinase C (PKC) which phosphorylates serine 113 (S113) in the N-terminal domain leading to reduced interaction. The phosphorylation appears to be important for the SUN1 function in nuclear mRNA export since GFP-SUN1 carrying a S113A mutation was less efficient in restoring mRNA export after SUN1 knockdown as compared to the wild type protein. By contrast, GFP-SUN1-S113D resembling the phosphorylated state allowed very efficient export of poly(A)+RNA. Furthermore, probing a possible role of the LINC complex component Nesprin-2 in this process we observed impaired mRNA export in Nesprin-2 knockdown cells. This effect might be independent of SUN1 as expression of a GFP tagged SUN-domain deficient SUN1, which no longer can interact with Nesprin-2, did not affect mRNA export.",
+        "affiliation": "Institute of Biochemistry I, Medical Faculty, University Hospital Cologne, Center for Molecular Medicine Cologne (CMMC) and Cologne Excellence Cluster on Cellular Stress Responses in Aging-Associated Diseases (CECAD), University of Cologne, Joseph-Stelzmann-Strasse 52, 50931, Cologne, Germany.",
+        "authMan": "N",
+        "authorIdList": {
+          "authorId": [
+            {
+              "type": "ORCID",
+              "value": "0000-0002-9061-1061"
+            },
+            {
+              "type": "ORCID",
+              "value": "0000-0003-1594-6117"
+            }
+          ]
+        },
+        "authorList": {
+          "author": [
+            {
+              "authorAffiliationDetailsList": {
+                "authorAffiliation": [
+                  {
+                    "affiliation": "Institute of Biochemistry I, Medical Faculty, University Hospital Cologne, Center for Molecular Medicine Cologne (CMMC) and Cologne Excellence Cluster on Cellular Stress Responses in Aging-Associated Diseases (CECAD), University of Cologne, Joseph-Stelzmann-Strasse 52, 50931, Cologne, Germany."
+                  },
+                  {
+                    "affiliation": "Institutes of Biomedical Sciences, Shanxi University, 030006, Taiyuan, China."
+                  }
+                ]
+              },
+              "firstName": "Ping",
+              "fullName": "Li P",
+              "initials": "P",
+              "lastName": "Li"
+            },
+            {
+              "authorAffiliationDetailsList": {
+                "authorAffiliation": [
+                  {
+                    "affiliation": "Institute of Biochemistry I, Medical Faculty, University Hospital Cologne, Center for Molecular Medicine Cologne (CMMC) and Cologne Excellence Cluster on Cellular Stress Responses in Aging-Associated Diseases (CECAD), University of Cologne, Joseph-Stelzmann-Strasse 52, 50931, Cologne, Germany."
+                  }
+                ]
+              },
+              "firstName": "Maria",
+              "fullName": "Stumpf M",
+              "initials": "M",
+              "lastName": "Stumpf"
+            },
+            {
+              "authorAffiliationDetailsList": {
+                "authorAffiliation": [
+                  {
+                    "affiliation": "Institute of Biochemistry I, Medical Faculty, University Hospital Cologne, Center for Molecular Medicine Cologne (CMMC) and Cologne Excellence Cluster on Cellular Stress Responses in Aging-Associated Diseases (CECAD), University of Cologne, Joseph-Stelzmann-Strasse 52, 50931, Cologne, Germany."
+                  }
+                ]
+              },
+              "firstName": "Rolf",
+              "fullName": "Müller R",
+              "initials": "R",
+              "lastName": "Müller"
+            },
+            {
+              "authorAffiliationDetailsList": {
+                "authorAffiliation": [
+                  {
+                    "affiliation": "Institute of Biochemistry I, Medical Faculty, University Hospital Cologne, Center for Molecular Medicine Cologne (CMMC) and Cologne Excellence Cluster on Cellular Stress Responses in Aging-Associated Diseases (CECAD), University of Cologne, Joseph-Stelzmann-Strasse 52, 50931, Cologne, Germany."
+                  }
+                ]
+              },
+              "authorId": {
+                "type": "ORCID",
+                "value": "0000-0003-1594-6117"
+              },
+              "firstName": "Ludwig",
+              "fullName": "Eichinger L",
+              "initials": "L",
+              "lastName": "Eichinger"
+            },
+            {
+              "authorAffiliationDetailsList": {
+                "authorAffiliation": [
+                  {
+                    "affiliation": "Institute of Biochemistry I, Medical Faculty, University Hospital Cologne, Center for Molecular Medicine Cologne (CMMC) and Cologne Excellence Cluster on Cellular Stress Responses in Aging-Associated Diseases (CECAD), University of Cologne, Joseph-Stelzmann-Strasse 52, 50931, Cologne, Germany. gernot.gloeckner@uni-koeln.de."
+                  }
+                ]
+              },
+              "authorId": {
+                "type": "ORCID",
+                "value": "0000-0002-9061-1061"
+              },
+              "firstName": "Gernot",
+              "fullName": "Glöckner G",
+              "initials": "G",
+              "lastName": "Glöckner"
+            },
+            {
+              "authorAffiliationDetailsList": {
+                "authorAffiliation": [
+                  {
+                    "affiliation": "Institute of Biochemistry I, Medical Faculty, University Hospital Cologne, Center for Molecular Medicine Cologne (CMMC) and Cologne Excellence Cluster on Cellular Stress Responses in Aging-Associated Diseases (CECAD), University of Cologne, Joseph-Stelzmann-Strasse 52, 50931, Cologne, Germany. noegel@uni-koeln.de."
+                  }
+                ]
+              },
+              "firstName": "Angelika A",
+              "fullName": "Noegel AA",
+              "initials": "AA",
+              "lastName": "Noegel"
+            }
+          ]
+        },
+        "authorString": "Li P, Stumpf M, Müller R, Eichinger L, Glöckner G, Noegel AA.",
+        "chemicalList": {
+          "chemical": [
+            {
+              "name": "NXF1 protein, human",
+              "registryNumber": "0"
+            },
+            {
+              "name": "Membrane Proteins",
+              "registryNumber": "0"
+            },
+            {
+              "name": "RNA, Messenger",
+              "registryNumber": "0"
+            },
+            {
+              "name": "Nuclear Proteins",
+              "registryNumber": "0"
+            },
+            {
+              "name": "Microtubule-Associated Proteins",
+              "registryNumber": "0"
+            },
+            {
+              "name": "RNA-Binding Proteins",
+              "registryNumber": "0"
+            },
+            {
+              "name": "Nucleocytoplasmic Transport Proteins",
+              "registryNumber": "0"
+            },
+            {
+              "name": "Nuclear Pore Complex Proteins",
+              "registryNumber": "0"
+            },
+            {
+              "name": "NUP153 protein, human",
+              "registryNumber": "0"
+            },
+            {
+              "name": "SUN1 protein, human",
+              "registryNumber": "0"
+            },
+            {
+              "name": "Protein Kinase C",
+              "registryNumber": "EC 2.7.11.13"
+            },
+            {
+              "name": "Serine",
+              "registryNumber": "452VLY9402"
+            }
+          ]
+        },
+        "citedByCount": 15,
+        "dataLinksTagsList": {
+          "dataLinkstag": [
+            "altmetrics",
+            "supporting_data",
+            "related_data"
+          ]
+        },
+        "dateOfCompletion": "2019-04-18",
+        "dateOfCreation": "2017-08-24",
+        "dateOfRevision": "2019-04-18",
+        "doi": "10.1038/s41598-017-08837-7",
+        "electronicPublicationDate": "2017-08-22",
+        "epmcAuthMan": "N",
+        "firstIndexDate": "2017-08-23",
+        "firstPublicationDate": "2017-08-22",
+        "fullTextIdList": {
+          "fullTextId": [
+            "PMC5567243"
+          ]
+        },
+        "fullTextReceivedDate": "2025-02-04",
+        "fullTextUrlList": {
+          "fullTextUrl": [
+            {
+              "availability": "Subscription required",
+              "availabilityCode": "S",
+              "documentStyle": "doi",
+              "site": "DOI",
+              "url": "https://doi.org/10.1038/s41598-017-08837-7"
+            },
+            {
+              "availability": "Open access",
+              "availabilityCode": "OA",
+              "documentStyle": "html",
+              "site": "Europe_PMC",
+              "url": "https://europepmc.org/articles/PMC5567243"
+            },
+            {
+              "availability": "Open access",
+              "availabilityCode": "OA",
+              "documentStyle": "pdf",
+              "site": "Europe_PMC",
+              "url": "https://europepmc.org/articles/PMC5567243?pdf=render"
+            }
+          ]
+        },
+        "hasBook": "N",
+        "hasData": "Y",
+        "hasDbCrossReferences": "N",
+        "hasEvaluations": "N",
+        "hasLabsLinks": "Y",
+        "hasPDF": "Y",
+        "hasReferences": "Y",
+        "hasSuppl": "N",
+        "hasTMAccessionNumbers": "Y",
+        "hasTextMinedTerms": "Y",
+        "id": "28831067",
+        "inEPMC": "Y",
+        "inPMC": "Y",
+        "isOpenAccess": "Y",
+        "journalInfo": {
+          "dateOfPublication": "2017 Aug",
+          "issue": "1",
+          "journal": {
+            "essn": "2045-2322",
+            "isoabbreviation": "Sci Rep",
+            "issn": "2045-2322",
+            "medlineAbbreviation": "Sci Rep",
+            "nlmid": "101563288",
+            "title": "Scientific reports"
+          },
+          "journalIssueId": 2582427,
+          "monthOfPublication": 8,
+          "printPublicationDate": "2017-08-01",
+          "volume": "7",
+          "yearOfPublication": 2017
+        },
+        "language": "eng",
+        "license": "cc by",
+        "meshHeadingList": {
+          "meshHeading": [
+            {
+              "descriptorName": "Hela Cells",
+              "majorTopic_YN": "N"
+            },
+            {
+              "descriptorName": "Cell Nucleus",
+              "majorTopic_YN": "N",
+              "meshQualifierList": {
+                "meshQualifier": [
+                  {
+                    "abbreviation": "ME",
+                    "majorTopic_YN": "Y",
+                    "qualifierName": "metabolism"
+                  }
+                ]
+              }
+            },
+            {
+              "descriptorName": "Humans",
+              "majorTopic_YN": "N"
+            },
+            {
+              "descriptorName": "Protein Kinase C",
+              "majorTopic_YN": "N",
+              "meshQualifierList": {
+                "meshQualifier": [
+                  {
+                    "abbreviation": "ME",
+                    "majorTopic_YN": "N",
+                    "qualifierName": "metabolism"
+                  }
+                ]
+              }
+            },
+            {
+              "descriptorName": "Serine",
+              "majorTopic_YN": "N",
+              "meshQualifierList": {
+                "meshQualifier": [
+                  {
+                    "abbreviation": "ME",
+                    "majorTopic_YN": "Y",
+                    "qualifierName": "metabolism"
+                  }
+                ]
+              }
+            },
+            {
+              "descriptorName": "Nucleocytoplasmic Transport Proteins",
+              "majorTopic_YN": "N",
+              "meshQualifierList": {
+                "meshQualifier": [
+                  {
+                    "abbreviation": "ME",
+                    "majorTopic_YN": "N",
+                    "qualifierName": "metabolism"
+                  }
+                ]
+              }
+            },
+            {
+              "descriptorName": "Nuclear Pore Complex Proteins",
+              "majorTopic_YN": "N",
+              "meshQualifierList": {
+                "meshQualifier": [
+                  {
+                    "abbreviation": "ME",
+                    "majorTopic_YN": "N",
+                    "qualifierName": "metabolism"
+                  }
+                ]
+              }
+            },
+            {
+              "descriptorName": "RNA-Binding Proteins",
+              "majorTopic_YN": "N",
+              "meshQualifierList": {
+                "meshQualifier": [
+                  {
+                    "abbreviation": "ME",
+                    "majorTopic_YN": "N",
+                    "qualifierName": "metabolism"
+                  }
+                ]
+              }
+            },
+            {
+              "descriptorName": "Microtubule-Associated Proteins",
+              "majorTopic_YN": "N",
+              "meshQualifierList": {
+                "meshQualifier": [
+                  {
+                    "abbreviation": "ME",
+                    "majorTopic_YN": "Y",
+                    "qualifierName": "metabolism"
+                  },
+                  {
+                    "abbreviation": "CH",
+                    "majorTopic_YN": "N",
+                    "qualifierName": "chemistry"
+                  }
+                ]
+              }
+            },
+            {
+              "descriptorName": "Membrane Proteins",
+              "majorTopic_YN": "N",
+              "meshQualifierList": {
+                "meshQualifier": [
+                  {
+                    "abbreviation": "ME",
+                    "majorTopic_YN": "Y",
+                    "qualifierName": "metabolism"
+                  },
+                  {
+                    "abbreviation": "CH",
+                    "majorTopic_YN": "N",
+                    "qualifierName": "chemistry"
+                  }
+                ]
+              }
+            },
+            {
+              "descriptorName": "Nuclear Proteins",
+              "majorTopic_YN": "N",
+              "meshQualifierList": {
+                "meshQualifier": [
+                  {
+                    "abbreviation": "ME",
+                    "majorTopic_YN": "Y",
+                    "qualifierName": "metabolism"
+                  },
+                  {
+                    "abbreviation": "CH",
+                    "majorTopic_YN": "N",
+                    "qualifierName": "chemistry"
+                  }
+                ]
+              }
+            },
+            {
+              "descriptorName": "RNA, Messenger",
+              "majorTopic_YN": "N",
+              "meshQualifierList": {
+                "meshQualifier": [
+                  {
+                    "abbreviation": "ME",
+                    "majorTopic_YN": "Y",
+                    "qualifierName": "metabolism"
+                  }
+                ]
+              }
+            },
+            {
+              "descriptorName": "Active Transport, Cell Nucleus",
+              "majorTopic_YN": "N"
+            },
+            {
+              "descriptorName": "Phosphorylation",
+              "majorTopic_YN": "N"
+            },
+            {
+              "descriptorName": "Protein Domains",
+              "majorTopic_YN": "N"
+            }
+          ]
+        },
+        "nihAuthMan": "N",
+        "pageInfo": "9157",
+        "pmcid": "PMC5567243",
+        "pmid": "28831067",
+        "pubModel": "Electronic",
+        "pubTypeList": {
+          "pubType": [
+            "Research Support, Non-U.S. Gov't",
+            "research-article",
+            "Journal Article"
+          ]
+        },
+        "pubYear": "2017",
+        "publicationStatus": "epublish",
+        "source": "MED",
+        "subsetList": {
+          "subset": [
+            {
+              "code": "IM",
+              "name": "Index Medicus"
+            }
+          ]
+        },
+        "title": "The function of the inner nuclear envelope protein SUN1 in mRNA export is regulated by phosphorylation.",
+        "tmAccessionTypeList": {
+          "accessionType": [
+            "gen",
+            "biosample",
+            "uniprot"
+          ]
+        }
+      },
+      "metadata_locator": "attempt:metadata/body_base64#result",
+      "model_read": false,
+      "provider": "Europe PMC",
+      "relationships": [],
+      "representation": "provider abstract, markup flattened; not full text",
+      "source": {
+        "citation": "https://europepmc.org/article/MED/28831067",
+        "source_ref": "epmc:MED:28831067",
+        "title": "The function of the inner nuclear envelope protein SUN1 in mRNA export is regulated by phosphorylation."
+      },
+      "text_locator": "attempt:metadata/body_base64#result.abstractText",
+      "transport": "real_public_http"
+    },
+    "model_read": false,
+    "science_validated": false
+  },
+  "attempts": [
+    {
+      "id": "3a36f8f2b54844c1b33d63837c9c9321",
+      "call_key": "metadata",
+      "status": "succeeded",
+      "target": "Europe PMC public REST",
+      "request": "{\"headers\": {\"Accept\": \"application/json\", \"User-Agent\": \"CoScientist-W1-L1/1.0 (manual development acquisition)\"}, \"method\": \"GET\", \"url\": \"https://www.ebi.ac.uk/europepmc/webservices/rest/article/MED/28831067?resultType=core&format=json\"}",
+      "started_at": "2026-11-04T03:07:22.894061+00:00",
+      "finished_at": "2026-11-04T03:07:25.305013+00:00",
+      "error": null,
+      "usage": "{\"cost\": null, \"input_tokens\": null, \"output_tokens\": null, \"tool_units\": 1}"
+    }
+  ]
+}

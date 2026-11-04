@@ -1,0 +1,214 @@
+{
+  "artifact": {
+    "finding_cards": [
+      {
+        "access": "abstract",
+        "author_interpretation": "作者总体上认为核质运输紊乱可能是 SOD1 介导的 ALS 与其他家族性、散发性 ALS 的共同疾病机制，并支持将该通路作为治疗靶点。",
+        "biological_context": "突变 SOD1 相关研究。方法段列出体外、体内模型、患者来源成纤维细胞及患者尸检脊髓组织，但本句各终点对应的具体系统和实验当前视图未报告，不能视为所有系统均逐项验证。",
+        "endpoint": "核输入、核输出，以及 RanGAP1 和 XPO1 的胞质积累。",
+        "id": "finding-c24e29a61d8a4b999f29c45aa9906729-0",
+        "images_seen": false,
+        "intervention_comparator": "作者考察突变 SOD1 对核质运输的影响；本句对应的处理方式、对照、剂量和时间当前视图未报告。",
+        "negative_findings": [],
+        "negative_quotes": [],
+        "negative_state": "not_reported_in_view",
+        "not_established": [
+          "当前仅为所获摘要，未读取全文、图像或补充材料；具体实验和对照当前视图未报告。",
+          "是否专门测量 mRNA 输出、各运输终点的检测方法及先后关系，当前视图未报告。",
+          "核孔蛋白磷酸化的测量、选择性修饰干预及其与运输异常的关系，当前视图未报告。",
+          "其他 ALS 病理背景是否具有相同机制，当前视图未直接建立。"
+        ],
+        "reported_observation": "作者报告突变 SOD1 破坏核输入和核输出运输，并导致包括 RanGAP1、XPO1 在内的关键运输调节因子在胞质积累。",
+        "representation": "complete obtained provider abstract, markup flattened; not full text",
+        "source_locator": "attempt:metadata/body_base64#result.abstractText",
+        "source_ref": "epmc:MED:41691309",
+        "source_version": "provider version unreported",
+        "source_view_ref": "ef0d631b44e14b2abf8f10443c55d5c2",
+        "supplements_seen": false,
+        "supporting_quote": "Mutant SOD1 disrupts nuclear import and export trafficking, causing cytosolic accumulation of key transport regulators such as RanGAP1 and exportin 1 (XPO1).",
+        "transfer_assumptions": [
+          "将本结果用于核孔蛋白磷酸化问题，需要另行检验运输异常是否依赖该修饰，而不能以运输因子定位变化替代磷酸化测量。"
+        ]
+      },
+      {
+        "access": "abstract",
+        "author_interpretation": "针对 FG-Nups 丰度降低而核圆度不变的单独机制解释，当前视图未报告。",
+        "biological_context": "突变 SOD1 背景下的核孔 FG-Nups 丰度及核形态分析；对应的具体模型、细胞类型及两项测量是否来自同一实验，当前视图未报告。",
+        "endpoint": "核孔处 FG-Nups 丰度；核圆度。",
+        "id": "finding-c24e29a61d8a4b999f29c45aa9906729-1",
+        "images_seen": false,
+        "intervention_comparator": "突变 SOD1 相关比较；具体对照、表达水平、处理时间和测量条件当前视图未报告。",
+        "negative_findings": [
+          "在所报告的突变 SOD1 相关分析中，核圆度未改变；具体测试系统、比较对照、时间和检测条件当前视图未报告。这一无变化结果仅对应核圆度，不能扩展为所有核形态指标均无变化。"
+        ],
+        "negative_quotes": [
+          "without altering nuclear circularity."
+        ],
+        "negative_state": "reported_in_view",
+        "not_established": [
+          "具体 FG-Nups 身份、磷酸化位点和修饰水平当前视图未报告。",
+          "核孔处丰度降低是否代表总蛋白减少、重定位或其他过程，当前视图未报告。",
+          "FG-Nups 丰度变化与运输障碍、细胞损伤之间的时序及因果关系，当前视图未建立。"
+        ],
+        "reported_observation": "作者报告突变 SOD1 降低核孔处 FG-Nups 的丰度，同时未改变核圆度。",
+        "representation": "complete obtained provider abstract, markup flattened; not full text",
+        "source_locator": "attempt:metadata/body_base64#result.abstractText",
+        "source_ref": "epmc:MED:41691309",
+        "source_version": "provider version unreported",
+        "source_view_ref": "ef0d631b44e14b2abf8f10443c55d5c2",
+        "supplements_seen": false,
+        "supporting_quote": "Mutant SOD1 also lowers the abundance of FG-Nups at the nuclear pore without altering nuclear circularity.",
+        "transfer_assumptions": [
+          "不能将核孔处 FG-Nups 丰度降低等同于核孔蛋白磷酸化变化。",
+          "若用于分析修饰与损伤的关系，需要区分核孔组分变化与核圆度这一形态终点。"
+        ]
+      },
+      {
+        "access": "abstract",
+        "author_interpretation": "作者认为该观察提示此前被忽视的非细胞自主性致病贡献。",
+        "biological_context": "Iba1 阳性小胶质细胞；该观察对应的物种、模型或患者材料当前视图未报告。",
+        "endpoint": "小胶质细胞中核质运输组分的异常积累。",
+        "id": "finding-c24e29a61d8a4b999f29c45aa9906729-2",
+        "images_seen": false,
+        "intervention_comparator": "此项观察的具体处理和比较对照当前视图未报告。",
+        "negative_findings": [],
+        "negative_quotes": [],
+        "negative_state": "not_reported_in_view",
+        "not_established": [
+          "此处异常积累的具体组分、亚细胞位置和运输功能读数，当前视图未报告。",
+          "小胶质细胞变化通过何种途径影响神经元，以及是否进行了细胞类型选择性干预，当前视图未报告。",
+          "该观察与核孔蛋白磷酸化的关系，当前视图未报告。"
+        ],
+        "reported_observation": "作者报告在 Iba1 阳性小胶质细胞中发现核质运输组分异常积累。",
+        "representation": "complete obtained provider abstract, markup flattened; not full text",
+        "source_locator": "attempt:metadata/body_base64#result.abstractText",
+        "source_ref": "epmc:MED:41691309",
+        "source_version": "provider version unreported",
+        "source_view_ref": "ef0d631b44e14b2abf8f10443c55d5c2",
+        "supplements_seen": false,
+        "supporting_quote": "Abnormal accumulation of NCT components was identified in Iba1-positive microglia, indicating a previously overlooked, non-cell-autonomous contribution to disease pathogenesis.",
+        "transfer_assumptions": [
+          "不能将小胶质细胞中的观察直接当作神经元内的同一事件；非细胞自主性机制及其与磷酸化的联系需要分别检验。"
+        ]
+      },
+      {
+        "access": "abstract",
+        "author_interpretation": "作者认为这一恢复结果强调了突变 SOD1 在核质运输异常中的因果作用。",
+        "biological_context": "转基因小鼠中的 AAV 干预；品系、年龄、靶组织和靶细胞当前视图未报告。",
+        "endpoint": "XPO1 的核内定位。",
+        "id": "finding-c24e29a61d8a4b999f29c45aa9906729-3",
+        "images_seen": false,
+        "intervention_comparator": "AAV 介导降低突变 SOD1；具体载体、对照组、剂量、时程和降低幅度当前视图未报告。",
+        "negative_findings": [],
+        "negative_quotes": [],
+        "negative_state": "not_reported_in_view",
+        "not_established": [
+          "该结果是否同时恢复核输入、核输出、mRNA 输出或 FG-Nups 丰度，当前视图未报告。",
+          "运动神经元存活、疾病表型和核孔蛋白磷酸化是否改善，当前视图未报告。",
+          "该干预不是当前视图所报告的核孔蛋白磷酸化选择性干预，不能据此建立该修饰的因果作用。"
+        ],
+        "reported_observation": "作者报告，在转基因小鼠中通过 AAV 降低突变 SOD1，恢复了 XPO1 的核内定位。",
+        "representation": "complete obtained provider abstract, markup flattened; not full text",
+        "source_locator": "attempt:metadata/body_base64#result.abstractText",
+        "source_ref": "epmc:MED:41691309",
+        "source_version": "provider version unreported",
+        "source_view_ref": "ef0d631b44e14b2abf8f10443c55d5c2",
+        "supplements_seen": false,
+        "supporting_quote": "Importantly, AAV-mediated reduction of mutant SOD1 in transgenic mice restored nuclear XPO1 localization, underscoring the causal role of mutant SOD1 in NCT abnormalities.",
+        "transfer_assumptions": [
+          "将降低突变 SOD1 后的定位恢复用于解释核孔蛋白磷酸化，需要额外区分上游致病蛋白减少的广泛效应与修饰本身的作用。"
+        ]
+      },
+      {
+        "access": "abstract",
+        "author_interpretation": "作者将患者来源材料中的结果纳入其关于 SOD1 相关 ALS 核质运输紊乱的总体解释。",
+        "biological_context": "患者来源成纤维细胞。方法段将患者来源材料置于 SOD1 突变 ALS 研究背景下；此卡仅记录成纤维细胞系统，不与尸检组织合并为同一实验。",
+        "endpoint": "核质运输扰动；该系统具体复现了哪些运输或定位终点，当前视图未报告。",
+        "id": "finding-c24e29a61d8a4b999f29c45aa9906729-4",
+        "images_seen": false,
+        "intervention_comparator": "患者来源成纤维细胞的观察性比较；患者数、突变类型、培养条件及对照来源当前视图未报告。",
+        "negative_findings": [],
+        "negative_quotes": [],
+        "negative_state": "not_reported_in_view",
+        "not_established": [
+          "不能据摘要中的“comparable”认定前述每个终点均在成纤维细胞中得到重复。",
+          "核孔蛋白磷酸化、mRNA 输出及细胞损伤之间的关系，当前视图未报告。"
+        ],
+        "reported_observation": "作者报告在患者来源成纤维细胞中观察到可比的核质运输扰动。",
+        "representation": "complete obtained provider abstract, markup flattened; not full text",
+        "source_locator": "attempt:metadata/body_base64#result.abstractText",
+        "source_ref": "epmc:MED:41691309",
+        "source_version": "provider version unreported",
+        "source_view_ref": "ef0d631b44e14b2abf8f10443c55d5c2",
+        "supplements_seen": false,
+        "supporting_quote": "Finally, comparable NCT perturbations were observed in patient-derived fibroblasts and in post-mortem spinal cord tissues from individuals with SOD1-ALS.",
+        "transfer_assumptions": [
+          "将成纤维细胞结果转用于运动神经元或其他细胞类型，需要检验细胞类型间机制是否一致。"
+        ]
+      },
+      {
+        "access": "abstract",
+        "author_interpretation": "作者将该组织观察纳入核质运输紊乱参与 SOD1 相关 ALS 的总体解释。",
+        "biological_context": "SOD1-ALS 患者尸检脊髓组织；与患者来源成纤维细胞分开记录，同一句摘要不计作额外独立重复。",
+        "endpoint": "核质运输扰动；具体细胞类型和检测指标当前视图未报告。",
+        "id": "finding-c24e29a61d8a4b999f29c45aa9906729-5",
+        "images_seen": false,
+        "intervention_comparator": "尸检组织观察；病例数、具体突变、疾病阶段、对照来源及死后间隔当前视图未报告。",
+        "negative_findings": [],
+        "negative_quotes": [],
+        "negative_state": "not_reported_in_view",
+        "not_established": [
+          "不能据此将前述小胶质细胞发现或全部运输终点自动配对到这批尸检组织。",
+          "磷酸化变化、运输障碍及细胞损伤的发生先后与选择性干预结果，当前视图未报告。",
+          "该组织结果是否适用于非 SOD1 背景 ALS，当前视图未建立。"
+        ],
+        "reported_observation": "作者报告在 SOD1-ALS 患者尸检脊髓组织中观察到可比的核质运输扰动。",
+        "representation": "complete obtained provider abstract, markup flattened; not full text",
+        "source_locator": "attempt:metadata/body_base64#result.abstractText",
+        "source_ref": "epmc:MED:41691309",
+        "source_version": "provider version unreported",
+        "source_view_ref": "ef0d631b44e14b2abf8f10443c55d5c2",
+        "supplements_seen": false,
+        "supporting_quote": "Finally, comparable NCT perturbations were observed in patient-derived fibroblasts and in post-mortem spinal cord tissues from individuals with SOD1-ALS.",
+        "transfer_assumptions": [
+          "将尸检组织中的终点观察用于判断起始机制，需要额外区分疾病晚期变化、细胞组成变化与更早发生的事件。"
+        ]
+      }
+    ],
+    "source_view_id": "ef0d631b44e14b2abf8f10443c55d5c2",
+    "targeted_reading_requests": [
+      "获取可访问的结果与方法文本，逐项对应核输入、核输出、RanGAP1/XPO1 定位、FG-Nups 丰度及核圆度的具体系统、处理、对照和时间；同时保留核圆度未改变的测试条件。",
+      "查阅小胶质细胞观察对应的材料、异常积累组分，以及作者支持非细胞自主性解释的实验；不要预设其来自患者尸检或特定模型。",
+      "查阅 AAV 降低突变 SOD1 的干预细节，区分 XPO1 核内定位恢复与其他运输、核孔组分和损伤终点是否分别测量。",
+      "分别查阅患者来源成纤维细胞与尸检脊髓组织的具体读数、对照及不一致或无变化结果，明确摘要中“comparable”的范围。",
+      "在不预选具体核孔蛋白或实验模型的前提下，查找是否报告核孔蛋白磷酸化直接测量、与 mRNA 输出和损伤的时序比较，以及针对该修饰的选择性干预；若取得文本仍未报告，应继续标注为当前视图未报告。"
+    ]
+  },
+  "background_status": "saved",
+  "binding": {
+    "goal_ref": "goal-38a4a7a321d54c1eb475b9c7646930f0",
+    "run_id": "cea909fe8a004010b1896df1c1d98e02",
+    "seed_id": "seed-f87361b21b4f44609dedfa2ac9afc7bc-0"
+  },
+  "execution_mode": "real_model",
+  "model_config": {
+    "credential_configured": true,
+    "endpoint": "https://api.openai.com/v1/chat/completions",
+    "execution_mode": "real_model",
+    "max_request_bytes": 262144,
+    "model": "gpt-6.1-sol",
+    "parameters": {
+      "max_completion_tokens": 32768,
+      "reasoning_effort": "high",
+      "response_format": {
+        "type": "json_object"
+      }
+    },
+    "provider": "openai",
+    "timeout_seconds": 600
+  },
+  "operation": "P04",
+  "progress_fingerprint": null,
+  "prompt_version": "w1-l2-p04-context-v2",
+  "science_validated": false
+}

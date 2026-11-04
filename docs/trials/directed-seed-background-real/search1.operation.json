@@ -1,0 +1,14 @@
+{
+  "request_id": "directed-seed-search-1-page1",
+  "request": {
+    "kind": "search",
+    "query": "(TITLE_ABS:\"amyotrophic lateral sclerosis\" OR TITLE_ABS:ALS OR TITLE_ABS:\"motor neuron disease\") AND (TITLE_ABS:nucleoporin* OR TITLE_ABS:\"nuclear pore\")",
+    "cursor": null,
+    "page_size": 5
+  },
+  "background_context": {
+    "plan_ref": "directed-seed-p03-plan-single",
+    "query_index": 0,
+    "seed_id": "seed-f87361b21b4f44609dedfa2ac9afc7bc-0"
+  }
+}

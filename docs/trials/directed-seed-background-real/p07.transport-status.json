@@ -1,0 +1,12 @@
+{
+  "task_status": "blocked",
+  "attempt_status": "uncertain",
+  "attempt_id": "0d9e7d5fd9da4bbea3ddc42608e0c184",
+  "provider_response": null,
+  "finish_reason": null,
+  "usage": null,
+  "readiness_decision": null,
+  "safe_recorded_error": "Model send outcome uncertain; credential details withheld",
+  "diagnosis": "No raw network cause retained by adapter; cannot establish timeout, rejection, provider execution, or zero consumption. Recorded interval about5seconds despite configured600seconds.",
+  "recovery": "Preserve uncertain attempt. No retry/recover/model switch. Any later resolution requires explicit authorization and evidence; do not count as scientific negative."
+}

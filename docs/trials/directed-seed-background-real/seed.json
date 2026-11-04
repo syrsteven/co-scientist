@@ -1,0 +1,15 @@
+{
+  "execution_mode": "real_model",
+  "goal_ref": "goal-38a4a7a321d54c1eb475b9c7646930f0",
+  "id": "seed-f87361b21b4f44609dedfa2ac9afc7bc-0",
+  "kind": "directed",
+  "known_anchor_refs": [
+    "finding-f49335ad41a946f9aed8103f53f328ca-6",
+    "finding-f49335ad41a946f9aed8103f53f328ca-4",
+    "finding-f8cf38bfaf564f93a51f5b4b17aeefeb-1"
+  ],
+  "orientation_ref": "p05-neutral-15cards-single",
+  "question": "在不预选具体核孔蛋白或实验模型的前提下，若检测到核孔蛋白磷酸化变化，能否通过时序比较及针对该修饰的选择性干预，区分其参与 mRNA 输出障碍、属于细胞损伤后的反应，或与运输障碍和损伤并行变化？",
+  "run_id": "cea909fe8a004010b1896df1c1d98e02",
+  "unresolved_relationship": "所供记录报告了聚集相关的核孔蛋白分布改变、mRNA 输出受损及神经元毒性，但未直接测量核孔蛋白磷酸化，也未建立这些终点的先后或因果关系。TDP-43 磷酸模拟变体的核输入无损害结果针对不同对象和运输终点，不能直接解决这一关系。"
+}

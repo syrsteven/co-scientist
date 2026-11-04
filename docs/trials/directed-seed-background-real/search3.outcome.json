@@ -1,0 +1,15 @@
+{
+  "request_id": "directed-seed-search-3-page1",
+  "task_id": "ffda285a41b64dddacf7370900dcabad",
+  "task_status": "succeeded",
+  "acquisition_status": "succeeded",
+  "reported_total": 184,
+  "items": 5,
+  "scope_complete": false,
+  "next_cursor": "AoIIQFXs/Sg1NTc3MTQ2NA==",
+  "access": null,
+  "text_characters": 0,
+  "error": null,
+  "attempts": 1,
+  "seed_id": "seed-f87361b21b4f44609dedfa2ac9afc7bc-0"
+}

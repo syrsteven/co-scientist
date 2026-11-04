@@ -1,0 +1,42 @@
+{
+  "operation": "P03",
+  "request_id": "directed-seed-p03-plan-single",
+  "seed_id": "seed-f87361b21b4f44609dedfa2ac9afc7bc-0",
+  "prompt_version": "w1-l2-p03-p07-v1",
+  "request_envelope_bytes": 9710,
+  "body_bytes": 9618,
+  "max_request_bytes": 262144,
+  "capacity_passed": true,
+  "existing_success": false,
+  "task_id": "235dc5d2921d40c7b7e173ce766c8569",
+  "task_status": "succeeded",
+  "result_status": "saved",
+  "attempt_count": 1,
+  "attempt_id": "ac8c337f12634c5a9200eeb3d57f027f",
+  "attempt_status": "succeeded",
+  "http_status": 200,
+  "finish_reason": "stop",
+  "provider_usage": {
+    "completion_tokens": 2058,
+    "completion_tokens_details": {
+      "accepted_prediction_tokens": 0,
+      "audio_tokens": 0,
+      "reasoning_tokens": 880,
+      "rejected_prediction_tokens": 0
+    },
+    "prompt_tokens": 2533,
+    "prompt_tokens_details": {
+      "audio_tokens": 0,
+      "cache_write_tokens": 2530,
+      "cached_tokens": 0
+    },
+    "total_tokens": 4591
+  },
+  "shared_usage": {
+    "cost": null,
+    "input_tokens": 2533,
+    "output_tokens": 2058,
+    "tool_units": null
+  },
+  "science_validated": false
+}

@@ -1,0 +1,66 @@
+{
+  "run_id": "cea909fe8a004010b1896df1c1d98e02",
+  "seed_id": "seed-f87361b21b4f44609dedfa2ac9afc7bc-0",
+  "original_rows_preserved": {
+    "background_actions": 5,
+    "tasks": 11,
+    "attempts": 12,
+    "results": 11,
+    "literature_actions": 4,
+    "material_views": 2,
+    "goal_contexts": 1,
+    "brief_revisions": 1
+  },
+  "original_task_attempt_result_material_goal_brief_unchanged": true,
+  "new_model_call_attempts": 6,
+  "successful_model_calls": 5,
+  "uncertain_model_calls": 1,
+  "readiness_decision": null,
+  "no_retry_after_uncertainty": true,
+  "model_operations": [
+    "P03",
+    "P04",
+    "P04",
+    "P04",
+    "P05",
+    "P07"
+  ],
+  "new_public_http_sends": 6,
+  "new_searches": 3,
+  "new_fetches": 3,
+  "model_timing": [
+    {
+      "step": "p03",
+      "started_at": "2026-11-04T03:04:08.571936+00:00",
+      "finished_at": "2026-11-04T03:04:49.285042+00:00"
+    },
+    {
+      "step": "p04-1",
+      "started_at": "2026-11-04T03:13:15.609893+00:00",
+      "finished_at": "2026-11-04T03:14:16.271056+00:00"
+    },
+    {
+      "step": "p04-2",
+      "started_at": "2026-11-04T03:14:33.694278+00:00",
+      "finished_at": "2026-11-04T03:15:48.530870+00:00"
+    },
+    {
+      "step": "p04-3",
+      "started_at": "2026-11-04T03:16:05.267233+00:00",
+      "finished_at": "2026-11-04T03:17:03.967101+00:00"
+    },
+    {
+      "step": "p05",
+      "started_at": "2026-11-04T03:17:37.887636+00:00",
+      "finished_at": "2026-11-04T03:19:27.289221+00:00"
+    },
+    {
+      "step": "p07",
+      "started_at": "2026-11-04T03:20:22.577406+00:00",
+      "finished_at": "2026-11-04T03:20:27.613994+00:00"
+    }
+  ],
+  "model_strictly_sequential": true,
+  "science_validated": false,
+  "run_status": "blocked"
+}

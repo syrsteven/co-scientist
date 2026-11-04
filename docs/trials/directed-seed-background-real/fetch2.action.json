@@ -1,0 +1,592 @@
+{
+  "request_id": "directed-seed-fetch-source-2",
+  "run_id": "cea909fe8a004010b1896df1c1d98e02",
+  "task_id": "a5804871fb0e4bf8af0ebf06654fbf6d",
+  "request": {
+    "background_context": {
+      "plan_ref": "directed-seed-p03-plan-single",
+      "query_index": 1,
+      "seed_id": "seed-f87361b21b4f44609dedfa2ac9afc7bc-0"
+    },
+    "desired_access": "abstract",
+    "kind": "fetch",
+    "query_origin": "human_selected_source",
+    "search_request_id": "directed-seed-search-2-page1",
+    "source_ref": "epmc:MED:42031697"
+  },
+  "created_at": "2026-11-04T03:07:05.060414+00:00",
+  "task_status": "succeeded",
+  "error": null,
+  "result": {
+    "acquisition": {
+      "access": "abstract",
+      "error": null,
+      "executed_at": "2026-11-04T03:07:08.211287+00:00",
+      "limitation": null,
+      "request": {
+        "desired_access": "abstract",
+        "source_ref": "epmc:MED:42031697"
+      },
+      "source": {
+        "citation": "https://europepmc.org/article/MED/42031697",
+        "source_ref": "epmc:MED:42031697",
+        "title": "Nucleoporin TPR integrates MAPK signaling with mitogen-induced transcriptional programs."
+      },
+      "status": "succeeded",
+      "text": "The nuclear pore complex (NPC) component TPR has emerged as a multifunctional scaffold implicated in mitosis, chromatin organization, mRNA export, and genome stability. However, TPR's role in mitogenic signal transduction remains largely unexplored. Here, we investigate whether nucleoporin TPR functions as a MAPK-regulated nuclear component that modulates mitogenic signals initiated at the plasma membrane-including EGFR activation-and their transcriptional output. Transcriptomic profiling reveals that TPR depletion reshapes EGF-induced, MAPK-responsive gene expression, including altered expression of MAPK pathway components and enhanced induction of the immediate-early gene FOS. Functionally, TPR-depleted cells exhibit increased FOS induction upon EGF stimulation and altered EGF-driven cell-cycle progression. Using a novel phospho-specific monoclonal antibody, we show that TPR is phosphorylated at Ser2155 following EGFR activation via the canonical RAS-RAF-MEK-ERK MAPK cascade, placing TPR downstream of MAPK pathway activation. This phosphorylation is suppressed by clinically used EGFR and BRAF inhibitors and, conversely, is constitutively induced by oncogenic RAS and BRAF, indicating that Ser2155 phosphorylation reflects MAPK pathway activity. In vivo, CRISPR/Cas9-engineered Tpr haploinsufficient mice show changes in MAPK pathway regulatory gene expression in bulk spleen RNA-seq, consistent with findings in human cells, and enhanced Fos induction in splenocytes upon CD3/CD28 stimulation, together suggesting a conserved association between TPR levels and altered MAPK-related transcriptomic profiles. Finally, immunohistochemical analysis reveals elevated TPR phosphorylation in serous ovarian carcinoma and heterogeneous phosphorylation patterns in triple-negative breast cancer, two tumor types frequently characterized by MAPK pathway hyperactivation. Together, these findings uncover a previously unappreciated role for TPR as a MAPK-responsive nuclear factor and support a model in which NPC-associated components fine-tune mitogen-induced transcriptional responses."
+    },
+    "details": {
+      "metadata": {
+        "abstractText": "The nuclear pore complex (NPC) component TPR has emerged as a multifunctional scaffold implicated in mitosis, chromatin organization, mRNA export, and genome stability. However, TPR's role in mitogenic signal transduction remains largely unexplored. Here, we investigate whether nucleoporin TPR functions as a MAPK-regulated nuclear component that modulates mitogenic signals initiated at the plasma membrane-including EGFR activation-and their transcriptional output. Transcriptomic profiling reveals that TPR depletion reshapes EGF-induced, MAPK-responsive gene expression, including altered expression of MAPK pathway components and enhanced induction of the immediate-early gene FOS. Functionally, TPR-depleted cells exhibit increased FOS induction upon EGF stimulation and altered EGF-driven cell-cycle progression. Using a novel phospho-specific monoclonal antibody, we show that TPR is phosphorylated at Ser2155 following EGFR activation via the canonical RAS-RAF-MEK-ERK MAPK cascade, placing TPR downstream of MAPK pathway activation. This phosphorylation is suppressed by clinically used EGFR and BRAF inhibitors and, conversely, is constitutively induced by oncogenic RAS and BRAF, indicating that Ser2155 phosphorylation reflects MAPK pathway activity. In vivo, CRISPR/Cas9-engineered Tpr haploinsufficient mice show changes in MAPK pathway regulatory gene expression in bulk spleen RNA-seq, consistent with findings in human cells, and enhanced Fos induction in splenocytes upon CD3/CD28 stimulation, together suggesting a conserved association between TPR levels and altered MAPK-related transcriptomic profiles. Finally, immunohistochemical analysis reveals elevated TPR phosphorylation in serous ovarian carcinoma and heterogeneous phosphorylation patterns in triple-negative breast cancer, two tumor types frequently characterized by MAPK pathway hyperactivation. Together, these findings uncover a previously unappreciated role for TPR as a MAPK-responsive nuclear factor and support a model in which NPC-associated components fine-tune mitogen-induced transcriptional responses.",
+        "affiliation": "Department of Burns, the Second Affiliated Hospital of Zhejiang University School of Medicine, and the Centre for Infection, Immunity, and Cancer (IIC) at Zhejiang University-University of Edinburgh Institute, Zhejiang University School of Medicine, Haining, China.",
+        "authMan": "N",
+        "authorIdList": {
+          "authorId": [
+            {
+              "type": "ORCID",
+              "value": "0000-0002-1447-0973"
+            },
+            {
+              "type": "ORCID",
+              "value": "0000-0002-9400-2327"
+            },
+            {
+              "type": "ORCID",
+              "value": "0000-0003-2013-7525"
+            },
+            {
+              "type": "ORCID",
+              "value": "0000-0003-4795-834X"
+            },
+            {
+              "type": "ORCID",
+              "value": "0009-0002-5433-4113"
+            },
+            {
+              "type": "ORCID",
+              "value": "0009-0007-0855-7646"
+            }
+          ]
+        },
+        "authorList": {
+          "author": [
+            {
+              "authorAffiliationDetailsList": {
+                "authorAffiliation": [
+                  {
+                    "affiliation": "Department of Burns, the Second Affiliated Hospital of Zhejiang University School of Medicine, and the Centre for Infection, Immunity, and Cancer (IIC) at Zhejiang University-University of Edinburgh Institute, Zhejiang University School of Medicine, Haining, China."
+                  },
+                  {
+                    "affiliation": "Edinburgh Medical School: Biomedical Sciences, College of Medicine and Veterinary Medicine, The University of Edinburgh, Edinburgh, UK."
+                  }
+                ]
+              },
+              "authorId": {
+                "type": "ORCID",
+                "value": "0009-0007-0855-7646"
+              },
+              "firstName": "Jin",
+              "fullName": "Liu J",
+              "initials": "J",
+              "lastName": "Liu"
+            },
+            {
+              "authorAffiliationDetailsList": {
+                "authorAffiliation": [
+                  {
+                    "affiliation": "Department of Burns, the Second Affiliated Hospital of Zhejiang University School of Medicine, and the Centre for Infection, Immunity, and Cancer (IIC) at Zhejiang University-University of Edinburgh Institute, Zhejiang University School of Medicine, Haining, China."
+                  },
+                  {
+                    "affiliation": "Edinburgh Medical School: Biomedical Sciences, College of Medicine and Veterinary Medicine, The University of Edinburgh, Edinburgh, UK."
+                  }
+                ]
+              },
+              "firstName": "Yifan",
+              "fullName": "Zheng Y",
+              "initials": "Y",
+              "lastName": "Zheng"
+            },
+            {
+              "authorAffiliationDetailsList": {
+                "authorAffiliation": [
+                  {
+                    "affiliation": "Department of Burns, the Second Affiliated Hospital of Zhejiang University School of Medicine, and the Centre for Infection, Immunity, and Cancer (IIC) at Zhejiang University-University of Edinburgh Institute, Zhejiang University School of Medicine, Haining, China."
+                  },
+                  {
+                    "affiliation": "Edinburgh Medical School: Biomedical Sciences, College of Medicine and Veterinary Medicine, The University of Edinburgh, Edinburgh, UK."
+                  }
+                ]
+              },
+              "firstName": "Yi",
+              "fullName": "Xiong Y",
+              "initials": "Y",
+              "lastName": "Xiong"
+            },
+            {
+              "authorAffiliationDetailsList": {
+                "authorAffiliation": [
+                  {
+                    "affiliation": "Department of Burns, the Second Affiliated Hospital of Zhejiang University School of Medicine, and the Centre for Infection, Immunity, and Cancer (IIC) at Zhejiang University-University of Edinburgh Institute, Zhejiang University School of Medicine, Haining, China."
+                  },
+                  {
+                    "affiliation": "Edinburgh Medical School: Biomedical Sciences, College of Medicine and Veterinary Medicine, The University of Edinburgh, Edinburgh, UK."
+                  }
+                ]
+              },
+              "firstName": "Runhua",
+              "fullName": "Ma R",
+              "initials": "R",
+              "lastName": "Ma"
+            },
+            {
+              "authorAffiliationDetailsList": {
+                "authorAffiliation": [
+                  {
+                    "affiliation": "Department of Burns, the Second Affiliated Hospital of Zhejiang University School of Medicine, and the Centre for Infection, Immunity, and Cancer (IIC) at Zhejiang University-University of Edinburgh Institute, Zhejiang University School of Medicine, Haining, China."
+                  },
+                  {
+                    "affiliation": "Edinburgh Medical School: Biomedical Sciences, College of Medicine and Veterinary Medicine, The University of Edinburgh, Edinburgh, UK."
+                  }
+                ]
+              },
+              "firstName": "Zihao",
+              "fullName": "Lin Z",
+              "initials": "Z",
+              "lastName": "Lin"
+            },
+            {
+              "authorAffiliationDetailsList": {
+                "authorAffiliation": [
+                  {
+                    "affiliation": "Department of Burns, the Second Affiliated Hospital of Zhejiang University School of Medicine, and the Centre for Infection, Immunity, and Cancer (IIC) at Zhejiang University-University of Edinburgh Institute, Zhejiang University School of Medicine, Haining, China."
+                  },
+                  {
+                    "affiliation": "Edinburgh Medical School: Biomedical Sciences, College of Medicine and Veterinary Medicine, The University of Edinburgh, Edinburgh, UK."
+                  }
+                ]
+              },
+              "firstName": "Haikun",
+              "fullName": "Lin H",
+              "initials": "H",
+              "lastName": "Lin"
+            },
+            {
+              "authorAffiliationDetailsList": {
+                "authorAffiliation": [
+                  {
+                    "affiliation": "Pathology Department, Complejo Hospitalario Universitario Insular Materno Infantil, Las Palmas de Gran Canaria, Spain."
+                  }
+                ]
+              },
+              "firstName": "Miguel",
+              "fullName": "Andújar-Sánchez M",
+              "initials": "M",
+              "lastName": "Andújar-Sánchez"
+            },
+            {
+              "authorAffiliationDetailsList": {
+                "authorAffiliation": [
+                  {
+                    "affiliation": "Division of Genome Biology, Department of Medical Biochemistry and Biophysics, Science for Life Laboratory, Karolinska Institutet, Stockholm, Sweden."
+                  },
+                  {
+                    "affiliation": "Danish Cancer Institute, Danish Cancer Society, Copenhagen, Denmark."
+                  }
+                ]
+              },
+              "firstName": "Jirina",
+              "fullName": "Bartkova J",
+              "initials": "J",
+              "lastName": "Bartkova"
+            },
+            {
+              "authorAffiliationDetailsList": {
+                "authorAffiliation": [
+                  {
+                    "affiliation": "Edinburgh Medical School: Biomedical Sciences, College of Medicine and Veterinary Medicine, The University of Edinburgh, Edinburgh, UK."
+                  },
+                  {
+                    "affiliation": "Centre for Infection, Immunity, and Cancer (IIC) at Zhejiang University-University of Edinburgh Institute, Zhejiang University School of Medicine, Haining, China."
+                  },
+                  {
+                    "affiliation": "Biomedical and Health Translational Research Center of Zhejiang Province, Haining, China."
+                  }
+                ]
+              },
+              "authorId": {
+                "type": "ORCID",
+                "value": "0000-0002-1447-0973"
+              },
+              "firstName": "Jian",
+              "fullName": "Liu J",
+              "initials": "J",
+              "lastName": "Liu"
+            },
+            {
+              "authorAffiliationDetailsList": {
+                "authorAffiliation": [
+                  {
+                    "affiliation": "IFOM, Fondazione Istituto FIRC di Oncologia Molecolare, Milano, Italy."
+                  }
+                ]
+              },
+              "authorId": {
+                "type": "ORCID",
+                "value": "0000-0003-4795-834X"
+              },
+              "firstName": "Marco",
+              "fullName": "Foiani M",
+              "initials": "M",
+              "lastName": "Foiani"
+            },
+            {
+              "authorAffiliationDetailsList": {
+                "authorAffiliation": [
+                  {
+                    "affiliation": "Division of Genome Biology, Department of Medical Biochemistry and Biophysics, Science for Life Laboratory, Karolinska Institutet, Stockholm, Sweden. jb@cancer.dk."
+                  },
+                  {
+                    "affiliation": "Danish Cancer Institute, Danish Cancer Society, Copenhagen, Denmark. jb@cancer.dk."
+                  }
+                ]
+              },
+              "authorId": {
+                "type": "ORCID",
+                "value": "0000-0003-2013-7525"
+              },
+              "firstName": "Jiri",
+              "fullName": "Bartek J",
+              "initials": "J",
+              "lastName": "Bartek"
+            },
+            {
+              "authorAffiliationDetailsList": {
+                "authorAffiliation": [
+                  {
+                    "affiliation": "Department of Burns, the Second Affiliated Hospital of Zhejiang University School of Medicine, and the Centre for Infection, Immunity, and Cancer (IIC) at Zhejiang University-University of Edinburgh Institute, Zhejiang University School of Medicine, Haining, China. martinkosar@intl.zju.edu.cn."
+                  },
+                  {
+                    "affiliation": "Edinburgh Medical School: Biomedical Sciences, College of Medicine and Veterinary Medicine, The University of Edinburgh, Edinburgh, UK. martinkosar@intl.zju.edu.cn."
+                  },
+                  {
+                    "affiliation": "Biomedical and Health Translational Research Center of Zhejiang Province, Haining, China. martinkosar@intl.zju.edu.cn."
+                  }
+                ]
+              },
+              "authorId": {
+                "type": "ORCID",
+                "value": "0000-0002-9400-2327"
+              },
+              "firstName": "Martin",
+              "fullName": "Kosar M",
+              "initials": "M",
+              "lastName": "Kosar"
+            }
+          ]
+        },
+        "authorString": "Liu J, Zheng Y, Xiong Y, Ma R, Lin Z, Lin H, Andújar-Sánchez M, Bartkova J, Liu J, Foiani M, Bartek J, Kosar M.",
+        "chemicalList": {
+          "chemical": [
+            {
+              "name": "Mitogens",
+              "registryNumber": "0"
+            },
+            {
+              "name": "Epidermal Growth Factor",
+              "registryNumber": "62229-50-9"
+            },
+            {
+              "name": "Nuclear Pore Complex Proteins",
+              "registryNumber": "0"
+            },
+            {
+              "name": "ErbB Receptors",
+              "registryNumber": "EC 2.7.10.1"
+            }
+          ]
+        },
+        "citedByCount": 0,
+        "dataLinksTagsList": {
+          "dataLinkstag": [
+            "altmetrics",
+            "supporting_data"
+          ]
+        },
+        "dateOfCompletion": "2026-07-15",
+        "dateOfCreation": "2026-04-24",
+        "dateOfRevision": "2026-08-13",
+        "doi": "10.1038/s41419-026-08760-8",
+        "electronicPublicationDate": "2026-04-24",
+        "epmcAuthMan": "N",
+        "firstIndexDate": "2026-04-25",
+        "firstPublicationDate": "2026-04-24",
+        "fullTextIdList": {
+          "fullTextId": [
+            "PMC13109368"
+          ]
+        },
+        "fullTextReceivedDate": "2026-05-18",
+        "fullTextUrlList": {
+          "fullTextUrl": [
+            {
+              "availability": "Subscription required",
+              "availabilityCode": "S",
+              "documentStyle": "doi",
+              "site": "DOI",
+              "url": "https://doi.org/10.1038/s41419-026-08760-8"
+            },
+            {
+              "availability": "Open access",
+              "availabilityCode": "OA",
+              "documentStyle": "html",
+              "site": "Europe_PMC",
+              "url": "https://europepmc.org/articles/PMC13109368"
+            },
+            {
+              "availability": "Open access",
+              "availabilityCode": "OA",
+              "documentStyle": "pdf",
+              "site": "Europe_PMC",
+              "url": "https://europepmc.org/articles/PMC13109368?pdf=render"
+            }
+          ]
+        },
+        "grantsList": {
+          "grant": [
+            {
+              "agency": "Swedish Cancer Foundation",
+              "grantId": "170176",
+              "orderIn": 0
+            },
+            {
+              "agency": "Novo Nordisk Fonden (Novo Nordisk Foundation)",
+              "grantId": "NNF 20OC0060590",
+              "orderIn": 0
+            },
+            {
+              "agency": "Kræftens Bekæmpelse (Danish Cancer Society)",
+              "grantId": "R322-A17482",
+              "orderIn": 0
+            },
+            {
+              "agency": "Vetenskapsrådet (Swedish Research Council)",
+              "grantId": "VR-MH 201446602-117891-30",
+              "orderIn": 0
+            }
+          ]
+        },
+        "hasBook": "N",
+        "hasData": "Y",
+        "hasDbCrossReferences": "N",
+        "hasEvaluations": "N",
+        "hasLabsLinks": "Y",
+        "hasPDF": "Y",
+        "hasReferences": "Y",
+        "hasSuppl": "Y",
+        "hasTMAccessionNumbers": "Y",
+        "hasTextMinedTerms": "Y",
+        "id": "42031697",
+        "inEPMC": "Y",
+        "inPMC": "Y",
+        "isOpenAccess": "Y",
+        "journalInfo": {
+          "dateOfPublication": "2026 Apr",
+          "issue": "1",
+          "journal": {
+            "essn": "2041-4889",
+            "isoabbreviation": "Cell Death Dis",
+            "issn": "2041-4889",
+            "medlineAbbreviation": "Cell Death Dis",
+            "nlmid": "101524092",
+            "title": "Cell death & disease"
+          },
+          "journalIssueId": 4170072,
+          "monthOfPublication": 4,
+          "printPublicationDate": "2026-04-01",
+          "volume": "17",
+          "yearOfPublication": 2026
+        },
+        "language": "eng",
+        "license": "cc by",
+        "meshHeadingList": {
+          "meshHeading": [
+            {
+              "descriptorName": "Animals",
+              "majorTopic_YN": "N"
+            },
+            {
+              "descriptorName": "Humans",
+              "majorTopic_YN": "N"
+            },
+            {
+              "descriptorName": "Mice",
+              "majorTopic_YN": "N"
+            },
+            {
+              "descriptorName": "Epidermal Growth Factor",
+              "majorTopic_YN": "N",
+              "meshQualifierList": {
+                "meshQualifier": [
+                  {
+                    "abbreviation": "PD",
+                    "majorTopic_YN": "N",
+                    "qualifierName": "pharmacology"
+                  }
+                ]
+              }
+            },
+            {
+              "descriptorName": "Nuclear Pore Complex Proteins",
+              "majorTopic_YN": "Y",
+              "meshQualifierList": {
+                "meshQualifier": [
+                  {
+                    "abbreviation": "GE",
+                    "majorTopic_YN": "N",
+                    "qualifierName": "genetics"
+                  },
+                  {
+                    "abbreviation": "ME",
+                    "majorTopic_YN": "N",
+                    "qualifierName": "metabolism"
+                  }
+                ]
+              }
+            },
+            {
+              "descriptorName": "Mitogens",
+              "majorTopic_YN": "Y",
+              "meshQualifierList": {
+                "meshQualifier": [
+                  {
+                    "abbreviation": "ME",
+                    "majorTopic_YN": "N",
+                    "qualifierName": "metabolism"
+                  },
+                  {
+                    "abbreviation": "PD",
+                    "majorTopic_YN": "N",
+                    "qualifierName": "pharmacology"
+                  }
+                ]
+              }
+            },
+            {
+              "descriptorName": "MAP Kinase Signaling System",
+              "majorTopic_YN": "Y",
+              "meshQualifierList": {
+                "meshQualifier": [
+                  {
+                    "abbreviation": "DE",
+                    "majorTopic_YN": "N",
+                    "qualifierName": "drug effects"
+                  }
+                ]
+              }
+            },
+            {
+              "descriptorName": "Transcription, Genetic",
+              "majorTopic_YN": "Y",
+              "meshQualifierList": {
+                "meshQualifier": [
+                  {
+                    "abbreviation": "DE",
+                    "majorTopic_YN": "N",
+                    "qualifierName": "drug effects"
+                  }
+                ]
+              }
+            },
+            {
+              "descriptorName": "Phosphorylation",
+              "majorTopic_YN": "N",
+              "meshQualifierList": {
+                "meshQualifier": [
+                  {
+                    "abbreviation": "DE",
+                    "majorTopic_YN": "N",
+                    "qualifierName": "drug effects"
+                  }
+                ]
+              }
+            },
+            {
+              "descriptorName": "Female",
+              "majorTopic_YN": "N"
+            },
+            {
+              "descriptorName": "ErbB Receptors",
+              "majorTopic_YN": "N",
+              "meshQualifierList": {
+                "meshQualifier": [
+                  {
+                    "abbreviation": "ME",
+                    "majorTopic_YN": "N",
+                    "qualifierName": "metabolism"
+                  }
+                ]
+              }
+            }
+          ]
+        },
+        "nihAuthMan": "N",
+        "pageInfo": "400",
+        "pmcid": "PMC13109368",
+        "pmid": "42031697",
+        "pubModel": "Electronic",
+        "pubTypeList": {
+          "pubType": [
+            "research-article",
+            "Journal Article"
+          ]
+        },
+        "pubYear": "2026",
+        "publicationStatus": "epublish",
+        "source": "MED",
+        "subsetList": {
+          "subset": [
+            {
+              "code": "IM",
+              "name": "Index Medicus"
+            }
+          ]
+        },
+        "title": "Nucleoporin TPR integrates MAPK signaling with mitogen-induced transcriptional programs.",
+        "tmAccessionTypeList": {
+          "accessionType": [
+            "gen",
+            "ensembl",
+            "hpa"
+          ]
+        }
+      },
+      "metadata_locator": "attempt:metadata/body_base64#result",
+      "model_read": false,
+      "provider": "Europe PMC",
+      "relationships": [],
+      "representation": "provider abstract, markup flattened; not full text",
+      "source": {
+        "citation": "https://europepmc.org/article/MED/42031697",
+        "source_ref": "epmc:MED:42031697",
+        "title": "Nucleoporin TPR integrates MAPK signaling with mitogen-induced transcriptional programs."
+      },
+      "text_locator": "attempt:metadata/body_base64#result.abstractText",
+      "transport": "real_public_http"
+    },
+    "model_read": false,
+    "science_validated": false
+  },
+  "attempts": [
+    {
+      "id": "5cfab4b2289e4da79aba32a3813481a1",
+      "call_key": "metadata",
+      "status": "succeeded",
+      "target": "Europe PMC public REST",
+      "request": "{\"headers\": {\"Accept\": \"application/json\", \"User-Agent\": \"CoScientist-W1-L1/1.0 (manual development acquisition)\"}, \"method\": \"GET\", \"url\": \"https://www.ebi.ac.uk/europepmc/webservices/rest/article/MED/42031697?resultType=core&format=json\"}",
+      "started_at": "2026-11-04T03:07:05.064297+00:00",
+      "finished_at": "2026-11-04T03:07:08.211716+00:00",
+      "error": null,
+      "usage": "{\"cost\": null, \"input_tokens\": null, \"output_tokens\": null, \"tool_units\": 1}"
+    }
+  ]
+}
