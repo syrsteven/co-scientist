@@ -1,0 +1,64 @@
+{
+  "task_id": "55bc66f3e1a44070babcf67db99b0bac",
+  "old_attempt_id": "0d9e7d5fd9da4bbea3ddc42608e0c184",
+  "new_attempt_id": "a283b83163334165a902a00362b49c2d",
+  "call_key": "model",
+  "request_id": "directed-seed-p07-readiness-single",
+  "new_attempt_count": 1,
+  "new_attempt_status": "succeeded",
+  "task_status": "succeeded",
+  "result_status": "saved",
+  "decision": "ready",
+  "http_status": 200,
+  "finish_reason": "stop",
+  "provider_usage": {
+    "completion_tokens": 3224,
+    "completion_tokens_details": {
+      "accepted_prediction_tokens": 0,
+      "audio_tokens": 0,
+      "reasoning_tokens": 876,
+      "rejected_prediction_tokens": 0
+    },
+    "prompt_tokens": 40396,
+    "prompt_tokens_details": {
+      "audio_tokens": 0,
+      "cache_write_tokens": 40393,
+      "cached_tokens": 0
+    },
+    "total_tokens": 43620
+  },
+  "new_usage": {
+    "cost": null,
+    "input_tokens": 40396,
+    "output_tokens": 3224,
+    "tool_units": null
+  },
+  "old_attempt_status": "uncertain",
+  "old_usage": {
+    "cost": null,
+    "input_tokens": null,
+    "output_tokens": null,
+    "tool_units": null
+  },
+  "old_error_unchanged": true,
+  "request_identical": true,
+  "no_new_run_task_search_fetch_view": {
+    "runs": 1,
+    "tasks": 23,
+    "background_actions": 11,
+    "literature_actions": 10,
+    "material_views": 5
+  },
+  "protected_original_rows": {
+    "background_actions": 10,
+    "tasks": 22,
+    "attempts": 23,
+    "results": 22,
+    "literature_actions": 10,
+    "material_views": 5,
+    "goal_contexts": 1,
+    "brief_revisions": 1
+  },
+  "run_status": "awaiting_generation",
+  "science_validated": false
+}

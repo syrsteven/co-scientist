@@ -1,0 +1,111 @@
+{
+  "method": "read-only original DB matching exact frozen request + bounded known trial/run response-file inventory; no credential/session/private-log scan",
+  "database_mode": "ro",
+  "original_response_present": false,
+  "complete_response_candidates": [],
+  "inventory": [
+    {
+      "path": "/private/tmp/co-scientist-directed-background/docs/trials/directed-seed-background-real/p07.action.json",
+      "bytes": 168979,
+      "sha256": "a47274088e0b9d64d5f075bd76fc7c4ee5df7e6b72b25d13ebee3725848bf65d"
+    },
+    {
+      "path": "/private/tmp/co-scientist-directed-background/docs/trials/directed-seed-background-real/p07.attempts.json",
+      "bytes": 297725,
+      "sha256": "66728043989857e01a12d96b9b9da54be6db41296177b6b1536c6f7100df013d"
+    },
+    {
+      "path": "/private/tmp/co-scientist-directed-background/docs/trials/directed-seed-background-real/p07.input.json",
+      "bytes": 163041,
+      "sha256": "a7d37f45ce939dbe68ce0fb963402ad6fe1090c48e1a5d14fa475172b66134ee"
+    },
+    {
+      "path": "/private/tmp/co-scientist-directed-background/docs/trials/directed-seed-background-real/p07.messages.json",
+      "bytes": 147797,
+      "sha256": "fb93d1aadd3743ff39c85750089f84b705206c0cb3edf4c49d07e3e50492787a"
+    },
+    {
+      "path": "/private/tmp/co-scientist-directed-background/docs/trials/directed-seed-background-real/p07.operation.json",
+      "bytes": 551,
+      "sha256": "6cde4a5ab2a2d7fb89416c4f467b2a8601104ff72f8d39aea49c9ba22f9953a9"
+    },
+    {
+      "path": "/private/tmp/co-scientist-directed-background/docs/trials/directed-seed-background-real/p07.outcome.json",
+      "bytes": 754,
+      "sha256": "7ad328715c09b55b1d98bc1330c86f7c116e4aaeeb3321eafcb325561b2da1f9"
+    },
+    {
+      "path": "/private/tmp/co-scientist-directed-background/docs/trials/directed-seed-background-real/p07.planned-http.json",
+      "bytes": 148180,
+      "sha256": "9a02a3566e470b1bc3bdf7e656562d7ed25a94c42d6e954f740dde3fd9dcc884"
+    },
+    {
+      "path": "/private/tmp/co-scientist-directed-background/docs/trials/directed-seed-background-real/p07.preflight.json",
+      "bytes": 322,
+      "sha256": "2369f2447af86764ab78f8a1215ba2781c7ea1ea05d9b20792e64cf58eac8c7a"
+    },
+    {
+      "path": "/private/tmp/co-scientist-directed-background/docs/trials/directed-seed-background-real/p07.transport-status.json",
+      "bytes": 683,
+      "sha256": "c3e7e1cf773f73cf700c2a103fe123dff3b66f892f69dcf68734ffa8761a9250"
+    },
+    {
+      "path": "/private/tmp/co-scientist-directed-background/docs/trials/directed-seed-background-real/p07.usage.json",
+      "bytes": 5,
+      "sha256": "38e0b9de817f645c4bec37c0d4a3e58baecccb040f5718dc069a72c7385a0bed"
+    },
+    {
+      "path": "/private/tmp/co-scientist-p07-recovery/docs/trials/directed-seed-background-real/p07.action.json",
+      "bytes": 168979,
+      "sha256": "a47274088e0b9d64d5f075bd76fc7c4ee5df7e6b72b25d13ebee3725848bf65d"
+    },
+    {
+      "path": "/private/tmp/co-scientist-p07-recovery/docs/trials/directed-seed-background-real/p07.attempts.json",
+      "bytes": 297725,
+      "sha256": "66728043989857e01a12d96b9b9da54be6db41296177b6b1536c6f7100df013d"
+    },
+    {
+      "path": "/private/tmp/co-scientist-p07-recovery/docs/trials/directed-seed-background-real/p07.input.json",
+      "bytes": 163041,
+      "sha256": "a7d37f45ce939dbe68ce0fb963402ad6fe1090c48e1a5d14fa475172b66134ee"
+    },
+    {
+      "path": "/private/tmp/co-scientist-p07-recovery/docs/trials/directed-seed-background-real/p07.messages.json",
+      "bytes": 147797,
+      "sha256": "fb93d1aadd3743ff39c85750089f84b705206c0cb3edf4c49d07e3e50492787a"
+    },
+    {
+      "path": "/private/tmp/co-scientist-p07-recovery/docs/trials/directed-seed-background-real/p07.operation.json",
+      "bytes": 551,
+      "sha256": "6cde4a5ab2a2d7fb89416c4f467b2a8601104ff72f8d39aea49c9ba22f9953a9"
+    },
+    {
+      "path": "/private/tmp/co-scientist-p07-recovery/docs/trials/directed-seed-background-real/p07.outcome.json",
+      "bytes": 754,
+      "sha256": "7ad328715c09b55b1d98bc1330c86f7c116e4aaeeb3321eafcb325561b2da1f9"
+    },
+    {
+      "path": "/private/tmp/co-scientist-p07-recovery/docs/trials/directed-seed-background-real/p07.planned-http.json",
+      "bytes": 148180,
+      "sha256": "9a02a3566e470b1bc3bdf7e656562d7ed25a94c42d6e954f740dde3fd9dcc884"
+    },
+    {
+      "path": "/private/tmp/co-scientist-p07-recovery/docs/trials/directed-seed-background-real/p07.preflight.json",
+      "bytes": 322,
+      "sha256": "2369f2447af86764ab78f8a1215ba2781c7ea1ea05d9b20792e64cf58eac8c7a"
+    },
+    {
+      "path": "/private/tmp/co-scientist-p07-recovery/docs/trials/directed-seed-background-real/p07.transport-status.json",
+      "bytes": 683,
+      "sha256": "c3e7e1cf773f73cf700c2a103fe123dff3b66f892f69dcf68734ffa8761a9250"
+    },
+    {
+      "path": "/private/tmp/co-scientist-p07-recovery/docs/trials/directed-seed-background-real/p07.usage.json",
+      "bytes": 5,
+      "sha256": "38e0b9de817f645c4bec37c0d4a3e58baecccb040f5718dc069a72c7385a0bed"
+    }
+  ],
+  "finding": "No locally retained complete response found in inspected locations; not proof provider did not execute",
+  "attempt_reclassified": false,
+  "unknown_usage_preserved": true
+}

@@ -1,5 +1,17 @@
 # 项目状态 — W1-L2
 
+## P07同Task授权恢复与最小安全诊断（2026-11-04）
+
+基线远端main378475b2e5a86d1c6504138bc3992dae2c977e81；独立PR分支codex/p07-transport-recovery，不合并。诊断代码909107b7a00227e70ed11f8cff1e1ab2d4eb385a。
+只读检查原库/20相关文件，无可关联完整响应；这不证明原请求未执行。原Attempt0d9e7d5fd9da4bbea3ddc42608e0c184仍uncertain、原错误/未知用量不变，仅以authorize_uncertain_retry记录用户接受重复执行/收费风险。
+最小补丁仅允许列表category/phase/code，不保存原始异常文本/凭据/鉴权头/请求正文到诊断；不改uncertain、成功回放或自动重试语义。
+通过Store.recover/authorize_uncertain_retry/retry_task及既有BackgroundService恢复原Task55bc66f3e1a44070babcf67db99b0bac，新Attempta283b83163334165a902a00362b49c2d ordinal2/previous_id关联原Attempt；仅1次新请求。
+冻结call_key/model输入/Prompt/配置/HTTP请求完全一致：148027字节，gpt-6.1-sol/high/32768/JSON object、无temperature、600秒、原262144上限。HTTP200/stop/saved，P07 decision=ready，停awaiting_generation，不执行P08。
+新调用40396输入/3224输出（含reasoning876）/total43620；原调用消耗未知，两次完整总耗用/费用未知。无新Run/Task、无前序重跑、无检索/获取/视图新增，原行哈希保护。
+[恢复前后/实际请求/完整响应usage/6项依据与初审](trials/p07-recovery-real/README.md)。ready仅是单模型对条件性探索准备的判断，不证明机制/实验可行性/新颖性；P05措辞弱化及原体系归属问题仍待专家复核，原结果不改。
+聚焦102通过，最终新系统239通过、0失败/跳过（203+36）；Ruff/35文件format、导出/只读DB/哈希/ZIP解压检查通过，原工作区232项保持。未运行旧G3全量、本机Python3.12、浏览器、专家/科学验证。
+Goal Ethics仍开发测试；science_validated=false。未执行P08、Candidate Ethics或R0。以下历史不改写。
+
 ## P04 context-v2 与独立新Run准备（2026-11-04）
 
 实际起点main：`87668c8ee84a52aa3109830cd7dbef02d0a32f28`；独立分支`codex/p04-context-preparation`。

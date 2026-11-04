@@ -1,0 +1,15 @@
+{
+  "old_attempt_id": "0d9e7d5fd9da4bbea3ddc42608e0c184",
+  "reason": "User authorization 2026-11-04: accept possible duplicate execution and billing of original uncertain P07; authorize at most one linked retry on same Task/call_key/frozen request. Prior outcome and usage remain unknown. No further automatic retries.",
+  "task_id": "55bc66f3e1a44070babcf67db99b0bac",
+  "call_key": "model",
+  "max_new_attempts": 1,
+  "new_run_or_task": false,
+  "methods_used": [
+    "Store.recover",
+    "Store.authorize_uncertain_retry",
+    "Store.retry_task",
+    "BackgroundService.execute"
+  ],
+  "no_direct_state_updates": true
+}
