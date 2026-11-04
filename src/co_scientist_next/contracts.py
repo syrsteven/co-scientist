@@ -2,7 +2,7 @@
 
 from collections.abc import Callable
 from dataclasses import dataclass, field
-from typing import Any, Protocol
+from typing import Any, ClassVar, Protocol
 
 JSON = dict[str, Any]
 
@@ -37,6 +37,53 @@ class KnownCallFailure(Exception):
 
 class UncertainCall(RuntimeError):
     """Provider may have executed; requires explicit recovery decision."""
+
+
+class TransportUncertain(RuntimeError):
+    """Only fixed, allowlisted metadata may cross a credential-bearing transport."""
+
+    MESSAGE = "Model send outcome uncertain; credential details withheld"
+    ALLOWED: ClassVar[dict[str, set[str]]] = {
+        "category": {"timeout", "connection", "tls", "dns", "http_protocol", "transport"},
+        "phase": {
+            "request_open",
+            "response_read",
+            "response_metadata",
+            "response_close",
+            "unknown",
+        },
+        "code": {
+            "ETIMEDOUT",
+            "ECONNRESET",
+            "ECONNABORTED",
+            "ECONNREFUSED",
+            "EPIPE",
+            "ENETUNREACH",
+            "EHOSTUNREACH",
+            "EAI_AGAIN",
+            "EAI_NONAME",
+            "DNS_ERROR",
+            "CERTIFICATE_VERIFY_FAILED",
+            "TLS_ERROR",
+            "REMOTE_DISCONNECTED",
+            "INCOMPLETE_READ",
+            "BAD_STATUS_LINE",
+            "HTTP_PROTOCOL_ERROR",
+            "TRANSPORT_ERROR",
+        },
+    }
+
+    def __init__(self, category, phase, code):
+        super().__init__(self.MESSAGE)
+        self.diagnostic = {"category": category, "phase": phase, "code": code}
+
+    def error_record(self):
+        defaults = {"category": "transport", "phase": "unknown", "code": "TRANSPORT_ERROR"}
+        diagnostic = {}
+        for key, allowed in self.ALLOWED.items():
+            value = self.diagnostic.get(key)
+            diagnostic[key] = value if type(value) is str and value in allowed else defaults[key]
+        return {"type": "TransportUncertain", "message": self.MESSAGE, "diagnostic": diagnostic}
 
 
 @dataclass(frozen=True)

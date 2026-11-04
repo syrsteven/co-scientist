@@ -1,19 +1,66 @@
 """One explicit OpenAI Chat Completions send; no SDK, retries or G3 imports."""
 
 import base64
+import errno
 import hashlib
+import http.client
 import json
 import math
 import os
+import socket
+import ssl
 import urllib.error
 import urllib.request
 from pathlib import Path
 
-from .contracts import CallResponse, KnownCallFailure, Usage
+from .contracts import CallResponse, KnownCallFailure, TransportUncertain, Usage
 from .europe_pmc import NoRedirect
 from .store import encode, now
 
 ENDPOINT = "https://api.openai.com/v1/chat/completions"
+
+
+def transport_error(exc, phase):
+    """Classify by known types/numeric codes; never format provider error text."""
+    if isinstance(exc, urllib.error.URLError) and isinstance(exc.reason, BaseException):
+        exc = exc.reason
+    if isinstance(exc, TimeoutError):
+        category, code = "timeout", "ETIMEDOUT"
+    elif isinstance(exc, ssl.SSLCertVerificationError):
+        category, code = "tls", "CERTIFICATE_VERIFY_FAILED"
+    elif isinstance(exc, ssl.SSLError):
+        category, code = "tls", "TLS_ERROR"
+    elif isinstance(exc, socket.gaierror):
+        category = "dns"
+        code = {socket.EAI_AGAIN: "EAI_AGAIN", socket.EAI_NONAME: "EAI_NONAME"}.get(
+            exc.errno, "DNS_ERROR"
+        )
+    elif isinstance(exc, http.client.HTTPException):
+        category = "http_protocol"
+        code = next(
+            (
+                name
+                for kind, name in (
+                    (http.client.RemoteDisconnected, "REMOTE_DISCONNECTED"),
+                    (http.client.IncompleteRead, "INCOMPLETE_READ"),
+                    (http.client.BadStatusLine, "BAD_STATUS_LINE"),
+                )
+                if isinstance(exc, kind)
+            ),
+            "HTTP_PROTOCOL_ERROR",
+        )
+    elif isinstance(exc, OSError) and exc.errno in {
+        errno.ECONNRESET,
+        errno.ECONNABORTED,
+        errno.ECONNREFUSED,
+        errno.EPIPE,
+        errno.ENETUNREACH,
+        errno.EHOSTUNREACH,
+    }:
+        category, code = "connection", errno.errorcode[exc.errno]
+    else:
+        category, code = "transport", "TRANSPORT_ERROR"
+    return TransportUncertain(category, phase, code)
 
 
 def model_config(value):
@@ -164,6 +211,7 @@ class OpenAIChat:
         req = urllib.request.Request(
             actual["endpoint"], data=payload, headers=headers, method="POST"
         )
+        phase = "request_open"
         try:
             try:
                 response = urllib.request.build_opener(NoRedirect()).open(
@@ -172,7 +220,9 @@ class OpenAIChat:
             except urllib.error.HTTPError as exc:
                 response = exc
             with response:
+                phase = "response_read"
                 raw = response.read(4_000_001)
+                phase = "response_metadata"
                 truncated = len(raw) > 4_000_000
                 text = raw[:4_000_000].decode("utf8", errors="replace")
                 redacted = self._api_key in text
@@ -192,11 +242,10 @@ class OpenAIChat:
                         if k.lower() in ("content-type", "x-request-id")
                     },
                 }
-        except Exception:  # noqa: BLE001 -- credential-bearing transport exceptions must never reach persistence
+                phase = "response_close"
+        except Exception as exc:  # noqa: BLE001 -- only an allowlisted projection crosses M15
             # Never leak urllib/provider exceptions or credential-bearing objects to M15.
-            raise RuntimeError(
-                "Model send outcome uncertain; credential details withheld"
-            ) from None
+            raise transport_error(exc, phase) from None
         # Preserve every provider usage detail, including reasoning/cache counters,
         # independently of the narrow shared Usage summary and domain parsing.
         try:

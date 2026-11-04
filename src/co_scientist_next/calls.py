@@ -4,7 +4,7 @@ import json
 import math
 from dataclasses import asdict
 
-from .contracts import CallResponse, KnownCallFailure, UncertainCall, Usage
+from .contracts import CallResponse, KnownCallFailure, TransportUncertain, UncertainCall, Usage
 from .store import encode, identity, now
 
 
@@ -91,7 +91,11 @@ class TaskCalls:
                 usage_json = checked_usage(response.usage)
             except Exception as exc:
                 known = isinstance(exc, KnownCallFailure)
-                error = encode({"type": type(exc).__name__, "message": str(exc)})
+                error = encode(
+                    exc.error_record()
+                    if isinstance(exc, TransportUncertain)
+                    else {"type": type(exc).__name__, "message": str(exc)}
+                )
                 # A malformed adapter response also leaves effects uncertain.
                 try:
                     usage_json = checked_usage(exc.usage) if known else checked_usage(Usage())
