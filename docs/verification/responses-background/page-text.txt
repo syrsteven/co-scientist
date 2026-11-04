@@ -1,0 +1,46 @@
+P08 · SINGLE CALL
+从固定 ready seed 生成一个候选
+
+开发生成替身 · 工程验证，不是真实模型能力；science_validated=false。 Goal Ethics 为开发测试结果，不代表真实伦理审查。
+
+当前 Prompt：w1-p08-single-v1；Run has an unfinished or blocked task
+
+已完成 ready（固定背景包）
+seed-f802b0dedf0645d8800bcd13cdb2a4aa-0 · background-007 · Development exploration question 1: what remains unknown in the original Goal?
+
+固定背景包：background-006；允许具体程度：Conditional exploratory relations only; no preselected model
+
+单次生成方式
+DIRECT · 单次直接生成
+ASSUMPTION_STRUCTURED · 公开科学假设清单
+调用方候选身份（修改需新身份）
+显式提交并生成一个候选
+
+每次仅一次生成；没有多轮辩论，也未认定任一方式更优。刷新只读取，不自动生成或重发。新候选待 Candidate Ethics/R0，非准入或科学验收。
+
+candidate-offline-1
+
+候选身份：candidate-offline-1 · 方式：DIRECT
+
+调用状态：远端任务已保存，等待显式查询 · 结果未完成
+
+执行标识：development_fixture · 固定Prompt：w1-p08-single-v1
+
+seed：seed-f802b0dedf0645d8800bcd13cdb2a4aa-0 · 背景包：background-006 · readiness：background-007
+
+远端任务：resp_OFFLINE1 · 最近观测状态 queued · 已等待 68 秒（自本地保存提交响应起，非供应商计算时长）
+
+最近查询：{"at":"2026-11-04T14:47:06.230603+00:00","outcome":"query_failed","remote_status_unchanged":true}；刷新只读，不自动查询或重新提交。
+
+显式查询同一远端任务（不创建新生成）
+
+Responses 后台 · store=true；供应商存储保留按已确认配置执行，未知费用不记0。
+
+Attempt 8719a487540e4e40a8c89d9554ad63b5 · failed · 用量：{"cost": null, "input_tokens": null, "output_tokens": null, "tool_units": null}（null为未知）
+
+查看保存的实际请求 / 原始响应
+
+Attempt 5ff1b7a8fd434c9595559d8534511ac0 · succeeded · 用量：{"cost": null, "input_tokens": null, "output_tokens": null, "tool_units": null}（null为未知）
+
+查看保存的实际请求 / 原始响应
+固定输入、配置和来源关联

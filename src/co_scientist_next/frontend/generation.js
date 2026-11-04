@@ -57,9 +57,23 @@ async function showGeneration(data) {
     card.append(title);
     note("候选身份：" + a.candidate_id + " · 方式：" + a.request.mode, card);
     const status = a.result?.generation_status;
-    note(status === "generated" ? "已生成，待Candidate Ethics/R0；未准入、未评分、科学未验证。" : "调用状态：" + ({blocked: "发送不确定，已停止；不自动重发", failed: "技术失败（非科学否定）", running: "执行中，尚未收尾", ready: "已保存待显式执行"}[a.task_status] || a.task_status) + " · " + (status || "结果未完成"), card);
+    note(status === "generated" ? "已生成，待Candidate Ethics/R0；未准入、未评分、科学未验证。" : "调用状态：" + ({blocked: "发送不确定，已停止；不自动重发", failed: "技术失败（非科学否定）", running: "执行中，尚未收尾", waiting_remote: "远端任务已保存，等待显式查询", ready: "已保存待显式执行"}[a.task_status] || a.task_status) + " · " + (status || "结果未完成"), card);
     note("执行标识：" + a.config.execution_mode + " · 固定Prompt：" + a.prompt_version, card);
     note("seed：" + a.request.seed_id + " · 背景包：" + a.request.packet_ref + " · readiness：" + a.request.readiness_ref, card);
+    if (a.remote) {
+      note("远端任务：" + a.remote.response_id + " · 最近观测状态 " + a.remote.status + " · 已等待 " + Math.floor(a.remote.elapsed_seconds) + " 秒（自本地保存提交响应起，非供应商计算时长）", card);
+      note("最近查询：" + JSON.stringify(a.remote.latest_query || {outcome: "尚未查询"}) + "；刷新只读，不自动查询或重新提交。", card);
+      if (["queued", "in_progress", "unknown"].includes(a.remote.status)) {
+        const query = document.createElement("button");
+        query.textContent = "显式查询同一远端任务（不创建新生成）";
+        query.disabled = !saved.real_calls_authorized || !saved.model_config.credential_configured;
+        query.onclick = () => action(async () => {await api("/api/generation/query", {request_id: a.request_id}); await showRun(data.run.id);});
+        card.append(query);
+      }
+    } else if (a.task_status === "blocked") {
+      note("没有已保存的远端任务 ID；提交结果不确定，不能作为正在远端执行显示。", card);
+    }
+    if (a.config.api_mode === "responses_background_v1") note("Responses 后台 · store=true；供应商存储保留按已确认配置执行，未知费用不记0。", card);
     if (a.error) note("技术状态：" + a.error.message, card);
     if (a.result?.parse_error) note(a.result.parse_error, card);
     if (status === "capacity_exceeded") note("完整输入超出容量，未发送、未静默裁剪。", card);

@@ -160,6 +160,10 @@ class GenerationService:
             return self.snapshot(action["run_id"])
         if json.loads(action["config"]) != self.config():
             raise ValueError("Recovery requires frozen model configuration/mode")
+        if getattr(self.adapter, "background_responses", False):
+            from .remote_generation import RemoteP08
+
+            return RemoteP08(self).execute(action, recover=recover)
         self.clear_calls(action["run_id"], action["task_id"])
         if recover:
             self.store.recover(run_id=action["run_id"])
@@ -171,6 +175,16 @@ class GenerationService:
             registry.register(MODULE, self.perform)
             Scheduler(self.store, registry).step(action["run_id"])
         return self.snapshot(action["run_id"])
+
+    def query_remote(self, request_id):
+        from .remote_generation import RemoteP08
+
+        if not getattr(self.adapter, "background_responses", False):
+            raise ValueError("Frozen Responses background configuration required")
+        action = self.store.one(
+            "SELECT * FROM generation_actions WHERE request_id=?", (request_id,)
+        )
+        return RemoteP08(self).execute(action, query=True)
 
     def perform(self, inputs, calls):
         a = self.store.one("SELECT * FROM generation_actions WHERE task_id=?", (inputs.task_id,))
@@ -258,6 +272,9 @@ class GenerationService:
                 row[key] = json.loads(row[key]) if row[key] else None
             output = row.pop("output")
             row["result"] = json.loads(output) if output else None
+            from .remote_generation import remote_snapshot
+
+            row["remote"] = remote_snapshot(self.store, row["task_id"])
             row["attempts"] = self.store.rows(
                 "SELECT id,status,usage,error,previous_id,started_at,finished_at FROM attempts WHERE task_id=? ORDER BY ordinal",
                 (row["task_id"],),

@@ -15,6 +15,7 @@ from .generation_ops import DevelopmentGenerationAdapter
 from .goal import DEVELOPMENT_POLICY, DevelopmentAdapter, GoalSlice, validate_brief
 from .literature_runtime import LiteratureService
 from .reading_model import OpenAIChat, load_credential
+from .responses_model import OpenAIResponses
 from .store import Store
 
 
@@ -224,6 +225,8 @@ def make_server(
                     self.reply(
                         201, {"request_id": saved["request_id"], "task_id": saved["task_id"]}
                     )
+                elif path == "/api/generation/query":
+                    self.reply(200, generation.query_remote(data["request_id"]))
                 elif path == "/api/generation/execute":
                     self.reply(
                         200,
@@ -286,6 +289,10 @@ def main():
         help="Explicit deterministic P08 fixture; no real model or science validation",
     )
     parser.add_argument(
+        "--generation-responses-config",
+        help="Separate explicit P08 Responses background profile; no migration/fallback",
+    )
+    parser.add_argument(
         "--reading-model-config", help="Public explicit OpenAI model/endpoint/parameters JSON"
     )
     parser.add_argument(
@@ -300,6 +307,10 @@ def main():
         help="Explicitly authorize model sends only when operations are clicked",
     )
     args = parser.parse_args()
+    if args.generation_responses_config and (
+        args.development_generation or args.reading_model_config or args.development_reading
+    ):
+        parser.error("Select a separate Responses profile; no implicit API migration")
     if args.development_reading and (
         args.reading_model_config
         or args.allow_real_model_calls
@@ -307,7 +318,7 @@ def main():
         or args.credential_file
     ):
         parser.error("Select explicit development reading or real configuration; no fallback")
-    if not args.reading_model_config and (
+    if not (args.reading_model_config or args.generation_responses_config) and (
         args.credential_env or args.credential_file or args.allow_real_model_calls
     ):
         parser.error(
@@ -327,6 +338,22 @@ def main():
             parser.error(
                 "Reading configuration/credential unavailable; no fallback or secret details printed"
             )
+    generation_adapter = adapter if args.reading_model_config else None
+    if args.generation_responses_config:
+        try:
+            config = json.loads(Path(args.generation_responses_config).read_text())
+            secret = (
+                load_credential(env_name=args.credential_env, credential_file=args.credential_file)
+                if args.credential_env or args.credential_file
+                else None
+            )
+            generation_adapter = OpenAIResponses(
+                config, secret, authorized=args.allow_real_model_calls
+            )
+        except (ValueError, OSError):
+            parser.error(
+                "Responses configuration/credential unavailable; no fallback or secret details printed"
+            )
     with Store(args.db) as store:
         server = make_server(
             store,
@@ -337,9 +364,7 @@ def main():
             generation_adapter=(
                 DevelopmentGenerationAdapter()
                 if args.development_generation
-                else adapter
-                if args.reading_model_config
-                else None
+                else generation_adapter
             ),
         )
         # No store.recover() here. Restart and refresh are observational until explicit POST.

@@ -1,0 +1,12 @@
+{
+  "baseline": "db37b47598c167d586b743f51f6a078e3c2b0cf6",
+  "executed": false,
+  "science_validated": false,
+  "actual_request_bytes": 145401,
+  "original_messages_sha256": "dca632bc26841d2964883caa67df2fff74181d3e1b55d34d1de868caac2f1934",
+  "original_input_sha256": "72dfb811bd64c615c97f2c9110f16a28fa0a012c667b31059a91e1c68981eade",
+  "scientific_messages_equal": true,
+  "six_field_user_equal": true,
+  "model_requests": 0,
+  "credential_loaded": false
+}

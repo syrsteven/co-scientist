@@ -1,5 +1,6 @@
 """Small execution contracts. Scientific modules own their payload schemas."""
 
+import math
 from collections.abc import Callable
 from dataclasses import dataclass, field
 from typing import Any, ClassVar, Protocol
@@ -47,6 +48,9 @@ class TransportUncertain(RuntimeError):
         "category": {"timeout", "connection", "tls", "dns", "http_protocol", "transport"},
         "phase": {
             "request_open",
+            "connect",
+            "request_send",
+            "waiting_headers",
             "response_read",
             "response_metadata",
             "response_close",
@@ -73,9 +77,10 @@ class TransportUncertain(RuntimeError):
         },
     }
 
-    def __init__(self, category, phase, code):
+    def __init__(self, category, phase, code, *, elapsed_seconds=None):
         super().__init__(self.MESSAGE)
         self.diagnostic = {"category": category, "phase": phase, "code": code}
+        self.elapsed_seconds = elapsed_seconds
 
     def error_record(self):
         defaults = {"category": "transport", "phase": "unknown", "code": "TRANSPORT_ERROR"}
@@ -83,7 +88,19 @@ class TransportUncertain(RuntimeError):
         for key, allowed in self.ALLOWED.items():
             value = self.diagnostic.get(key)
             diagnostic[key] = value if type(value) is str and value in allowed else defaults[key]
-        return {"type": "TransportUncertain", "message": self.MESSAGE, "diagnostic": diagnostic}
+        record = {"type": "TransportUncertain", "message": self.MESSAGE, "diagnostic": diagnostic}
+        elapsed = self.elapsed_seconds
+        if type(elapsed) in (int, float) and math.isfinite(elapsed) and elapsed >= 0:
+            record["elapsed_seconds"] = elapsed
+        return record
+
+
+class SubmissionUncertain(TransportUncertain):
+    """A received submission response cannot identify the remote job; retain it."""
+
+    def __init__(self, response, usage):
+        super().__init__("http_protocol", "response_metadata", "HTTP_PROTOCOL_ERROR")
+        self.response, self.usage = response, usage
 
 
 @dataclass(frozen=True)

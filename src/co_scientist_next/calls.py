@@ -4,7 +4,14 @@ import json
 import math
 from dataclasses import asdict
 
-from .contracts import CallResponse, KnownCallFailure, TransportUncertain, UncertainCall, Usage
+from .contracts import (
+    CallResponse,
+    KnownCallFailure,
+    SubmissionUncertain,
+    TransportUncertain,
+    UncertainCall,
+    Usage,
+)
 from .store import encode, identity, now
 
 
@@ -26,7 +33,7 @@ class TaskCalls:
         self.store = store
         self.task_id = task_id
 
-    def execute(self, key, target, request, invoke, *, max_attempts=1):
+    def execute(self, key, target, request, invoke, *, max_attempts=1, commit_response=None):
         if (
             not key
             or not target
@@ -52,6 +59,8 @@ class TaskCalls:
         if previous and previous["status"] == "succeeded":
             with store.db:
                 store.fact(self.task_id, "call_replayed", {"attempt_id": previous["id"]})
+                if commit_response:
+                    commit_response(json.loads(previous["response"]), previous["id"])
             return CallResponse(
                 json.loads(previous["response"]), Usage(**json.loads(previous["usage"]))
             )
@@ -98,8 +107,9 @@ class TaskCalls:
                 )
                 # A malformed adapter response also leaves effects uncertain.
                 try:
-                    usage_json = checked_usage(exc.usage) if known else checked_usage(Usage())
-                    response_json = encode(exc.response) if known else None
+                    retained = known or isinstance(exc, SubmissionUncertain)
+                    usage_json = checked_usage(exc.usage) if retained else checked_usage(Usage())
+                    response_json = encode(exc.response) if retained else None
                 except (ValueError, TypeError):
                     known = False
                     usage_json, response_json = checked_usage(Usage()), None
@@ -129,5 +139,7 @@ class TaskCalls:
                                         finished_at=? WHERE id=?""",
                         (response_json, usage_json, now(), attempt_id),
                     )
+                    if commit_response:
+                        commit_response(json.loads(response_json), attempt_id)
                 return CallResponse(json.loads(response_json), response.usage)
         raise last_error

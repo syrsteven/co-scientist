@@ -1,3 +1,25 @@
+# 项目状态 — Responses 后台传输修复
+
+## 独立传输可靠性修复（2026-11-04）
+
+起始main经远端核实为 `db37b47598c167d586b743f51f6a078e3c2b0cf6`；独立分支 `codex/responses-background-transport`，提交独立PR，保持未合并。
+原工作区232项内容/暂存/状态指纹保持；原真实Run/Task和两次uncertain只读核查，费用/请求/状态不改。
+
+| 维度 | 本轮事实 |
+|---|---|
+| 传输 | 新Responses后台窄适配器；脱敏代理事实、connect/请求写入/等响应头/读正文、单调耗时；socket与总期限分别显式600秒，无隐藏重试；历史根因未知 |
+| M15/M12 | 原子保存ID及响应后只显式GET同ID；跨进程继续、查询错误不重建；queued/in_progress/unknown等待，只有completed且完整候选契约通过才保存；原uncertain阻断不绕过 |
+| 输入/配置 | 科学Prompt w1-p08-single-v1与六字段原样；Sol/high/32768/JSON，无temperature、输入不裁剪，145401字节；新执行配置显式store=true及保留确认，与旧store=false请求不伪装一致 |
+| 页面 | 远端ID、最近观测状态、等待时长、最近查询结果/断连、显式同ID查询；无ID提交不确定单独提示；IAB及HTTP刷新/重启持久化验证 |
+| 验证 | 最终新系统301通过、0失败/跳过；Ruff/44文件format、JS、准备包/请求/SHA256/diff检查通过；6项本地HTTP均获准运行，不跳过 |
+| 真实与科学边界 | 本轮模型请求0次，未读取真实凭据；不执行ASSUMPTION_STRUCTURED或下游模块。science_validated=false；真实供应商后台链/模型表现/科学有效性未验证 |
+| 仍待处理 | 原两次uncertain费用/执行未知；迁移仅方案，需另行授权和窄入口，不能新Run绕过；供应商保留/组织例外待确认；DNS硬期限限制明确 |
+
+[实现、状态转换与迁移方案](RESPONSES_BACKGROUND.md) · [完整实际请求及配置](preparations/responses-background) · [测试与页面证据](verification/responses-background/RESULTS.md)。
+历史设计与原始科学请求/结果不改，W1仍Proposed。本机Python3.12、旧G3全量、真实付费调用、科学/伦理分类验收均未运行。
+
+## 以下为历史状态（原文保留）
+
 # 项目状态 — P08最小生成切片
 
 ## P08最小单次生成切片（2026-11-04）
