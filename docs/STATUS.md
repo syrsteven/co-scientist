@@ -1,5 +1,29 @@
 # 项目状态 — W1-L2
 
+## P04 v2 真实试跑及离线初审（2026-11-04）
+
+起点main378475b2e5a86d1c6504138bc3992dae2c977e81；独立结果分支codex/p04-v2-trial-review，应用代码不改，不合并main。
+使用已验收Run cea909fe8a004010b1896df1c1d98e02及原独立准备库。调用前准备包/数据库事实/两份视图与消息/HTTP均与审查版本一致；无对应旧调用。
+按p04-v2-control-single → p04-v2-complement-single顺序执行，各1次新Attempt，均w1-l2-p04-context-v2、HTTP200/stop、saved。
+实际模型gpt-6.1-sol/high/32768/JSON object，无temperature、600秒；无自动重试或模型切换。
+
+| 材料 | 输入 | 输出（含reasoning） | reasoning | 结果 |
+|---|---:|---:|---:|---|
+| 对照摘要 | 1749 | 4273 | 1024 | 1 Attempt，saved |
+| 互补Results片段 | 3328 | 6326 | 2563 | 1 Attempt，saved |
+| 本轮合计 | 5077 | 10599 | 3587 | total15676；cost未知/null |
+
+完整实际请求、原始响应、finish_reason、所有provider usage、解析结果和身份均在[结果/审阅包](trials/p04-context-v2-real/README.md)。
+[20项Codex初审及6项v1比较](trials/p04-context-v2-real/codex-review.md)发现本样本情境覆盖/措辞差异，同时记录C-08潜在情境错配、M-09缺失范围歧义、M-08统计信息局部遗漏。
+仅Codex初审，待独立人工复核；单次比较且Brief背景/Run/Prompt均改变，不能宣称稳定提升。science_validated=false。
+Goal制备/Goal Ethics仍为此前开发替身结果，不是真实伦理审查；本轮无新公共检索、无P05–P07/P08/Candidate Ethics/R0。
+原库只有两个P04背景动作，Run状态background_saved，不表示科研完成；旧Brief、旧试跑包及已审查准备包未改写。
+
+本轮只新增结果与离线核对脚本：实际DB只读审计、包SHA/输入/原始字节/usage/引用/审阅定位及独立解压核对。
+未重跑203项新系统工程回归（应用代码不变），未做独立专家科学验收或稳定性试验。用户原工作区232项改动与暂存状态指纹保持不变。
+
+## 以下保留准备阶段及更早交付的历史记录
+
 ## P04 context-v2 与独立新Run准备（2026-11-04）
 
 实际起点main：`87668c8ee84a52aa3109830cd7dbef02d0a32f28`；独立分支`codex/p04-context-preparation`。

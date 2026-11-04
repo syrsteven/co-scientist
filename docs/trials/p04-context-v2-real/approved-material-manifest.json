@@ -1,0 +1,155 @@
+{
+  "status": "PREPARATION_ONLY_NO_MODEL_REQUESTS",
+  "prompt_version": "w1-l2-p04-context-v2",
+  "materials": [
+    {
+      "name": "control",
+      "source": {
+        "citation": "https://europepmc.org/article/PPR/PPR1217875",
+        "source_ref": "epmc:PPR:PPR1217875",
+        "title": "Seeded aggregation of ANXA11 induces prion-like propagation, TDP-43 co-pathology and nucleocytoplasmic transport defects"
+      },
+      "source_version": "provider version unreported",
+      "doi": "10.64898/2026.03.24.713853",
+      "pmcid": null,
+      "pub_type": {
+        "pubType": [
+          "Preprint"
+        ]
+      },
+      "first_publication_date": "2026-03-26",
+      "provider_license": null,
+      "acquisition_status": "succeeded",
+      "obtained_access": "abstract",
+      "view_access": "abstract",
+      "representation": "complete obtained provider abstract, markup flattened; not full text",
+      "character_range": [
+        0,
+        2746
+      ],
+      "obtained_characters": 2746,
+      "view_characters": 2746,
+      "view_id": "75bf96a0e25b4e6aa10e54f6781a5382",
+      "selection_reason": "Complete obtained Abstract/Highlights/In Brief text; not article body or image pixels",
+      "jats_section_id": null,
+      "unselected_ranges": [],
+      "view_sha256": "06b544e345c80a260d04645b7fb26a0fd8c126167eb15ca69deae7edf3bb59b2",
+      "full_obtained_text_sha256": "06b544e345c80a260d04645b7fb26a0fd8c126167eb15ca69deae7edf3bb59b2",
+      "not_model_input_operator_note": "Historical first abstract control, content hash identical; newly retrieved for the new Run",
+      "authors": "Luo H, Zheng H, Lu Y, Liu C, Zhang K, Duan S, Zhang H, Zhang Y, Song Y, Wang T, Liu H, Zhang N, Xia Z, Xu Y.",
+      "journal": null,
+      "publication_year": "2026",
+      "received_at": "2026-11-03T18:02:26.471809+00:00",
+      "metadata_attempt_id": "40460d8a4e31439ea664370f30f61b62"
+    },
+    {
+      "name": "complement",
+      "source": {
+        "citation": "https://europepmc.org/article/MED/35112738",
+        "source_ref": "epmc:MED:35112738",
+        "title": "Disease-linked TDP-43 hyperphosphorylation suppresses TDP-43 condensation and aggregation."
+      },
+      "source_version": "provider version unreported",
+      "doi": "10.15252/embj.2021108443",
+      "pmcid": "PMC9016352",
+      "pub_type": {
+        "pubType": [
+          "research-article",
+          "Journal Article"
+        ]
+      },
+      "first_publication_date": "2022-02-03",
+      "provider_license": "cc by",
+      "acquisition_status": "succeeded",
+      "obtained_access": "full_text",
+      "view_access": "full_text",
+      "representation": "excerpt of JATS XML saved; flattened article text, not a scientific interpretation",
+      "character_range": [
+        33770,
+        41370
+      ],
+      "obtained_characters": 125363,
+      "view_characters": 7600,
+      "view_id": "876e76bb00f84e928a89cbea813dacad",
+      "selection_reason": "Complete obtained Results subsection covering cellular localisation, nuclear import and RNA regulation assays, including captions as text; other sections not selected",
+      "jats_section_id": "embj2021108443-sec-0010",
+      "unselected_ranges": [
+        [
+          0,
+          33770
+        ],
+        [
+          41370,
+          125363
+        ]
+      ],
+      "view_sha256": "a02e46373edb618c52be88f4f436c9f3492408492d1c75a40611fc95fe43fedb",
+      "full_obtained_text_sha256": "8463d27e6dc972d53df1c282334683001d2ca336410c1b7e2f3e86fd3244e92b",
+      "not_model_input_operator_note": "Selected for explicit no-effect assays and context-dependent interpretation; this is not a direct refutation/replication of ANXA11 seeding and not evidence about nucleoporin phosphorylation",
+      "authors": "Gruijs da Silva LA, Simonetti F, Hutten S, Riemenschneider H, Sternburg EL, Pietrek LM, Gebel J, Dötsch V, Edbauer D, Hummer G, Stelzl LS, Dormann D.",
+      "journal": "The EMBO journal",
+      "publication_year": "2022",
+      "received_at": "2026-11-03T18:02:29.848762+00:00",
+      "metadata_attempt_id": "60996c2c4d74439a9164b5590f7099fd",
+      "copyright_and_license": "© 2022 The Authors. Published under the terms of the CC BY 4.0 licensehttps://creativecommons.org/licenses/by/4.0/This is an open access article under the terms of the http://creativecommons.org/licenses/by/4.0/ License, which permits use, distribution and reproduction in any medium, provided the original work is properly cited.",
+      "license_url": "https://creativecommons.org/licenses/by/4.0/",
+      "modification_notice": "XML mechanically flattened with the existing adapter; only the explicitly declared Results subsection selected; captions are text, image pixels not viewed",
+      "fulltext_attempt_id": "a53791061b6e4750999ff4c3b3391d62"
+    }
+  ],
+  "public_request_count": 5,
+  "public_attempts": [
+    {
+      "attempt_id": "a443ed9029df467ead763ed8a004c4d9",
+      "call_key": "search",
+      "status": "succeeded",
+      "record": "acquisition/a443ed9029df467ead763ed8a004c4d9.attempt.json.gz"
+    },
+    {
+      "attempt_id": "40460d8a4e31439ea664370f30f61b62",
+      "call_key": "metadata",
+      "status": "succeeded",
+      "record": "acquisition/40460d8a4e31439ea664370f30f61b62.attempt.json.gz"
+    },
+    {
+      "attempt_id": "b1803cd06efc4ec6ab3fd1d2da04f3df",
+      "call_key": "search",
+      "status": "succeeded",
+      "record": "acquisition/b1803cd06efc4ec6ab3fd1d2da04f3df.attempt.json.gz"
+    },
+    {
+      "attempt_id": "60996c2c4d74439a9164b5590f7099fd",
+      "call_key": "metadata",
+      "status": "succeeded",
+      "record": "acquisition/60996c2c4d74439a9164b5590f7099fd.attempt.json.gz"
+    },
+    {
+      "attempt_id": "a53791061b6e4750999ff4c3b3391d62",
+      "call_key": "fulltext",
+      "status": "succeeded",
+      "record": "acquisition/a53791061b6e4750999ff4c3b3391d62.attempt.json.gz"
+    }
+  ],
+  "query_origin": "human-entered exact identity queries after developer source scouting, not agent-planned",
+  "queries": [
+    {
+      "cursor": null,
+      "kind": "search",
+      "page_size": 3,
+      "query": "EXT_ID:PPR1217875 AND SRC:PPR",
+      "query_origin": "human_entered",
+      "scope": "Europe PMC indexed publications; manual query; relevance order; no automatic expansion",
+      "source": "Europe PMC"
+    },
+    {
+      "cursor": null,
+      "kind": "search",
+      "page_size": 3,
+      "query": "EXT_ID:35112738 AND SRC:MED",
+      "query_origin": "human_entered",
+      "scope": "Europe PMC indexed publications; manual query; relevance order; no automatic expansion",
+      "source": "Europe PMC"
+    }
+  ],
+  "science_validated": false
+}

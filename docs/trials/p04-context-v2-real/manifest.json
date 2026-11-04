@@ -1,0 +1,21 @@
+{
+  "status": "TWO_REAL_P04_RESULTS_SAVED_CODEX_INITIAL_REVIEW_ONLY",
+  "baseline": "378475b2e5a86d1c6504138bc3992dae2c977e81",
+  "approved_preparation_commit": "793041e67cc5abee8a3d315c35251e9c3ed5161d",
+  "delivery_branch": "codex/p04-v2-trial-review",
+  "run_id": "cea909fe8a004010b1896df1c1d98e02",
+  "prompt_version": "w1-l2-p04-context-v2",
+  "new_real_requests": 2,
+  "new_public_literature_requests": 0,
+  "review_status": "Codex 初审，待独立人工复核",
+  "independent_human_review_completed": false,
+  "science_validated": false,
+  "application_code_modified": false,
+  "model_config": "model-config.json",
+  "original_outputs_modified": false,
+  "raw_response_sha256": {
+    "control": "eb8b892eb38b18b827b74f22356e36e57cded3e582f8ff681e24ff721565632e",
+    "complement": "5cbabe2d2fc7d5e12f90927fded394c52ab5827d0378d37e175e1df329cab820"
+  },
+  "hash_file": "SHA256SUMS"
+}

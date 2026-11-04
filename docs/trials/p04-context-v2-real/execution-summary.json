@@ -1,0 +1,109 @@
+{
+  "baseline_commit": "378475b2e5a86d1c6504138bc3992dae2c977e81",
+  "run_id": "cea909fe8a004010b1896df1c1d98e02",
+  "prompt_version": "w1-l2-p04-context-v2",
+  "execution_order": "control then complement; timestamps verified",
+  "materials": [
+    {
+      "material": "control",
+      "request_id": "p04-v2-control-single",
+      "task_id": "f49335ad41a946f9aed8103f53f328ca",
+      "prompt_version": "w1-l2-p04-context-v2",
+      "task_status": "succeeded",
+      "result_status": "saved",
+      "attempt_count": 1,
+      "attempt_id": "3d4c827fad69481c90ceebf5caa3f7f8",
+      "attempt_status": "succeeded",
+      "finish_reason": "stop",
+      "http_status": 200,
+      "provider_usage": {
+        "completion_tokens": 4273,
+        "completion_tokens_details": {
+          "accepted_prediction_tokens": 0,
+          "audio_tokens": 0,
+          "reasoning_tokens": 1024,
+          "rejected_prediction_tokens": 0
+        },
+        "prompt_tokens": 1749,
+        "prompt_tokens_details": {
+          "audio_tokens": 0,
+          "cache_write_tokens": 1746,
+          "cached_tokens": 0
+        },
+        "total_tokens": 6022
+      },
+      "shared_usage": {
+        "cost": null,
+        "input_tokens": 1749,
+        "output_tokens": 4273,
+        "tool_units": null
+      },
+      "already_saved_success_read_locally": false,
+      "actual_messages_and_http_match_reviewed": true,
+      "science_validated": false,
+      "response_model": "gpt-6.1-sol",
+      "started_at": "2026-11-04T00:26:22.136240+00:00",
+      "finished_at": "2026-11-04T00:27:26.492210+00:00",
+      "duration_seconds": 64.35597,
+      "finding_card_count": 7
+    },
+    {
+      "material": "complement",
+      "request_id": "p04-v2-complement-single",
+      "task_id": "f8cf38bfaf564f93a51f5b4b17aeefeb",
+      "prompt_version": "w1-l2-p04-context-v2",
+      "task_status": "succeeded",
+      "result_status": "saved",
+      "attempt_count": 1,
+      "attempt_id": "e8dc9d52845e4fb0b713410a2ba0a724",
+      "attempt_status": "succeeded",
+      "finish_reason": "stop",
+      "http_status": 200,
+      "provider_usage": {
+        "completion_tokens": 6326,
+        "completion_tokens_details": {
+          "accepted_prediction_tokens": 0,
+          "audio_tokens": 0,
+          "reasoning_tokens": 2563,
+          "rejected_prediction_tokens": 0
+        },
+        "prompt_tokens": 3328,
+        "prompt_tokens_details": {
+          "audio_tokens": 0,
+          "cache_write_tokens": 3325,
+          "cached_tokens": 0
+        },
+        "total_tokens": 9654
+      },
+      "shared_usage": {
+        "cost": null,
+        "input_tokens": 3328,
+        "output_tokens": 6326,
+        "tool_units": null
+      },
+      "already_saved_success_read_locally": false,
+      "actual_messages_and_http_match_reviewed": true,
+      "science_validated": false,
+      "response_model": "gpt-6.1-sol",
+      "started_at": "2026-11-04T00:28:14.048834+00:00",
+      "finished_at": "2026-11-04T00:29:47.501660+00:00",
+      "duration_seconds": 93.452826,
+      "finding_card_count": 8
+    }
+  ],
+  "new_real_requests": 2,
+  "automatic_retries": 0,
+  "total_usage": {
+    "prompt_tokens": 5077,
+    "completion_tokens": 10599,
+    "reasoning_tokens": 3587,
+    "total_tokens": 15676,
+    "cost": null,
+    "reasoning_included_in_completion": true,
+    "scope": "only the two new real P04 attempts; excludes historical v1, Goal fixtures and public acquisition"
+  },
+  "goal_ethics_mode": "development_fixture",
+  "science_validated": false,
+  "codex_initial_review_only": true,
+  "independent_human_review_completed": false
+}

@@ -1,0 +1,99 @@
+C‐terminal phosphomimetic substitutions do not impair nuclear import and RNA regulatory functions of TDP‐43
+Next, we turned to cellular experiments to investigate how C‐terminal TDP‐43 phosphorylation affects the behavior and function of TDP‐43 in cells. As TDP‐43 hyperphosphorylation is found in the disease state, it seems possible that this PTM has detrimental effects on the protein and contributes to mislocalization and/or malfunction of TDP‐43, thus driving neurodegeneration. To address this possibility, we transiently expressed different myc‐tagged TDP‐43 variants (Wt, 12D, 12A) in HeLa cells and analyzed their intracellular localization, nuclear import and RNA processing functions. All three TDP‐43 variants showed a predominantly nuclear steady‐state localization (Fig
+EV4A
+). We also compared their nuclear import rates in a hormone‐inducible reporter assay by live cell imaging (Hutten
+et al
+,
+2020
+). In this assay, a protein‐of‐interest harboring a nuclear localization signal (NLS) is fused to a tandem EGFP and two hormone binding domains of the glucocorticoid receptor (GCR), which retains the reporter protein in the cytoplasm. Upon addition of a steroid hormone (dexamethasone), the reporter protein is released from the cytoplasm and imported into the nucleus, by virtue of the NLS in the protein‐of‐interest. We examined reporters containing the different TDP‐43 variants (Wt, 12D, 12A) and found that their import rates were indistinguishable (Fig
+4A and B
+).
+Figure EV4
+Phosphomimetic substitutions do not alter nuclear localization, UG‐rich RNA binding and autoregulation of TDP‐43
+Immunostainings showing nuclear localization of myc‐TDP‐43 Wt, 12D and 12A in HeLa cells. Endogenous TDP‐43 expression was silenced by siRNAs, followed by transient transfection of the indicated siRNA‐resistant myc‐TDP‐43 constructs. After 24 h, localization of TDP‐43 Wt, 12D and 12A variants was visualized by TDP‐43 immunostaining (mouse anti‐TDP‐43 antibody, Proteintech). G3BP1 (rabbit anti‐G3BP1 antibody, Proteintech) and DAPI signal is shown to visualize the cytoplasm and nuclei, respectively. In the merge (right column), DAPI is show in turquoise, TDP‐43 in green, and G3BP1 in magenta. Bar, 30 µm.
+Electrophoretic mobility shift assay (EMSA) of TDP‐43‐MBP‐His
+6
+variants (Wt, 12D and 12A) in a complex with (UG)
+12
+RNA.
+Representative confocal images of U2OS cells stably expressing the indicated myc‐TDP‐43 variants (Wt, 12D and 12A) after siRNA KD of endogenous TDP‐43 and induction of myc‐TDP‐43 expression with doxycycline. Cells were stained with mouse monoclonal anti‐myc 9E10 antibody (IMB protein production facility) and DAPI. For clarity, signals were converted to grey values in the individual channels (upper two rows). In the merge (lower row), DAPI is shown in turquoise) and myc‐TDP‐43 is shown in green. Bar, 20 µm.
+Western Blot showing the expression levels of myc‐TDP‐43 variants in stable inducible Flp‐In T‐Rex U2OS cell lines before and after addition of doxycycline (dox). Samples were analyzed by SDS–PAGE and Western blot using a rabbit anti‐TDP‐43 N‐term antibody (Proteintech, upper blot), mouse anti‐myc 9E10 antibody (IMB protein production core facility), and rabbit anti‐Histone H3 antibody (Abcam) to detect the loading control Histone H3.
+Quantification of TDP‐43 autoregulation after dox‐induced expression of myc‐TDP‐43 variants in U2OS cell lines. Values represent the mean ± SD of four independent experimental replicates (
+n
+= 4) of endogenous TDP‐43 expression levels normalized to Wt (−Dox) condition. *
+P
+< 0.0332 and ***
+P
+< 0.0002 by one‐way ANOVA with Šídák's multiple comparisons test of TDP‐43 endogenous expression levels, comparing the respective non‐induced (−Dox) and induced (+Dox) lines.
+Source data are available online for this figure.
+Figure 4
+Phosphomimetic substitutions do not alter the rate of TDP‐43 nuclear import and do not impair TDP‐43 autoregulation, RNA‐binding or alternative splicing function
+Hormone‐inducible nuclear import assay, representative still images of GCR
+2
+‐EGFP
+2
+‐TDP‐43 Wt, 12D and 12A before and during import triggered by addition of dexamethasone. Images were live recorded by spinning disc confocal microscopy. Bar, 20 µm.
+Quantification of the hormone‐inducible nuclear import measured during a total time course of 50 min. Values represent the mean fluorescence intensity of GCR
+2
+‐EGFP
+2
+‐TDP‐43 in the cytoplasm for three independent replicates ± SEM (≥ 42 cells per condition).
+Phosphomimetic 12D TDP‐43 is competent in autoregulating TDP‐43 expression. SDS–PAGE followed by TDP‐43 Western blot showing downregulation of endogenous TDP‐43 through autoregulation (
+60
+) after 48 h expression of Wt, 12D and 12A variants in HeLa cells. TDP‐43 was detected using rabbit anti‐TDP‐43 C‐term antibody (Proteintech), Histone H3 (rabbit anti‐Histone H3 antibody, Abcam) was visualized as a loading control. * denotes an unspecific band.
+Electrophoretic mobility shift assays (EMSA) of TDP‐43‐MBP‐His
+6
+variants (Wt, 12D and 12A) in a complex with TDP‐43 autoregulatory RNA binding site (
+60
+). All TDP‐43 variants form TDP‐43‐RNA complexes equally well.
+Splicing analysis by RT–PCR of known TDP‐43 splice targets (
+SKAR
+exon 3 and
+Bim
+exon 3) in HeLa cells. Silencing of endogenous TDP‐43 by siRNA leads to altered splice isoforms of
+SKAR
+and
+Bim
+(second vs first lane). These splicing alterations can be rescued by re‐expression of TDP‐43 Wt, but also 12D or 12A variants, demonstrating that phosphomimetic TDP‐43 is fully competent in regulation splicing of these TDP‐43 splice targets.
+Source data are available online for this figure.
+To assess whether hyperphosphorylated TDP‐43 shows functional impairments in RNA processing, we first assessed its ability to autoregulate its own levels when transiently overexpressed in HeLa cells (Ayala
+et al
+,
+2011
+; Avendano‐Vazquez
+et al
+,
+2012
+). However, endogenous TDP‐43 was downregulated to the same degree by all three myc‐TDP‐43 variants (Fig
+4C
+), indicating that hyperphosphorylated TDP‐43 can normally bind to its own 3′UTR and autoregulate its own levels. In line with these findings, recombinant TDP‐43 Wt, 12D and 12A showed comparable RNA binding in electrophoretic mobility shift assays (EMSAs) with
+in vitro
+transcribed RNA comprised of the autoregulatory TDP‐43 binding site (Fig
+4D
+) or synthetic (UG)
+12
+RNA (Fig
+EV4B
+). Second, we examined splicing of two known TDP‐43 splice targets that get mis‐spliced upon loss of TDP‐43 (Tollervey
+et al
+,
+2011
+; Fiesel
+et al
+,
+2012
+). After siRNA‐mediated silencing of endogenous TDP‐43 expression and re‐expression of siRNA‐resistant myc‐TDP‐43 Wt, 12D or 12A (Appendix Fig
+S6A
+), splicing of
+SKAR
+and
+Bim
+exon 3 were fully restored by all three TDP‐43 variants (Fig
+4E
+), indicating normal function of phosphomimetic TDP‐43 in splicing regulation. Normal nuclear localization and autoregulation of TDP‐43 were also replicated in a cellular system that avoids high overexpression and has homogenous expression levels, namely stable inducible Flp‐In U2OS cell lines that express the different myc‐TDP‐43 variants (Wt, 12D and 12A) after overnight doxycycline addition (Fig
+EV4C–E
+, in Fig
+EV4C
+endogenous TDP‐43 was silenced with siRNAs, see Appendix Fig
+S6C
+). In conclusion, even though an effect on other RNA targets/RNA processing events or intracellular transport in other cell types cannot be excluded, our data suggest that C‐terminal TDP‐43 hyperphosphorylation is not primarily responsible for cytosolic mislocalization or impaired RNA regulatory functions of TDP‐43 in disease.

@@ -1,0 +1,1355 @@
+{
+  "status": "Codex 初审，待独立人工复核",
+  "science_validated": false,
+  "scope": "仅对实际发送的两份固定视图和两次P04结果作文本/字段初审，不验证完整研究或科学有效性",
+  "rows": [
+    {
+      "id": "C-01",
+      "material": "control",
+      "source_fragments": [
+        {
+          "text": "Recent cryo-EM studies revealed heteromeric ANXA11-TDP-43 filaments in patient brains, suggesting a direct pathological connection between these two ALS-associated proteins.",
+          "view_character_range": [
+            198,
+            371
+          ],
+          "obtained_text_character_range": [
+            198,
+            371
+          ]
+        }
+      ],
+      "actual_p04_fields": [
+        {
+          "json_pointer": "/finding_cards/0/supporting_quote",
+          "value": "Recent cryo-EM studies revealed heteromeric ANXA11-TDP-43 filaments in patient brains, suggesting a direct pathological connection between these two ALS-associated proteins."
+        },
+        {
+          "json_pointer": "/finding_cards/0/biological_context",
+          "value": "患者脑组织；摘要引述的既往冷冻电镜研究背景，不是本视图所述新实验。"
+        },
+        {
+          "json_pointer": "/finding_cards/0/intervention_comparator",
+          "value": "干预、比较组及患者分组：当前视图未报告。"
+        },
+        {
+          "json_pointer": "/finding_cards/0/endpoint",
+          "value": "ANXA11–TDP-43 异源丝状结构。"
+        },
+        {
+          "json_pointer": "/finding_cards/0/reported_observation",
+          "value": "作者引述既往研究在患者脑中发现 ANXA11–TDP-43 异源丝状结构。"
+        },
+        {
+          "json_pointer": "/finding_cards/0/author_interpretation",
+          "value": "作者认为该结构提示两种 ALS 相关蛋白之间存在直接病理联系。"
+        },
+        {
+          "json_pointer": "/finding_cards/0/negative_findings",
+          "value": []
+        },
+        {
+          "json_pointer": "/finding_cards/0/not_established",
+          "value": [
+            "该患者脑观察不能与后述细胞播种实验合并为同一实验。",
+            "具体患者疾病分组、样本量及原始结构数据：当前视图未报告。",
+            "本次仅阅读提供的 Abstract、Highlights 和 In Brief 扁平文本；正文、图像像素及补充材料不在访问范围内。各卡片空的阴性结果数组仅表示当前视图未报告阴性实验结果。"
+          ]
+        },
+        {
+          "json_pointer": "/finding_cards/0/transfer_assumptions",
+          "value": [
+            "将患者脑中的结构观察连接到后述细胞机制，需要建立跨样本、跨体系的对应关系；该对应关系当前视图未报告。"
+          ]
+        }
+      ],
+      "codex_initial_assessment": "既往患者脑情境明确区分",
+      "accuracy_omission_overreach": "保留了既往cryo-EM引述与作者的病理联系解释，未把患者脑观察当本研究新细胞实验。具体患者分组/样本量确未在视图提供。",
+      "suggested_human_review": "核查引述与新实验的层次，不把此卡算本次独立验证。",
+      "independent_human_review": "pending"
+    },
+    {
+      "id": "C-02",
+      "material": "control",
+      "source_fragments": [
+        {
+          "text": "Here, we demonstrate that ANXA11 undergoes liquid-liquid phase separation and subsequently matures into amyloid fibrils through a liquid-to-solid phase transition.",
+          "view_character_range": [
+            513,
+            676
+          ],
+          "obtained_text_character_range": [
+            513,
+            676
+          ]
+        }
+      ],
+      "actual_p04_fields": [
+        {
+          "json_pointer": "/finding_cards/1/supporting_quote",
+          "value": "Here, we demonstrate that ANXA11 undergoes liquid-liquid phase separation and subsequently matures into amyloid fibrils through a liquid-to-solid phase transition."
+        },
+        {
+          "json_pointer": "/finding_cards/1/biological_context",
+          "value": "ANXA11 相分离与淀粉样纤维形成；具体实验体系当前视图未报告。"
+        },
+        {
+          "json_pointer": "/finding_cards/1/intervention_comparator",
+          "value": "蛋白制备、浓度、诱导条件、时间及比较组：当前视图未报告。"
+        },
+        {
+          "json_pointer": "/finding_cards/1/endpoint",
+          "value": "液液相分离及经液固相变形成淀粉样纤维。"
+        },
+        {
+          "json_pointer": "/finding_cards/1/reported_observation",
+          "value": "作者报告 ANXA11 发生液液相分离，随后通过液固相变成熟为淀粉样纤维。Highlights 和 In Brief 重述此结果，不作为独立证据计数。"
+        },
+        {
+          "json_pointer": "/finding_cards/1/author_interpretation",
+          "value": "作者将 ANXA11 概括为具有内在淀粉样形成能力和相变能力的蛋白。"
+        },
+        {
+          "json_pointer": "/finding_cards/1/negative_findings",
+          "value": []
+        },
+        {
+          "json_pointer": "/finding_cards/1/not_established",
+          "value": [
+            "相态及淀粉样结构的具体测定方法、实验重复和形成条件：当前视图未报告。",
+            "核孔蛋白磷酸化是否影响该过程：当前视图未报告。"
+          ]
+        },
+        {
+          "json_pointer": "/finding_cards/1/transfer_assumptions",
+          "value": [
+            "将该相变过程外推到 ALS 病理环境，需要确认实验条件与疾病环境的对应性；当前视图未报告这种对应性的检验。"
+          ]
+        }
+      ],
+      "codex_initial_assessment": "相分离报告与作者概括基本对应",
+      "accuracy_omission_overreach": "相分离/液固转变与内在淀粉样性质区分为来源报告和作者解释；Highlights/In Brief重述不计独立证据。",
+      "suggested_human_review": "实验条件缺失仅限当前摘要，不能断言全文没做。",
+      "independent_human_review": "pending"
+    },
+    {
+      "id": "C-03",
+      "material": "control",
+      "source_fragments": [
+        {
+          "text": "ANXA11 fibrils exhibit prion-like properties, including self-templating seeding activity and intercellular propagation in human iPSC-derived neurons.",
+          "view_character_range": [
+            677,
+            826
+          ],
+          "obtained_text_character_range": [
+            677,
+            826
+          ]
+        }
+      ],
+      "actual_p04_fields": [
+        {
+          "json_pointer": "/finding_cards/2/supporting_quote",
+          "value": "ANXA11 fibrils exhibit prion-like properties, including self-templating seeding activity and intercellular propagation in human iPSC-derived neurons."
+        },
+        {
+          "json_pointer": "/finding_cards/2/biological_context",
+          "value": "人 iPSC 来源神经元。"
+        },
+        {
+          "json_pointer": "/finding_cards/2/intervention_comparator",
+          "value": "ANXA11 纤维相关播种和传播实验；纤维剂量、递送方式、观察时间及比较组当前视图未报告。"
+        },
+        {
+          "json_pointer": "/finding_cards/2/endpoint",
+          "value": "自模板播种活性和神经元间传播。"
+        },
+        {
+          "json_pointer": "/finding_cards/2/reported_observation",
+          "value": "作者报告 ANXA11 纤维具有自模板播种活性，并在人 iPSC 来源神经元中发生细胞间传播。Highlights 和 In Brief 对神经元中的播种及传播作了重复概括。"
+        },
+        {
+          "json_pointer": "/finding_cards/2/author_interpretation",
+          "value": "作者将这些性质解释为朊样性质。"
+        },
+        {
+          "json_pointer": "/finding_cards/2/negative_findings",
+          "value": []
+        },
+        {
+          "json_pointer": "/finding_cards/2/not_established",
+          "value": [
+            "神经元亚型、遗传背景、传播路径及排除残留外源纤维的具体方法：当前视图未报告。",
+            "这些神经元是否与后述毒性实验采用相同制备、处理及时间条件：当前视图未报告。",
+            "人体疾病中的传播是否由该机制驱动：当前视图未报告直接检验。"
+          ]
+        },
+        {
+          "json_pointer": "/finding_cards/2/transfer_assumptions",
+          "value": [
+            "将培养神经元中的播种和传播外推到 ALS，需要确认其与疾病相关细胞及病理条件相容；不能仅凭此摘要完成外推。"
+          ]
+        }
+      ],
+      "codex_initial_assessment": "神经元传播保留，播种体系仍需细读",
+      "accuracy_omission_overreach": "原句明确细胞间传播发生在人iPSC来源神经元。自模板播种与传播同列，不足以证明每一检测都同一体系/同一实验；后续Highlights另给体系。",
+      "suggested_human_review": "独立复核每个终点与体系对应，不把同卡多个终点读成同一实验已验证。",
+      "independent_human_review": "pending"
+    },
+    {
+      "id": "C-04",
+      "material": "control",
+      "source_fragments": [
+        {
+          "text": "ANXA11 fibrils supports homotypic seeding and propagate within SH-SY5Y cells and iPSC-derived neurons.",
+          "view_character_range": [
+            1921,
+            2023
+          ],
+          "obtained_text_character_range": [
+            1921,
+            2023
+          ]
+        }
+      ],
+      "actual_p04_fields": [
+        {
+          "json_pointer": "/finding_cards/3/supporting_quote",
+          "value": "ANXA11 fibrils supports homotypic seeding and propagate within SH-SY5Y cells and iPSC-derived neurons."
+        },
+        {
+          "json_pointer": "/finding_cards/3/biological_context",
+          "value": "SH-SY5Y 细胞；该体系由 Highlights 补充报告，与人 iPSC 来源神经元体系分别保留。"
+        },
+        {
+          "json_pointer": "/finding_cards/3/intervention_comparator",
+          "value": "ANXA11 纤维相关同型播种及传播；处理条件和比较组当前视图未报告。"
+        },
+        {
+          "json_pointer": "/finding_cards/3/endpoint",
+          "value": "同型播种及传播。"
+        },
+        {
+          "json_pointer": "/finding_cards/3/reported_observation",
+          "value": "作者在 Highlights 中报告 ANXA11 纤维支持同型播种，并在 SH-SY5Y 细胞中传播。"
+        },
+        {
+          "json_pointer": "/finding_cards/3/author_interpretation",
+          "value": "作者将播种和传播总体归入 ANXA11 的朊样性质。"
+        },
+        {
+          "json_pointer": "/finding_cards/3/negative_findings",
+          "value": []
+        },
+        {
+          "json_pointer": "/finding_cards/3/not_established",
+          "value": [
+            "SH-SY5Y 体系中传播的具体空间范围、检测方法及条件：当前视图未报告。",
+            "不能把神经元中报告的 TDP-43 表型、核孔相关表型或毒性自动配对到 SH-SY5Y 实验；这些终点在该体系中的对应结果当前视图未报告。"
+          ]
+        },
+        {
+          "json_pointer": "/finding_cards/3/transfer_assumptions",
+          "value": [
+            "将 SH-SY5Y 结果用于解释神经元或患者病理，需要跨体系一致性的支持；该支持的具体比较当前视图未报告。"
+          ]
+        }
+      ],
+      "codex_initial_assessment": "SH-SY5Y情境得到显式保留",
+      "accuracy_omission_overreach": "Highlights的补充体系现在单独列卡，并与iPSC体系分开。但本卡限制句对TDP-43神经元归属存在下列专门意见。",
+      "suggested_human_review": "保留补充情境，同时修正/复核C-08指出的跨实验归属措辞。",
+      "independent_human_review": "pending"
+    },
+    {
+      "id": "C-05",
+      "material": "control",
+      "source_fragments": [
+        {
+          "text": "Strikingly, ANXA11 fibrils induces pathological conversion of TDP-43, including hyperphosphorylation, accumulation in detergent-insoluble fractions, and formation of cytoplasmic aggregates.",
+          "view_character_range": [
+            827,
+            1016
+          ],
+          "obtained_text_character_range": [
+            827,
+            1016
+          ]
+        }
+      ],
+      "actual_p04_fields": [
+        {
+          "json_pointer": "/finding_cards/4/supporting_quote",
+          "value": "Strikingly, ANXA11 fibrils induces pathological conversion of TDP-43, including hyperphosphorylation, accumulation in detergent-insoluble fractions, and formation of cytoplasmic aggregates."
+        },
+        {
+          "json_pointer": "/finding_cards/4/biological_context",
+          "value": "ANXA11 纤维相关的 TDP-43 病理转化实验；具体细胞或其他实验体系当前视图未报告。"
+        },
+        {
+          "json_pointer": "/finding_cards/4/intervention_comparator",
+          "value": "ANXA11 纤维；处理方式、剂量、时程及比较组当前视图未报告。"
+        },
+        {
+          "json_pointer": "/finding_cards/4/endpoint",
+          "value": "TDP-43 过度磷酸化、去污剂不溶性组分中积累及胞质聚集体形成。"
+        },
+        {
+          "json_pointer": "/finding_cards/4/reported_observation",
+          "value": "作者报告 ANXA11 纤维诱导 TDP-43 病理转化，包括过度磷酸化、去污剂不溶性组分中积累及胞质聚集体形成。Highlights 和 In Brief 重述该诱导关系，不另计为独立实验。"
+        },
+        {
+          "json_pointer": "/finding_cards/4/author_interpretation",
+          "value": "作者将该结果概括为 ANXA11 播种组装体诱导 TDP-43 共同病理。"
+        },
+        {
+          "json_pointer": "/finding_cards/4/negative_findings",
+          "value": []
+        },
+        {
+          "json_pointer": "/finding_cards/4/not_established",
+          "value": [
+            "这里报告的磷酸化对象是 TDP-43，不是核孔蛋白；核孔蛋白磷酸化测量当前视图未报告。",
+            "TDP-43 磷酸化位点、相关激酶或磷酸酶、时间顺序及干预救援结果：当前视图未报告。",
+            "作者的诱导关系在本次阅读中未获独立验证；其具体实验依据和控制条件当前视图未报告。"
+          ]
+        },
+        {
+          "json_pointer": "/finding_cards/4/transfer_assumptions",
+          "value": [
+            "将这一结果连接到核孔蛋白磷酸化问题，需要直接建立两者之间的关系，不能以 TDP-43 过度磷酸化替代核孔蛋白磷酸化。"
+          ]
+        }
+      ],
+      "codex_initial_assessment": "作者诱导措辞忠实保留",
+      "accuracy_omission_overreach": "reported_observation保留作者报告诱导TDP-43病理转变，独立验证不足另列；未把TDP-43磷酸化当核孔蛋白磷酸化。",
+      "suggested_human_review": "不因作者用induces就认定本次已证明直接性或充分/必要性。",
+      "independent_human_review": "pending"
+    },
+    {
+      "id": "C-06",
+      "material": "control",
+      "source_fragments": [
+        {
+          "text": "TurboID proximity-labeling proteomics further revealed aggregation-dependent enrichment of nuclear pore complex and nucleocytoplasmic transport factors in the ANXA11 aggregate-proximal proteome.",
+          "view_character_range": [
+            1017,
+            1211
+          ],
+          "obtained_text_character_range": [
+            1017,
+            1211
+          ]
+        }
+      ],
+      "actual_p04_fields": [
+        {
+          "json_pointer": "/finding_cards/5/supporting_quote",
+          "value": "TurboID proximity-labeling proteomics further revealed aggregation-dependent enrichment of nuclear pore complex and nucleocytoplasmic transport factors in the ANXA11 aggregate-proximal proteome."
+        },
+        {
+          "json_pointer": "/finding_cards/5/biological_context",
+          "value": "ANXA11 聚集体邻近蛋白质组的 TurboID 邻近标记分析；具体实验体系当前视图未报告。"
+        },
+        {
+          "json_pointer": "/finding_cards/5/intervention_comparator",
+          "value": "作者报告聚集依赖性差异；所用聚集条件及对照构建当前视图未报告。"
+        },
+        {
+          "json_pointer": "/finding_cards/5/endpoint",
+          "value": "聚集体邻近蛋白质组中核孔复合体及核质运输相关因子的富集。"
+        },
+        {
+          "json_pointer": "/finding_cards/5/reported_observation",
+          "value": "作者报告 ANXA11 聚集体邻近蛋白质组中存在聚集依赖性的核孔复合体和核质运输因子富集。"
+        },
+        {
+          "json_pointer": "/finding_cards/5/author_interpretation",
+          "value": "作者将该结果与后述核孔相关表型及核质运输缺陷联系起来。"
+        },
+        {
+          "json_pointer": "/finding_cards/5/negative_findings",
+          "value": []
+        },
+        {
+          "json_pointer": "/finding_cards/5/not_established",
+          "value": [
+            "具体富集蛋白、富集幅度、统计结果及比较组：当前视图未报告。",
+            "直接结合、被聚集体隔离、功能丧失及磷酸化变化的检验：当前视图未报告；邻近富集本身不能替代这些终点。",
+            "该蛋白质组实验是否与神经元表型实验采用相同体系及处理条件：当前视图未报告。"
+          ]
+        },
+        {
+          "json_pointer": "/finding_cards/5/transfer_assumptions",
+          "value": [
+            "将邻近富集解释为核孔功能损害或核孔蛋白磷酸化机制，需要额外的功能及修饰测量，不能只凭富集结果推定。"
+          ]
+        }
+      ],
+      "codex_initial_assessment": "邻近富集与直接机制边界有保留",
+      "accuracy_omission_overreach": "作者报告aggregation-dependent enrichment；输出没有将邻近富集直接升级为结合、隔离、失活或磷酸化变化。",
+      "suggested_human_review": "具体实验体系和对照仅是视图未报告，作者解释不能取代独立功能证据。",
+      "independent_human_review": "pending"
+    },
+    {
+      "id": "C-07",
+      "material": "control",
+      "source_fragments": [
+        {
+          "text": "Consistently, ANXA11 aggregation was associated with nuclear envelope abnormalities, altered nucleoporin distribution, impaired mRNA export, and progressive neuronal toxicity in iPSC-derived neurons.",
+          "view_character_range": [
+            1212,
+            1411
+          ],
+          "obtained_text_character_range": [
+            1212,
+            1411
+          ]
+        }
+      ],
+      "actual_p04_fields": [
+        {
+          "json_pointer": "/finding_cards/6/supporting_quote",
+          "value": "Consistently, ANXA11 aggregation was associated with nuclear envelope abnormalities, altered nucleoporin distribution, impaired mRNA export, and progressive neuronal toxicity in iPSC-derived neurons."
+        },
+        {
+          "json_pointer": "/finding_cards/6/biological_context",
+          "value": "iPSC 来源神经元中的 ANXA11 聚集相关表型。"
+        },
+        {
+          "json_pointer": "/finding_cards/6/intervention_comparator",
+          "value": "ANXA11 聚集状态相关观察；具体处理、比较组及随访时间当前视图未报告。"
+        },
+        {
+          "json_pointer": "/finding_cards/6/endpoint",
+          "value": "核膜异常、核孔蛋白分布改变、mRNA 输出受损及进行性神经元毒性。"
+        },
+        {
+          "json_pointer": "/finding_cards/6/reported_observation",
+          "value": "作者报告，在 iPSC 来源神经元中，ANXA11 聚集与核膜异常、核孔蛋白分布改变、mRNA 输出受损及进行性神经元毒性相关。Highlights 和 In Brief 另将核孔相关表型概括为核孔复合体重塑；这些摘要性重述不作为额外独立实验计数。"
+        },
+        {
+          "json_pointer": "/finding_cards/6/author_interpretation",
+          "value": "作者认为这些结果为 ANXA11 相关 ALS/FTD 发病机制提供框架；In Brief 的结尾进一步将播种组装体概括为扰乱核质运输。"
+        },
+        {
+          "json_pointer": "/finding_cards/6/negative_findings",
+          "value": []
+        },
+        {
+          "json_pointer": "/finding_cards/6/not_established",
+          "value": [
+            "具体核孔蛋白身份、其磷酸化状态、核膜和核孔测量方法：当前视图未报告。",
+            "这些终点之间的时间顺序、必要性、充分性及救援结果：当前视图未报告。",
+            "不同终点是否在同一批细胞、同一处理及同一时间点测量：当前视图未报告。",
+            "原句报告的是关联，不能据此将核孔蛋白分布改变、mRNA 输出障碍和神经元毒性排列为已建立的因果链。"
+          ]
+        },
+        {
+          "json_pointer": "/finding_cards/6/transfer_assumptions",
+          "value": [
+            "将这些关联外推为 ALS 的核孔蛋白磷酸化机制，需要直接测量该修饰并建立其与运输缺陷及损伤的关系。",
+            "该文献中的分子和模型仅作为已报告背景保留，不据此预选后续研究的具体分子或实验模型。"
+          ]
+        }
+      ],
+      "codex_initial_assessment": "关联报告与In Brief作者概括分开",
+      "accuracy_omission_overreach": "reported_observation保持associated；author_interpretation另记In Brief结尾disrupt和机制框架，没有将关联串成已证因果链。",
+      "suggested_human_review": "复核两种作者表述强度；重复摘要文本不算额外证据。",
+      "independent_human_review": "pending"
+    },
+    {
+      "id": "C-08",
+      "material": "control",
+      "source_fragments": [
+        {
+          "text": "Strikingly, ANXA11 fibrils induces pathological conversion of TDP-43, including hyperphosphorylation, accumulation in detergent-insoluble fractions, and formation of cytoplasmic aggregates.",
+          "view_character_range": [
+            827,
+            1016
+          ],
+          "obtained_text_character_range": [
+            827,
+            1016
+          ]
+        },
+        {
+          "text": "Consistently, ANXA11 aggregation was associated with nuclear envelope abnormalities, altered nucleoporin distribution, impaired mRNA export, and progressive neuronal toxicity in iPSC-derived neurons.",
+          "view_character_range": [
+            1212,
+            1411
+          ],
+          "obtained_text_character_range": [
+            1212,
+            1411
+          ]
+        }
+      ],
+      "actual_p04_fields": [
+        {
+          "json_pointer": "/finding_cards/3/not_established/1",
+          "value": "不能把神经元中报告的 TDP-43 表型、核孔相关表型或毒性自动配对到 SH-SY5Y 实验；这些终点在该体系中的对应结果当前视图未报告。"
+        },
+        {
+          "json_pointer": "/finding_cards/4/biological_context",
+          "value": "ANXA11 纤维相关的 TDP-43 病理转化实验；具体细胞或其他实验体系当前视图未报告。"
+        }
+      ],
+      "codex_initial_assessment": "需修正/独立复核的情境归属",
+      "accuracy_omission_overreach": "SH-SY5Y卡限制句写“神经元中报告的TDP-43表型…”，可能暗示TDP-43病理转化已明确归属于神经元；当前视图的TDP-43句未给体系，模型自己的第5卡也写当前视图未报告。明确的iPSC情境在核膜/Nup/mRNA/毒性句。此处不能因其他表型是神经元就连带配对。",
+      "suggested_human_review": "建议以后另行修订为“其他段落的TDP-43表型及神经元核孔/毒性表型不可自动分配给SH-SY5Y”；本次原始输出不改。",
+      "independent_human_review": "pending"
+    },
+    {
+      "id": "C-09",
+      "material": "control",
+      "source_fragments": [
+        {
+          "text": "Recent cryo-EM studies revealed heteromeric ANXA11-TDP-43 filaments in patient brains, suggesting a direct pathological connection between these two ALS-associated proteins.",
+          "view_character_range": [
+            198,
+            371
+          ],
+          "obtained_text_character_range": [
+            198,
+            371
+          ]
+        }
+      ],
+      "actual_p04_fields": [
+        {
+          "json_pointer": "/finding_cards/0/not_established/2",
+          "value": "本次仅阅读提供的 Abstract、Highlights 和 In Brief 扁平文本；正文、图像像素及补充材料不在访问范围内。各卡片空的阴性结果数组仅表示当前视图未报告阴性实验结果。"
+        }
+      ],
+      "codex_initial_assessment": "访问/阴性未报告范围清楚",
+      "accuracy_omission_overreach": "全部7卡negative_findings与negative_quotes为空；输出明确限定当前摘要视图未报告，不是“干预无效”或没有反证。raw引言的知识未知也不等于阴性实验。",
+      "suggested_human_review": "后端negative_state补充属于工程语义，不算模型额外能力；当前视图外内容尚未阅读。",
+      "independent_human_review": "pending"
+    },
+    {
+      "id": "M-01",
+      "material": "complement",
+      "source_fragments": [
+        {
+          "text": "All three TDP‐43 variants showed a predominantly nuclear steady‐state localization",
+          "view_character_range": [
+            697,
+            779
+          ],
+          "obtained_text_character_range": [
+            34467,
+            34549
+          ]
+        }
+      ],
+      "actual_p04_fields": [
+        {
+          "json_pointer": "/finding_cards/0/supporting_quote",
+          "value": "All three TDP‐43 variants showed a predominantly nuclear steady‐state localization"
+        },
+        {
+          "json_pointer": "/finding_cards/0/biological_context",
+          "value": "HeLa cells with endogenous TDP-43 silenced by siRNAs, followed by transient expression of siRNA-resistant myc-TDP-43 constructs; localization assessed after 24 hours, as described in the Figure EV4 caption."
+        },
+        {
+          "json_pointer": "/finding_cards/0/intervention_comparator",
+          "value": "TDP-43 Wt, phosphomimetic 12D and the 12A comparison variant."
+        },
+        {
+          "json_pointer": "/finding_cards/0/endpoint",
+          "value": "Steady-state intracellular localization assessed by immunostaining."
+        },
+        {
+          "json_pointer": "/finding_cards/0/reported_observation",
+          "value": "Authors report that all three variants showed predominantly nuclear steady-state localization."
+        },
+        {
+          "json_pointer": "/finding_cards/0/negative_findings",
+          "value": [
+            "In this HeLa localization experiment, the authors report no alteration of nuclear localization with the phosphomimetic substitutions; all three tested variants remained predominantly nuclear."
+          ]
+        },
+        {
+          "json_pointer": "/finding_cards/0/negative_quotes",
+          "value": [
+            "All three TDP‐43 variants showed a predominantly nuclear steady‐state localization"
+          ]
+        },
+        {
+          "json_pointer": "/finding_cards/0/author_interpretation",
+          "value": "The authors' overall interpretation is that C-terminal TDP-43 hyperphosphorylation is not primarily responsible for cytosolic mislocalization in disease, while explicitly allowing effects in other cell types."
+        },
+        {
+          "json_pointer": "/finding_cards/0/not_established",
+          "value": [
+            "Localization after authentic, site-specific phosphorylation rather than amino-acid substitution is not reported in the current view.",
+            "Nucleoporin phosphorylation, ALS causation and localization outcomes in disease-relevant neural cells are not reported in the current view."
+          ]
+        },
+        {
+          "json_pointer": "/finding_cards/0/transfer_assumptions",
+          "value": [
+            "Transfer to authentic phosphorylation requires the substitutions to reproduce its relevant effects.",
+            "Transfer beyond this HeLa expression and depletion context requires additional context-specific evidence."
+          ]
+        }
+      ],
+      "codex_initial_assessment": "HeLa定位条件与阴性终点对应",
+      "accuracy_omission_overreach": "保留siRNA内源沉默、瞬时表达、24h、Wt/12D/12A及主要核定位；阴性针对该设置的定位变化。作者疾病概括放解释，不当作直接疾病实验。",
+      "suggested_human_review": "区分氨基酸替代与真实位点磷酸化；勿外推到所有神经细胞。",
+      "independent_human_review": "pending"
+    },
+    {
+      "id": "M-02",
+      "material": "complement",
+      "source_fragments": [
+        {
+          "text": "We examined reporters containing the different TDP‐43 variants (Wt, 12D, 12A) and found that their import rates were indistinguishable",
+          "view_character_range": [
+            1336,
+            1470
+          ],
+          "obtained_text_character_range": [
+            35106,
+            35240
+          ]
+        }
+      ],
+      "actual_p04_fields": [
+        {
+          "json_pointer": "/finding_cards/1/supporting_quote",
+          "value": "We examined reporters containing the different TDP‐43 variants (Wt, 12D, 12A) and found that their import rates were indistinguishable"
+        },
+        {
+          "json_pointer": "/finding_cards/1/biological_context",
+          "value": "Hormone-inducible live-cell nuclear-import reporter assay within the subsection's cellular experiments. TDP-43 variants were fused to tandem EGFP and two glucocorticoid-receptor hormone-binding domains. The caption reports a 50-minute time course, three independent replicates and at least 42 cells per condition."
+        },
+        {
+          "json_pointer": "/finding_cards/1/intervention_comparator",
+          "value": "Dexamethasone-triggered import of reporters containing Wt, 12D or 12A TDP-43."
+        },
+        {
+          "json_pointer": "/finding_cards/1/endpoint",
+          "value": "Reporter nuclear-import kinetics, quantified through cytoplasmic fluorescence."
+        },
+        {
+          "json_pointer": "/finding_cards/1/reported_observation",
+          "value": "Authors report that nuclear-import rates of the three TDP-43 reporter variants were indistinguishable."
+        },
+        {
+          "json_pointer": "/finding_cards/1/negative_findings",
+          "value": [
+            "No difference in import rate was reported among Wt, 12D and 12A under the tested hormone-inducible reporter conditions."
+          ]
+        },
+        {
+          "json_pointer": "/finding_cards/1/negative_quotes",
+          "value": [
+            "We examined reporters containing the different TDP‐43 variants (Wt, 12D, 12A) and found that their import rates were indistinguishable"
+          ]
+        },
+        {
+          "json_pointer": "/finding_cards/1/author_interpretation",
+          "value": "The authors interpret these results as showing that the tested C-terminal phosphomimetic substitutions do not impair TDP-43 nuclear import. They explicitly state that effects on intracellular transport in other cell types cannot be excluded."
+        },
+        {
+          "json_pointer": "/finding_cards/1/not_established",
+          "value": [
+            "General nuclear-pore permeability, transport of other cargos and nucleoporin phosphorylation are not reported in the current view.",
+            "Statistical equivalence bounds and transport outcomes under ALS-associated conditions are not reported in the current view."
+          ]
+        },
+        {
+          "json_pointer": "/finding_cards/1/transfer_assumptions",
+          "value": [
+            "Applying this result to endogenous TDP-43 transport requires the hormone-inducible fusion reporter to preserve the relevant import behavior.",
+            "Applying it to nucleoporin phosphorylation would require a separately demonstrated relationship; it cannot be substituted for this TDP-43 result."
+          ]
+        }
+      ],
+      "codex_initial_assessment": "核输入报告保持原力度",
+      "accuracy_omission_overreach": "保留激素诱导融合报告、dexamethasone、50min、3重复和≥42细胞/条件；作者“indistinguishable”忠实转述，未变为所有核孔运输已证明等价。没有擅自把U2OS定位条件塞进该报告实验。",
+      "suggested_human_review": "统计等价界值未在文字给出；不能用无显著差异断言真实完全等效或所有cargo正常。",
+      "independent_human_review": "pending"
+    },
+    {
+      "id": "M-03",
+      "material": "complement",
+      "source_fragments": [
+        {
+          "text": "However, endogenous TDP‐43 was downregulated to the same degree by all three myc‐TDP‐43 variants",
+          "view_character_range": [
+            5901,
+            5997
+          ],
+          "obtained_text_character_range": [
+            39671,
+            39767
+          ]
+        }
+      ],
+      "actual_p04_fields": [
+        {
+          "json_pointer": "/finding_cards/2/supporting_quote",
+          "value": "However, endogenous TDP‐43 was downregulated to the same degree by all three myc‐TDP‐43 variants"
+        },
+        {
+          "json_pointer": "/finding_cards/2/biological_context",
+          "value": "Transient expression of myc-TDP-43 variants in HeLa cells; the Figure 4 caption specifies 48 hours of expression followed by Western blotting."
+        },
+        {
+          "json_pointer": "/finding_cards/2/intervention_comparator",
+          "value": "Expression of Wt, 12D or 12A TDP-43, comparing their effects on endogenous TDP-43 levels."
+        },
+        {
+          "json_pointer": "/finding_cards/2/endpoint",
+          "value": "Downregulation of endogenous TDP-43 as an autoregulatory readout."
+        },
+        {
+          "json_pointer": "/finding_cards/2/reported_observation",
+          "value": "Authors report that all three variants downregulated endogenous TDP-43 to the same degree."
+        },
+        {
+          "json_pointer": "/finding_cards/2/negative_findings",
+          "value": [
+            "No impairment of this autoregulatory readout was reported for 12D or 12A relative to Wt in the transient HeLa expression experiment."
+          ]
+        },
+        {
+          "json_pointer": "/finding_cards/2/negative_quotes",
+          "value": [
+            "However, endogenous TDP‐43 was downregulated to the same degree by all three myc‐TDP‐43 variants"
+          ]
+        },
+        {
+          "json_pointer": "/finding_cards/2/author_interpretation",
+          "value": "The authors interpret the result as indicating that hyperphosphorylated TDP-43 can normally bind its own 3′UTR and autoregulate its levels. The measured cellular endpoint here is endogenous protein downregulation; RNA binding is addressed separately by EMSA."
+        },
+        {
+          "json_pointer": "/finding_cards/2/not_established",
+          "value": [
+            "Direct cellular 3′UTR occupancy in this experiment is not reported in the current view.",
+            "Autoregulation under authentic phosphorylation, chronic disease conditions or nucleoporin perturbation is not reported in the current view."
+          ]
+        },
+        {
+          "json_pointer": "/finding_cards/2/transfer_assumptions",
+          "value": [
+            "Generalization requires this expression-based autoregulatory readout to represent the relevant endogenous regulatory setting."
+          ]
+        }
+      ],
+      "codex_initial_assessment": "HeLa自调控与RNA占位分开",
+      "accuracy_omission_overreach": "保留48h瞬时表达及内源蛋白下调readout，作者对3′UTR结合的解释单列，并提示本细胞readout不是直接占位测量。",
+      "suggested_human_review": "当前实验是12D/12A比较；作者hyperphosphorylated措辞不等于本视图做了真实位点磷酸化干预。",
+      "independent_human_review": "pending"
+    },
+    {
+      "id": "M-04",
+      "material": "complement",
+      "source_fragments": [
+        {
+          "text": "All TDP‐43 variants form TDP‐43‐RNA complexes equally well.",
+          "view_character_range": [
+            5102,
+            5161
+          ],
+          "obtained_text_character_range": [
+            38872,
+            38931
+          ]
+        }
+      ],
+      "actual_p04_fields": [
+        {
+          "json_pointer": "/finding_cards/3/supporting_quote",
+          "value": "All TDP‐43 variants form TDP‐43‐RNA complexes equally well."
+        },
+        {
+          "json_pointer": "/finding_cards/3/biological_context",
+          "value": "In vitro electrophoretic mobility shift assay using recombinant TDP-43–MBP–His6 variants and RNA containing the TDP-43 autoregulatory binding site."
+        },
+        {
+          "json_pointer": "/finding_cards/3/intervention_comparator",
+          "value": "Recombinant Wt, 12D and 12A TDP-43 tested against the autoregulatory RNA substrate."
+        },
+        {
+          "json_pointer": "/finding_cards/3/endpoint",
+          "value": "Formation of TDP-43–RNA complexes in EMSA."
+        },
+        {
+          "json_pointer": "/finding_cards/3/reported_observation",
+          "value": "Authors report that all three variants formed complexes with the autoregulatory RNA equally well."
+        },
+        {
+          "json_pointer": "/finding_cards/3/negative_findings",
+          "value": [
+            "No impairment of binding to the tested autoregulatory RNA was reported for 12D or 12A relative to Wt in this recombinant-protein assay."
+          ]
+        },
+        {
+          "json_pointer": "/finding_cards/3/negative_quotes",
+          "value": [
+            "All TDP‐43 variants form TDP‐43‐RNA complexes equally well."
+          ]
+        },
+        {
+          "json_pointer": "/finding_cards/3/author_interpretation",
+          "value": "The authors describe the binding result as consistent with preserved TDP-43 autoregulation."
+        },
+        {
+          "json_pointer": "/finding_cards/3/not_established",
+          "value": [
+            "Binding constants, cellular RNA occupancy and effects on other RNA sequences are not reported in the current view.",
+            "A relationship between this binding endpoint and nucleoporin phosphorylation or ALS causation is not reported in the current view."
+          ]
+        },
+        {
+          "json_pointer": "/finding_cards/3/transfer_assumptions",
+          "value": [
+            "Transfer to cellular regulation requires recombinant fusion-protein binding to reflect the relevant intracellular interactions."
+          ]
+        }
+      ],
+      "codex_initial_assessment": "重组蛋白/自调控RNA结合对应",
+      "accuracy_omission_overreach": "保留体外EMSA、融合蛋白、Wt/12D/12A和自调控RNA底物；不是细胞内占位或所有RNA通用结论。限制字段“其他RNA序列”表述有下列范围歧义。",
+      "suggested_human_review": "确认文字“equally well”是作者报告，不是本次独立确定Kd或等效性。",
+      "independent_human_review": "pending"
+    },
+    {
+      "id": "M-05",
+      "material": "complement",
+      "source_fragments": [
+        {
+          "text": "recombinant TDP‐43 Wt, 12D and 12A showed comparable RNA binding in electrophoretic mobility shift assays (EMSAs) with\nin vitro\ntranscribed RNA comprised of the autoregulatory TDP‐43 binding site (Fig\n4D\n) or synthetic (UG)\n12\nRNA",
+          "view_character_range": [
+            6149,
+            6379
+          ],
+          "obtained_text_character_range": [
+            39919,
+            40149
+          ]
+        },
+        {
+          "text": "Phosphomimetic substitutions do not alter nuclear localization, UG‐rich RNA binding and autoregulation of TDP‐43",
+          "view_character_range": [
+            1499,
+            1611
+          ],
+          "obtained_text_character_range": [
+            35269,
+            35381
+          ]
+        }
+      ],
+      "actual_p04_fields": [
+        {
+          "json_pointer": "/finding_cards/4/supporting_quote",
+          "value": "recombinant TDP‐43 Wt, 12D and 12A showed comparable RNA binding in electrophoretic mobility shift assays (EMSAs) with\nin vitro\ntranscribed RNA comprised of the autoregulatory TDP‐43 binding site (Fig\n4D\n) or synthetic (UG)\n12\nRNA"
+        },
+        {
+          "json_pointer": "/finding_cards/4/biological_context",
+          "value": "In vitro EMSA using recombinant TDP-43–MBP–His6 variants and synthetic (UG)12 RNA. This substrate is distinct from the autoregulatory RNA substrate described in the preceding card."
+        },
+        {
+          "json_pointer": "/finding_cards/4/intervention_comparator",
+          "value": "Recombinant Wt, 12D and 12A TDP-43 tested against synthetic (UG)12 RNA."
+        },
+        {
+          "json_pointer": "/finding_cards/4/endpoint",
+          "value": "Binding to the synthetic UG-rich RNA substrate."
+        },
+        {
+          "json_pointer": "/finding_cards/4/reported_observation",
+          "value": "Authors report comparable RNA binding among Wt, 12D and 12A for the synthetic (UG)12 substrate."
+        },
+        {
+          "json_pointer": "/finding_cards/4/negative_findings",
+          "value": [
+            "No alteration of UG-rich RNA binding was reported for the tested phosphomimetic substitutions in this EMSA context."
+          ]
+        },
+        {
+          "json_pointer": "/finding_cards/4/negative_quotes",
+          "value": [
+            "Phosphomimetic substitutions do not alter nuclear localization, UG‐rich RNA binding and autoregulation of TDP‐43"
+          ]
+        },
+        {
+          "json_pointer": "/finding_cards/4/author_interpretation",
+          "value": "The authors present this result as additional support for preserved RNA-binding function of the tested variants."
+        },
+        {
+          "json_pointer": "/finding_cards/4/not_established",
+          "value": [
+            "Binding behavior across other RNA sequences and RNA-processing events is not reported in the current view.",
+            "Binding under authentic site-specific phosphorylation is not reported in the current view."
+          ]
+        },
+        {
+          "json_pointer": "/finding_cards/4/transfer_assumptions",
+          "value": [
+            "A synthetic UG-repeat substrate cannot be assumed to represent all cellular RNA targets without additional evidence."
+          ]
+        }
+      ],
+      "codex_initial_assessment": "UG12底物与前卡分开",
+      "accuracy_omission_overreach": "另保留合成UG12的EMSA报告；negative_quote使用小节图题的概括，supporting_quote有正文具体结合比较。可定位但图题概括不能代替定量图像数据。",
+      "suggested_human_review": "当前视图也含其他已测RNA终点；限制措辞应明确“除本视图已测对象之外”，见M-09。",
+      "independent_human_review": "pending"
+    },
+    {
+      "id": "M-06",
+      "material": "complement",
+      "source_fragments": [
+        {
+          "text": "Silencing of endogenous TDP‐43 by siRNA leads to altered splice isoforms of\nSKAR\nand\nBim\n(second vs first lane). These splicing alterations can be rescued by re‐expression of TDP‐43 Wt, but also 12D or 12A variants, demonstrating that phosphomimetic TDP‐43 is fully competent in regulation splicing of these TDP‐43 splice targets.",
+          "view_character_range": [
+            5266,
+            5596
+          ],
+          "obtained_text_character_range": [
+            39036,
+            39366
+          ]
+        },
+        {
+          "text": "These splicing alterations can be rescued by re‐expression of TDP‐43 Wt, but also 12D or 12A variants, demonstrating that phosphomimetic TDP‐43 is fully competent in regulation splicing of these TDP‐43 splice targets.",
+          "view_character_range": [
+            5379,
+            5596
+          ],
+          "obtained_text_character_range": [
+            39149,
+            39366
+          ]
+        }
+      ],
+      "actual_p04_fields": [
+        {
+          "json_pointer": "/finding_cards/5/supporting_quote",
+          "value": "Silencing of endogenous TDP‐43 by siRNA leads to altered splice isoforms of\nSKAR\nand\nBim\n(second vs first lane). These splicing alterations can be rescued by re‐expression of TDP‐43 Wt, but also 12D or 12A variants, demonstrating that phosphomimetic TDP‐43 is fully competent in regulation splicing of these TDP‐43 splice targets."
+        },
+        {
+          "json_pointer": "/finding_cards/5/biological_context",
+          "value": "HeLa cells subjected to siRNA-mediated depletion of endogenous TDP-43 and re-expression of siRNA-resistant myc-TDP-43 variants; splicing analyzed by RT-PCR."
+        },
+        {
+          "json_pointer": "/finding_cards/5/intervention_comparator",
+          "value": "Endogenous TDP-43 silencing versus the nonsilenced condition, followed by rescue with Wt, 12D or 12A."
+        },
+        {
+          "json_pointer": "/finding_cards/5/endpoint",
+          "value": "SKAR exon 3 and Bim exon 3 splice isoforms, reported as two targets in the same rescue setup."
+        },
+        {
+          "json_pointer": "/finding_cards/5/reported_observation",
+          "value": "Authors report that endogenous TDP-43 silencing leads to altered SKAR and Bim splice isoforms, and that exon 3 splicing for both targets was fully restored by each of the three re-expressed variants."
+        },
+        {
+          "json_pointer": "/finding_cards/5/negative_findings",
+          "value": [
+            "The authors report no impairment of restoration of the tested SKAR and Bim splicing endpoints by phosphomimetic 12D; 12A also restored these endpoints."
+          ]
+        },
+        {
+          "json_pointer": "/finding_cards/5/negative_quotes",
+          "value": [
+            "These splicing alterations can be rescued by re‐expression of TDP‐43 Wt, but also 12D or 12A variants, demonstrating that phosphomimetic TDP‐43 is fully competent in regulation splicing of these TDP‐43 splice targets."
+          ]
+        },
+        {
+          "json_pointer": "/finding_cards/5/author_interpretation",
+          "value": "The authors interpret these results as showing normal splicing-regulatory function of phosphomimetic TDP-43 for the tested targets, while explicitly not excluding effects on other RNA targets or processing events."
+        },
+        {
+          "json_pointer": "/finding_cards/5/not_established",
+          "value": [
+            "Transcriptome-wide preservation of splicing, effects on other RNA targets and disease-relevant neural-cell splicing outcomes are not reported in the current view.",
+            "A nucleoporin-phosphorylation mechanism for these splice changes is not reported in the current view."
+          ]
+        },
+        {
+          "json_pointer": "/finding_cards/5/transfer_assumptions",
+          "value": [
+            "Extension beyond SKAR and Bim requires target-specific evidence.",
+            "Extension from depletion-and-re-expression rescue to endogenous disease conditions requires additional evidence."
+          ]
+        }
+      ],
+      "codex_initial_assessment": "SKAR/Bim条件与挽救端点保留",
+      "accuracy_omission_overreach": "保留siRNA沉默、重表达、RT-PCR、两个exon3靶标及作者“fully restored”关系。负结果是12D未损害所测挽救功能；不是整个转录组无效应。",
+      "suggested_human_review": "缺失其他靶标证据不等于其他靶标必定无效应；补图/数据未看。",
+      "independent_human_review": "pending"
+    },
+    {
+      "id": "M-07",
+      "material": "complement",
+      "source_fragments": [
+        {
+          "text": "Normal nuclear localization and autoregulation of TDP‐43 were also replicated in a cellular system that avoids high overexpression and has homogenous expression levels",
+          "view_character_range": [
+            6862,
+            7029
+          ],
+          "obtained_text_character_range": [
+            40632,
+            40799
+          ]
+        },
+        {
+          "text": "Normal nuclear localization and autoregulation of TDP‐43 were also replicated",
+          "view_character_range": [
+            6862,
+            6939
+          ],
+          "obtained_text_character_range": [
+            40632,
+            40709
+          ]
+        }
+      ],
+      "actual_p04_fields": [
+        {
+          "json_pointer": "/finding_cards/6/supporting_quote",
+          "value": "Normal nuclear localization and autoregulation of TDP‐43 were also replicated in a cellular system that avoids high overexpression and has homogenous expression levels"
+        },
+        {
+          "json_pointer": "/finding_cards/6/biological_context",
+          "value": "Stable inducible Flp-In U2OS cell lines expressing Wt, 12D or 12A myc-TDP-43 after overnight doxycycline addition. For the localization images, endogenous TDP-43 was silenced with siRNAs."
+        },
+        {
+          "json_pointer": "/finding_cards/6/intervention_comparator",
+          "value": "Doxycycline-induced expression of the three variants in the stable U2OS system."
+        },
+        {
+          "json_pointer": "/finding_cards/6/endpoint",
+          "value": "Nuclear localization assessed in the cellular imaging experiment."
+        },
+        {
+          "json_pointer": "/finding_cards/6/reported_observation",
+          "value": "Authors report replication of normal nuclear localization in the stable inducible U2OS system."
+        },
+        {
+          "json_pointer": "/finding_cards/6/negative_findings",
+          "value": [
+            "No abnormal nuclear localization was reported for the tested variants in the stable U2OS localization context."
+          ]
+        },
+        {
+          "json_pointer": "/finding_cards/6/negative_quotes",
+          "value": [
+            "Normal nuclear localization and autoregulation of TDP‐43 were also replicated"
+          ]
+        },
+        {
+          "json_pointer": "/finding_cards/6/author_interpretation",
+          "value": "The authors emphasize this system as avoiding high overexpression and providing homogeneous expression levels, extending their localization observation beyond transient HeLa expression."
+        },
+        {
+          "json_pointer": "/finding_cards/6/not_established",
+          "value": [
+            "Quantitative nuclear-to-cytoplasmic localization ratios and between-variant localization statistics are not reported in the current view.",
+            "Nuclear-import kinetics in this stable U2OS experiment are not reported in the current view; the separate import-reporter result cannot be assigned to this setup."
+          ]
+        },
+        {
+          "json_pointer": "/finding_cards/6/transfer_assumptions",
+          "value": [
+            "Transfer to neural cells or disease states requires evidence beyond replication in these two cellular expression contexts."
+          ]
+        }
+      ],
+      "codex_initial_assessment": "U2OS定位与输入动力学未混",
+      "accuracy_omission_overreach": "稳定诱导、overnight dox及定位图内源siRNA被单列；没有将另一个核输入报告实验自动赋给U2OS。",
+      "suggested_human_review": "作者称在另体系复现定位，不等于独立研究复现、神经元证据或全部运输正常。",
+      "independent_human_review": "pending"
+    },
+    {
+      "id": "M-08",
+      "material": "complement",
+      "source_fragments": [
+        {
+          "text": "Normal nuclear localization and autoregulation of TDP‐43 were also replicated",
+          "view_character_range": [
+            6862,
+            6939
+          ],
+          "obtained_text_character_range": [
+            40632,
+            40709
+          ]
+        }
+      ],
+      "actual_p04_fields": [
+        {
+          "json_pointer": "/finding_cards/7/supporting_quote",
+          "value": "Normal nuclear localization and autoregulation of TDP‐43 were also replicated"
+        },
+        {
+          "json_pointer": "/finding_cards/7/biological_context",
+          "value": "Stable inducible Flp-In U2OS cell lines expressing Wt, 12D or 12A myc-TDP-43 after overnight doxycycline addition. The Figure EV4 caption reports four independent replicates for autoregulation, with endogenous TDP-43 levels normalized to the Wt noninduced condition."
+        },
+        {
+          "json_pointer": "/finding_cards/7/intervention_comparator",
+          "value": "Doxycycline-induced versus noninduced expression within the respective variant cell lines."
+        },
+        {
+          "json_pointer": "/finding_cards/7/endpoint",
+          "value": "Endogenous TDP-43 expression as an autoregulatory readout."
+        },
+        {
+          "json_pointer": "/finding_cards/7/reported_observation",
+          "value": "Authors report replication of normal TDP-43 autoregulation in stable inducible U2OS cells. The caption describes comparisons between noninduced and induced conditions; it does not provide numerical effect sizes in this text."
+        },
+        {
+          "json_pointer": "/finding_cards/7/negative_findings",
+          "value": [
+            "The authors report preserved autoregulation for the tested variants in the stable U2OS system."
+          ]
+        },
+        {
+          "json_pointer": "/finding_cards/7/negative_quotes",
+          "value": [
+            "Normal nuclear localization and autoregulation of TDP‐43 were also replicated"
+          ]
+        },
+        {
+          "json_pointer": "/finding_cards/7/author_interpretation",
+          "value": "The authors regard this result as supporting preserved autoregulation in a system with less overexpression and more homogeneous expression than the transient-expression setup."
+        },
+        {
+          "json_pointer": "/finding_cards/7/not_established",
+          "value": [
+            "Equal autoregulatory effect sizes among U2OS variants and explicit between-variant statistical comparisons are not reported in the current view.",
+            "The endogenous-siRNA condition specified for the U2OS localization images is not established here as the condition for the separate autoregulation measurement.",
+            "A connection to nucleoporin phosphorylation or ALS causation is not reported in the current view."
+          ]
+        },
+        {
+          "json_pointer": "/finding_cards/7/transfer_assumptions",
+          "value": [
+            "Transfer requires the stable inducible expression response to represent the relevant endogenous regulatory context."
+          ]
+        }
+      ],
+      "codex_initial_assessment": "U2OS自调控测量单独记录",
+      "accuracy_omission_overreach": "保留4独立重复、Wt未诱导归一化、+/-dox比较；不把定位图siRNA条件直接嫁接到独立自调控测量。明确文字没给效应量/直接变体间比较。",
+      "suggested_human_review": "图注还给SD、ANOVA/Šídák及P范围，输出未完整保留；这是局部信息遗漏，不能据此声称无统计信息。原输出未改。",
+      "independent_human_review": "pending"
+    },
+    {
+      "id": "M-09",
+      "material": "complement",
+      "source_fragments": [
+        {
+          "text": "recombinant TDP‐43 Wt, 12D and 12A showed comparable RNA binding in electrophoretic mobility shift assays (EMSAs) with\nin vitro\ntranscribed RNA comprised of the autoregulatory TDP‐43 binding site (Fig\n4D\n) or synthetic (UG)\n12\nRNA",
+          "view_character_range": [
+            6149,
+            6379
+          ],
+          "obtained_text_character_range": [
+            39919,
+            40149
+          ]
+        },
+        {
+          "text": "Silencing of endogenous TDP‐43 by siRNA leads to altered splice isoforms of\nSKAR\nand\nBim\n(second vs first lane). These splicing alterations can be rescued by re‐expression of TDP‐43 Wt, but also 12D or 12A variants, demonstrating that phosphomimetic TDP‐43 is fully competent in regulation splicing of these TDP‐43 splice targets.",
+          "view_character_range": [
+            5266,
+            5596
+          ],
+          "obtained_text_character_range": [
+            39036,
+            39366
+          ]
+        }
+      ],
+      "actual_p04_fields": [
+        {
+          "json_pointer": "/finding_cards/3/not_established/0",
+          "value": "Binding constants, cellular RNA occupancy and effects on other RNA sequences are not reported in the current view."
+        },
+        {
+          "json_pointer": "/finding_cards/4/not_established/0",
+          "value": "Binding behavior across other RNA sequences and RNA-processing events is not reported in the current view."
+        }
+      ],
+      "codex_initial_assessment": "缺失范围表述需澄清",
+      "accuracy_omission_overreach": "“其他RNA序列/processing events当前视图未报告”容易被读成除当前卡外都没报告；同一视图实际包含自调控RNA、UG12、SKAR/Bim剪接和自调控。可能本意是除这些已测对象之外，但原句没有把范围说清。不是确定科学反证，而是潜在过度排除/表述歧义。",
+      "suggested_human_review": "以后明确“本视图已测的自调控RNA、UG12及SKAR/Bim之外的其他对象/事件未报告”；不要覆写这次原始输出。",
+      "independent_human_review": "pending"
+    },
+    {
+      "id": "M-10",
+      "material": "complement",
+      "source_fragments": [
+        {
+          "text": "To address this possibility, we transiently expressed different myc‐tagged TDP‐43 variants (Wt, 12D, 12A) in HeLa cells and analyzed their intracellular localization, nuclear import and RNA processing functions.",
+          "view_character_range": [
+            485,
+            696
+          ],
+          "obtained_text_character_range": [
+            34255,
+            34466
+          ]
+        }
+      ],
+      "actual_p04_fields": [
+        {
+          "json_pointer": "/finding_cards/0/not_established/0",
+          "value": "Localization after authentic, site-specific phosphorylation rather than amino-acid substitution is not reported in the current view."
+        },
+        {
+          "json_pointer": "/finding_cards/2/author_interpretation",
+          "value": "The authors interpret the result as indicating that hyperphosphorylated TDP-43 can normally bind its own 3′UTR and autoregulate its levels. The measured cellular endpoint here is endogenous protein downregulation; RNA binding is addressed separately by EMSA."
+        },
+        {
+          "json_pointer": "/finding_cards/2/not_established/1",
+          "value": "Autoregulation under authentic phosphorylation, chronic disease conditions or nucleoporin perturbation is not reported in the current view."
+        }
+      ],
+      "codex_initial_assessment": "磷酸模拟与真实磷酸化边界得到提示",
+      "accuracy_omission_overreach": "实验比较是Wt/12D/12A；该视图没有真实位点磷酸化干预测定。输出保留作者的hyperphosphorylated解释，同时在限制中单列真实性不足，没有把该对象偷换为核孔蛋白。",
+      "suggested_human_review": "独立专家仍需复核模拟有效性；不得把本阅读当已验证替代物等效或ALS因果结论。",
+      "independent_human_review": "pending"
+    },
+    {
+      "id": "M-11",
+      "material": "complement",
+      "source_fragments": [
+        {
+          "text": "C‐terminal phosphomimetic substitutions do not impair nuclear import and RNA regulatory functions of TDP‐43",
+          "view_character_range": [
+            0,
+            107
+          ],
+          "obtained_text_character_range": [
+            33770,
+            33877
+          ]
+        }
+      ],
+      "actual_p04_fields": [
+        {
+          "json_pointer": "/access_scope",
+          "value": {
+            "source_view_ref": "876e76bb00f84e928a89cbea813dacad",
+            "source_ref": "epmc:MED:35112738",
+            "character_range": [
+              33770,
+              41370
+            ],
+            "reviewed_content": "Only the supplied Results subsection and its flattened figure-caption text were read. Repeated caption and narrative summaries are not treated as independent experiments.",
+            "limitations": [
+              "Abstract, Highlights and In Brief are not reported in the current view.",
+              "Figure image pixels, binary files and supplementary files were not accessed.",
+              "The supplied range does not establish full-article coverage."
+            ]
+          }
+        },
+        {
+          "json_pointer": "/targeted_reading_requests",
+          "value": [
+            "Request the Abstract, Highlights and In Brief, if present, and the remaining Results text to retain additional systems, conditions and conflicting findings. These sections are not reported in the current view.",
+            "Request the relevant Methods and construct descriptions for the identities of the 12D/12A substitution sites, reporter cell identity, expression levels and quantitative assay details; these details are not reported in the current view.",
+            "Request any supplied records directly addressing authentic phosphorylation, nucleoporin phosphorylation, ALS-relevant neural contexts or disease endpoints. Those relationships are not reported in the current view and cannot be inferred from TDP-43 substitution assays.",
+            "Request the actual figure files, source data and relevant supplementary records for the reported localization, import, binding and RNA-regulation assays. Their contents were not accessed through this flattened text view."
+          ]
+        }
+      ],
+      "codex_initial_assessment": "原始访问声明与解析投影区分",
+      "accuracy_omission_overreach": "raw access_scope正确说明仅小节/图注文字；该额外字段不在现行P04解析契约中，因此parsed_result未复制它，但完整保存在原始响应和正文中。未看图像、原始source data、补充或其余正文；阅读请求不是已执行操作。",
+      "suggested_human_review": "核对图注文字和图像像素的访问区别；不能把原文“Source data available”当已取得数据。",
+      "independent_human_review": "pending"
+    }
+  ],
+  "v1_v2_comparison": [
+    {
+      "id": "V-01",
+      "v1": {
+        "json_pointer": "/finding_cards/0/biological_context",
+        "value": "ANXA11 相分离、淀粉样纤维形成及传播；摘要明确提到人 iPSC 衍生神经元中的细胞间传播，但未说明相分离实验的具体体系。"
+      },
+      "v2": {
+        "json_pointer": "/finding_cards/3/biological_context",
+        "value": "SH-SY5Y 细胞；该体系由 Highlights 补充报告，与人 iPSC 来源神经元体系分别保留。"
+      },
+      "codex_case_observation": "本次v2显式保留SH-SY5Y，v1该卡未保留；只是此样本可观察覆盖差异。"
+    },
+    {
+      "id": "V-02",
+      "v1": {
+        "json_pointer": "/finding_cards/1/reported_observation",
+        "value": "摘要报告 ANXA11 纤维伴随上述三类 TDP-43 病理变化。"
+      },
+      "v2": {
+        "json_pointer": "/finding_cards/4/reported_observation",
+        "value": "作者报告 ANXA11 纤维诱导 TDP-43 病理转化，包括过度磷酸化、去污剂不溶性组分中积累及胞质聚集体形成。Highlights 和 In Brief 重述该诱导关系，不另计为独立实验。"
+      },
+      "codex_case_observation": "v1用“伴随”弱化作者induces，v2保留“作者报告诱导”；独立验证不足另列。"
+    },
+    {
+      "id": "V-03",
+      "v1": {
+        "json_pointer": "/finding_cards/2/reported_observation",
+        "value": "摘要报告聚集依赖的核孔与运输因子邻近富集，并报告 ANXA11 聚集与上述结构和功能异常相关。"
+      },
+      "v2": {
+        "json_pointer": "/finding_cards/6/reported_observation",
+        "value": "作者报告，在 iPSC 来源神经元中，ANXA11 聚集与核膜异常、核孔蛋白分布改变、mRNA 输出受损及进行性神经元毒性相关。Highlights 和 In Brief 另将核孔相关表型概括为核孔复合体重塑；这些摘要性重述不作为额外独立实验计数。"
+      },
+      "codex_case_observation": "两次均保留核孔/毒性原句的相关关系，不把该项描述为v2独有改进。"
+    },
+    {
+      "id": "V-04",
+      "v1": {
+        "json_pointer": "/finding_cards/0/intervention_comparator",
+        "value": "涉及 ANXA11 纤维及播种活性；具体处理条件、剂量、时程和对照未知。"
+      },
+      "v2": {
+        "json_pointer": "/finding_cards/1/intervention_comparator",
+        "value": "蛋白制备、浓度、诱导条件、时间及比较组：当前视图未报告。"
+      },
+      "codex_case_observation": "v2将缺失条件明确限定当前视图未报告；不代表模型已查全文或确认科学上未知。"
+    },
+    {
+      "id": "V-05",
+      "v1": {
+        "json_pointer": "/finding_cards/2/author_interpretation",
+        "value": "作者认为 ANXA11 播种聚集与核质运输缺陷和神经元损伤相联系，为 ANXA11 相关 ALS/FTD 的发病机制提供框架。"
+      },
+      "v2": {
+        "json_pointer": "/finding_cards/6/author_interpretation",
+        "value": "作者认为这些结果为 ANXA11 相关 ALS/FTD 发病机制提供框架；In Brief 的结尾进一步将播种组装体概括为扰乱核质运输。"
+      },
+      "codex_case_observation": "v2额外标明In Brief结尾更强的作者概括，与原句关联层次分开。"
+    },
+    {
+      "id": "V-06",
+      "v1": {
+        "json_pointer": "/finding_cards/1/biological_context",
+        "value": "ANXA11 纤维与 TDP-43 病理变化；该句未明确各项 TDP-43 检测所用的具体细胞体系，不能直接沿用其他实验的模型信息。"
+      },
+      "v2": {
+        "json_pointer": "/finding_cards/3/not_established/1",
+        "value": "不能把神经元中报告的 TDP-43 表型、核孔相关表型或毒性自动配对到 SH-SY5Y 实验；这些终点在该体系中的对应结果当前视图未报告。"
+      },
+      "codex_case_observation": "v2新增限制句出现潜在TDP-43神经元情境错配，不能声称整体无误或稳定提升；见C-08。"
+    }
+  ],
+  "comparison_limits": [
+    "每版仅一个摘要试跑，不是重复实验或统计评价，不宣称稳定提升。",
+    "原文摘要相同，但新Brief背景已清理、Run/版本/消息身份改变；无法把输出差异单独归因Prompt。",
+    "返回模型名/参数相同，不代表采样状态完全固定。卡片数量3→7仅是输出组织差异，不是准确性评分。"
+  ],
+  "input_isolation": "审阅在两次调用完成后离线生成；未进入任一实际请求。互补请求也与已审查预导出一致，未包含对照输出或任何评审答案。",
+  "overall_findings": [
+    "本样本中SH-SY5Y、作者诱导/相关措辞、当前视图范围更显式，但C-08仍有情境归属问题。",
+    "互补结果区分了HeLa/U2OS、EMSA/报告/剪接等实验及真实磷酸化边界；M-09缺失范围歧义和M-08统计信息局部遗漏仍待复核。",
+    "仅Codex初审，不是独立专家科学验收；原始输出和解析结果均保留，不进行静默修正。"
+  ]
+}

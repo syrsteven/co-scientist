@@ -1,0 +1,94 @@
+{
+  "run": {
+    "id": "cea909fe8a004010b1896df1c1d98e02",
+    "project_id": "def2c9881bdd4fe690c06a3ecea15acf",
+    "revision_id": "997d55886d634f289612ba79e1755f16",
+    "policy_ref": "POLICY-W1-DEMO-PROPOSED@w0-t4-dev-1",
+    "goal_context_ref": "goal-38a4a7a321d54c1eb475b9c7646930f0",
+    "plan": [
+      "goal.prepare.v1",
+      "goal.screen.v1",
+      "literature.search.v1",
+      "literature.fetch.v1",
+      "literature.search.v1",
+      "literature.fetch.v1",
+      "background.P04",
+      "background.P04"
+    ],
+    "status": "background_saved",
+    "created_at": "2026-11-03T18:02:22.225669+00:00"
+  },
+  "task_statuses": [
+    {
+      "id": "38a4a7a321d54c1eb475b9c7646930f0",
+      "step": 0,
+      "module": "goal.prepare.v1",
+      "status": "succeeded",
+      "error": null
+    },
+    {
+      "id": "c6e26a4d527042009dbcdaf14551f162",
+      "step": 1,
+      "module": "goal.screen.v1",
+      "status": "succeeded",
+      "error": null
+    },
+    {
+      "id": "4009447348f041b4bc3f4f63b633a559",
+      "step": 2,
+      "module": "literature.search.v1",
+      "status": "succeeded",
+      "error": null
+    },
+    {
+      "id": "f80635ec59164ab79f5d9ccde100d9cb",
+      "step": 3,
+      "module": "literature.fetch.v1",
+      "status": "succeeded",
+      "error": null
+    },
+    {
+      "id": "2aa3aa5dc6d94e51a53d7cd95378939d",
+      "step": 4,
+      "module": "literature.search.v1",
+      "status": "succeeded",
+      "error": null
+    },
+    {
+      "id": "3cd7cb24431a402eb687d49daec7ef22",
+      "step": 5,
+      "module": "literature.fetch.v1",
+      "status": "succeeded",
+      "error": null
+    },
+    {
+      "id": "f49335ad41a946f9aed8103f53f328ca",
+      "step": 6,
+      "module": "background.P04",
+      "status": "succeeded",
+      "error": null
+    },
+    {
+      "id": "f8cf38bfaf564f93a51f5b4b17aeefeb",
+      "step": 7,
+      "module": "background.P04",
+      "status": "succeeded",
+      "error": null
+    }
+  ],
+  "table_counts": {
+    "projects": 1,
+    "brief_revisions": 1,
+    "runs": 1,
+    "tasks": 8,
+    "attempts": 9,
+    "material_views": 2,
+    "background_actions": 2
+  },
+  "background_request_ids": [
+    "p04-v2-control-single",
+    "p04-v2-complement-single"
+  ],
+  "database_source": "/private/tmp/co-scientist-p04-v2/runs/p04-v2-prepared.sqlite",
+  "scope": "one approved Run; no other background operations"
+}

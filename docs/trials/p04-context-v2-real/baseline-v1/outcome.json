@@ -1,0 +1,43 @@
+{
+  "request_id": "trial-p04-ppr1217875-20261103-gpt61sol-high",
+  "task_id": "63d759a46095455b8d4248ba556d89fc",
+  "attempt_id": "ba8d731e9ec14262ab486b358e3b7183",
+  "attempt_count": 1,
+  "attempt_status": "succeeded",
+  "http_status": 200,
+  "finish_reason": "stop",
+  "response_model": "gpt-6.1-sol",
+  "provider_usage": {
+    "completion_tokens": 2785,
+    "completion_tokens_details": {
+      "accepted_prediction_tokens": 0,
+      "audio_tokens": 0,
+      "reasoning_tokens": 1010,
+      "rejected_prediction_tokens": 0
+    },
+    "prompt_tokens": 1477,
+    "prompt_tokens_details": {
+      "audio_tokens": 0,
+      "cache_write_tokens": 1474,
+      "cached_tokens": 0
+    },
+    "total_tokens": 4262
+  },
+  "usage": {
+    "cost": null,
+    "input_tokens": 1477,
+    "output_tokens": 2785,
+    "tool_units": null
+  },
+  "result_status": "saved",
+  "parse_error": null,
+  "content_characters": 4003,
+  "complete_json": true,
+  "started_at": "2026-11-03T09:10:16.482977+00:00",
+  "finished_at": "2026-11-03T09:11:08.532621+00:00",
+  "actual_request_matches_export": true,
+  "scientific_input_unchanged": true,
+  "automatically_retried": false,
+  "human_science_review_completed": false,
+  "science_validated": false
+}

@@ -1,0 +1,12 @@
+{
+  "baseline": "378475b2e5a86d1c6504138bc3992dae2c977e81",
+  "run_id": "cea909fe8a004010b1896df1c1d98e02",
+  "database": "/private/tmp/co-scientist-p04-v2/runs/p04-v2-prepared.sqlite",
+  "approved_snapshot_facts_identical": true,
+  "prompt_version": "w1-l2-p04-context-v2",
+  "both_payloads_messages_http_identical_to_reviewed": true,
+  "existing_background_actions": 0,
+  "existing_attempts": 7,
+  "model_credentials_read": false,
+  "new_model_sends": 0
+}

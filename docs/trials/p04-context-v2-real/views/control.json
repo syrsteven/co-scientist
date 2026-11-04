@@ -1,0 +1,26 @@
+{
+  "id": "75bf96a0e25b4e6aa10e54f6781a5382",
+  "run_id": "cea909fe8a004010b1896df1c1d98e02",
+  "goal_ref": "goal-38a4a7a321d54c1eb475b9c7646930f0",
+  "seed_id": null,
+  "acquisition_task_id": "f80635ec59164ab79f5d9ccde100d9cb",
+  "source_ref": "epmc:PPR:PPR1217875",
+  "source_version": "provider version unreported",
+  "locator": "attempt:metadata/body_base64#result.abstractText",
+  "access": "abstract",
+  "representation": "complete obtained provider abstract, markup flattened; not full text",
+  "character_range": [
+    0,
+    2746
+  ],
+  "original_characters": 2746,
+  "original_text_sha256": "06b544e345c80a260d04645b7fb26a0fd8c126167eb15ca69deae7edf3bb59b2",
+  "selection_reason": "Complete obtained Abstract/Highlights/In Brief text; not article body or image pixels",
+  "cropped": false,
+  "not_read_ranges": [],
+  "text": "ABSTRACT   Mutations in ANXA11 cause amyotrophic lateral sclerosis (ALS) and frontotemporal dementia (FTD), yet the mechanisms linking ANXA11 dysfunction to neurodegeneration remain poorly defined. Recent cryo-EM studies revealed heteromeric ANXA11-TDP-43 filaments in patient brains, suggesting a direct pathological connection between these two ALS-associated proteins. However, whether ANXA11 possesses intrinsic amyloidogenic properties and how its aggregation relates to TDP-43 proteinopathy remain unknown. Here, we demonstrate that ANXA11 undergoes liquid-liquid phase separation and subsequently matures into amyloid fibrils through a liquid-to-solid phase transition. ANXA11 fibrils exhibit prion-like properties, including self-templating seeding activity and intercellular propagation in human iPSC-derived neurons. Strikingly, ANXA11 fibrils induces pathological conversion of TDP-43, including hyperphosphorylation, accumulation in detergent-insoluble fractions, and formation of cytoplasmic aggregates. TurboID proximity-labeling proteomics further revealed aggregation-dependent enrichment of nuclear pore complex and nucleocytoplasmic transport factors in the ANXA11 aggregate-proximal proteome. Consistently, ANXA11 aggregation was associated with nuclear envelope abnormalities, altered nucleoporin distribution, impaired mRNA export, and progressive neuronal toxicity in iPSC-derived neurons. Together, these findings establish ANXA11 as an intrinsically amyloidogenic, phase-transition-competent protein whose seeded assemblies propagate between cells, induce TDP-43 co-pathology, and are linked to nucleocytoplasmic transport defects and neuronal injury, thereby providing a mechanistic framework for ANXA11-associated ALS/FTD pathogenesis.  Graphic Abstract    Highlights   ANXA11 undergoes liquid-liquid phase separation and matures into amyloid fibrils through a liquid-to-solid phase transition. ANXA11 fibrils supports homotypic seeding and propagate within SH-SY5Y cells and iPSC-derived neurons. ANXA11 fibrils induce TDP-43 pathological conversion, including phosphorylation and accumulation in insoluble aggregates. ANXA11 aggregation is associated with nuclear pore complex remodeling, impaired mRNA export, and neuronal toxicity.  In Brief   ANXA11 undergoes phase separation and matures into prion-like amyloid fibrils through a liquid-to-solid transition. These seeded assemblies propagate between cells and human neurons, induce TDP-43 pathological conversion, and are associated with remodeling of nuclear pore complexes, impaired mRNA export, and progressive neuronal toxicity. ANXA11 forms seeded amyloid assemblies that spread between cells, induce TDP-43 pathology, and disrupt nucleocytoplasmic transport.",
+  "images_seen": false,
+  "supplements_seen": false,
+  "access_limitations": "Only the obtained representation; no unseen text/figures/supplements",
+  "source_citation": "https://europepmc.org/article/PPR/PPR1217875"
+}
