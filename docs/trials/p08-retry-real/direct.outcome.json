@@ -1,0 +1,44 @@
+{
+  "request_id": "p08-real-direct-single",
+  "candidate_id": "planned-p08-direct",
+  "task_id": "c1119e1ab4ed431daca848c01811fc37",
+  "original_attempt_id": "5ad8cea64b1146c7bf2eb80e194e0798",
+  "new_attempt_id": "86948ac23ee2477cac992b24f6016796",
+  "new_attempt_status": "uncertain",
+  "new_attempt_count": 1,
+  "attempt_count": 2,
+  "attempt_status": "uncertain",
+  "task_status": "blocked",
+  "result_status": null,
+  "finish_reason": null,
+  "http_status": null,
+  "provider_usage": null,
+  "shared_usage": {
+    "cost": null,
+    "input_tokens": null,
+    "output_tokens": null,
+    "tool_units": null
+  },
+  "original_usage": {
+    "cost": null,
+    "input_tokens": null,
+    "output_tokens": null,
+    "tool_units": null
+  },
+  "original_error_and_uncertainty_unchanged": true,
+  "request_identical": true,
+  "monotonic_execution_seconds": 156.41286515101092,
+  "protected_original_rows": {
+    "tasks": 23,
+    "attempts": 25,
+    "results": 23,
+    "background_actions": 11,
+    "generation_actions": 1,
+    "literature_actions": 10,
+    "material_views": 5,
+    "goal_contexts": 1,
+    "brief_revisions": 1,
+    "execution_facts": 52
+  },
+  "science_validated": false
+}

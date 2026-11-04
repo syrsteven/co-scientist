@@ -1,0 +1,11 @@
+{
+  "read_only_get": true,
+  "generation_actions": 1,
+  "direct_attempts": 2,
+  "candidate_count": 0,
+  "task_status": "blocked",
+  "can_submit": false,
+  "viewer_credentials_configured": false,
+  "viewer_real_calls_authorized": false,
+  "browser_verification": "not_completed: browser control unavailable; backend GET checked only"
+}

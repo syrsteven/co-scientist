@@ -1,0 +1,28 @@
+{
+  "database_mode": "ro",
+  "same_task_id": "c1119e1ab4ed431daca848c01811fc37",
+  "original_status": "uncertain",
+  "new_status": "uncertain",
+  "new_model_attempts": 1,
+  "total_direct_attempts": 2,
+  "new_attempt_id": "86948ac23ee2477cac992b24f6016796",
+  "previous_id": "5ad8cea64b1146c7bf2eb80e194e0798",
+  "old_only_retry_authorization_changed": true,
+  "same_request": true,
+  "no_new_direct_task": true,
+  "assumption_task_created": false,
+  "candidate_count": 0,
+  "historical_rows_unchanged": {
+    "tasks": 23,
+    "attempts": 25,
+    "results": 23,
+    "background_actions": 11,
+    "generation_actions": 1,
+    "literature_actions": 10,
+    "material_views": 5,
+    "goal_contexts": 1,
+    "brief_revisions": 1,
+    "execution_facts": 52
+  },
+  "science_validated": false
+}

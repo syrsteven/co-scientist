@@ -1,0 +1,13 @@
+{
+  "original_attempt_id": "5ad8cea64b1146c7bf2eb80e194e0798",
+  "task_id": "c1119e1ab4ed431daca848c01811fc37",
+  "reason": "User explicitly requested 再次尝试 after uncertain DIRECT and unknown billing report: accept potential duplicate execution/billing; authorize exactly one linked retry of same Task/call_key/frozen input. No automatic further retry.",
+  "max_new_attempts": 1,
+  "methods": [
+    "Store.recover",
+    "Store.authorize_uncertain_retry",
+    "Store.retry_task",
+    "GenerationService.execute"
+  ],
+  "new_run_or_task": false
+}

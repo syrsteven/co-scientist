@@ -1,0 +1,12 @@
+{
+  "status": "EXPLICIT_DIRECT_RETRY_UNCERTAIN_STOPPED_NO_SECOND_MODE",
+  "application_main": "db37b47598c167d586b743f51f6a078e3c2b0cf6",
+  "parent_trial_commit": "f62e03408a677b7f13d75aac6030af06768f3593",
+  "branch": "codex/p08-explicit-retry",
+  "new_model_attempts": 1,
+  "total_direct_attempts": 2,
+  "candidate_count": 0,
+  "second_mode_sent": false,
+  "science_validated": false,
+  "scientific_review_completed": false
+}

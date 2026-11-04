@@ -1,0 +1,9 @@
+{
+  "same_task": "c1119e1ab4ed431daca848c01811fc37",
+  "same_call_key": "model",
+  "same_target": "openai/chat/gpt-6.1-sol",
+  "same_input_messages_http_config_prompt": true,
+  "request_envelope_bytes": 145327,
+  "sha256": "88f7c9e4c4be28d11140cb36ab02d740d2c1db84acc2ed9bcb11f3ae9bb7d304",
+  "configuration_changed": false
+}

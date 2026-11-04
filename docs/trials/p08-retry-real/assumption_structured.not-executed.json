@@ -1,0 +1,8 @@
+{
+  "request_id": "p08-real-assumption-single",
+  "candidate_id": "planned-p08-assumption_structured",
+  "status": "not_executed",
+  "new_attempts": 0,
+  "reason": "Explicit DIRECT retry again uncertain; stop,no second task/send",
+  "usage": null
+}

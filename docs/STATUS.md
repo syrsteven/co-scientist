@@ -1,5 +1,15 @@
 # 项目状态 — P08最小生成切片
 
+## P08一次显式重试：仍uncertain（2026-11-04）
+
+用户“再次尝试”授权下，仅对原Taskc1119e1ab4ed431daca848c01811fc37通过既有不确定授权/任务恢复机制新增1个关联Attempt。
+新86948ac23ee2477cac992b24f6016796 previous_id→5ad8cea64b1146c7bf2eb80e194e0798；原Attempt状态/错误/未知用量不变，仅追加授权。输入/Prompt/配置/HTTP请求完全一致，无新DIRECT Task或Run。
+再次http_protocol/request_open/REMOTE_DISCONNECTED，uncertain、Run blocked；没有响应/finish_reason/usage/候选。单调计时156.412865秒。消耗和费用未知；不是科学否定。
+ASSUMPTION_STRUCTURED仍未建Task或发送；无进一步重试/修复/换模型/其他模块。没有候选可初审或比较，science_validated=false。
+[新旧Attempt、授权、完整请求与审阅不可开展说明](trials/p08-retry-real/README.md)。应用和历史结果不改，独立结果分支codex/p08-explicit-retry，不合并。
+只读DB/冻结请求/原行哈希/导出核对通过；无凭据页面后端GET显示两个uncertain/0候选/禁用生成。浏览器自动复核本轮因工具不可用未完成。
+本轮未重跑267项工程测试、旧G3、本机Python3.12或科学/专家验收。原工作区232项改动保护。以下历史原样保留。
+
 ## 真实P08试跑：DIRECT不确定停止（2026-11-04）
 
 基线main db37b47598c167d586b743f51f6a078e3c2b0cf6；独立结果分支codex/p08-real-trial-review，不合并；应用/Prompt/历史结果不改。

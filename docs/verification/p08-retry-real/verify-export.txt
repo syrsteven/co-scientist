@@ -1,0 +1,1 @@
+Verified one explicit previous_id retry,same frozen request/config/task,original uncertainty/error/usage preserved,no response/candidate/second task,all available hashes. Science not validated.

@@ -1,0 +1,7 @@
+{
+  "status": "科学初审未开展：两次DIRECT均未取得输出；Codex仅核对工程事实",
+  "science_validated": false,
+  "candidate_review_possible": false,
+  "mode_comparison_possible": false,
+  "reason": "Explicit retry again REMOTE_DISCONNECTED/request_open; no HTTP response/usage/candidate; ASSUMPTION not executed"
+}

@@ -1,0 +1,44 @@
+[
+  {
+    "id": 51,
+    "task_id": "c1119e1ab4ed431daca848c01811fc37",
+    "kind": "task_started",
+    "detail": "{\"module\": \"generation.P08\"}",
+    "created_at": "2026-11-04T10:03:07.749708+00:00"
+  },
+  {
+    "id": 52,
+    "task_id": "c1119e1ab4ed431daca848c01811fc37",
+    "kind": "task_error",
+    "detail": "{\"message\": \"Unresolved Attempt 5ad8cea64b1146c7bf2eb80e194e0798\", \"module\": \"generation.P08\", \"type\": \"UncertainCall\"}",
+    "created_at": "2026-11-04T12:35:20.412041+00:00"
+  },
+  {
+    "id": 53,
+    "task_id": "c1119e1ab4ed431daca848c01811fc37",
+    "kind": "uncertain_retry_authorized",
+    "detail": "{\"attempt_id\": \"5ad8cea64b1146c7bf2eb80e194e0798\", \"reason\": \"User explicitly requested 再次尝试 after uncertain DIRECT and unknown billing report: accept potential duplicate execution/billing; authorize exactly one linked retry of same Task/call_key/frozen input. No automatic further retry.\"}",
+    "created_at": "2026-11-04T13:54:41.698096+00:00"
+  },
+  {
+    "id": 54,
+    "task_id": "c1119e1ab4ed431daca848c01811fc37",
+    "kind": "task_retry",
+    "detail": "{\"previous_error\": \"{\\\"message\\\": \\\"Unresolved Attempt 5ad8cea64b1146c7bf2eb80e194e0798\\\", \\\"module\\\": \\\"generation.P08\\\", \\\"type\\\": \\\"UncertainCall\\\"}\", \"reason\": \"User-requested one explicit P08 DIRECT recovery; preserve frozen input\"}",
+    "created_at": "2026-11-04T13:54:41.700106+00:00"
+  },
+  {
+    "id": 55,
+    "task_id": "c1119e1ab4ed431daca848c01811fc37",
+    "kind": "task_started",
+    "detail": "{\"module\": \"generation.P08\"}",
+    "created_at": "2026-11-04T13:54:41.703311+00:00"
+  },
+  {
+    "id": 56,
+    "task_id": "c1119e1ab4ed431daca848c01811fc37",
+    "kind": "task_error",
+    "detail": "{\"message\": \"Unresolved Attempt 86948ac23ee2477cac992b24f6016796\", \"module\": \"generation.P08\", \"type\": \"UncertainCall\"}",
+    "created_at": "2026-11-04T13:57:18.075836+00:00"
+  }
+]
