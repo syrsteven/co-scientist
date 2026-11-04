@@ -20,6 +20,9 @@
   Require a saved same-Run/Goal/seed/packet ready record; six-field USER input only.
   Save immutable candidates, stop pending Candidate Ethics/R0, never auto-generate.
   Fixtures do not prove real model/science quality.
+  P08 Responses background transport is explicit opt-in; read docs/RESPONSES_BACKGROUND.md.
+  Persist remote ID before querying, never POST on refresh/restart/query failure.
+  Old uncertain Chat calls remain blocked; API migration is a separate decision/configuration.
   Open seed calls receive only Goal, neutral overview, capabilities and generic
   constraints; sibling queries/materials/seed narratives must remain isolated.
   New P04 uses w1-l2-p04-context-v2; freeze its version per action. Retain v1

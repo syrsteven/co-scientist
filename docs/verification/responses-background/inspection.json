@@ -1,0 +1,64 @@
+{
+  "read_only": true,
+  "canonical_database_sha256": "4ffef4c2e8f257b7ff0e1a8c10332c09bef68176856837e095104c7cc4fc608f",
+  "task": {
+    "id": "c1119e1ab4ed431daca848c01811fc37",
+    "status": "blocked",
+    "row_sha256": "2890a9de923dfeff1e2d12f16c571d7a11f476a33e4449e4bda9e74f02b9265c"
+  },
+  "attempts": [
+    {
+      "id": "5ad8cea64b1146c7bf2eb80e194e0798",
+      "status": "uncertain",
+      "previous_id": null,
+      "usage": {
+        "cost": null,
+        "input_tokens": null,
+        "output_tokens": null,
+        "tool_units": null
+      },
+      "error": {
+        "diagnostic": {
+          "category": "http_protocol",
+          "code": "REMOTE_DISCONNECTED",
+          "phase": "request_open"
+        },
+        "message": "Model send outcome uncertain; credential details withheld",
+        "type": "TransportUncertain"
+      },
+      "row_sha256": "54d601f181f57f3a2c1affaadfbb97261f2c2bfaf4239e897a06fef2b5db596a",
+      "frozen_request_sha256": "eba1dfe2aeabf74b841bfde41a8e0df18aec33e8962843f8e002011fc52b09e4"
+    },
+    {
+      "id": "86948ac23ee2477cac992b24f6016796",
+      "status": "uncertain",
+      "previous_id": "5ad8cea64b1146c7bf2eb80e194e0798",
+      "usage": {
+        "cost": null,
+        "input_tokens": null,
+        "output_tokens": null,
+        "tool_units": null
+      },
+      "error": {
+        "diagnostic": {
+          "category": "http_protocol",
+          "code": "REMOTE_DISCONNECTED",
+          "phase": "request_open"
+        },
+        "message": "Model send outcome uncertain; credential details withheld",
+        "type": "TransportUncertain"
+      },
+      "row_sha256": "07f13da28e5018e71cf137d7c46b5f2566f0c5b6fe685753d2074e4462ff664b",
+      "frozen_request_sha256": "eba1dfe2aeabf74b841bfde41a8e0df18aec33e8962843f8e002011fc52b09e4"
+    }
+  ],
+  "current_proxy_configuration": {
+    "effective_proxies": {},
+    "openai_proxy_bypass": false,
+    "route_confirmed": false,
+    "source": "current urllib environment/OS discovery"
+  },
+  "historical_proxy_route": "unknown",
+  "root_cause": "unknown",
+  "new_real_model_sends": 0
+}

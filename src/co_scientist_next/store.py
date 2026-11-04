@@ -108,6 +108,14 @@ class Store:
                     request TEXT NOT NULL, input TEXT NOT NULL, binding TEXT NOT NULL,
                     config TEXT NOT NULL, prompt_version TEXT NOT NULL
                 );
+                CREATE TABLE IF NOT EXISTS remote_generations (
+                    task_id TEXT PRIMARY KEY REFERENCES tasks(id),
+                    response_id TEXT NOT NULL UNIQUE, status TEXT NOT NULL,
+                    submission_attempt_id TEXT NOT NULL REFERENCES attempts(id),
+                    latest_attempt_id TEXT NOT NULL REFERENCES attempts(id),
+                    response TEXT NOT NULL, submitted_at TEXT NOT NULL,
+                    observed_at TEXT NOT NULL, latest_query TEXT
+                );
                 CREATE TABLE IF NOT EXISTS execution_facts (
                     id INTEGER PRIMARY KEY, task_id TEXT NOT NULL REFERENCES tasks(id),
                     kind TEXT NOT NULL, detail TEXT NOT NULL, created_at TEXT NOT NULL
