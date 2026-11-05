@@ -1,0 +1,59 @@
+{
+  "base_merge_sha": "b677c7f94f588aa71c3f453a13620f4e6bb0ad6c",
+  "preparation_sha256": "1890c42d8fdea5872f01018a7bb84f302a6ce9b5cc3022369f81647af9ce0951",
+  "run_id": "cea909fe8a004010b1896df1c1d98e02",
+  "candidate_id": "planned-p08-direct-responses",
+  "P09": {
+    "request_id": "p09-real-nonprod-single-v1",
+    "task_id": "250e3e6dea7a430fb07e71080c20a345",
+    "attempt_id": "da49fb3eb36c4e8aadee6f34e0757d15",
+    "status": "uncertain",
+    "task_status": "blocked",
+    "response_id": null,
+    "raw_response_available": false,
+    "finish_reason": null,
+    "finish_reason_reported": false,
+    "parsed_result": null,
+    "post_attempts": 1,
+    "query_attempts": 0,
+    "usage": {
+      "cost": null,
+      "input_tokens": null,
+      "output_tokens": null,
+      "tool_units": null
+    },
+    "provider_usage": null,
+    "safe_error": {
+      "diagnostic": {
+        "category": "transport",
+        "code": "TRANSPORT_ERROR",
+        "phase": "response_read"
+      },
+      "elapsed_seconds": 2.6495829980121925,
+      "message": "Model send outcome uncertain; credential details withheld",
+      "type": "TransportUncertain"
+    },
+    "request_matches_preparation": true,
+    "actual_request_bytes": 31644,
+    "science_decision": null
+  },
+  "P10": {
+    "task_created": false,
+    "post_attempts": 0,
+    "query_attempts": 0,
+    "result": null,
+    "reason": "No completed valid real P09 pass"
+  },
+  "policy_mode": "development",
+  "execution_mode": "real_model",
+  "unknown_cost_not_zero": true,
+  "do_not_sum_repeated_get_usage": true,
+  "science_validated": false,
+  "limitations": [
+    "No response ID or complete response retained locally; supplier execution and charge unknown",
+    "No P09 ethical conclusion; no P10 scientific disposition",
+    "Original two P08 uncertain attempts and consumption remain unknown",
+    "No query window started because no remote ID; no retries or cancellation",
+    "No model output available for scientific review"
+  ]
+}

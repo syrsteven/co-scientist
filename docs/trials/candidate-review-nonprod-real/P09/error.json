@@ -1,0 +1,10 @@
+{
+  "diagnostic": {
+    "category": "transport",
+    "code": "TRANSPORT_ERROR",
+    "phase": "response_read"
+  },
+  "elapsed_seconds": 2.6495829980121925,
+  "message": "Model send outcome uncertain; credential details withheld",
+  "type": "TransportUncertain"
+}

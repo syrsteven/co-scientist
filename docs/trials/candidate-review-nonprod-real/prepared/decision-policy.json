@@ -1,0 +1,9 @@
+{
+  "id": "CANDIDATE-ETHICS-NONPROD-TRIAL-DECISIONS",
+  "version": "2026-11-05-v1",
+  "routes": {
+    "pass": "continue",
+    "reject": "stop",
+    "incomplete": "hold"
+  }
+}

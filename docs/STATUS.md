@@ -1,3 +1,24 @@
+# 项目状态 — Candidate Ethics／R0 非生产真实试跑
+
+## PR16合并后授权执行（2026-11-05）
+
+PR16固定head `77a0aca200cb640d29d7f044d6773076476581b6` 重核4项CI成功、clean无冲突/新增阻断后合并；实际merge及本轮起点 `b677c7f94f588aa71c3f453a13620f4e6bb0ad6c`。
+独立分支 `codex/candidate-review-real-results`，交付PR保持未合并；无生产逻辑/Prompt/政策变更。
+
+| 维度 | 本轮事实 |
+|---|---|
+| 输入 | 唯一既定隔离试跑库inspect通过；准备哈希1890c42d…951、完整31644字节请求与总控接受包一致。候选/Goal/5份原文、2026-11-05-v1非生产政策及配置原样；未重新prepare/覆盖/回滚/另库执行 |
+| 真实P09 | 一次Responses POST尝试，Task 250e3e6dea7a430fb07e71080c20a345 / Attempt da49fb3eb36c4e8aadee6f34e0757d15。读取响应阶段传输错误，单调耗时2.649582998秒；未取得ID/完整响应，保存uncertain，Run/Task blocked，供应商执行/收费未知 |
+| P10／M12 | 没有有效真实P09 completed/pass，因此P10未组装、未创建/发送。无GET查询，无重试/模型切换/政策修补；此技术阻断不是伦理拒绝或R0科学阻断 |
+| 用量 | 完整本地可得usage的token/cost/tool_units均null，provider_usage与finish_reason未返回，不补0或stop；历史两个P08 uncertain及未知用量不变 |
+| 页面 | 无凭据、无发送授权进程显示真实执行标识/非生产政策/无ID停止。实际刷新2次并重启后33条Attempt全行不变，无新增供应商请求；试跑库文件hash因启动过程有变化，如实记录，不声称重启前后字节相同 |
+| 交付 | 脱敏实际请求、Attempt/错误/未知usage、前后inspect、候选及原文、政策绑定、初审未验证项、页面证据、离线核验脚本、审阅ZIP及SHA256已导出；无数据库或凭据提交 |
+| 验证与保护 | 新系统373通过、0失败/跳过；Ruff/JS/diff与包核验见检查报告。原真实库字节哈希、原科学记录及原工作区232项内容/index/status保持。没有新科学输出可供实质初审 |
+| 科学边界 | execution_mode=real_model、policy_mode=development；science_validated=false。无伦理决定、无R0结论、无科学准入；未执行R1、检索、重生成、候选修补或其他模块。真实P09/P10准确性和独立专家审阅均未验证 |
+
+[结果/命令/完整证据](trials/candidate-review-nonprod-real/README.md) · [Codex初审，待独立人工复核](trials/candidate-review-nonprod-real/REVIEW.md) · [审阅ZIP](trials/candidate-review-nonprod-real-review.zip) · [ZIP SHA256](trials/candidate-review-nonprod-real-review.zip.sha256)。
+原Accepted/Proposed状态及历史设计/科学输出均不改。本轮授权一次P09已使用；无ID uncertain后停止，任何未来恢复均需另行明确授权，不能用新Run/任务/数据库绕过。以下历史状态原样保留。
+
 # 项目状态 — Candidate Ethics／R0 非生产真实试跑准备
 
 ## PR15合并后连续准备（2026-11-05）

@@ -1,0 +1,19 @@
+{
+  "trial_db_sha256_before": "a2adb6abb3a96fbfd8dd06f848ab103e09c703c0d33b58272869822e6e0d1e94",
+  "trial_db_sha256_after": "44edc450cc03faf91b897068a40434dc1c6dc79f3e151bded85dcf3436459ffe",
+  "database_bytes_unchanged": false,
+  "binary_hash_note": "Trial DB file bytes changed during server restart; Store initialization can write SQLite metadata. All Attempt rows unchanged; no new provider request inferred or claimed from byte equality. Original canonical DB byte hash unchanged.",
+  "all_attempts_unchanged": true,
+  "p09_post_attempts": 1,
+  "p09_remote_ids": 0,
+  "p09_queries": 0,
+  "p10_tasks": 0,
+  "p10_post_attempts": 0,
+  "provider_requests_added_by_page_or_restart": 0,
+  "server_model_credentials_configured": false,
+  "server_paid_sending_authorized": false,
+  "actions_seen": 1,
+  "reloads": 2,
+  "server_restarted": true,
+  "science_validated": false
+}

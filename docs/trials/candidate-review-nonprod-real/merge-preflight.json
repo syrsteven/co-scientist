@@ -1,0 +1,30 @@
+{
+  "head": "77a0aca200cb640d29d7f044d6773076476581b6",
+  "mergeable": true,
+  "mergeable_state": "clean",
+  "checks": [
+    {
+      "name": "offline (3.11)",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "name": "offline (3.12)",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "name": "offline (3.11)",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "name": "offline (3.12)",
+      "status": "completed",
+      "conclusion": "success"
+    }
+  ],
+  "comments": [],
+  "reviews": {},
+  "inline_comments": []
+}
