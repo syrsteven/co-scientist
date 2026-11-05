@@ -38,10 +38,37 @@ class GenerationService:
                 AND n.call_key=p.call_key AND n.ordinal>p.ordinal)""",
             (run_id, exclude_task, exclude_task),
         )
-        if unresolved:
+        allowed = set()
+        if exclude_task:
+            from .generation_migration import scoped_exemptions
+
+            allowed = scoped_exemptions(self.store, run_id, exclude_task)
+        if any(p["id"] not in allowed for p in unresolved):
             raise ValueError(
                 "Unresolved external call requires explicit recovery before generation"
             )
+
+    def clear_calls_for_migration(self, run_id, source_attempt_ids):
+        unresolved = self.store.rows(
+            """SELECT p.id FROM attempts p JOIN tasks t ON t.id=p.task_id
+            WHERE t.run_id=? AND p.status IN ('in_flight','uncertain')
+            AND NOT EXISTS (SELECT 1 FROM attempts n WHERE n.task_id=p.task_id
+            AND n.call_key=p.call_key AND n.ordinal>p.ordinal)""",
+            (run_id,),
+        )
+        if any(p["id"] not in source_attempt_ids for p in unresolved):
+            raise ValueError(
+                "Other unresolved external calls remain blocked; migration is successor-only"
+            )
+
+    def config_matches(self, action):
+        from .generation_migration import existing, profile
+
+        expected = json.loads(action["config"])
+        actual = self.config()
+        if existing(self.store, successor=action["task_id"]):
+            actual = profile(actual)
+        return expected == actual
 
     def ready_input(self, run_id, request):
         run = self.background.literature.passed_goal(run_id)
@@ -149,7 +176,7 @@ class GenerationService:
             )
         return self.store.one("SELECT * FROM generation_actions WHERE request_id=?", (request_id,))
 
-    def execute(self, request_id, *, recover=False):
+    def execute(self, request_id, *, recover=False, authorize_migrated_execution=False):
         action = self.store.one(
             "SELECT * FROM generation_actions WHERE request_id=?", (request_id,)
         )
@@ -158,11 +185,13 @@ class GenerationService:
             == "succeeded"
         ):
             return self.snapshot(action["run_id"])
-        if json.loads(action["config"]) != self.config():
+        if not self.config_matches(action):
             raise ValueError("Recovery requires frozen model configuration/mode")
         if getattr(self.adapter, "background_responses", False):
+            from .generation_migration import authorize_execution
             from .remote_generation import RemoteP08
 
+            authorize_execution(self, action, authorize_migrated_execution)
             return RemoteP08(self).execute(action, recover=recover)
         self.clear_calls(action["run_id"], action["task_id"])
         if recover:
@@ -275,6 +304,12 @@ class GenerationService:
             from .remote_generation import remote_snapshot
 
             row["remote"] = remote_snapshot(self.store, row["task_id"])
+            from .generation_migration import MigrationService, existing
+
+            m = existing(self.store, source=row["task_id"]) or existing(
+                self.store, successor=row["task_id"]
+            )
+            row["migration"] = MigrationService.record(m) if m else None
             row["attempts"] = self.store.rows(
                 "SELECT id,status,usage,error,previous_id,started_at,finished_at FROM attempts WHERE task_id=? ORDER BY ordinal",
                 (row["task_id"],),

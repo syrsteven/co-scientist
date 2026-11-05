@@ -99,14 +99,96 @@ async function showGeneration(data) {
       });
       card.append(button);
     }
+    if (a.migration) {
+      const m = a.migration;
+      note("迁移关联：原 Task " + m.source_task_id + " → 后继 Task " + m.successor_task_id + "。旧两次调用仍 uncertain，可能已执行/收费。", card);
+      note(m.successor_task_id === a.task_id ? (a.attempts.length ? "后继执行状态见下方保存事实。" : "后继任务已创建，模型尚未运行；迁移本身不联网。") : "原历史记录保留；后继任务另列，不代表旧调用已解决。", card);
+      note(m.execution_authorization ? "本后继任务已有单独执行授权；不允许自动重发。" : "尚未授予本后继任务付费执行授权。", card);
+      genTextSection(card, "迁移确认、身份替代与来源哈希", m);
+    } else if (saved.model_config.api_mode === "responses_background_v1" && a.request.mode === "DIRECT" && a.task_status === "blocked" && a.config.api_mode !== "responses_background_v1" && a.attempts.length === 2 && a.attempts.every((p) => p.status === "uncertain")) {
+      migrationPreviewControl(card, a, data.run.id);
+    }
     if (["ready", "running"].includes(a.task_status)) {
       const button = document.createElement("button");
-      button.textContent = "显式执行 / 恢复此任务";
-      button.onclick = () => action(async () => {await api("/api/generation/execute", {request_id: a.request_id, recover: true}); await showRun(data.run.id);});
+      const needsAuthorization = a.migration?.successor_task_id === a.task_id && !a.migration.execution_authorization;
+      button.textContent = needsAuthorization ? "另行授权并执行此后继任务（可能收费）" : "显式执行 / 恢复此任务";
+      button.disabled = a.migration && (!saved.real_calls_authorized || !saved.model_config.credential_configured);
+      if (needsAuthorization) {
+        const consent = document.createElement("input");
+        consent.type = "checkbox";
+        consent.setAttribute("aria-label", "另行接受此后继任务的付费执行风险");
+        const label = document.createElement("label");
+        label.append(consent, document.createTextNode("另行接受此后继任务的付费执行风险；迁移创建未包含本授权"));
+        card.append(label);
+        button.disabled = true;
+        consent.onchange = () => {button.disabled = !consent.checked || !saved.real_calls_authorized || !saved.model_config.credential_configured;};
+      }
+      button.onclick = () => action(async () => {await api("/api/generation/execute", {request_id: a.request_id, recover: true, authorize_migrated_execution: needsAuthorization}); await showRun(data.run.id);});
       card.append(button);
     }
     genTextSection(card, "固定输入、配置和来源关联", {input: a.input, config: a.config, provenance: a.result?.call_provenance});
     el("generation-records").append(card);
   }
   if (state.busy) document.querySelectorAll("button").forEach((b) => (b.disabled = true));
+}
+
+const migrationPreviews = new Map();
+function migrationProposal(a) {
+  return {source_task_id: a.task_id, source_attempt_ids: a.attempts.map((p) => p.id),
+    seed_id: a.request.seed_id, packet_ref: a.request.packet_ref, readiness_ref: a.request.readiness_ref,
+    request_id: "p08-migration-" + a.task_id, candidate_id: a.candidate_id + "-responses"};
+}
+function migrationPreviewControl(card, a, runId) {
+  const savedPreview = migrationPreviews.get(a.task_id);
+  if (!savedPreview) {
+    const candidate = document.createElement("input");
+    candidate.value = a.candidate_id + "-responses";
+    candidate.setAttribute("aria-label", "迁移后新候选身份");
+    const label = document.createElement("label");
+    label.textContent = "迁移后新候选身份（明确关联原候选）";
+    label.append(candidate);
+    card.append(label);
+    const previewButton = document.createElement("button");
+    previewButton.textContent = "只读预览 Responses 迁移（不发送）";
+    previewButton.onclick = () => action(async () => {
+      const request = {...migrationProposal(a), candidate_id: candidate.value.trim()};
+      const preview = await api("/api/generation/migration/preview", {run_id: runId, request});
+      migrationPreviews.set(a.task_id, {request, preview});
+    });
+    card.append(previewButton);
+    return;
+  }
+  const {request, preview} = savedPreview;
+  note("旧两次调用可能已执行并收费；迁移不更改 uncertain，不确认旧调用已停止。新配置 store=true，供应商标准保留至少30天且有组织例外；迁移不授权付费执行。", card);
+  note("原候选 " + preview.identity_relation.original_candidate_id + " → 新执行候选 " + preview.identity_relation.successor_candidate_id + "；不是旧调用已解决。科学输入仅替换候选身份，Prompt 不变。", card);
+  note("预览 SHA-256：" + preview.preview_hash + "；新配置 SHA-256：" + preview.new_config_sha256, card);
+  genTextSection(card, "完整只读预览、冻结请求与新实际请求", preview);
+  const confirms = [
+    ["old_calls_may_have_executed_and_charged", "确认旧两次调用可能已执行并收费，旧记录保留未知"],
+    ["accept_duplicate_execution_and_charge_risk", "接受后继执行可能造成重复执行和收费的风险"],
+    ["accept_store_true_retention", "接受新配置 store=true 及所示供应商保留安排"],
+    ["creation_is_not_paid_execution_authorization", "仅创建后继任务，不授权付费发送，不自动执行"],
+  ];
+  const submit = document.createElement("button");
+  submit.textContent = "确认迁移，仅创建一个关联任务（不发送）";
+  submit.disabled = true;
+  const inputs = confirms.map(([key, text]) => {
+    const line = document.createElement("label");
+    const box = document.createElement("input");
+    box.type = "checkbox";
+    box.setAttribute("aria-label", text);
+    box.onchange = () => {submit.disabled = !inputs.every((i) => i.box.checked);};
+    line.append(box, document.createTextNode(text));
+    card.append(line);
+    return {key, box};
+  });
+  submit.onclick = () => action(async () => {
+    const acknowledgements = Object.fromEntries(inputs.map((i) => [i.key, i.box.checked]));
+    await api("/api/generation/migration/confirm", {run_id: runId, request, preview_hash: preview.preview_hash, acknowledgements});
+    migrationPreviews.delete(a.task_id);
+    await project(state.project);
+    await showRun(runId);
+    el("notice").textContent = "迁移任务已原子创建；没有发送模型请求，尚未授权付费执行。旧 uncertain 记录不变。";
+  });
+  card.append(submit);
 }

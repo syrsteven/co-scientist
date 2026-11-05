@@ -23,6 +23,9 @@
   P08 Responses background transport is explicit opt-in; read docs/RESPONSES_BACKGROUND.md.
   Persist remote ID before querying, never POST on refresh/restart/query failure.
   Old uncertain Chat calls remain blocked; API migration is a separate decision/configuration.
+  Narrow DIRECT migration: docs/P08_EXPLICIT_MIGRATION.md. Preview is read-only;
+  confirmation reserves only one linked same-Run successor atomically, never sends.
+  Only that successor can scope the named old Attempts; paid execution needs separate consent.
   Open seed calls receive only Goal, neutral overview, capabilities and generic
   constraints; sibling queries/materials/seed narratives must remain isolated.
   New P04 uses w1-l2-p04-context-v2; freeze its version per action. Retain v1

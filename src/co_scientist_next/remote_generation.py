@@ -38,12 +38,15 @@ class RemoteP08:
         task = s.one("SELECT * FROM tasks WHERE id=?", (a["task_id"],))
         if task["status"] == "succeeded":
             return self.g.snapshot(a["run_id"])
-        if json.loads(a["config"]) != self.g.config():
+        if not self.g.config_matches(a):
             raise ValueError("Recovery requires frozen Responses execution configuration")
         payload, binding = self.g.ready_input(a["run_id"], json.loads(a["request"]))
         if payload != json.loads(a["input"]) or binding != json.loads(a["binding"]):
             raise ValueError("Frozen generation input/provenance changed")
         self.g.clear_calls(a["run_id"], a["task_id"])
+        from .generation_migration import authorize_execution
+
+        authorize_execution(self.g, a, False)
         jobs = s.rows("SELECT * FROM remote_generations WHERE task_id=?", (a["task_id"],))
         job = jobs[0] if jobs else None
         if query and not job:
@@ -269,6 +272,15 @@ class RemoteP08:
                 candidate_status="generated_pending_candidate_ethics_r0",
             )
         from .generation import generation_route
+        from .generation_migration import existing
+
+        migration = existing(self.store, successor=a["task_id"])
+        if migration:
+            result["migration_provenance"] = {
+                "migration_id": migration["id"],
+                "source_task_id": migration["source_task_id"],
+                "preview_hash": migration["preview_hash"],
+            }
 
         with self.store.db:
             self.store.db.execute(
