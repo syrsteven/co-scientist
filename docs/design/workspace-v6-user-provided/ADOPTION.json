@@ -1,0 +1,11 @@
+{
+  "source_sha256": "cce3ad7bddb9b7c141f3bd87da7079f2b823dc0907f2830e01284de20e7f702e",
+  "history_derivative_sha256": "5b59c7bfc10001593460b2a800127d9243c5f656999ccb9b65fa4b921545b875",
+  "changes": [
+    "V5 seed is initial study",
+    "historical localStorage replaced with isolated in-frame memory",
+    "historical banner and ALS snapshot label",
+    "served in opaque-origin iframe sandbox; connect-src none"
+  ],
+  "live_app_embedded_science_records": false
+}

@@ -27,7 +27,7 @@ def identity():
 
 
 class Store:
-    def __init__(self, path: str | Path):
+    def __init__(self, path: str | Path, *, http_threads=False):
         path = Path(path).resolve()
         path.parent.mkdir(parents=True, exist_ok=True)
         self._lock = open(str(path) + ".lock", "a")  # noqa: SIM115 -- Store owns lock lifetime
@@ -37,7 +37,8 @@ class Store:
             self._lock.close()
             raise RuntimeError("Database already has an active runtime") from None
         try:
-            self.db = sqlite3.connect(path)
+            self.http_threads = http_threads
+            self.db = sqlite3.connect(path, check_same_thread=not http_threads)
             self.db.row_factory = sqlite3.Row
             self.db.execute("PRAGMA foreign_keys=ON")
             self.db.execute("PRAGMA synchronous=FULL")
@@ -47,6 +48,12 @@ class Store:
                 raise ValueError("Not a Co-Scientist Next W0 database")
             self.db.execute("PRAGMA application_id=1129532977")
             self.db.executescript("""
+                CREATE TABLE IF NOT EXISTS human_annotations (
+                    id TEXT PRIMARY KEY, run_id TEXT NOT NULL REFERENCES runs(id),
+                    target_kind TEXT NOT NULL, target_ref TEXT NOT NULL,
+                    target_sha256 TEXT NOT NULL, category TEXT NOT NULL,
+                    observations TEXT NOT NULL, note TEXT NOT NULL, created_at TEXT NOT NULL
+                );
                 CREATE TABLE IF NOT EXISTS projects (
                     id TEXT PRIMARY KEY, name TEXT NOT NULL, created_at TEXT NOT NULL
                 );

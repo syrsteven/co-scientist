@@ -2,24 +2,33 @@
 
 import argparse
 import json
-from http.server import BaseHTTPRequestHandler, HTTPServer
+from http.server import BaseHTTPRequestHandler, HTTPServer, ThreadingHTTPServer
 from importlib.resources import files
 from pathlib import Path
+from threading import Lock
 from urllib.parse import parse_qs, urlsplit
 
 from .background import BackgroundService
 from .background_ops import DevelopmentReadingAdapter
 from .candidate_review import CandidateReviewService
-from .candidate_review_ops import DevelopmentReviewAdapter
+from .candidate_review_ops import (
+    DEVELOPMENT_DECISIONS,
+    DEVELOPMENT_R0_POLICY,
+    DevelopmentReviewAdapter,
+)
+from .candidate_review_ops import (
+    DEVELOPMENT_POLICY as REVIEW_POLICY,
+)
 from .europe_pmc import public_http
 from .generation import GenerationService
-from .generation_migration import MigrationService
+from .generation_migration import MigrationService, ReadOnlyStore
 from .generation_ops import DevelopmentGenerationAdapter
 from .goal import DEVELOPMENT_POLICY, DevelopmentAdapter, GoalSlice, validate_brief
 from .literature_runtime import LiteratureService
 from .reading_model import OpenAIChat, load_credential
 from .responses_model import OpenAIResponses
 from .store import Store
+from .workspace_records import WorkspaceRecords
 
 
 def make_server(
@@ -33,7 +42,17 @@ def make_server(
     generation_adapter=None,
     review_adapter=None,
     development_review=False,
+    require_goal_test_opt_in=False,
+    responsive=False,
+    history_db=None,
+    literature_mode="real_public",
 ):
+    database_path = store.one("PRAGMA database_list")["file"]
+    if history_db and Path(history_db).resolve() == Path(database_path).resolve():
+        raise ValueError("History and stage databases must be separate")
+    if responsive and not getattr(store, "http_threads", False):
+        raise ValueError("Responsive server requires explicitly serialized HTTP Store threads")
+    write_lock = Lock()
     service = GoalSlice(
         store, DevelopmentAdapter() if development_test else None, development_test=development_test
     )
@@ -61,7 +80,11 @@ def make_server(
             self.send_header("X-Content-Type-Options", "nosniff")
             self.send_header(
                 "Content-Security-Policy",
-                "default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'; frame-ancestors 'none'",
+                (
+                    "default-src 'none'; style-src 'unsafe-inline'; script-src 'unsafe-inline'; img-src data:; connect-src 'none'; frame-ancestors 'self'; form-action 'none'"
+                    if urlsplit(self.path).path == "/history.html"
+                    else "default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self'; frame-ancestors 'none'"
+                ),
             )
             self.end_headers()
             self.wfile.write(data)
@@ -75,6 +98,18 @@ def make_server(
                 raise ValueError("Cross-origin writes are not supported")
 
         def do_GET(self):
+            with ReadOnlyStore(database_path) as snapshot:
+                snapshot.db.execute("BEGIN")
+                self.read_get(snapshot)
+
+        def read_get(self, store):
+            service = GoalSlice(store, development_test=development_test)
+            literature = LiteratureService(
+                store, enabled=public_literature, transport=literature_transport
+            )
+            background = BackgroundService(store, reading_adapter)
+            generation = GenerationService(store, generation_adapter)
+            reviews = CandidateReviewService(store, review_adapter, development=development_review)
             try:
                 self.allowed_origin()
                 parsed = urlsplit(self.path)
@@ -86,6 +121,9 @@ def make_server(
                     "/background.js",
                     "/generation.js",
                     "/candidate-review.js",
+                    "/workbench.js",
+                    "/workbench.css",
+                    "/history.html",
                 ):
                     asset, mime = {
                         "/": ("index.html", "text/html"),
@@ -94,6 +132,9 @@ def make_server(
                         "/generation.js": ("generation.js", "text/javascript"),
                         "/candidate-review.js": ("candidate-review.js", "text/javascript"),
                         "/app.css": ("app.css", "text/css"),
+                        "/workbench.js": ("workbench.js", "text/javascript"),
+                        "/workbench.css": ("workbench.css", "text/css"),
+                        "/history.html": ("history.html", "text/html"),
                     }[path]
                     self.reply(
                         200,
@@ -109,9 +150,72 @@ def make_server(
                             "reading_model": background.config(),
                             "generation_model": generation.config(),
                             "public_literature_enabled": public_literature,
+                            "literature_execution_mode": literature_mode
+                            if public_literature
+                            else "not_configured",
+                            "review_model": reviews.config(),
+                            "review_development_policy_allowed": development_review,
+                            "module_authorization": {
+                                "reading": bool(
+                                    reading_adapter
+                                    and getattr(reading_adapter, "authorized", False)
+                                ),
+                                "generation": bool(
+                                    generation_adapter and generation_adapter.authorized
+                                ),
+                                "review": bool(
+                                    review_adapter and getattr(review_adapter, "authorized", False)
+                                ),
+                            },
+                            "goal_test_opt_in_required": require_goal_test_opt_in,
+                            "history_available": bool(history_db and Path(history_db).is_file()),
+                            "production_policy_default": False,
+                            "development_review_templates": {
+                                "ethics": REVIEW_POLICY,
+                                "decisions": DEVELOPMENT_DECISIONS,
+                                "r0": DEVELOPMENT_R0_POLICY,
+                            }
+                            if development_review
+                            else None,
                             "example_policy": DEVELOPMENT_POLICY if development_test else None,
                         },
                     )
+                elif path == "/api/annotations":
+                    run_id = parse_qs(parsed.query)["run_id"][0]
+                    records = WorkspaceRecords(store)
+                    self.reply(
+                        200,
+                        {
+                            "records": records.list(run_id),
+                            "targets": records.targets(run_id),
+                            "automatically_in_model_input": False,
+                        },
+                    )
+                elif path == "/api/export":
+                    self.reply(
+                        200, WorkspaceRecords(store).export(parse_qs(parsed.query)["run_id"][0])
+                    )
+                elif path == "/api/history":
+                    if not history_db:
+                        raise ValueError("No read-only historical record configured")
+                    with ReadOnlyStore(history_db) as historical:
+                        historical.db.execute("BEGIN")
+                        runs = historical.rows(
+                            "SELECT id,status FROM runs ORDER BY created_at DESC"
+                        )
+                        selected = parse_qs(parsed.query).get(
+                            "run_id", [runs[0]["id"] if runs else None]
+                        )[0]
+                        self.reply(
+                            200,
+                            {
+                                "read_only": True,
+                                "runs": runs,
+                                "export": WorkspaceRecords(historical).export(selected)
+                                if selected
+                                else None,
+                            },
+                        )
                 elif path == "/api/projects":
                     self.reply(200, store.rows("SELECT * FROM projects ORDER BY created_at DESC"))
                 elif path == "/api/project":
@@ -191,6 +295,17 @@ def make_server(
                 self.reply(400, {"error": str(exc)})
 
         def do_POST(self):
+            if not write_lock.acquire(blocking=False):
+                self.reply(409, {"error": "当前操作正在执行；可读取本地状态，等待后再保存或执行。"})
+                return
+            try:
+                self.write_post()
+            except (BrokenPipeError, ConnectionResetError):
+                pass  # Browser refresh does not cancel or resend an already recorded operation.
+            finally:
+                write_lock.release()
+
+        def write_post(self):
             try:
                 self.allowed_origin()
                 size = int(self.headers.get("Content-Length", "0"))
@@ -200,7 +315,9 @@ def make_server(
                     raise ValueError("JSON request required")
                 data = json.loads(self.rfile.read(size))
                 path = urlsplit(self.path).path
-                if path == "/api/brief":
+                if path == "/api/annotations":
+                    self.reply(201, WorkspaceRecords(store).save(data["run_id"], data))
+                elif path == "/api/brief":
                     validate_brief(data["brief"])
                     project_id = data.get("project_id")
                     if project_id is None:
@@ -213,6 +330,13 @@ def make_server(
                     )
                     self.reply(201, {"project_id": project_id, "revision_id": revision})
                 elif path == "/api/runs":
+                    if require_goal_test_opt_in and (
+                        not development_test
+                        or data.get("goal_test_mode") != "deterministic_development"
+                    ):
+                        raise ValueError(
+                            "请明确选择 Goal 制备/筛查开发替身模式；不代表真实伦理审查"
+                        )
                     run = service.create_run(
                         data["revision_id"],
                         data.get("policy"),
@@ -222,7 +346,7 @@ def make_server(
                 elif path == "/api/execute":
                     # POST is explicit. Loading /api/run does not reach this operation.
                     if store.tasks(data["run_id"])[-1]["module"].startswith(
-                        ("literature.", "background.", "generation.")
+                        ("literature.", "background.", "generation.", "candidate_review.")
                     ):
                         raise ValueError("Use the explicit literature action recovery endpoint")
                     service.execute(data["run_id"], recover=data.get("recover") is True)
@@ -321,7 +445,9 @@ def make_server(
             except (KeyError, ValueError, TypeError) as exc:
                 self.reply(400, {"error": str(exc)})
 
-    return HTTPServer(("127.0.0.1", port), Handler)
+    server = (ThreadingHTTPServer if responsive else HTTPServer)(("127.0.0.1", port), Handler)
+    server.daemon_threads = True
+    return server
 
 
 def main():
@@ -380,6 +506,16 @@ def main():
         action="store_true",
         help="Permit explicit nonproduction policies with a real Responses profile; does not select fixtures or authorize calls",
     )
+    parser.add_argument("--require-goal-test-opt-in", action="store_true")
+    parser.add_argument(
+        "--responsive",
+        action="store_true",
+        help="One serialized writer, independent read-only GET snapshots during long calls",
+    )
+    parser.add_argument(
+        "--history-db",
+        help="Optional historical database: read-only GET/export only, never a Store",
+    )
     args = parser.parse_args()
     if args.allow_development_review_policy and (
         not args.review_responses_config or args.development_review
@@ -387,23 +523,11 @@ def main():
         parser.error(
             "Nonproduction real review requires explicit review Responses profile, separate from fixture mode"
         )
-    if args.development_review and (
-        args.review_responses_config
-        or args.credential_env
-        or args.credential_file
-        or args.allow_real_model_calls
-    ):
+    if args.development_review and (args.review_responses_config):
         parser.error("Development review cannot load model credentials or authorize real calls")
-    if args.generation_responses_config and (
-        args.development_generation or args.reading_model_config or args.development_reading
-    ):
+    if args.generation_responses_config and (args.development_generation):
         parser.error("Select a separate Responses profile; no implicit API migration")
-    if args.development_reading and (
-        args.reading_model_config
-        or args.allow_real_model_calls
-        or args.credential_env
-        or args.credential_file
-    ):
+    if args.development_reading and (args.reading_model_config):
         parser.error("Select explicit development reading or real configuration; no fallback")
     if not (
         args.reading_model_config
@@ -413,29 +537,27 @@ def main():
         parser.error(
             "Explicit model configuration required; credentials/authorization alone do not select a model"
         )
+    secret = None
+    if args.credential_env or args.credential_file:
+        try:
+            secret = load_credential(
+                env_name=args.credential_env, credential_file=args.credential_file
+            )
+        except (ValueError, OSError):
+            secret = None
     adapter = DevelopmentReadingAdapter() if args.development_reading else None
     if args.reading_model_config:
         try:
             config = json.loads(Path(args.reading_model_config).read_text())
-            secret = (
-                load_credential(env_name=args.credential_env, credential_file=args.credential_file)
-                if args.credential_env or args.credential_file
-                else None
-            )
             adapter = OpenAIChat(config, secret, authorized=args.allow_real_model_calls)
         except (ValueError, OSError):
             parser.error(
                 "Reading configuration/credential unavailable; no fallback or secret details printed"
             )
-    generation_adapter = adapter if args.reading_model_config else None
+    generation_adapter = None  # Each role selects its own explicit API/configuration.
     if args.generation_responses_config:
         try:
             config = json.loads(Path(args.generation_responses_config).read_text())
-            secret = (
-                load_credential(env_name=args.credential_env, credential_file=args.credential_file)
-                if args.credential_env or args.credential_file
-                else None
-            )
             generation_adapter = OpenAIResponses(
                 config, secret, authorized=args.allow_real_model_calls
             )
@@ -447,22 +569,22 @@ def main():
     if args.review_responses_config:
         try:
             config = json.loads(Path(args.review_responses_config).read_text())
-            secret = (
-                load_credential(env_name=args.credential_env, credential_file=args.credential_file)
-                if args.credential_env or args.credential_file
-                else None
-            )
             review_adapter = OpenAIResponses(config, secret, authorized=args.allow_real_model_calls)
         except (ValueError, OSError):
             parser.error(
                 "Review configuration/credential unavailable; no fallback or secret details printed"
             )
-    with Store(args.db) as store:
+    if args.history_db and Path(args.history_db).resolve() == Path(args.db).resolve():
+        parser.error("Stage database must be distinct from the read-only history database")
+    with Store(args.db, http_threads=args.responsive) as store:
         server = make_server(
             store,
             port=args.port,
             development_test=args.development_test,
             public_literature=args.public_literature,
+            require_goal_test_opt_in=args.require_goal_test_opt_in,
+            responsive=args.responsive,
+            history_db=args.history_db,
             reading_adapter=adapter,
             review_adapter=review_adapter,
             development_review=args.development_review or args.allow_development_review_policy,

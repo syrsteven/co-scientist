@@ -2,7 +2,7 @@
 let generationData = null;
 function generationSpecificity() {
   const ready = generationData?.ready_records.find((r) => r.readiness_ref === el("generation-ready").value);
-  el("generation-specificity").textContent = ready ? "固定背景包：" + ready.packet_ref + "；允许具体程度：" + ready.allowed_specificity : "没有已完成且绑定正确的 ready 记录。";
+  el("generation-specificity").textContent = ready ? "所选方向已绑定固定背景包；允许具体程度：" + ready.allowed_specificity : "没有已完成且绑定正确的 ready 记录。";
 }
 el("generation-ready").onchange = generationSpecificity;
 el("generation-submit").onclick = () => action(async () => {
@@ -43,7 +43,7 @@ async function showGeneration(data) {
     : "生成模型未配置；不会自动使用开发替身。";
   if (data.development_test) el("generation-mode").textContent += " Goal Ethics 为开发测试结果，不代表真实伦理审查。";
   el("generation-prompt").textContent = "当前 Prompt：" + saved.prompt_version + "；" + (saved.blocked_reason || "按保存 ready 记录放行，不仅依赖 Run 状态。");
-  bgOptions("generation-ready", saved.ready_records.map((r) => ({...r, id: r.readiness_ref})), (r) => r.seed_id + " · " + r.readiness_ref + " · " + r.question);
+  bgOptions("generation-ready", saved.ready_records.map((r) => ({...r, id: r.readiness_ref})), (r) => r.question);
   generationSpecificity();
   el("generation-submit").disabled = !saved.can_submit || mode === "not_configured" || (mode === "real_model" && (!saved.real_calls_authorized || !saved.model_config.credential_configured));
   el("generation-records").replaceChildren();
@@ -141,7 +141,8 @@ async function showGeneration(data) {
     genTextSection(card, "固定输入、配置和来源关联", {input: a.input, config: a.config, provenance: a.result?.call_provenance});
     el("generation-records").append(card);
   }
-  if (state.busy) document.querySelectorAll("button").forEach((b) => (b.disabled = true));
+  workspaceChanged();
+  if (state.busy) document.querySelectorAll("button:not([data-nav]):not(#refresh)").forEach((b) => (b.disabled = true));
 }
 
 const migrationPreviews = new Map();

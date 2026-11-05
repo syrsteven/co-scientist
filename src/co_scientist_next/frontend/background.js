@@ -1,5 +1,6 @@
 "use strict";
 let backgroundData = null;
+const backgroundTaskLabels = {P03:"规划查询",P04:"阅读原文",P05:"综合背景资料",P06_DIRECTED:"准备定向研究方向",P06_OPEN:"准备开放研究方向",P07:"评估准备程度"};
 const backgroundLabels = {
   saved: "已保存解读/准备结果",
   invalid_output: "阅读失败：输出解析或契约无效",
@@ -164,15 +165,15 @@ async function showBackground(data) {
     "background-orientation",
     success
       .filter((a) => a.operation === "P05" && !a.seed_id)
-      .map((a) => ({ id: a.request_id })),
-    (a) => a.id,
+      .map((a) => ({ id: a.request_id, label: a.result.artifact.overview[0] || "已保存背景包" })),
+    (a) => a.label,
   );
   bgOptions(
     "background-packet",
     success
       .filter((a) => a.operation === "P05" && a.seed_id === seed && seed)
-      .map((a) => ({ id: a.request_id })),
-    (a) => a.id,
+      .map((a) => ({ id: a.request_id, label: a.result.artifact.overview[0] || "已保存背景包" })),
+    (a) => a.label,
   );
   const idle = [
     "awaiting_background",
@@ -244,7 +245,7 @@ async function showBackground(data) {
     d.className = "block background-record";
     d.dataset.requestId = a.request_id;
     const h = document.createElement("h3");
-    h.textContent = a.operation + " · " + (a.seed_id || "宽背景");
+    h.textContent = (backgroundTaskLabels[a.operation] || a.operation) + " · " + (saved.seeds.find(s=>s.id===a.seed_id)?.question || "宽背景");
     d.append(h);
     note("固定 Prompt 版本：" + a.prompt_version, d);
     const status = a.result?.background_status;
@@ -337,6 +338,6 @@ async function showBackground(data) {
   bgFields();
   if (state.busy)
     document
-      .querySelectorAll("button")
+      .querySelectorAll("button:not([data-nav]):not(#refresh)")
       .forEach((button) => (button.disabled = true));
 }
