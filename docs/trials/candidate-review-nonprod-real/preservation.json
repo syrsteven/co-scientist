@@ -1,0 +1,114 @@
+{
+  "original_database_sha256": "a1414816be01c06535e9493f9eaa62d40ee892ad45cf024af61dc7776ab7a2b9",
+  "original_database_unchanged": true,
+  "trial_history": {
+    "projects": {
+      "old_count": 1,
+      "new_count": 1,
+      "all_original_rows_unchanged": true
+    },
+    "brief_revisions": {
+      "old_count": 1,
+      "new_count": 1,
+      "all_original_rows_unchanged": true
+    },
+    "runs": {
+      "old_count": 1,
+      "new_count": 1,
+      "changes": "Only current trial Run plan/status advancement; identity/input unchanged"
+    },
+    "tasks": {
+      "old_count": 25,
+      "new_count": 26,
+      "all_original_rows_unchanged": true
+    },
+    "results": {
+      "old_count": 24,
+      "new_count": 24,
+      "all_original_rows_unchanged": true
+    },
+    "attempts": {
+      "old_count": 32,
+      "new_count": 33,
+      "all_original_rows_unchanged": true
+    },
+    "goal_contexts": {
+      "old_count": 1,
+      "new_count": 1,
+      "all_original_rows_unchanged": true
+    },
+    "goal_run_config": {
+      "old_count": 1,
+      "new_count": 1,
+      "all_original_rows_unchanged": true
+    },
+    "literature_actions": {
+      "old_count": 10,
+      "new_count": 10,
+      "all_original_rows_unchanged": true
+    },
+    "material_views": {
+      "old_count": 5,
+      "new_count": 5,
+      "all_original_rows_unchanged": true
+    },
+    "background_actions": {
+      "old_count": 11,
+      "new_count": 11,
+      "all_original_rows_unchanged": true
+    },
+    "execution_facts": {
+      "old_count": 70,
+      "new_count": 72,
+      "all_original_rows_unchanged": true
+    },
+    "generation_actions": {
+      "old_count": 2,
+      "new_count": 2,
+      "all_original_rows_unchanged": true
+    },
+    "generation_migrations": {
+      "old_count": 1,
+      "new_count": 1,
+      "all_original_rows_unchanged": true
+    },
+    "remote_generations": {
+      "old_count": 1,
+      "new_count": 1,
+      "all_original_rows_unchanged": true
+    },
+    "candidate_review_actions": {
+      "old_count": 0,
+      "new_count": 1,
+      "all_original_rows_unchanged": true
+    }
+  },
+  "candidate_sha256": "ba61dbc62315e7f5ad2cb360df4aa86da625a40df4b3dfc852d6effceb981fd9",
+  "goal_sha256": "aaa0f1edd3b50c26022c1b9ca30948688783f1936682217b54d9be56bcf001cc",
+  "source_views_sha256": "9b1c176e204536faaee3dde950b580c14fcc48d6cb50251b343447c215128f98",
+  "scientific_inputs_unchanged": true,
+  "historical_uncertain_attempts": [
+    {
+      "id": "5ad8cea64b1146c7bf2eb80e194e0798",
+      "status": "uncertain",
+      "usage": {
+        "cost": null,
+        "input_tokens": null,
+        "output_tokens": null,
+        "tool_units": null
+      },
+      "row_sha256": "54d601f181f57f3a2c1affaadfbb97261f2c2bfaf4239e897a06fef2b5db596a"
+    },
+    {
+      "id": "86948ac23ee2477cac992b24f6016796",
+      "status": "uncertain",
+      "usage": {
+        "cost": null,
+        "input_tokens": null,
+        "output_tokens": null,
+        "tool_units": null
+      },
+      "row_sha256": "07f13da28e5018e71cf137d7c46b5f2566f0c5b6fe685753d2074e4462ff664b"
+    }
+  ]
+}

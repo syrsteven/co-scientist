@@ -1,0 +1,16 @@
+[
+  {
+    "id": 71,
+    "task_id": "250e3e6dea7a430fb07e71080c20a345",
+    "kind": "nonproduction_trial_post_explicitly_authorized",
+    "detail": "{\"operation\": \"P09\", \"preparation_sha256\": \"1890c42d8fdea5872f01018a7bb84f302a6ce9b5cc3022369f81647af9ce0951\", \"scope\": \"one POST for this task only; nonproduction policy\", \"store_true_acknowledged\": true}",
+    "created_at": "2026-11-05T08:53:14.073080+00:00"
+  },
+  {
+    "id": 72,
+    "task_id": "250e3e6dea7a430fb07e71080c20a345",
+    "kind": "remote_submit_requested",
+    "detail": "{}",
+    "created_at": "2026-11-05T08:53:14.113044+00:00"
+  }
+]

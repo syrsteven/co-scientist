@@ -1,0 +1,9 @@
+{
+  "request_id": "p10-real-nonprod-single-v1",
+  "task_created": false,
+  "post_attempts": 0,
+  "queries": 0,
+  "assembled": false,
+  "reason": "P09 submit uncertain without response_id, completed result or valid pass; do not assemble/create/send P10",
+  "decision": null
+}
