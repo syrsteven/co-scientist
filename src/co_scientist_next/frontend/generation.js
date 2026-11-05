@@ -48,6 +48,7 @@ async function showGeneration(data) {
   el("generation-submit").disabled = !saved.can_submit || mode === "not_configured" || (mode === "real_model" && (!saved.real_calls_authorized || !saved.model_config.credential_configured));
   el("generation-records").replaceChildren();
   const reviews = await api("/api/candidate-review?run_id=" + encodeURIComponent(data.run.id));
+  candidateReviewData = reviews;
   for (const a of saved.actions) {
     const card = document.createElement("div");
     card.className = "block candidate-card";
@@ -142,7 +143,7 @@ async function showGeneration(data) {
     el("generation-records").append(card);
   }
   workspaceChanged();
-  if (state.busy) document.querySelectorAll("button:not([data-nav]):not(#refresh)").forEach((b) => (b.disabled = true));
+  if (state.busy) document.querySelectorAll("button:not([data-nav]):not(#refresh):not([data-read-only])").forEach((b) => (b.disabled = true));
 }
 
 const migrationPreviews = new Map();

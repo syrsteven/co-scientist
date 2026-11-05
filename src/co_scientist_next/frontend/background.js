@@ -211,6 +211,7 @@ async function showBackground(data) {
         "；未读取图像或补充材料。",
       d,
     );
+    d.append(wbButton("阅读原文／记录来源问题", () => wbSource(view, {runId: data.run.id, readOnly: false})));
     d.append(folded("查看固定原文 / 裁剪记录", view));
     el("background-views").append(d);
   }
@@ -338,6 +339,6 @@ async function showBackground(data) {
   bgFields();
   if (state.busy)
     document
-      .querySelectorAll("button:not([data-nav]):not(#refresh)")
+      .querySelectorAll("button:not([data-nav]):not(#refresh):not([data-read-only])")
       .forEach((button) => (button.disabled = true));
 }

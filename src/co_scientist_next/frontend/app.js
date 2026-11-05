@@ -51,14 +51,18 @@ async function api(path, data) {
       : {},
   );
   const result = await response.json();
-  if (!response.ok) throw new Error(result.error || "请求失败");
+  if (!response.ok) {
+    const error = new Error(response.status === 409 ? "本机另一项写操作仍在执行。可继续浏览已保存记录，待其结束后再保存；这不是模型执行失败。不会自动重发。" : (result.error || "请求失败"));
+    error.status = response.status; throw error;
+  }
   return result;
 }
 async function action(fn) {
   if (state.busy) return;
   state.busy = true;
+  workspaceChanged();
   el("notice").textContent = "";
-  const buttons = [...document.querySelectorAll("button:not([data-nav]):not(#refresh)")];
+  const buttons = [...document.querySelectorAll("button:not([data-nav]):not(#refresh):not([data-read-only])")];
   const disabled = buttons.map((b) => b.disabled);
   buttons.forEach((b) => (b.disabled = true));
   try {
@@ -67,6 +71,7 @@ async function action(fn) {
     el("notice").textContent = e.message;
   } finally {
     state.busy = false;
+    workspaceChanged();
     buttons.forEach((b, i) => (b.disabled = disabled[i]));
     updateActions();
     if (state.run) {
@@ -124,7 +129,7 @@ function reset() {
   state.project = null;
   state.revision = null;
   state.run = null;
-  generationData = null; backgroundData = null; literatureData = [];
+  generationData = null; candidateReviewData = null; backgroundData = null; literatureData = [];
   el("literature-panel").hidden = true;
   el("background-panel").hidden = true;
   el("generation-panel").hidden = true;
@@ -156,7 +161,7 @@ async function project(id) {
   const data = await api("/api/project?id=" + encodeURIComponent(id));
   if (state.project && state.project !== id) {
     state.run = null;
-    generationData = null; backgroundData = null; literatureData = [];
+    generationData = null; candidateReviewData = null; backgroundData = null; literatureData = [];
     el("literature-panel").hidden = true;
     el("background-panel").hidden = true;
     el("generation-panel").hidden = true;

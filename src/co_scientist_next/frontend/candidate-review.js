@@ -1,4 +1,5 @@
 "use strict";
+let candidateReviewData = null;
 function reviewField(parent, title, value = "") {
   const label = document.createElement("label");
   label.textContent = title;

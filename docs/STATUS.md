@@ -651,3 +651,12 @@ python -m ruff format --check src/co_scientist_next tests/next
 - 验证：新系统398 passed，失败0/跳过0；Ruff、Next所有JS语法、wheel构建通过。浏览器走通新植物问题的隔离夹具链、双模式候选、独立审查、笔记刷新/导出、第二研究隔离及历史比较；390px窄屏无整页横溢。细节与截图：`docs/workbench/verification/README.md`。
 - 已启动 <http://127.0.0.1:8767/>，独立空阶段库，不写历史真实库；实际服务只做只读查看，真实模型请求0、真实文献请求0。原工作区232项改动及历史DB哈希保持。启动/人工评估路径：`docs/workbench/README.md`、`scripts/start_stage_workbench.sh`。
 - 科学验证：`science_validated=false`。离线夹具不证明任意问题的科学相关性或模型质量；生产伦理政策、科学质量、用户科研评估未验证。旧G3全量/在线供应商检查未运行；历史交互未穷举所有组合。阶段库位于临时目录，长期保存需备份；服务仅用于本机单用户。
+
+## PR #20 科研阅读与独立判断优化（2026-11-06）
+
+- 远端复核PR #20仍Open，固定起点 `b1d357595780c389df263a7a56efb3014a18dbd3`，继续 `codex/v6-stage-workbench` 追加，保持未合并；原main基线 `758bd4132a1792da01ab996b91d78711c494d6a2`。
+- 前端：候选摘要／四标签科学阅读／原始记录三级结构；机制、证据、假设、预测、证伪、P09/R0使用专用组件。当前候选内直接查看正式审查和保存独立人工意见；原文视图可绑定material_view意见，无目标或只读时明确不能保存。概览展示实际背景、候选主张和待解决问题，七项主导航保留汇总入口。
+- 复用现有API/字段，无新数据字段、无后端改动，Store/M12/M15及科学Prompt/契约不变。只读浏览在长POST期间可用；409明确为本机写锁繁忙、不是模型失败，不自动重发；后端写锁完整保留。未来并发写意见需另评审。
+- 真实ALS只读验收：P09真实模型+限定非生产用途pass；P10 proceed_to_R1、6项未知、8项R1核查、无达标阻断缺陷；逐条保留原文，未把ANXA11/SUN1独立人工初审问题冒充R0发现。R1未执行／能力未实现。
+- 回归起始398 passed；最终403 passed（新增5项前端映射/DOM/隔离/409断连测试），失败0/跳过0。Ruff、全部Next JS语法、wheel/sdist通过。桌面及390px浏览器已验候选内意见保存/刷新、来源问题、兄弟候选与Run隔离、空新问题、V5比较和G0→G3回放；延迟夹具执行中GET刷新后两个任务仍仅两个ordinal=1 Attempt。截图、命令和限制见 `docs/workbench/reading-refinement/README.md`。
+- 科学/历史保护：真实模型请求0、真实检索0；原工作区232项指纹及两历史DB SHA不变，科学原件和V5 HTML未改。science_validated=false。旧G3全量、在线供应商/检索和科学质量验收未运行，不实现M03/R1/Ranking/Evolution。
