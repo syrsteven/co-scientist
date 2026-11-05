@@ -46,7 +46,7 @@ where = ["src"]
 version = {attr = "co_scientist.__version__"}
 
 [tool.setuptools.package-data]
-"co_scientist_next" = ["frontend/*.html", "frontend/*.css", "frontend/*.js"]
+"co_scientist_next" = ["frontend/*.html", "frontend/*.css", "frontend/*.js", "prompts/*.txt"]
 "co_scientist_web" = ["frontend/*.html", "frontend/*.css", "frontend/*.js"]
 "co_scientist.release" = ["resources/*.yaml", "resources/*.json", "resources/*.txt"]
 "co_scientist" = [

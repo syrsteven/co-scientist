@@ -1,0 +1,1493 @@
+* Getting build dependencies for sdist...
+running egg_info
+writing src/co_scientist_replica.egg-info/PKG-INFO
+writing dependency_links to src/co_scientist_replica.egg-info/dependency_links.txt
+writing entry points to src/co_scientist_replica.egg-info/entry_points.txt
+writing requirements to src/co_scientist_replica.egg-info/requires.txt
+writing top-level names to src/co_scientist_replica.egg-info/top_level.txt
+reading manifest file 'src/co_scientist_replica.egg-info/SOURCES.txt'
+reading manifest template 'MANIFEST.in'
+warning: no previously-included files matching '__pycache__' found anywhere in distribution
+warning: no previously-included files matching '*.py[cod]' found anywhere in distribution
+writing manifest file 'src/co_scientist_replica.egg-info/SOURCES.txt'
+* Building sdist...
+running sdist
+running egg_info
+writing src/co_scientist_replica.egg-info/PKG-INFO
+writing dependency_links to src/co_scientist_replica.egg-info/dependency_links.txt
+writing entry points to src/co_scientist_replica.egg-info/entry_points.txt
+writing requirements to src/co_scientist_replica.egg-info/requires.txt
+writing top-level names to src/co_scientist_replica.egg-info/top_level.txt
+reading manifest file 'src/co_scientist_replica.egg-info/SOURCES.txt'
+reading manifest template 'MANIFEST.in'
+warning: no previously-included files matching '__pycache__' found anywhere in distribution
+warning: no previously-included files matching '*.py[cod]' found anywhere in distribution
+writing manifest file 'src/co_scientist_replica.egg-info/SOURCES.txt'
+running check
+creating co_scientist_replica-0.2.0.dev0
+creating co_scientist_replica-0.2.0.dev0/docs
+creating co_scientist_replica-0.2.0.dev0/docs/design
+creating co_scientist_replica-0.2.0.dev0/docs/design/m00-accepted-v1.0
+creating co_scientist_replica-0.2.0.dev0/docs/design/m00-accepted-v1.0/diagrams
+creating co_scientist_replica-0.2.0.dev0/docs/design/m00-accepted-v1.0/reference
+creating co_scientist_replica-0.2.0.dev0/docs/design/w0-proposed-v0.1
+creating co_scientist_replica-0.2.0.dev0/docs/design/w0-real-cases-proposed-v0.1
+creating co_scientist_replica-0.2.0.dev0/docs/design/w1-method-v0.4-proposed
+creating co_scientist_replica-0.2.0.dev0/docs/examples
+creating co_scientist_replica-0.2.0.dev0/docs/preparations/candidate-ethics-r0-unsent
+creating co_scientist_replica-0.2.0.dev0/docs/preparations/p04-context-v2
+creating co_scientist_replica-0.2.0.dev0/docs/preparations/p04-context-v2/requests
+creating co_scientist_replica-0.2.0.dev0/docs/preparations/p04-context-v2/views
+creating co_scientist_replica-0.2.0.dev0/docs/preparations/p08-explicit-migration
+creating co_scientist_replica-0.2.0.dev0/docs/preparations/p08-unexecuted
+creating co_scientist_replica-0.2.0.dev0/docs/preparations/responses-background
+creating co_scientist_replica-0.2.0.dev0/docs/trials/p07-recovery-real
+creating co_scientist_replica-0.2.0.dev0/docs/trials/p08-direct-responses-real
+creating co_scientist_replica-0.2.0.dev0/docs/trials/p08-direct-responses-real/attempts/00-b14e5fbc561a40d2869b0241126feb2d
+creating co_scientist_replica-0.2.0.dev0/docs/trials/p08-direct-responses-real/attempts/01-138b35b1579b4267b392a68de8aa905e
+creating co_scientist_replica-0.2.0.dev0/docs/trials/p08-direct-responses-real/attempts/02-cc8ca88fd45a4e6eaffd09abae31f0e4
+creating co_scientist_replica-0.2.0.dev0/docs/trials/p08-direct-responses-real/attempts/03-24ec077f7cb6480f85e0293f29eec94b
+creating co_scientist_replica-0.2.0.dev0/docs/trials/p08-direct-responses-real/attempts/04-d11dc55e5c384bfeb21629583c9a902a
+creating co_scientist_replica-0.2.0.dev0/docs/trials/p08-direct-responses-real/preflight
+creating co_scientist_replica-0.2.0.dev0/docs/trials/w1-l2-first-real-p04-review
+creating co_scientist_replica-0.2.0.dev0/docs/trials/w1-l2-first-real-p04-review/tests
+creating co_scientist_replica-0.2.0.dev0/docs/verification
+creating co_scientist_replica-0.2.0.dev0/docs/verification/candidate-ethics-r0
+creating co_scientist_replica-0.2.0.dev0/docs/verification/p04-context-v2
+creating co_scientist_replica-0.2.0.dev0/docs/verification/p08
+creating co_scientist_replica-0.2.0.dev0/docs/verification/p08-explicit-migration
+creating co_scientist_replica-0.2.0.dev0/docs/verification/responses-background
+creating co_scientist_replica-0.2.0.dev0/docs/verification/w1-l1
+creating co_scientist_replica-0.2.0.dev0/docs/verification/w1-l2
+creating co_scientist_replica-0.2.0.dev0/examples
+creating co_scientist_replica-0.2.0.dev0/scripts
+creating co_scientist_replica-0.2.0.dev0/src/co_scientist
+creating co_scientist_replica-0.2.0.dev0/src/co_scientist/_migrations
+creating co_scientist_replica-0.2.0.dev0/src/co_scientist/_migrations/versions
+creating co_scientist_replica-0.2.0.dev0/src/co_scientist/adapters/artifacts
+creating co_scientist_replica-0.2.0.dev0/src/co_scientist/adapters/literature
+creating co_scientist_replica-0.2.0.dev0/src/co_scientist/adapters/llm
+creating co_scientist_replica-0.2.0.dev0/src/co_scientist/adapters/persistence
+creating co_scientist_replica-0.2.0.dev0/src/co_scientist/agents
+creating co_scientist_replica-0.2.0.dev0/src/co_scientist/application
+creating co_scientist_replica-0.2.0.dev0/src/co_scientist/cli
+creating co_scientist_replica-0.2.0.dev0/src/co_scientist/domain
+creating co_scientist_replica-0.2.0.dev0/src/co_scientist/events
+creating co_scientist_replica-0.2.0.dev0/src/co_scientist/evidence
+creating co_scientist_replica-0.2.0.dev0/src/co_scientist/export
+creating co_scientist_replica-0.2.0.dev0/src/co_scientist/ports
+creating co_scientist_replica-0.2.0.dev0/src/co_scientist/release
+creating co_scientist_replica-0.2.0.dev0/src/co_scientist/release/resources
+creating co_scientist_replica-0.2.0.dev0/src/co_scientist/runtime
+creating co_scientist_replica-0.2.0.dev0/src/co_scientist/skills
+creating co_scientist_replica-0.2.0.dev0/src/co_scientist/skills/resources/candidate_ethics
+creating co_scientist_replica-0.2.0.dev0/src/co_scientist/skills/resources/candidate_ethics/prompts
+creating co_scientist_replica-0.2.0.dev0/src/co_scientist/skills/resources/claim_decomposition
+creating co_scientist_replica-0.2.0.dev0/src/co_scientist/skills/resources/claim_decomposition/prompts
+creating co_scientist_replica-0.2.0.dev0/src/co_scientist/skills/resources/claim_search_plan
+creating co_scientist_replica-0.2.0.dev0/src/co_scientist/skills/resources/claim_search_plan/prompts
+creating co_scientist_replica-0.2.0.dev0/src/co_scientist/skills/resources/claim_verification
+creating co_scientist_replica-0.2.0.dev0/src/co_scientist/skills/resources/claim_verification/prompts
+creating co_scientist_replica-0.2.0.dev0/src/co_scientist/skills/resources/directive_ethics
+creating co_scientist_replica-0.2.0.dev0/src/co_scientist/skills/resources/directive_ethics/prompts
+creating co_scientist_replica-0.2.0.dev0/src/co_scientist/skills/resources/evolution
+creating co_scientist_replica-0.2.0.dev0/src/co_scientist/skills/resources/evolution/prompts
+creating co_scientist_replica-0.2.0.dev0/src/co_scientist/skills/resources/generation
+creating co_scientist_replica-0.2.0.dev0/src/co_scientist/skills/resources/generation/prompts
+creating co_scientist_replica-0.2.0.dev0/src/co_scientist/skills/resources/meta_review
+creating co_scientist_replica-0.2.0.dev0/src/co_scientist/skills/resources/meta_review/prompts
+creating co_scientist_replica-0.2.0.dev0/src/co_scientist/skills/resources/population_evolution
+creating co_scientist_replica-0.2.0.dev0/src/co_scientist/skills/resources/population_evolution/prompts
+creating co_scientist_replica-0.2.0.dev0/src/co_scientist/skills/resources/proximity
+creating co_scientist_replica-0.2.0.dev0/src/co_scientist/skills/resources/proximity/prompts
+creating co_scientist_replica-0.2.0.dev0/src/co_scientist/skills/resources/ranking
+creating co_scientist_replica-0.2.0.dev0/src/co_scientist/skills/resources/ranking/prompts
+creating co_scientist_replica-0.2.0.dev0/src/co_scientist/skills/resources/reflection
+creating co_scientist_replica-0.2.0.dev0/src/co_scientist/skills/resources/reflection/prompts
+creating co_scientist_replica-0.2.0.dev0/src/co_scientist/skills/resources/root_literature_review
+creating co_scientist_replica-0.2.0.dev0/src/co_scientist/skills/resources/root_literature_review/prompts
+creating co_scientist_replica-0.2.0.dev0/src/co_scientist/supervisor
+creating co_scientist_replica-0.2.0.dev0/src/co_scientist_next
+creating co_scientist_replica-0.2.0.dev0/src/co_scientist_next/frontend
+creating co_scientist_replica-0.2.0.dev0/src/co_scientist_next/prompts
+creating co_scientist_replica-0.2.0.dev0/src/co_scientist_replica.egg-info
+creating co_scientist_replica-0.2.0.dev0/src/co_scientist_web
+creating co_scientist_replica-0.2.0.dev0/src/co_scientist_web/frontend
+creating co_scientist_replica-0.2.0.dev0/tests
+creating co_scientist_replica-0.2.0.dev0/tests/next
+copying files to co_scientist_replica-0.2.0.dev0...
+copying .env.example -> co_scientist_replica-0.2.0.dev0
+copying .gitignore -> co_scientist_replica-0.2.0.dev0
+copying MANIFEST.in -> co_scientist_replica-0.2.0.dev0
+copying README.md -> co_scientist_replica-0.2.0.dev0
+copying constraints.lock -> co_scientist_replica-0.2.0.dev0
+copying pyproject.toml -> co_scientist_replica-0.2.0.dev0
+copying docs/2608_IDEATION_CORE_SPEC_V1.md -> co_scientist_replica-0.2.0.dev0/docs
+copying docs/ARCHITECTURE.md -> co_scientist_replica-0.2.0.dev0/docs
+copying docs/CONFIGURATION.md -> co_scientist_replica-0.2.0.dev0/docs
+copying docs/DEPLOYMENT_GUIDE_ZH.md -> co_scientist_replica-0.2.0.dev0/docs
+copying docs/FRONTEND_INTEGRATION.md -> co_scientist_replica-0.2.0.dev0/docs
+copying docs/M01_M02_PROPOSAL.md -> co_scientist_replica-0.2.0.dev0/docs
+copying docs/P08_EXPLICIT_MIGRATION.md -> co_scientist_replica-0.2.0.dev0/docs
+copying docs/RESPONSES_BACKGROUND.md -> co_scientist_replica-0.2.0.dev0/docs
+copying docs/STATUS.md -> co_scientist_replica-0.2.0.dev0/docs
+copying docs/W0_CONTRACTS.md -> co_scientist_replica-0.2.0.dev0/docs
+copying docs/W0_REAL_CASES.md -> co_scientist_replica-0.2.0.dev0/docs
+copying docs/W0_RUNTIME.md -> co_scientist_replica-0.2.0.dev0/docs
+copying docs/W0_SCENARIO_MAP.md -> co_scientist_replica-0.2.0.dev0/docs
+copying docs/W0_T4_DECISIONS.md -> co_scientist_replica-0.2.0.dev0/docs
+copying docs/W0_T4_WORKSPACE.md -> co_scientist_replica-0.2.0.dev0/docs
+copying docs/W1_CANDIDATE_REVIEW.md -> co_scientist_replica-0.2.0.dev0/docs
+copying docs/W1_L1_LITERATURE.md -> co_scientist_replica-0.2.0.dev0/docs
+copying docs/W1_L2_BACKGROUND.md -> co_scientist_replica-0.2.0.dev0/docs
+copying docs/W1_P08.md -> co_scientist_replica-0.2.0.dev0/docs
+copying docs/design/README.md -> co_scientist_replica-0.2.0.dev0/docs/design
+copying docs/design/source-integrity.json -> co_scientist_replica-0.2.0.dev0/docs/design
+copying docs/design/w0-real-cases-source-integrity.json -> co_scientist_replica-0.2.0.dev0/docs/design
+copying docs/design/w1-v04-source-integrity.json -> co_scientist_replica-0.2.0.dev0/docs/design
+copying docs/design/m00-accepted-v1.0/00_EXECUTIVE_SUMMARY.md -> co_scientist_replica-0.2.0.dev0/docs/design/m00-accepted-v1.0
+copying docs/design/m00-accepted-v1.0/01_ARCHITECTURE_BASELINE.md -> co_scientist_replica-0.2.0.dev0/docs/design/m00-accepted-v1.0
+copying docs/design/m00-accepted-v1.0/02_GLOBAL_DECISION_LOG.md -> co_scientist_replica-0.2.0.dev0/docs/design/m00-accepted-v1.0
+copying docs/design/m00-accepted-v1.0/03_INTERFACE_OWNERSHIP_MAP.md -> co_scientist_replica-0.2.0.dev0/docs/design/m00-accepted-v1.0
+copying docs/design/m00-accepted-v1.0/04_MODULE_DEPENDENCY_MAP.md -> co_scientist_replica-0.2.0.dev0/docs/design/m00-accepted-v1.0
+copying docs/design/m00-accepted-v1.0/05_G3_REFERENCE_PRESERVATION.md -> co_scientist_replica-0.2.0.dev0/docs/design/m00-accepted-v1.0
+copying docs/design/m00-accepted-v1.0/06_M00_HANDOFF.md -> co_scientist_replica-0.2.0.dev0/docs/design/m00-accepted-v1.0
+copying docs/design/m00-accepted-v1.0/07_ACCEPTANCE_AND_OPEN_ISSUES.md -> co_scientist_replica-0.2.0.dev0/docs/design/m00-accepted-v1.0
+copying docs/design/m00-accepted-v1.0/08_SOURCE_TRACEABILITY.md -> co_scientist_replica-0.2.0.dev0/docs/design/m00-accepted-v1.0
+copying docs/design/m00-accepted-v1.0/09_ACCEPTANCE_RECORD.md -> co_scientist_replica-0.2.0.dev0/docs/design/m00-accepted-v1.0
+copying docs/design/m00-accepted-v1.0/README.md -> co_scientist_replica-0.2.0.dev0/docs/design/m00-accepted-v1.0
+copying docs/design/m00-accepted-v1.0/VALIDATION_REPORT.md -> co_scientist_replica-0.2.0.dev0/docs/design/m00-accepted-v1.0
+copying docs/design/m00-accepted-v1.0/manifest.json -> co_scientist_replica-0.2.0.dev0/docs/design/m00-accepted-v1.0
+copying docs/design/m00-accepted-v1.0/diagrams/README.md -> co_scientist_replica-0.2.0.dev0/docs/design/m00-accepted-v1.0/diagrams
+copying docs/design/m00-accepted-v1.0/reference/00_COMMON_CONTEXT_legacy.md -> co_scientist_replica-0.2.0.dev0/docs/design/m00-accepted-v1.0/reference
+copying docs/design/m00-accepted-v1.0/reference/01_HANDOFF_TEMPLATE_legacy.md -> co_scientist_replica-0.2.0.dev0/docs/design/m00-accepted-v1.0/reference
+copying docs/design/m00-accepted-v1.0/reference/02_PROJECT_STATE_legacy.md -> co_scientist_replica-0.2.0.dev0/docs/design/m00-accepted-v1.0/reference
+copying docs/design/m00-accepted-v1.0/reference/03_WORKFLOW_PROTOCOL_legacy.md -> co_scientist_replica-0.2.0.dev0/docs/design/m00-accepted-v1.0/reference
+copying docs/design/m00-accepted-v1.0/reference/06_DECISION_LOG_legacy.md -> co_scientist_replica-0.2.0.dev0/docs/design/m00-accepted-v1.0/reference
+copying docs/design/m00-accepted-v1.0/reference/Evidence_Dossier_Contract_V1_legacy.md -> co_scientist_replica-0.2.0.dev0/docs/design/m00-accepted-v1.0/reference
+copying docs/design/m00-accepted-v1.0/reference/M00_PHASE1_REVIEW.md -> co_scientist_replica-0.2.0.dev0/docs/design/m00-accepted-v1.0/reference
+copying docs/design/m00-accepted-v1.0/reference/M00_PHASE2_REVISION_PROPOSED.md -> co_scientist_replica-0.2.0.dev0/docs/design/m00-accepted-v1.0/reference
+copying docs/design/m00-accepted-v1.0/reference/README.md -> co_scientist_replica-0.2.0.dev0/docs/design/m00-accepted-v1.0/reference
+copying docs/design/m00-accepted-v1.0/reference/Reflection_Pipeline_Contract_V1_legacy.md -> co_scientist_replica-0.2.0.dev0/docs/design/m00-accepted-v1.0/reference
+copying docs/design/w0-proposed-v0.1/01_W0_MINIMAL_INTERFACES_PROPOSED.md -> co_scientist_replica-0.2.0.dev0/docs/design/w0-proposed-v0.1
+copying docs/design/w0-proposed-v0.1/02_W0_SCIENTIFIC_TEST_CASES_PROPOSED.md -> co_scientist_replica-0.2.0.dev0/docs/design/w0-proposed-v0.1
+copying docs/design/w0-real-cases-proposed-v0.1/W0_REAL_CASEBOOK_v0.1_PROPOSED.md -> co_scientist_replica-0.2.0.dev0/docs/design/w0-real-cases-proposed-v0.1
+copying docs/design/w1-method-v0.4-proposed/README.md -> co_scientist_replica-0.2.0.dev0/docs/design/w1-method-v0.4-proposed
+copying docs/design/w1-method-v0.4-proposed/W1_ALS_Worked_Walkthrough_v0.4_PROPOSED.md -> co_scientist_replica-0.2.0.dev0/docs/design/w1-method-v0.4-proposed
+copying docs/design/w1-method-v0.4-proposed/W1_Complete_Worked_Input_v0.4_PROPOSED.json -> co_scientist_replica-0.2.0.dev0/docs/design/w1-method-v0.4-proposed
+copying docs/design/w1-method-v0.4-proposed/W1_English_Prompt_Pack_v0.4_PROPOSED.md -> co_scientist_replica-0.2.0.dev0/docs/design/w1-method-v0.4-proposed
+copying docs/design/w1-method-v0.4-proposed/W1_Method_Protocol_v0.4_PROPOSED.md -> co_scientist_replica-0.2.0.dev0/docs/design/w1-method-v0.4-proposed
+copying docs/design/w1-method-v0.4-proposed/W1_Supervisor_Codex_Handoff_v0.4_PROPOSED.md -> co_scientist_replica-0.2.0.dev0/docs/design/w1-method-v0.4-proposed
+copying docs/examples/reading-model.explicit.json -> co_scientist_replica-0.2.0.dev0/docs/examples
+copying docs/examples/w1-v04-adopted-worked-input.json -> co_scientist_replica-0.2.0.dev0/docs/examples
+copying docs/preparations/candidate-ethics-r0-unsent/P09.actual-input.json -> co_scientist_replica-0.2.0.dev0/docs/preparations/candidate-ethics-r0-unsent
+copying docs/preparations/candidate-ethics-r0-unsent/P09.fixture-result.json -> co_scientist_replica-0.2.0.dev0/docs/preparations/candidate-ethics-r0-unsent
+copying docs/preparations/candidate-ethics-r0-unsent/P09.unsent-request.json -> co_scientist_replica-0.2.0.dev0/docs/preparations/candidate-ethics-r0-unsent
+copying docs/preparations/candidate-ethics-r0-unsent/P10.actual-input.json -> co_scientist_replica-0.2.0.dev0/docs/preparations/candidate-ethics-r0-unsent
+copying docs/preparations/candidate-ethics-r0-unsent/P10.fixture-result.json -> co_scientist_replica-0.2.0.dev0/docs/preparations/candidate-ethics-r0-unsent
+copying docs/preparations/candidate-ethics-r0-unsent/P10.unsent-request.json -> co_scientist_replica-0.2.0.dev0/docs/preparations/candidate-ethics-r0-unsent
+copying docs/preparations/candidate-ethics-r0-unsent/manifest.json -> co_scientist_replica-0.2.0.dev0/docs/preparations/candidate-ethics-r0-unsent
+copying docs/preparations/p04-context-v2/README.md -> co_scientist_replica-0.2.0.dev0/docs/preparations/p04-context-v2
+copying docs/preparations/p04-context-v2/development-goal-ethics.json -> co_scientist_replica-0.2.0.dev0/docs/preparations/p04-context-v2
+copying docs/preparations/p04-context-v2/material-manifest.json -> co_scientist_replica-0.2.0.dev0/docs/preparations/p04-context-v2
+copying docs/preparations/p04-context-v2/model-config.json -> co_scientist_replica-0.2.0.dev0/docs/preparations/p04-context-v2
+copying docs/preparations/p04-context-v2/new-brief.json -> co_scientist_replica-0.2.0.dev0/docs/preparations/p04-context-v2
+copying docs/preparations/p04-context-v2/new-goal-context.json -> co_scientist_replica-0.2.0.dev0/docs/preparations/p04-context-v2
+copying docs/preparations/p04-context-v2/run-preparation.json -> co_scientist_replica-0.2.0.dev0/docs/preparations/p04-context-v2
+copying docs/preparations/p04-context-v2/requests/complement.p04-input.json -> co_scientist_replica-0.2.0.dev0/docs/preparations/p04-context-v2/requests
+copying docs/preparations/p04-context-v2/requests/complement.p04-messages.json -> co_scientist_replica-0.2.0.dev0/docs/preparations/p04-context-v2/requests
+copying docs/preparations/p04-context-v2/requests/complement.planned-http.json -> co_scientist_replica-0.2.0.dev0/docs/preparations/p04-context-v2/requests
+copying docs/preparations/p04-context-v2/requests/control.p04-input.json -> co_scientist_replica-0.2.0.dev0/docs/preparations/p04-context-v2/requests
+copying docs/preparations/p04-context-v2/requests/control.p04-messages.json -> co_scientist_replica-0.2.0.dev0/docs/preparations/p04-context-v2/requests
+copying docs/preparations/p04-context-v2/requests/control.planned-http.json -> co_scientist_replica-0.2.0.dev0/docs/preparations/p04-context-v2/requests
+copying docs/preparations/p04-context-v2/views/complement.json -> co_scientist_replica-0.2.0.dev0/docs/preparations/p04-context-v2/views
+copying docs/preparations/p04-context-v2/views/control.json -> co_scientist_replica-0.2.0.dev0/docs/preparations/p04-context-v2/views
+copying docs/preparations/p08-explicit-migration/export-manifest.json -> co_scientist_replica-0.2.0.dev0/docs/preparations/p08-explicit-migration
+copying docs/preparations/p08-explicit-migration/new.actual-request.json -> co_scientist_replica-0.2.0.dev0/docs/preparations/p08-explicit-migration
+copying docs/preparations/p08-explicit-migration/preview.json -> co_scientist_replica-0.2.0.dev0/docs/preparations/p08-explicit-migration
+copying docs/preparations/p08-explicit-migration/proposal.json -> co_scientist_replica-0.2.0.dev0/docs/preparations/p08-explicit-migration
+copying docs/preparations/p08-unexecuted/assumption_structured.binding.json -> co_scientist_replica-0.2.0.dev0/docs/preparations/p08-unexecuted
+copying docs/preparations/p08-unexecuted/assumption_structured.input.json -> co_scientist_replica-0.2.0.dev0/docs/preparations/p08-unexecuted
+copying docs/preparations/p08-unexecuted/assumption_structured.messages.json -> co_scientist_replica-0.2.0.dev0/docs/preparations/p08-unexecuted
+copying docs/preparations/p08-unexecuted/assumption_structured.planned-http.json -> co_scientist_replica-0.2.0.dev0/docs/preparations/p08-unexecuted
+copying docs/preparations/p08-unexecuted/assumption_structured.request.json -> co_scientist_replica-0.2.0.dev0/docs/preparations/p08-unexecuted
+copying docs/preparations/p08-unexecuted/direct.binding.json -> co_scientist_replica-0.2.0.dev0/docs/preparations/p08-unexecuted
+copying docs/preparations/p08-unexecuted/direct.input.json -> co_scientist_replica-0.2.0.dev0/docs/preparations/p08-unexecuted
+copying docs/preparations/p08-unexecuted/direct.messages.json -> co_scientist_replica-0.2.0.dev0/docs/preparations/p08-unexecuted
+copying docs/preparations/p08-unexecuted/direct.planned-http.json -> co_scientist_replica-0.2.0.dev0/docs/preparations/p08-unexecuted
+copying docs/preparations/p08-unexecuted/direct.request.json -> co_scientist_replica-0.2.0.dev0/docs/preparations/p08-unexecuted
+copying docs/preparations/p08-unexecuted/manifest.json -> co_scientist_replica-0.2.0.dev0/docs/preparations/p08-unexecuted
+copying docs/preparations/p08-unexecuted/model-config.json -> co_scientist_replica-0.2.0.dev0/docs/preparations/p08-unexecuted
+copying docs/preparations/responses-background/direct.actual-request.json -> co_scientist_replica-0.2.0.dev0/docs/preparations/responses-background
+copying docs/preparations/responses-background/manifest.json -> co_scientist_replica-0.2.0.dev0/docs/preparations/responses-background
+copying docs/preparations/responses-background/model-config.json -> co_scientist_replica-0.2.0.dev0/docs/preparations/responses-background
+copying docs/trials/p07-recovery-real/README.md -> co_scientist_replica-0.2.0.dev0/docs/trials/p07-recovery-real
+copying docs/trials/p07-recovery-real/action-after.json -> co_scientist_replica-0.2.0.dev0/docs/trials/p07-recovery-real
+copying docs/trials/p07-recovery-real/attempts-after.json -> co_scientist_replica-0.2.0.dev0/docs/trials/p07-recovery-real
+copying docs/trials/p07-recovery-real/before.json -> co_scientist_replica-0.2.0.dev0/docs/trials/p07-recovery-real
+copying docs/trials/p07-recovery-real/facts-after.json -> co_scientist_replica-0.2.0.dev0/docs/trials/p07-recovery-real
+copying docs/trials/p07-recovery-real/facts-before.json -> co_scientist_replica-0.2.0.dev0/docs/trials/p07-recovery-real
+copying docs/trials/p07-recovery-real/frozen-call-request.json -> co_scientist_replica-0.2.0.dev0/docs/trials/p07-recovery-real
+copying docs/trials/p07-recovery-real/frozen-http-request.json -> co_scientist_replica-0.2.0.dev0/docs/trials/p07-recovery-real
+copying docs/trials/p07-recovery-real/frozen-seed-background-packet.json -> co_scientist_replica-0.2.0.dev0/docs/trials/p07-recovery-real
+copying docs/trials/p07-recovery-real/input.json -> co_scientist_replica-0.2.0.dev0/docs/trials/p07-recovery-real
+copying docs/trials/p07-recovery-real/manifest.json -> co_scientist_replica-0.2.0.dev0/docs/trials/p07-recovery-real
+copying docs/trials/p07-recovery-real/messages.json -> co_scientist_replica-0.2.0.dev0/docs/trials/p07-recovery-real
+copying docs/trials/p07-recovery-real/model-config.json -> co_scientist_replica-0.2.0.dev0/docs/trials/p07-recovery-real
+copying docs/trials/p07-recovery-real/new-attempt-error.json -> co_scientist_replica-0.2.0.dev0/docs/trials/p07-recovery-real
+copying docs/trials/p07-recovery-real/original-response.json -> co_scientist_replica-0.2.0.dev0/docs/trials/p07-recovery-real
+copying docs/trials/p07-recovery-real/outcome.json -> co_scientist_replica-0.2.0.dev0/docs/trials/p07-recovery-real
+copying docs/trials/p07-recovery-real/parsed-result.json -> co_scientist_replica-0.2.0.dev0/docs/trials/p07-recovery-real
+copying docs/trials/p07-recovery-real/protected-row-hashes-before.json -> co_scientist_replica-0.2.0.dev0/docs/trials/p07-recovery-real
+copying docs/trials/p07-recovery-real/readiness-evidence-and-review.json -> co_scientist_replica-0.2.0.dev0/docs/trials/p07-recovery-real
+copying docs/trials/p07-recovery-real/readiness-evidence-and-review.md -> co_scientist_replica-0.2.0.dev0/docs/trials/p07-recovery-real
+copying docs/trials/p07-recovery-real/request-consistency-before-send.json -> co_scientist_replica-0.2.0.dev0/docs/trials/p07-recovery-real
+copying docs/trials/p07-recovery-real/retry-authorization.json -> co_scientist_replica-0.2.0.dev0/docs/trials/p07-recovery-real
+copying docs/trials/p07-recovery-real/runtime-audit.json -> co_scientist_replica-0.2.0.dev0/docs/trials/p07-recovery-real
+copying docs/trials/p07-recovery-real/source-finding-map.json -> co_scientist_replica-0.2.0.dev0/docs/trials/p07-recovery-real
+copying docs/trials/p07-recovery-real/task-after.json -> co_scientist_replica-0.2.0.dev0/docs/trials/p07-recovery-real
+copying docs/trials/p07-recovery-real/unassociated-response-inspection.json -> co_scientist_replica-0.2.0.dev0/docs/trials/p07-recovery-real
+copying docs/trials/p07-recovery-real/usage.json -> co_scientist_replica-0.2.0.dev0/docs/trials/p07-recovery-real
+copying docs/trials/p08-direct-responses-real/CANDIDATE.md -> co_scientist_replica-0.2.0.dev0/docs/trials/p08-direct-responses-real
+copying docs/trials/p08-direct-responses-real/README.md -> co_scientist_replica-0.2.0.dev0/docs/trials/p08-direct-responses-real
+copying docs/trials/p08-direct-responses-real/REVIEW.md -> co_scientist_replica-0.2.0.dev0/docs/trials/p08-direct-responses-real
+copying docs/trials/p08-direct-responses-real/actual-http-body.json -> co_scientist_replica-0.2.0.dev0/docs/trials/p08-direct-responses-real
+copying docs/trials/p08-direct-responses-real/actual-http-request.json -> co_scientist_replica-0.2.0.dev0/docs/trials/p08-direct-responses-real
+copying docs/trials/p08-direct-responses-real/backup-provenance.json -> co_scientist_replica-0.2.0.dev0/docs/trials/p08-direct-responses-real
+copying docs/trials/p08-direct-responses-real/candidate-model-text.json -> co_scientist_replica-0.2.0.dev0/docs/trials/p08-direct-responses-real
+copying docs/trials/p08-direct-responses-real/candidate.json -> co_scientist_replica-0.2.0.dev0/docs/trials/p08-direct-responses-real
+copying docs/trials/p08-direct-responses-real/execution-facts.json -> co_scientist_replica-0.2.0.dev0/docs/trials/p08-direct-responses-real
+copying docs/trials/p08-direct-responses-real/final-provider-response.json -> co_scientist_replica-0.2.0.dev0/docs/trials/p08-direct-responses-real
+copying docs/trials/p08-direct-responses-real/final-provider-usage.json -> co_scientist_replica-0.2.0.dev0/docs/trials/p08-direct-responses-real
+copying docs/trials/p08-direct-responses-real/frozen-binding.json -> co_scientist_replica-0.2.0.dev0/docs/trials/p08-direct-responses-real
+copying docs/trials/p08-direct-responses-real/frozen-config.json -> co_scientist_replica-0.2.0.dev0/docs/trials/p08-direct-responses-real
+copying docs/trials/p08-direct-responses-real/frozen-input.json -> co_scientist_replica-0.2.0.dev0/docs/trials/p08-direct-responses-real
+copying docs/trials/p08-direct-responses-real/frozen-request.json -> co_scientist_replica-0.2.0.dev0/docs/trials/p08-direct-responses-real
+copying docs/trials/p08-direct-responses-real/historical-after.json -> co_scientist_replica-0.2.0.dev0/docs/trials/p08-direct-responses-real
+copying docs/trials/p08-direct-responses-real/historical-before.json -> co_scientist_replica-0.2.0.dev0/docs/trials/p08-direct-responses-real
+copying docs/trials/p08-direct-responses-real/historical-preservation.json -> co_scientist_replica-0.2.0.dev0/docs/trials/p08-direct-responses-real
+copying docs/trials/p08-direct-responses-real/migration-after.json -> co_scientist_replica-0.2.0.dev0/docs/trials/p08-direct-responses-real
+copying docs/trials/p08-direct-responses-real/migration-confirmed.json -> co_scientist_replica-0.2.0.dev0/docs/trials/p08-direct-responses-real
+copying docs/trials/p08-direct-responses-real/migration-created-state.json -> co_scientist_replica-0.2.0.dev0/docs/trials/p08-direct-responses-real
+copying docs/trials/p08-direct-responses-real/observation-window.json -> co_scientist_replica-0.2.0.dev0/docs/trials/p08-direct-responses-real
+copying docs/trials/p08-direct-responses-real/operator-authorization.json -> co_scientist_replica-0.2.0.dev0/docs/trials/p08-direct-responses-real
+copying docs/trials/p08-direct-responses-real/page-readonly-verification.json -> co_scientist_replica-0.2.0.dev0/docs/trials/p08-direct-responses-real
+copying docs/trials/p08-direct-responses-real/parsed-result.json -> co_scientist_replica-0.2.0.dev0/docs/trials/p08-direct-responses-real
+copying docs/trials/p08-direct-responses-real/query-01-state.json -> co_scientist_replica-0.2.0.dev0/docs/trials/p08-direct-responses-real
+copying docs/trials/p08-direct-responses-real/query-02-state.json -> co_scientist_replica-0.2.0.dev0/docs/trials/p08-direct-responses-real
+copying docs/trials/p08-direct-responses-real/query-03-state.json -> co_scientist_replica-0.2.0.dev0/docs/trials/p08-direct-responses-real
+copying docs/trials/p08-direct-responses-real/query-04-state.json -> co_scientist_replica-0.2.0.dev0/docs/trials/p08-direct-responses-real
+copying docs/trials/p08-direct-responses-real/readiness.json -> co_scientist_replica-0.2.0.dev0/docs/trials/p08-direct-responses-real
+copying docs/trials/p08-direct-responses-real/remote-generation.json -> co_scientist_replica-0.2.0.dev0/docs/trials/p08-direct-responses-real
+copying docs/trials/p08-direct-responses-real/result-row.json -> co_scientist_replica-0.2.0.dev0/docs/trials/p08-direct-responses-real
+copying docs/trials/p08-direct-responses-real/review-comparison.json -> co_scientist_replica-0.2.0.dev0/docs/trials/p08-direct-responses-real
+copying docs/trials/p08-direct-responses-real/seed-background-packet.json -> co_scientist_replica-0.2.0.dev0/docs/trials/p08-direct-responses-real
+copying docs/trials/p08-direct-responses-real/source-views.json -> co_scientist_replica-0.2.0.dev0/docs/trials/p08-direct-responses-real
+copying docs/trials/p08-direct-responses-real/submission-state.json -> co_scientist_replica-0.2.0.dev0/docs/trials/p08-direct-responses-real
+copying docs/trials/p08-direct-responses-real/successor-action.json -> co_scientist_replica-0.2.0.dev0/docs/trials/p08-direct-responses-real
+copying docs/trials/p08-direct-responses-real/successor-task.json -> co_scientist_replica-0.2.0.dev0/docs/trials/p08-direct-responses-real
+copying docs/trials/p08-direct-responses-real/summary.json -> co_scientist_replica-0.2.0.dev0/docs/trials/p08-direct-responses-real
+copying docs/trials/p08-direct-responses-real/attempts/00-b14e5fbc561a40d2869b0241126feb2d/actual-request.json -> co_scientist_replica-0.2.0.dev0/docs/trials/p08-direct-responses-real/attempts/00-b14e5fbc561a40d2869b0241126feb2d
+copying docs/trials/p08-direct-responses-real/attempts/00-b14e5fbc561a40d2869b0241126feb2d/attempt.json -> co_scientist_replica-0.2.0.dev0/docs/trials/p08-direct-responses-real/attempts/00-b14e5fbc561a40d2869b0241126feb2d
+copying docs/trials/p08-direct-responses-real/attempts/00-b14e5fbc561a40d2869b0241126feb2d/m15-request.json -> co_scientist_replica-0.2.0.dev0/docs/trials/p08-direct-responses-real/attempts/00-b14e5fbc561a40d2869b0241126feb2d
+copying docs/trials/p08-direct-responses-real/attempts/00-b14e5fbc561a40d2869b0241126feb2d/provider-usage.json -> co_scientist_replica-0.2.0.dev0/docs/trials/p08-direct-responses-real/attempts/00-b14e5fbc561a40d2869b0241126feb2d
+copying docs/trials/p08-direct-responses-real/attempts/00-b14e5fbc561a40d2869b0241126feb2d/raw-response.json -> co_scientist_replica-0.2.0.dev0/docs/trials/p08-direct-responses-real/attempts/00-b14e5fbc561a40d2869b0241126feb2d
+copying docs/trials/p08-direct-responses-real/attempts/00-b14e5fbc561a40d2869b0241126feb2d/saved-response.json -> co_scientist_replica-0.2.0.dev0/docs/trials/p08-direct-responses-real/attempts/00-b14e5fbc561a40d2869b0241126feb2d
+copying docs/trials/p08-direct-responses-real/attempts/01-138b35b1579b4267b392a68de8aa905e/actual-request.json -> co_scientist_replica-0.2.0.dev0/docs/trials/p08-direct-responses-real/attempts/01-138b35b1579b4267b392a68de8aa905e
+copying docs/trials/p08-direct-responses-real/attempts/01-138b35b1579b4267b392a68de8aa905e/attempt.json -> co_scientist_replica-0.2.0.dev0/docs/trials/p08-direct-responses-real/attempts/01-138b35b1579b4267b392a68de8aa905e
+copying docs/trials/p08-direct-responses-real/attempts/01-138b35b1579b4267b392a68de8aa905e/m15-request.json -> co_scientist_replica-0.2.0.dev0/docs/trials/p08-direct-responses-real/attempts/01-138b35b1579b4267b392a68de8aa905e
+copying docs/trials/p08-direct-responses-real/attempts/01-138b35b1579b4267b392a68de8aa905e/provider-usage.json -> co_scientist_replica-0.2.0.dev0/docs/trials/p08-direct-responses-real/attempts/01-138b35b1579b4267b392a68de8aa905e
+copying docs/trials/p08-direct-responses-real/attempts/01-138b35b1579b4267b392a68de8aa905e/raw-response.json -> co_scientist_replica-0.2.0.dev0/docs/trials/p08-direct-responses-real/attempts/01-138b35b1579b4267b392a68de8aa905e
+copying docs/trials/p08-direct-responses-real/attempts/01-138b35b1579b4267b392a68de8aa905e/saved-response.json -> co_scientist_replica-0.2.0.dev0/docs/trials/p08-direct-responses-real/attempts/01-138b35b1579b4267b392a68de8aa905e
+copying docs/trials/p08-direct-responses-real/attempts/02-cc8ca88fd45a4e6eaffd09abae31f0e4/actual-request.json -> co_scientist_replica-0.2.0.dev0/docs/trials/p08-direct-responses-real/attempts/02-cc8ca88fd45a4e6eaffd09abae31f0e4
+copying docs/trials/p08-direct-responses-real/attempts/02-cc8ca88fd45a4e6eaffd09abae31f0e4/attempt.json -> co_scientist_replica-0.2.0.dev0/docs/trials/p08-direct-responses-real/attempts/02-cc8ca88fd45a4e6eaffd09abae31f0e4
+copying docs/trials/p08-direct-responses-real/attempts/02-cc8ca88fd45a4e6eaffd09abae31f0e4/m15-request.json -> co_scientist_replica-0.2.0.dev0/docs/trials/p08-direct-responses-real/attempts/02-cc8ca88fd45a4e6eaffd09abae31f0e4
+copying docs/trials/p08-direct-responses-real/attempts/02-cc8ca88fd45a4e6eaffd09abae31f0e4/provider-usage.json -> co_scientist_replica-0.2.0.dev0/docs/trials/p08-direct-responses-real/attempts/02-cc8ca88fd45a4e6eaffd09abae31f0e4
+copying docs/trials/p08-direct-responses-real/attempts/02-cc8ca88fd45a4e6eaffd09abae31f0e4/raw-response.json -> co_scientist_replica-0.2.0.dev0/docs/trials/p08-direct-responses-real/attempts/02-cc8ca88fd45a4e6eaffd09abae31f0e4
+copying docs/trials/p08-direct-responses-real/attempts/02-cc8ca88fd45a4e6eaffd09abae31f0e4/saved-response.json -> co_scientist_replica-0.2.0.dev0/docs/trials/p08-direct-responses-real/attempts/02-cc8ca88fd45a4e6eaffd09abae31f0e4
+copying docs/trials/p08-direct-responses-real/attempts/03-24ec077f7cb6480f85e0293f29eec94b/actual-request.json -> co_scientist_replica-0.2.0.dev0/docs/trials/p08-direct-responses-real/attempts/03-24ec077f7cb6480f85e0293f29eec94b
+copying docs/trials/p08-direct-responses-real/attempts/03-24ec077f7cb6480f85e0293f29eec94b/attempt.json -> co_scientist_replica-0.2.0.dev0/docs/trials/p08-direct-responses-real/attempts/03-24ec077f7cb6480f85e0293f29eec94b
+copying docs/trials/p08-direct-responses-real/attempts/03-24ec077f7cb6480f85e0293f29eec94b/m15-request.json -> co_scientist_replica-0.2.0.dev0/docs/trials/p08-direct-responses-real/attempts/03-24ec077f7cb6480f85e0293f29eec94b
+copying docs/trials/p08-direct-responses-real/attempts/03-24ec077f7cb6480f85e0293f29eec94b/provider-usage.json -> co_scientist_replica-0.2.0.dev0/docs/trials/p08-direct-responses-real/attempts/03-24ec077f7cb6480f85e0293f29eec94b
+copying docs/trials/p08-direct-responses-real/attempts/03-24ec077f7cb6480f85e0293f29eec94b/raw-response.json -> co_scientist_replica-0.2.0.dev0/docs/trials/p08-direct-responses-real/attempts/03-24ec077f7cb6480f85e0293f29eec94b
+copying docs/trials/p08-direct-responses-real/attempts/03-24ec077f7cb6480f85e0293f29eec94b/saved-response.json -> co_scientist_replica-0.2.0.dev0/docs/trials/p08-direct-responses-real/attempts/03-24ec077f7cb6480f85e0293f29eec94b
+copying docs/trials/p08-direct-responses-real/attempts/04-d11dc55e5c384bfeb21629583c9a902a/actual-request.json -> co_scientist_replica-0.2.0.dev0/docs/trials/p08-direct-responses-real/attempts/04-d11dc55e5c384bfeb21629583c9a902a
+copying docs/trials/p08-direct-responses-real/attempts/04-d11dc55e5c384bfeb21629583c9a902a/attempt.json -> co_scientist_replica-0.2.0.dev0/docs/trials/p08-direct-responses-real/attempts/04-d11dc55e5c384bfeb21629583c9a902a
+copying docs/trials/p08-direct-responses-real/attempts/04-d11dc55e5c384bfeb21629583c9a902a/m15-request.json -> co_scientist_replica-0.2.0.dev0/docs/trials/p08-direct-responses-real/attempts/04-d11dc55e5c384bfeb21629583c9a902a
+copying docs/trials/p08-direct-responses-real/attempts/04-d11dc55e5c384bfeb21629583c9a902a/provider-usage.json -> co_scientist_replica-0.2.0.dev0/docs/trials/p08-direct-responses-real/attempts/04-d11dc55e5c384bfeb21629583c9a902a
+copying docs/trials/p08-direct-responses-real/attempts/04-d11dc55e5c384bfeb21629583c9a902a/raw-response.json -> co_scientist_replica-0.2.0.dev0/docs/trials/p08-direct-responses-real/attempts/04-d11dc55e5c384bfeb21629583c9a902a
+copying docs/trials/p08-direct-responses-real/attempts/04-d11dc55e5c384bfeb21629583c9a902a/saved-response.json -> co_scientist_replica-0.2.0.dev0/docs/trials/p08-direct-responses-real/attempts/04-d11dc55e5c384bfeb21629583c9a902a
+copying docs/trials/p08-direct-responses-real/preflight/export-manifest.json -> co_scientist_replica-0.2.0.dev0/docs/trials/p08-direct-responses-real/preflight
+copying docs/trials/p08-direct-responses-real/preflight/new.actual-request.json -> co_scientist_replica-0.2.0.dev0/docs/trials/p08-direct-responses-real/preflight
+copying docs/trials/p08-direct-responses-real/preflight/preview.json -> co_scientist_replica-0.2.0.dev0/docs/trials/p08-direct-responses-real/preflight
+copying docs/trials/w1-l2-first-real-p04-review/README.md -> co_scientist_replica-0.2.0.dev0/docs/trials/w1-l2-first-real-p04-review
+copying docs/trials/w1-l2-first-real-p04-review/TEST_PROVENANCE.md -> co_scientist_replica-0.2.0.dev0/docs/trials/w1-l2-first-real-p04-review
+copying docs/trials/w1-l2-first-real-p04-review/actual-http-body.json -> co_scientist_replica-0.2.0.dev0/docs/trials/w1-l2-first-real-p04-review
+copying docs/trials/w1-l2-first-real-p04-review/actual-http-request.confirmed.json -> co_scientist_replica-0.2.0.dev0/docs/trials/w1-l2-first-real-p04-review
+copying docs/trials/w1-l2-first-real-p04-review/codex-initial-review.json -> co_scientist_replica-0.2.0.dev0/docs/trials/w1-l2-first-real-p04-review
+copying docs/trials/w1-l2-first-real-p04-review/codex-initial-review.md -> co_scientist_replica-0.2.0.dev0/docs/trials/w1-l2-first-real-p04-review
+copying docs/trials/w1-l2-first-real-p04-review/manifest.json -> co_scientist_replica-0.2.0.dev0/docs/trials/w1-l2-first-real-p04-review
+copying docs/trials/w1-l2-first-real-p04-review/material-view.json -> co_scientist_replica-0.2.0.dev0/docs/trials/w1-l2-first-real-p04-review
+copying docs/trials/w1-l2-first-real-p04-review/model-config.confirmed.json -> co_scientist_replica-0.2.0.dev0/docs/trials/w1-l2-first-real-p04-review
+copying docs/trials/w1-l2-first-real-p04-review/p04-input.json -> co_scientist_replica-0.2.0.dev0/docs/trials/w1-l2-first-real-p04-review
+copying docs/trials/w1-l2-first-real-p04-review/p04-messages.json -> co_scientist_replica-0.2.0.dev0/docs/trials/w1-l2-first-real-p04-review
+copying docs/trials/w1-l2-first-real-p04-review/p04-prompt.md -> co_scientist_replica-0.2.0.dev0/docs/trials/w1-l2-first-real-p04-review
+copying docs/trials/w1-l2-first-real-p04-review/review-form.md -> co_scientist_replica-0.2.0.dev0/docs/trials/w1-l2-first-real-p04-review
+copying docs/trials/w1-l2-first-real-p04-review/source-provenance.json -> co_scientist_replica-0.2.0.dev0/docs/trials/w1-l2-first-real-p04-review
+copying docs/trials/w1-l2-first-real-p04-review/trial-attempt.json -> co_scientist_replica-0.2.0.dev0/docs/trials/w1-l2-first-real-p04-review
+copying docs/trials/w1-l2-first-real-p04-review/trial-original-response.json -> co_scientist_replica-0.2.0.dev0/docs/trials/w1-l2-first-real-p04-review
+copying docs/trials/w1-l2-first-real-p04-review/trial-outcome.json -> co_scientist_replica-0.2.0.dev0/docs/trials/w1-l2-first-real-p04-review
+copying docs/trials/w1-l2-first-real-p04-review/trial-p04-result.json -> co_scientist_replica-0.2.0.dev0/docs/trials/w1-l2-first-real-p04-review
+copying docs/trials/w1-l2-first-real-p04-review/trial-response-record.json -> co_scientist_replica-0.2.0.dev0/docs/trials/w1-l2-first-real-p04-review
+copying docs/trials/w1-l2-first-real-p04-review/usage.json -> co_scientist_replica-0.2.0.dev0/docs/trials/w1-l2-first-real-p04-review
+copying docs/trials/w1-l2-first-real-p04-review/tests/engineering-checks.json -> co_scientist_replica-0.2.0.dev0/docs/trials/w1-l2-first-real-p04-review/tests
+copying docs/verification/w0-t4-browser.json -> co_scientist_replica-0.2.0.dev0/docs/verification
+copying docs/verification/candidate-ethics-r0/browser.json -> co_scientist_replica-0.2.0.dev0/docs/verification/candidate-ethics-r0
+copying docs/verification/p04-context-v2/RESULTS.md -> co_scientist_replica-0.2.0.dev0/docs/verification/p04-context-v2
+copying docs/verification/p04-context-v2/page-evidence.json -> co_scientist_replica-0.2.0.dev0/docs/verification/p04-context-v2
+copying docs/verification/p08/browser-proof.json -> co_scientist_replica-0.2.0.dev0/docs/verification/p08
+copying docs/verification/p08-explicit-migration/RESULTS.md -> co_scientist_replica-0.2.0.dev0/docs/verification/p08-explicit-migration
+copying docs/verification/p08-explicit-migration/history-after.json -> co_scientist_replica-0.2.0.dev0/docs/verification/p08-explicit-migration
+copying docs/verification/responses-background/RESULTS.md -> co_scientist_replica-0.2.0.dev0/docs/verification/responses-background
+copying docs/verification/responses-background/history-after.json -> co_scientist_replica-0.2.0.dev0/docs/verification/responses-background
+copying docs/verification/responses-background/inspection.json -> co_scientist_replica-0.2.0.dev0/docs/verification/responses-background
+copying docs/verification/w1-l1/browser.json -> co_scientist_replica-0.2.0.dev0/docs/verification/w1-l1
+copying docs/verification/w1-l1/run-snapshot.json -> co_scientist_replica-0.2.0.dev0/docs/verification/w1-l1
+copying docs/verification/w1-l2/browser.json -> co_scientist_replica-0.2.0.dev0/docs/verification/w1-l2
+copying docs/verification/w1-l2/progress-fix-browser.json -> co_scientist_replica-0.2.0.dev0/docs/verification/w1-l2
+copying examples/research-goal.yaml -> co_scientist_replica-0.2.0.dev0/examples
+copying scripts/export_p08_responses.py -> co_scientist_replica-0.2.0.dev0/scripts
+copying scripts/setup.sh -> co_scientist_replica-0.2.0.dev0/scripts
+copying scripts/verify_p08_direct_responses_trial.py -> co_scientist_replica-0.2.0.dev0/scripts
+copying scripts/verify_release.py -> co_scientist_replica-0.2.0.dev0/scripts
+copying scripts/w0_t4_browser.py -> co_scientist_replica-0.2.0.dev0/scripts
+copying scripts/w1_l1_browser.py -> co_scientist_replica-0.2.0.dev0/scripts
+copying scripts/w1_l2_browser.py -> co_scientist_replica-0.2.0.dev0/scripts
+copying src/co_scientist/__init__.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist
+copying src/co_scientist/_migrations/env.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist/_migrations
+copying src/co_scientist/_migrations/versions/0001_core_tables.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist/_migrations/versions
+copying src/co_scientist/_migrations/versions/0002_external_call_recovery.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist/_migrations/versions
+copying src/co_scientist/_migrations/versions/0003_worker_leases_budget_reservations.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist/_migrations/versions
+copying src/co_scientist/_migrations/versions/0004_external_call_observability.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist/_migrations/versions
+copying src/co_scientist/adapters/artifacts/__init__.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist/adapters/artifacts
+copying src/co_scientist/adapters/artifacts/filesystem.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist/adapters/artifacts
+copying src/co_scientist/adapters/literature/__init__.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist/adapters/literature
+copying src/co_scientist/adapters/literature/pubmed.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist/adapters/literature
+copying src/co_scientist/adapters/literature/replay.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist/adapters/literature
+copying src/co_scientist/adapters/llm/fake.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist/adapters/llm
+copying src/co_scientist/adapters/llm/multi_provider.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist/adapters/llm
+copying src/co_scientist/adapters/llm/openai_responses.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist/adapters/llm
+copying src/co_scientist/adapters/llm/output_errors.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist/adapters/llm
+copying src/co_scientist/adapters/llm/performance_responses.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist/adapters/llm
+copying src/co_scientist/adapters/llm/provider_output.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist/adapters/llm
+copying src/co_scientist/adapters/llm/provider_result_contract.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist/adapters/llm
+copying src/co_scientist/adapters/llm/replay.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist/adapters/llm
+copying src/co_scientist/adapters/persistence/__init__.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist/adapters/persistence
+copying src/co_scientist/adapters/persistence/migrations.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist/adapters/persistence
+copying src/co_scientist/adapters/persistence/sqlite.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist/adapters/persistence
+copying src/co_scientist/agents/__init__.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist/agents
+copying src/co_scientist/agents/executor.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist/agents
+copying src/co_scientist/agents/payloads.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist/agents
+copying src/co_scientist/agents/result.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist/agents
+copying src/co_scientist/application/__init__.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist/application
+copying src/co_scientist/application/cockpit.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist/application
+copying src/co_scientist/application/cockpit_control.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist/application
+copying src/co_scientist/application/cockpit_retry.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist/application
+copying src/co_scientist/application/cockpit_settings.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist/application
+copying src/co_scientist/application/commands.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist/application
+copying src/co_scientist/application/config.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist/application
+copying src/co_scientist/application/model_catalog.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist/application
+copying src/co_scientist/application/output_diagnostics.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist/application
+copying src/co_scientist/application/output_retry.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist/application
+copying src/co_scientist/application/queries.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist/application
+copying src/co_scientist/application/service.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist/application
+copying src/co_scientist/cli/__init__.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist/cli
+copying src/co_scientist/cli/app.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist/cli
+copying src/co_scientist/domain/__init__.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist/domain
+copying src/co_scientist/domain/admission.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist/domain
+copying src/co_scientist/domain/anchors.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist/domain
+copying src/co_scientist/domain/bayesian_ranking.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist/domain
+copying src/co_scientist/domain/budget.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist/domain
+copying src/co_scientist/domain/claim_lineage.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist/domain
+copying src/co_scientist/domain/claim_verification.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist/domain
+copying src/co_scientist/domain/continuous_execution.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist/domain
+copying src/co_scientist/domain/convergence.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist/domain
+copying src/co_scientist/domain/dispatch_limits.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist/domain
+copying src/co_scientist/domain/elo.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist/domain
+copying src/co_scientist/domain/evidence_units.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist/domain
+copying src/co_scientist/domain/execution_config.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist/domain
+copying src/co_scientist/domain/external_call.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist/domain
+copying src/co_scientist/domain/generation_integration.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist/domain
+copying src/co_scientist/domain/hypothesis.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist/domain
+copying src/co_scientist/domain/ideation_core_boundary.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist/domain
+copying src/co_scientist/domain/ideation_prerequisites.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist/domain
+copying src/co_scientist/domain/identifiers.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist/domain
+copying src/co_scientist/domain/pilot_output.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist/domain
+copying src/co_scientist/domain/pilot_pricing.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist/domain
+copying src/co_scientist/domain/population_evolution.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist/domain
+copying src/co_scientist/domain/probe_execution.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist/domain
+copying src/co_scientist/domain/provenance.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist/domain
+copying src/co_scientist/domain/proximity.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist/domain
+copying src/co_scientist/domain/pubmed_query_planning.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist/domain
+copying src/co_scientist/domain/ranking_output.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist/domain
+copying src/co_scientist/domain/research_feedback.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist/domain
+copying src/co_scientist/domain/research_plan.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist/domain
+copying src/co_scientist/domain/research_protocol.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist/domain
+copying src/co_scientist/domain/review.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist/domain
+copying src/co_scientist/domain/run_mutations.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist/domain
+copying src/co_scientist/domain/single_root.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist/domain
+copying src/co_scientist/domain/source_units.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist/domain
+copying src/co_scientist/domain/states.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist/domain
+copying src/co_scientist/domain/task.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist/domain
+copying src/co_scientist/domain/tournament.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist/domain
+copying src/co_scientist/domain/transitions.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist/domain
+copying src/co_scientist/events/__init__.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist/events
+copying src/co_scientist/events/contracts.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist/events
+copying src/co_scientist/events/lineage_replay.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist/events
+copying src/co_scientist/events/models.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist/events
+copying src/co_scientist/events/reducers.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist/events
+copying src/co_scientist/evidence/__init__.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist/evidence
+copying src/co_scientist/evidence/loader.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist/evidence
+copying src/co_scientist/export/__init__.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist/export
+copying src/co_scientist/export/run_export.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist/export
+copying src/co_scientist/ports/artifact_store.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist/ports
+copying src/co_scientist/ports/event_store.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist/ports
+copying src/co_scientist/ports/external_provider.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist/ports
+copying src/co_scientist/ports/literature.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist/ports
+copying src/co_scientist/ports/task_runtime.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist/ports
+copying src/co_scientist/release/__init__.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist/release
+copying src/co_scientist/release/cli.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist/release
+copying src/co_scientist/release/mock_http.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist/release
+copying src/co_scientist/release/resources.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist/release
+copying src/co_scientist/release/service.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist/release
+copying src/co_scientist/release/resources/deepseek-tokenizer-license.txt -> co_scientist_replica-0.2.0.dev0/src/co_scientist/release/resources
+copying src/co_scientist/release/resources/deepseek-v41.json -> co_scientist_replica-0.2.0.dev0/src/co_scientist/release/resources
+copying src/co_scientist/release/resources/g3.yaml -> co_scientist_replica-0.2.0.dev0/src/co_scientist/release/resources
+copying src/co_scientist/release/resources/tokenizers.json -> co_scientist_replica-0.2.0.dev0/src/co_scientist/release/resources
+copying src/co_scientist/runtime/__init__.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist/runtime
+copying src/co_scientist/runtime/bounded_transport.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist/runtime
+copying src/co_scientist/runtime/checkpoints.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist/runtime
+copying src/co_scientist/runtime/context_planning.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist/runtime
+copying src/co_scientist/runtime/continuous_recovery.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist/runtime
+copying src/co_scientist/runtime/core_runner.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist/runtime
+copying src/co_scientist/runtime/external_calls.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist/runtime
+copying src/co_scientist/runtime/ideation_trace.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist/runtime
+copying src/co_scientist/runtime/lineage_workflow_contract.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist/runtime
+copying src/co_scientist/runtime/registry.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist/runtime
+copying src/co_scientist/runtime/single_root.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist/runtime
+copying src/co_scientist/runtime/task_payload.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist/runtime
+copying src/co_scientist/runtime/trace_snapshot.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist/runtime
+copying src/co_scientist/runtime/transport_observability.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist/runtime
+copying src/co_scientist/runtime/worker.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist/runtime
+copying src/co_scientist/skills/__init__.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist/skills
+copying src/co_scientist/skills/loader.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist/skills
+copying src/co_scientist/skills/resources/candidate_ethics/manifest.yaml -> co_scientist_replica-0.2.0.dev0/src/co_scientist/skills/resources/candidate_ethics
+copying src/co_scientist/skills/resources/candidate_ethics/prompts/system.md -> co_scientist_replica-0.2.0.dev0/src/co_scientist/skills/resources/candidate_ethics/prompts
+copying src/co_scientist/skills/resources/claim_decomposition/manifest-v2.yaml -> co_scientist_replica-0.2.0.dev0/src/co_scientist/skills/resources/claim_decomposition
+copying src/co_scientist/skills/resources/claim_decomposition/manifest-v3.yaml -> co_scientist_replica-0.2.0.dev0/src/co_scientist/skills/resources/claim_decomposition
+copying src/co_scientist/skills/resources/claim_decomposition/manifest.yaml -> co_scientist_replica-0.2.0.dev0/src/co_scientist/skills/resources/claim_decomposition
+copying src/co_scientist/skills/resources/claim_decomposition/prompts/system-v2.md -> co_scientist_replica-0.2.0.dev0/src/co_scientist/skills/resources/claim_decomposition/prompts
+copying src/co_scientist/skills/resources/claim_decomposition/prompts/system-v3.md -> co_scientist_replica-0.2.0.dev0/src/co_scientist/skills/resources/claim_decomposition/prompts
+copying src/co_scientist/skills/resources/claim_decomposition/prompts/system.md -> co_scientist_replica-0.2.0.dev0/src/co_scientist/skills/resources/claim_decomposition/prompts
+copying src/co_scientist/skills/resources/claim_search_plan/manifest.yaml -> co_scientist_replica-0.2.0.dev0/src/co_scientist/skills/resources/claim_search_plan
+copying src/co_scientist/skills/resources/claim_search_plan/prompts/system.md -> co_scientist_replica-0.2.0.dev0/src/co_scientist/skills/resources/claim_search_plan/prompts
+copying src/co_scientist/skills/resources/claim_verification/manifest-v2.yaml -> co_scientist_replica-0.2.0.dev0/src/co_scientist/skills/resources/claim_verification
+copying src/co_scientist/skills/resources/claim_verification/manifest.yaml -> co_scientist_replica-0.2.0.dev0/src/co_scientist/skills/resources/claim_verification
+copying src/co_scientist/skills/resources/claim_verification/prompts/system-v2.md -> co_scientist_replica-0.2.0.dev0/src/co_scientist/skills/resources/claim_verification/prompts
+copying src/co_scientist/skills/resources/claim_verification/prompts/system.md -> co_scientist_replica-0.2.0.dev0/src/co_scientist/skills/resources/claim_verification/prompts
+copying src/co_scientist/skills/resources/directive_ethics/manifest.yaml -> co_scientist_replica-0.2.0.dev0/src/co_scientist/skills/resources/directive_ethics
+copying src/co_scientist/skills/resources/directive_ethics/prompts/system.md -> co_scientist_replica-0.2.0.dev0/src/co_scientist/skills/resources/directive_ethics/prompts
+copying src/co_scientist/skills/resources/evolution/manifest.yaml -> co_scientist_replica-0.2.0.dev0/src/co_scientist/skills/resources/evolution
+copying src/co_scientist/skills/resources/evolution/prompts/system.md -> co_scientist_replica-0.2.0.dev0/src/co_scientist/skills/resources/evolution/prompts
+copying src/co_scientist/skills/resources/generation/manifest-v2.yaml -> co_scientist_replica-0.2.0.dev0/src/co_scientist/skills/resources/generation
+copying src/co_scientist/skills/resources/generation/manifest-v3.yaml -> co_scientist_replica-0.2.0.dev0/src/co_scientist/skills/resources/generation
+copying src/co_scientist/skills/resources/generation/manifest.yaml -> co_scientist_replica-0.2.0.dev0/src/co_scientist/skills/resources/generation
+copying src/co_scientist/skills/resources/generation/prompts/system-baseline-v1.md -> co_scientist_replica-0.2.0.dev0/src/co_scientist/skills/resources/generation/prompts
+copying src/co_scientist/skills/resources/generation/prompts/system-performance-v1.md -> co_scientist_replica-0.2.0.dev0/src/co_scientist/skills/resources/generation/prompts
+copying src/co_scientist/skills/resources/generation/prompts/system.md -> co_scientist_replica-0.2.0.dev0/src/co_scientist/skills/resources/generation/prompts
+copying src/co_scientist/skills/resources/meta_review/manifest.yaml -> co_scientist_replica-0.2.0.dev0/src/co_scientist/skills/resources/meta_review
+copying src/co_scientist/skills/resources/meta_review/prompts/system.md -> co_scientist_replica-0.2.0.dev0/src/co_scientist/skills/resources/meta_review/prompts
+copying src/co_scientist/skills/resources/population_evolution/manifest-v2.yaml -> co_scientist_replica-0.2.0.dev0/src/co_scientist/skills/resources/population_evolution
+copying src/co_scientist/skills/resources/population_evolution/manifest-v3.yaml -> co_scientist_replica-0.2.0.dev0/src/co_scientist/skills/resources/population_evolution
+copying src/co_scientist/skills/resources/population_evolution/manifest.yaml -> co_scientist_replica-0.2.0.dev0/src/co_scientist/skills/resources/population_evolution
+copying src/co_scientist/skills/resources/population_evolution/prompts/system-baseline-v1.md -> co_scientist_replica-0.2.0.dev0/src/co_scientist/skills/resources/population_evolution/prompts
+copying src/co_scientist/skills/resources/population_evolution/prompts/system-v2.md -> co_scientist_replica-0.2.0.dev0/src/co_scientist/skills/resources/population_evolution/prompts
+copying src/co_scientist/skills/resources/population_evolution/prompts/system.md -> co_scientist_replica-0.2.0.dev0/src/co_scientist/skills/resources/population_evolution/prompts
+copying src/co_scientist/skills/resources/proximity/manifest.yaml -> co_scientist_replica-0.2.0.dev0/src/co_scientist/skills/resources/proximity
+copying src/co_scientist/skills/resources/proximity/prompts/system.md -> co_scientist_replica-0.2.0.dev0/src/co_scientist/skills/resources/proximity/prompts
+copying src/co_scientist/skills/resources/ranking/manifest-v2.yaml -> co_scientist_replica-0.2.0.dev0/src/co_scientist/skills/resources/ranking
+copying src/co_scientist/skills/resources/ranking/manifest.yaml -> co_scientist_replica-0.2.0.dev0/src/co_scientist/skills/resources/ranking
+copying src/co_scientist/skills/resources/ranking/prompts/system-baseline-v1.md -> co_scientist_replica-0.2.0.dev0/src/co_scientist/skills/resources/ranking/prompts
+copying src/co_scientist/skills/resources/ranking/prompts/system.md -> co_scientist_replica-0.2.0.dev0/src/co_scientist/skills/resources/ranking/prompts
+copying src/co_scientist/skills/resources/reflection/manifest-v2.yaml -> co_scientist_replica-0.2.0.dev0/src/co_scientist/skills/resources/reflection
+copying src/co_scientist/skills/resources/reflection/manifest.yaml -> co_scientist_replica-0.2.0.dev0/src/co_scientist/skills/resources/reflection
+copying src/co_scientist/skills/resources/reflection/prompts/system-baseline-v1.md -> co_scientist_replica-0.2.0.dev0/src/co_scientist/skills/resources/reflection/prompts
+copying src/co_scientist/skills/resources/reflection/prompts/system.md -> co_scientist_replica-0.2.0.dev0/src/co_scientist/skills/resources/reflection/prompts
+copying src/co_scientist/skills/resources/root_literature_review/manifest-v2.yaml -> co_scientist_replica-0.2.0.dev0/src/co_scientist/skills/resources/root_literature_review
+copying src/co_scientist/skills/resources/root_literature_review/manifest-v3.yaml -> co_scientist_replica-0.2.0.dev0/src/co_scientist/skills/resources/root_literature_review
+copying src/co_scientist/skills/resources/root_literature_review/manifest-v4.yaml -> co_scientist_replica-0.2.0.dev0/src/co_scientist/skills/resources/root_literature_review
+copying src/co_scientist/skills/resources/root_literature_review/manifest.yaml -> co_scientist_replica-0.2.0.dev0/src/co_scientist/skills/resources/root_literature_review
+copying src/co_scientist/skills/resources/root_literature_review/prompts/system-query-v2.md -> co_scientist_replica-0.2.0.dev0/src/co_scientist/skills/resources/root_literature_review/prompts
+copying src/co_scientist/skills/resources/root_literature_review/prompts/system-query-v3.md -> co_scientist_replica-0.2.0.dev0/src/co_scientist/skills/resources/root_literature_review/prompts
+copying src/co_scientist/skills/resources/root_literature_review/prompts/system-query-v4.md -> co_scientist_replica-0.2.0.dev0/src/co_scientist/skills/resources/root_literature_review/prompts
+copying src/co_scientist/skills/resources/root_literature_review/prompts/system-source-review-v2.md -> co_scientist_replica-0.2.0.dev0/src/co_scientist/skills/resources/root_literature_review/prompts
+copying src/co_scientist/skills/resources/root_literature_review/prompts/system.md -> co_scientist_replica-0.2.0.dev0/src/co_scientist/skills/resources/root_literature_review/prompts
+copying src/co_scientist/supervisor/__init__.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist/supervisor
+copying src/co_scientist/supervisor/decomposition_view.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist/supervisor
+copying src/co_scientist/supervisor/feedback_loop.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist/supervisor
+copying src/co_scientist/supervisor/followups.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist/supervisor
+copying src/co_scientist/supervisor/lineage_event_path.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist/supervisor
+copying src/co_scientist/supervisor/orchestrator.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist/supervisor
+copying src/co_scientist/supervisor/scientific_context.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist/supervisor
+copying src/co_scientist/supervisor/scientist_feedback.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist/supervisor
+copying src/co_scientist/supervisor/verification_route_v2.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist/supervisor
+copying src/co_scientist_next/__init__.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist_next
+copying src/co_scientist_next/__main__.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist_next
+copying src/co_scientist_next/_validation.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist_next
+copying src/co_scientist_next/admission.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist_next
+copying src/co_scientist_next/background.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist_next
+copying src/co_scientist_next/background_ops.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist_next
+copying src/co_scientist_next/background_trial.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist_next
+copying src/co_scientist_next/calls.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist_next
+copying src/co_scientist_next/candidate_review.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist_next
+copying src/co_scientist_next/candidate_review_ops.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist_next
+copying src/co_scientist_next/contracts.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist_next
+copying src/co_scientist_next/delta.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist_next
+copying src/co_scientist_next/demo.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist_next
+copying src/co_scientist_next/development_cases.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist_next
+copying src/co_scientist_next/europe_pmc.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist_next
+copying src/co_scientist_next/generation.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist_next
+copying src/co_scientist_next/generation_migration.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist_next
+copying src/co_scientist_next/generation_ops.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist_next
+copying src/co_scientist_next/goal.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist_next
+copying src/co_scientist_next/literature.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist_next
+copying src/co_scientist_next/literature_runtime.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist_next
+copying src/co_scientist_next/migration_export.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist_next
+copying src/co_scientist_next/reading_model.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist_next
+copying src/co_scientist_next/remote_generation.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist_next
+copying src/co_scientist_next/responses_model.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist_next
+copying src/co_scientist_next/review_export.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist_next
+copying src/co_scientist_next/review_fixture.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist_next
+copying src/co_scientist_next/scheduler.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist_next
+copying src/co_scientist_next/store.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist_next
+copying src/co_scientist_next/workspace.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist_next
+copying src/co_scientist_next/frontend/app.css -> co_scientist_replica-0.2.0.dev0/src/co_scientist_next/frontend
+copying src/co_scientist_next/frontend/app.js -> co_scientist_replica-0.2.0.dev0/src/co_scientist_next/frontend
+copying src/co_scientist_next/frontend/background.js -> co_scientist_replica-0.2.0.dev0/src/co_scientist_next/frontend
+copying src/co_scientist_next/frontend/candidate-review.js -> co_scientist_replica-0.2.0.dev0/src/co_scientist_next/frontend
+copying src/co_scientist_next/frontend/generation.js -> co_scientist_replica-0.2.0.dev0/src/co_scientist_next/frontend
+copying src/co_scientist_next/frontend/index.html -> co_scientist_replica-0.2.0.dev0/src/co_scientist_next/frontend
+copying src/co_scientist_next/prompts/P09-review-v1.txt -> co_scientist_replica-0.2.0.dev0/src/co_scientist_next/prompts
+copying src/co_scientist_next/prompts/P10-review-v1.txt -> co_scientist_replica-0.2.0.dev0/src/co_scientist_next/prompts
+copying src/co_scientist_replica.egg-info/PKG-INFO -> co_scientist_replica-0.2.0.dev0/src/co_scientist_replica.egg-info
+copying src/co_scientist_replica.egg-info/SOURCES.txt -> co_scientist_replica-0.2.0.dev0/src/co_scientist_replica.egg-info
+copying src/co_scientist_replica.egg-info/dependency_links.txt -> co_scientist_replica-0.2.0.dev0/src/co_scientist_replica.egg-info
+copying src/co_scientist_replica.egg-info/entry_points.txt -> co_scientist_replica-0.2.0.dev0/src/co_scientist_replica.egg-info
+copying src/co_scientist_replica.egg-info/requires.txt -> co_scientist_replica-0.2.0.dev0/src/co_scientist_replica.egg-info
+copying src/co_scientist_replica.egg-info/top_level.txt -> co_scientist_replica-0.2.0.dev0/src/co_scientist_replica.egg-info
+copying src/co_scientist_web/__init__.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist_web
+copying src/co_scientist_web/__main__.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist_web
+copying src/co_scientist_web/app.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist_web
+copying src/co_scientist_web/configuration.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist_web
+copying src/co_scientist_web/diagnostics.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist_web
+copying src/co_scientist_web/driver.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist_web
+copying src/co_scientist_web/jobs.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist_web
+copying src/co_scientist_web/monitor.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist_web
+copying src/co_scientist_web/progress.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist_web
+copying src/co_scientist_web/store.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist_web
+copying src/co_scientist_web/views.py -> co_scientist_replica-0.2.0.dev0/src/co_scientist_web
+copying src/co_scientist_web/frontend/app.js -> co_scientist_replica-0.2.0.dev0/src/co_scientist_web/frontend
+copying src/co_scientist_web/frontend/backend.js -> co_scientist_replica-0.2.0.dev0/src/co_scientist_web/frontend
+copying src/co_scientist_web/frontend/fixture.js -> co_scientist_replica-0.2.0.dev0/src/co_scientist_web/frontend
+copying src/co_scientist_web/frontend/index.html -> co_scientist_replica-0.2.0.dev0/src/co_scientist_web/frontend
+copying src/co_scientist_web/frontend/styles.css -> co_scientist_replica-0.2.0.dev0/src/co_scientist_web/frontend
+copying src/co_scientist_web/frontend/workbench.js -> co_scientist_replica-0.2.0.dev0/src/co_scientist_web/frontend
+copying tests/conftest.py -> co_scientist_replica-0.2.0.dev0/tests
+copying tests/test_bayesian_ranking.py -> co_scientist_replica-0.2.0.dev0/tests
+copying tests/test_external_call_raw_first.py -> co_scientist_replica-0.2.0.dev0/tests
+copying tests/test_external_call_recovery.py -> co_scientist_replica-0.2.0.dev0/tests
+copying tests/test_hardening.py -> co_scientist_replica-0.2.0.dev0/tests
+copying tests/test_installation.py -> co_scientist_replica-0.2.0.dev0/tests
+copying tests/test_population_evolution.py -> co_scientist_replica-0.2.0.dev0/tests
+copying tests/test_release.py -> co_scientist_replica-0.2.0.dev0/tests
+copying tests/test_web.py -> co_scientist_replica-0.2.0.dev0/tests
+copying tests/test_web_crash_recovery.py -> co_scientist_replica-0.2.0.dev0/tests
+copying tests/test_web_logging.py -> co_scientist_replica-0.2.0.dev0/tests
+copying tests/test_web_replay.py -> co_scientist_replica-0.2.0.dev0/tests
+copying tests/test_workbench_reliability.py -> co_scientist_replica-0.2.0.dev0/tests
+copying tests/web_browser.py -> co_scientist_replica-0.2.0.dev0/tests
+copying tests/web_reliability_browser.py -> co_scientist_replica-0.2.0.dev0/tests
+copying tests/next/test_background.py -> co_scientist_replica-0.2.0.dev0/tests/next
+copying tests/next/test_background_http.py -> co_scientist_replica-0.2.0.dev0/tests/next
+copying tests/next/test_candidate_review.py -> co_scientist_replica-0.2.0.dev0/tests/next
+copying tests/next/test_candidate_review_http.py -> co_scientist_replica-0.2.0.dev0/tests/next
+copying tests/next/test_development_cases.py -> co_scientist_replica-0.2.0.dev0/tests/next
+copying tests/next/test_generation.py -> co_scientist_replica-0.2.0.dev0/tests/next
+copying tests/next/test_generation_http.py -> co_scientist_replica-0.2.0.dev0/tests/next
+copying tests/next/test_generation_migration.py -> co_scientist_replica-0.2.0.dev0/tests/next
+copying tests/next/test_generation_migration_http.py -> co_scientist_replica-0.2.0.dev0/tests/next
+copying tests/next/test_goal_slice.py -> co_scientist_replica-0.2.0.dev0/tests/next
+copying tests/next/test_goal_workspace_http.py -> co_scientist_replica-0.2.0.dev0/tests/next
+copying tests/next/test_literature_acquisition.py -> co_scientist_replica-0.2.0.dev0/tests/next
+copying tests/next/test_literature_contract.py -> co_scientist_replica-0.2.0.dev0/tests/next
+copying tests/next/test_literature_http.py -> co_scientist_replica-0.2.0.dev0/tests/next
+copying tests/next/test_p04_preparation.py -> co_scientist_replica-0.2.0.dev0/tests/next
+copying tests/next/test_p04_prompt_version.py -> co_scientist_replica-0.2.0.dev0/tests/next
+copying tests/next/test_process_recovery.py -> co_scientist_replica-0.2.0.dev0/tests/next
+copying tests/next/test_reading_model.py -> co_scientist_replica-0.2.0.dev0/tests/next
+copying tests/next/test_responses_background.py -> co_scientist_replica-0.2.0.dev0/tests/next
+copying tests/next/test_responses_http.py -> co_scientist_replica-0.2.0.dev0/tests/next
+copying tests/next/test_runtime.py -> co_scientist_replica-0.2.0.dev0/tests/next
+copying tests/next/test_shared_contracts.py -> co_scientist_replica-0.2.0.dev0/tests/next
+copying tests/next/test_transport_diagnostics.py -> co_scientist_replica-0.2.0.dev0/tests/next
+copying src/co_scientist_replica.egg-info/SOURCES.txt -> co_scientist_replica-0.2.0.dev0/src/co_scientist_replica.egg-info
+Writing co_scientist_replica-0.2.0.dev0/setup.cfg
+Creating tar archive
+removing 'co_scientist_replica-0.2.0.dev0' (and everything under it)
+* Building wheel from sdist
+* Getting build dependencies for wheel...
+running egg_info
+writing src/co_scientist_replica.egg-info/PKG-INFO
+writing dependency_links to src/co_scientist_replica.egg-info/dependency_links.txt
+writing entry points to src/co_scientist_replica.egg-info/entry_points.txt
+writing requirements to src/co_scientist_replica.egg-info/requires.txt
+writing top-level names to src/co_scientist_replica.egg-info/top_level.txt
+reading manifest file 'src/co_scientist_replica.egg-info/SOURCES.txt'
+reading manifest template 'MANIFEST.in'
+warning: no previously-included files matching '__pycache__' found anywhere in distribution
+warning: no previously-included files matching '*.py[cod]' found anywhere in distribution
+writing manifest file 'src/co_scientist_replica.egg-info/SOURCES.txt'
+* Building wheel...
+running bdist_wheel
+running build
+running build_py
+creating build/lib/co_scientist_web
+copying src/co_scientist_web/store.py -> build/lib/co_scientist_web
+copying src/co_scientist_web/configuration.py -> build/lib/co_scientist_web
+copying src/co_scientist_web/monitor.py -> build/lib/co_scientist_web
+copying src/co_scientist_web/diagnostics.py -> build/lib/co_scientist_web
+copying src/co_scientist_web/__init__.py -> build/lib/co_scientist_web
+copying src/co_scientist_web/jobs.py -> build/lib/co_scientist_web
+copying src/co_scientist_web/app.py -> build/lib/co_scientist_web
+copying src/co_scientist_web/progress.py -> build/lib/co_scientist_web
+copying src/co_scientist_web/driver.py -> build/lib/co_scientist_web
+copying src/co_scientist_web/__main__.py -> build/lib/co_scientist_web
+copying src/co_scientist_web/views.py -> build/lib/co_scientist_web
+creating build/lib/co_scientist_next
+copying src/co_scientist_next/development_cases.py -> build/lib/co_scientist_next
+copying src/co_scientist_next/store.py -> build/lib/co_scientist_next
+copying src/co_scientist_next/generation.py -> build/lib/co_scientist_next
+copying src/co_scientist_next/background_trial.py -> build/lib/co_scientist_next
+copying src/co_scientist_next/background_ops.py -> build/lib/co_scientist_next
+copying src/co_scientist_next/review_fixture.py -> build/lib/co_scientist_next
+copying src/co_scientist_next/generation_ops.py -> build/lib/co_scientist_next
+copying src/co_scientist_next/review_export.py -> build/lib/co_scientist_next
+copying src/co_scientist_next/reading_model.py -> build/lib/co_scientist_next
+copying src/co_scientist_next/background.py -> build/lib/co_scientist_next
+copying src/co_scientist_next/__init__.py -> build/lib/co_scientist_next
+copying src/co_scientist_next/literature_runtime.py -> build/lib/co_scientist_next
+copying src/co_scientist_next/candidate_review_ops.py -> build/lib/co_scientist_next
+copying src/co_scientist_next/generation_migration.py -> build/lib/co_scientist_next
+copying src/co_scientist_next/europe_pmc.py -> build/lib/co_scientist_next
+copying src/co_scientist_next/_validation.py -> build/lib/co_scientist_next
+copying src/co_scientist_next/delta.py -> build/lib/co_scientist_next
+copying src/co_scientist_next/contracts.py -> build/lib/co_scientist_next
+copying src/co_scientist_next/remote_generation.py -> build/lib/co_scientist_next
+copying src/co_scientist_next/scheduler.py -> build/lib/co_scientist_next
+copying src/co_scientist_next/admission.py -> build/lib/co_scientist_next
+copying src/co_scientist_next/literature.py -> build/lib/co_scientist_next
+copying src/co_scientist_next/goal.py -> build/lib/co_scientist_next
+copying src/co_scientist_next/workspace.py -> build/lib/co_scientist_next
+copying src/co_scientist_next/migration_export.py -> build/lib/co_scientist_next
+copying src/co_scientist_next/demo.py -> build/lib/co_scientist_next
+copying src/co_scientist_next/responses_model.py -> build/lib/co_scientist_next
+copying src/co_scientist_next/calls.py -> build/lib/co_scientist_next
+copying src/co_scientist_next/__main__.py -> build/lib/co_scientist_next
+copying src/co_scientist_next/candidate_review.py -> build/lib/co_scientist_next
+creating build/lib/co_scientist
+copying src/co_scientist/__init__.py -> build/lib/co_scientist
+creating build/lib/co_scientist/_migrations
+copying src/co_scientist/_migrations/env.py -> build/lib/co_scientist/_migrations
+creating build/lib/co_scientist/evidence
+copying src/co_scientist/evidence/__init__.py -> build/lib/co_scientist/evidence
+copying src/co_scientist/evidence/loader.py -> build/lib/co_scientist/evidence
+creating build/lib/co_scientist/runtime
+copying src/co_scientist/runtime/worker.py -> build/lib/co_scientist/runtime
+copying src/co_scientist/runtime/registry.py -> build/lib/co_scientist/runtime
+copying src/co_scientist/runtime/single_root.py -> build/lib/co_scientist/runtime
+copying src/co_scientist/runtime/continuous_recovery.py -> build/lib/co_scientist/runtime
+copying src/co_scientist/runtime/__init__.py -> build/lib/co_scientist/runtime
+copying src/co_scientist/runtime/lineage_workflow_contract.py -> build/lib/co_scientist/runtime
+copying src/co_scientist/runtime/core_runner.py -> build/lib/co_scientist/runtime
+copying src/co_scientist/runtime/checkpoints.py -> build/lib/co_scientist/runtime
+copying src/co_scientist/runtime/transport_observability.py -> build/lib/co_scientist/runtime
+copying src/co_scientist/runtime/bounded_transport.py -> build/lib/co_scientist/runtime
+copying src/co_scientist/runtime/task_payload.py -> build/lib/co_scientist/runtime
+copying src/co_scientist/runtime/ideation_trace.py -> build/lib/co_scientist/runtime
+copying src/co_scientist/runtime/context_planning.py -> build/lib/co_scientist/runtime
+copying src/co_scientist/runtime/trace_snapshot.py -> build/lib/co_scientist/runtime
+copying src/co_scientist/runtime/external_calls.py -> build/lib/co_scientist/runtime
+creating build/lib/co_scientist/agents
+copying src/co_scientist/agents/__init__.py -> build/lib/co_scientist/agents
+copying src/co_scientist/agents/result.py -> build/lib/co_scientist/agents
+copying src/co_scientist/agents/payloads.py -> build/lib/co_scientist/agents
+copying src/co_scientist/agents/executor.py -> build/lib/co_scientist/agents
+creating build/lib/co_scientist/release
+copying src/co_scientist/release/service.py -> build/lib/co_scientist/release
+copying src/co_scientist/release/mock_http.py -> build/lib/co_scientist/release
+copying src/co_scientist/release/__init__.py -> build/lib/co_scientist/release
+copying src/co_scientist/release/cli.py -> build/lib/co_scientist/release
+copying src/co_scientist/release/resources.py -> build/lib/co_scientist/release
+creating build/lib/co_scientist/cli
+copying src/co_scientist/cli/__init__.py -> build/lib/co_scientist/cli
+copying src/co_scientist/cli/app.py -> build/lib/co_scientist/cli
+creating build/lib/co_scientist/skills
+copying src/co_scientist/skills/__init__.py -> build/lib/co_scientist/skills
+copying src/co_scientist/skills/loader.py -> build/lib/co_scientist/skills
+creating build/lib/co_scientist/application
+copying src/co_scientist/application/cockpit_settings.py -> build/lib/co_scientist/application
+copying src/co_scientist/application/cockpit.py -> build/lib/co_scientist/application
+copying src/co_scientist/application/cockpit_control.py -> build/lib/co_scientist/application
+copying src/co_scientist/application/service.py -> build/lib/co_scientist/application
+copying src/co_scientist/application/config.py -> build/lib/co_scientist/application
+copying src/co_scientist/application/cockpit_retry.py -> build/lib/co_scientist/application
+copying src/co_scientist/application/output_retry.py -> build/lib/co_scientist/application
+copying src/co_scientist/application/__init__.py -> build/lib/co_scientist/application
+copying src/co_scientist/application/model_catalog.py -> build/lib/co_scientist/application
+copying src/co_scientist/application/queries.py -> build/lib/co_scientist/application
+copying src/co_scientist/application/output_diagnostics.py -> build/lib/co_scientist/application
+copying src/co_scientist/application/commands.py -> build/lib/co_scientist/application
+creating build/lib/co_scientist/export
+copying src/co_scientist/export/__init__.py -> build/lib/co_scientist/export
+copying src/co_scientist/export/run_export.py -> build/lib/co_scientist/export
+creating build/lib/co_scientist/events
+copying src/co_scientist/events/reducers.py -> build/lib/co_scientist/events
+copying src/co_scientist/events/models.py -> build/lib/co_scientist/events
+copying src/co_scientist/events/__init__.py -> build/lib/co_scientist/events
+copying src/co_scientist/events/contracts.py -> build/lib/co_scientist/events
+copying src/co_scientist/events/lineage_replay.py -> build/lib/co_scientist/events
+creating build/lib/co_scientist/ports
+copying src/co_scientist/ports/task_runtime.py -> build/lib/co_scientist/ports
+copying src/co_scientist/ports/external_provider.py -> build/lib/co_scientist/ports
+copying src/co_scientist/ports/event_store.py -> build/lib/co_scientist/ports
+copying src/co_scientist/ports/literature.py -> build/lib/co_scientist/ports
+copying src/co_scientist/ports/artifact_store.py -> build/lib/co_scientist/ports
+creating build/lib/co_scientist/domain
+copying src/co_scientist/domain/evidence_units.py -> build/lib/co_scientist/domain
+copying src/co_scientist/domain/pilot_pricing.py -> build/lib/co_scientist/domain
+copying src/co_scientist/domain/elo.py -> build/lib/co_scientist/domain
+copying src/co_scientist/domain/task.py -> build/lib/co_scientist/domain
+copying src/co_scientist/domain/claim_verification.py -> build/lib/co_scientist/domain
+copying src/co_scientist/domain/convergence.py -> build/lib/co_scientist/domain
+copying src/co_scientist/domain/external_call.py -> build/lib/co_scientist/domain
+copying src/co_scientist/domain/generation_integration.py -> build/lib/co_scientist/domain
+copying src/co_scientist/domain/research_plan.py -> build/lib/co_scientist/domain
+copying src/co_scientist/domain/claim_lineage.py -> build/lib/co_scientist/domain
+copying src/co_scientist/domain/bayesian_ranking.py -> build/lib/co_scientist/domain
+copying src/co_scientist/domain/ranking_output.py -> build/lib/co_scientist/domain
+copying src/co_scientist/domain/identifiers.py -> build/lib/co_scientist/domain
+copying src/co_scientist/domain/budget.py -> build/lib/co_scientist/domain
+copying src/co_scientist/domain/dispatch_limits.py -> build/lib/co_scientist/domain
+copying src/co_scientist/domain/continuous_execution.py -> build/lib/co_scientist/domain
+copying src/co_scientist/domain/single_root.py -> build/lib/co_scientist/domain
+copying src/co_scientist/domain/run_mutations.py -> build/lib/co_scientist/domain
+copying src/co_scientist/domain/__init__.py -> build/lib/co_scientist/domain
+copying src/co_scientist/domain/research_protocol.py -> build/lib/co_scientist/domain
+copying src/co_scientist/domain/hypothesis.py -> build/lib/co_scientist/domain
+copying src/co_scientist/domain/research_feedback.py -> build/lib/co_scientist/domain
+copying src/co_scientist/domain/review.py -> build/lib/co_scientist/domain
+copying src/co_scientist/domain/ideation_core_boundary.py -> build/lib/co_scientist/domain
+copying src/co_scientist/domain/execution_config.py -> build/lib/co_scientist/domain
+copying src/co_scientist/domain/population_evolution.py -> build/lib/co_scientist/domain
+copying src/co_scientist/domain/source_units.py -> build/lib/co_scientist/domain
+copying src/co_scientist/domain/anchors.py -> build/lib/co_scientist/domain
+copying src/co_scientist/domain/transitions.py -> build/lib/co_scientist/domain
+copying src/co_scientist/domain/pilot_output.py -> build/lib/co_scientist/domain
+copying src/co_scientist/domain/pubmed_query_planning.py -> build/lib/co_scientist/domain
+copying src/co_scientist/domain/admission.py -> build/lib/co_scientist/domain
+copying src/co_scientist/domain/provenance.py -> build/lib/co_scientist/domain
+copying src/co_scientist/domain/probe_execution.py -> build/lib/co_scientist/domain
+copying src/co_scientist/domain/states.py -> build/lib/co_scientist/domain
+copying src/co_scientist/domain/proximity.py -> build/lib/co_scientist/domain
+copying src/co_scientist/domain/tournament.py -> build/lib/co_scientist/domain
+copying src/co_scientist/domain/ideation_prerequisites.py -> build/lib/co_scientist/domain
+creating build/lib/co_scientist/supervisor
+copying src/co_scientist/supervisor/scientific_context.py -> build/lib/co_scientist/supervisor
+copying src/co_scientist/supervisor/verification_route_v2.py -> build/lib/co_scientist/supervisor
+copying src/co_scientist/supervisor/scientist_feedback.py -> build/lib/co_scientist/supervisor
+copying src/co_scientist/supervisor/__init__.py -> build/lib/co_scientist/supervisor
+copying src/co_scientist/supervisor/followups.py -> build/lib/co_scientist/supervisor
+copying src/co_scientist/supervisor/decomposition_view.py -> build/lib/co_scientist/supervisor
+copying src/co_scientist/supervisor/orchestrator.py -> build/lib/co_scientist/supervisor
+copying src/co_scientist/supervisor/lineage_event_path.py -> build/lib/co_scientist/supervisor
+copying src/co_scientist/supervisor/feedback_loop.py -> build/lib/co_scientist/supervisor
+creating build/lib/co_scientist/_migrations/versions
+copying src/co_scientist/_migrations/versions/0002_external_call_recovery.py -> build/lib/co_scientist/_migrations/versions
+copying src/co_scientist/_migrations/versions/0003_worker_leases_budget_reservations.py -> build/lib/co_scientist/_migrations/versions
+copying src/co_scientist/_migrations/versions/0004_external_call_observability.py -> build/lib/co_scientist/_migrations/versions
+copying src/co_scientist/_migrations/versions/0001_core_tables.py -> build/lib/co_scientist/_migrations/versions
+creating build/lib/co_scientist/adapters/artifacts
+copying src/co_scientist/adapters/artifacts/filesystem.py -> build/lib/co_scientist/adapters/artifacts
+copying src/co_scientist/adapters/artifacts/__init__.py -> build/lib/co_scientist/adapters/artifacts
+creating build/lib/co_scientist/adapters/llm
+copying src/co_scientist/adapters/llm/output_errors.py -> build/lib/co_scientist/adapters/llm
+copying src/co_scientist/adapters/llm/fake.py -> build/lib/co_scientist/adapters/llm
+copying src/co_scientist/adapters/llm/openai_responses.py -> build/lib/co_scientist/adapters/llm
+copying src/co_scientist/adapters/llm/provider_output.py -> build/lib/co_scientist/adapters/llm
+copying src/co_scientist/adapters/llm/multi_provider.py -> build/lib/co_scientist/adapters/llm
+copying src/co_scientist/adapters/llm/performance_responses.py -> build/lib/co_scientist/adapters/llm
+copying src/co_scientist/adapters/llm/replay.py -> build/lib/co_scientist/adapters/llm
+copying src/co_scientist/adapters/llm/provider_result_contract.py -> build/lib/co_scientist/adapters/llm
+creating build/lib/co_scientist/adapters/literature
+copying src/co_scientist/adapters/literature/pubmed.py -> build/lib/co_scientist/adapters/literature
+copying src/co_scientist/adapters/literature/__init__.py -> build/lib/co_scientist/adapters/literature
+copying src/co_scientist/adapters/literature/replay.py -> build/lib/co_scientist/adapters/literature
+creating build/lib/co_scientist/adapters/persistence
+copying src/co_scientist/adapters/persistence/__init__.py -> build/lib/co_scientist/adapters/persistence
+copying src/co_scientist/adapters/persistence/sqlite.py -> build/lib/co_scientist/adapters/persistence
+copying src/co_scientist/adapters/persistence/migrations.py -> build/lib/co_scientist/adapters/persistence
+running egg_info
+writing src/co_scientist_replica.egg-info/PKG-INFO
+writing dependency_links to src/co_scientist_replica.egg-info/dependency_links.txt
+writing entry points to src/co_scientist_replica.egg-info/entry_points.txt
+writing requirements to src/co_scientist_replica.egg-info/requires.txt
+writing top-level names to src/co_scientist_replica.egg-info/top_level.txt
+reading manifest file 'src/co_scientist_replica.egg-info/SOURCES.txt'
+reading manifest template 'MANIFEST.in'
+warning: no previously-included files matching '__pycache__' found anywhere in distribution
+warning: no previously-included files matching '*.py[cod]' found anywhere in distribution
+writing manifest file 'src/co_scientist_replica.egg-info/SOURCES.txt'
+creating build/lib/co_scientist_web/frontend
+copying src/co_scientist_web/frontend/index.html -> build/lib/co_scientist_web/frontend
+copying src/co_scientist_web/frontend/styles.css -> build/lib/co_scientist_web/frontend
+copying src/co_scientist_web/frontend/fixture.js -> build/lib/co_scientist_web/frontend
+copying src/co_scientist_web/frontend/backend.js -> build/lib/co_scientist_web/frontend
+copying src/co_scientist_web/frontend/workbench.js -> build/lib/co_scientist_web/frontend
+copying src/co_scientist_web/frontend/app.js -> build/lib/co_scientist_web/frontend
+creating build/lib/co_scientist_next/frontend
+copying src/co_scientist_next/frontend/index.html -> build/lib/co_scientist_next/frontend
+copying src/co_scientist_next/frontend/app.css -> build/lib/co_scientist_next/frontend
+copying src/co_scientist_next/frontend/background.js -> build/lib/co_scientist_next/frontend
+copying src/co_scientist_next/frontend/generation.js -> build/lib/co_scientist_next/frontend
+copying src/co_scientist_next/frontend/candidate-review.js -> build/lib/co_scientist_next/frontend
+copying src/co_scientist_next/frontend/app.js -> build/lib/co_scientist_next/frontend
+creating build/lib/co_scientist_next/prompts
+copying src/co_scientist_next/prompts/P09-review-v1.txt -> build/lib/co_scientist_next/prompts
+copying src/co_scientist_next/prompts/P10-review-v1.txt -> build/lib/co_scientist_next/prompts
+creating build/lib/co_scientist/release/resources
+copying src/co_scientist/release/resources/g3.yaml -> build/lib/co_scientist/release/resources
+copying src/co_scientist/release/resources/tokenizers.json -> build/lib/co_scientist/release/resources
+copying src/co_scientist/release/resources/deepseek-v41.json -> build/lib/co_scientist/release/resources
+copying src/co_scientist/release/resources/deepseek-tokenizer-license.txt -> build/lib/co_scientist/release/resources
+creating build/lib/co_scientist/skills/resources/claim_search_plan
+copying src/co_scientist/skills/resources/claim_search_plan/manifest.yaml -> build/lib/co_scientist/skills/resources/claim_search_plan
+creating build/lib/co_scientist/skills/resources/ranking
+copying src/co_scientist/skills/resources/ranking/manifest.yaml -> build/lib/co_scientist/skills/resources/ranking
+creating build/lib/co_scientist/skills/resources/directive_ethics
+copying src/co_scientist/skills/resources/directive_ethics/manifest.yaml -> build/lib/co_scientist/skills/resources/directive_ethics
+creating build/lib/co_scientist/skills/resources/claim_verification
+copying src/co_scientist/skills/resources/claim_verification/manifest.yaml -> build/lib/co_scientist/skills/resources/claim_verification
+creating build/lib/co_scientist/skills/resources/root_literature_review
+copying src/co_scientist/skills/resources/root_literature_review/manifest.yaml -> build/lib/co_scientist/skills/resources/root_literature_review
+creating build/lib/co_scientist/skills/resources/population_evolution
+copying src/co_scientist/skills/resources/population_evolution/manifest.yaml -> build/lib/co_scientist/skills/resources/population_evolution
+creating build/lib/co_scientist/skills/resources/claim_decomposition
+copying src/co_scientist/skills/resources/claim_decomposition/manifest.yaml -> build/lib/co_scientist/skills/resources/claim_decomposition
+creating build/lib/co_scientist/skills/resources/proximity
+copying src/co_scientist/skills/resources/proximity/manifest.yaml -> build/lib/co_scientist/skills/resources/proximity
+creating build/lib/co_scientist/skills/resources/candidate_ethics
+copying src/co_scientist/skills/resources/candidate_ethics/manifest.yaml -> build/lib/co_scientist/skills/resources/candidate_ethics
+creating build/lib/co_scientist/skills/resources/evolution
+copying src/co_scientist/skills/resources/evolution/manifest.yaml -> build/lib/co_scientist/skills/resources/evolution
+creating build/lib/co_scientist/skills/resources/meta_review
+copying src/co_scientist/skills/resources/meta_review/manifest.yaml -> build/lib/co_scientist/skills/resources/meta_review
+creating build/lib/co_scientist/skills/resources/generation
+copying src/co_scientist/skills/resources/generation/manifest.yaml -> build/lib/co_scientist/skills/resources/generation
+creating build/lib/co_scientist/skills/resources/reflection
+copying src/co_scientist/skills/resources/reflection/manifest.yaml -> build/lib/co_scientist/skills/resources/reflection
+copying src/co_scientist/skills/resources/ranking/manifest-v2.yaml -> build/lib/co_scientist/skills/resources/ranking
+copying src/co_scientist/skills/resources/claim_verification/manifest-v2.yaml -> build/lib/co_scientist/skills/resources/claim_verification
+copying src/co_scientist/skills/resources/root_literature_review/manifest-v2.yaml -> build/lib/co_scientist/skills/resources/root_literature_review
+copying src/co_scientist/skills/resources/population_evolution/manifest-v2.yaml -> build/lib/co_scientist/skills/resources/population_evolution
+copying src/co_scientist/skills/resources/claim_decomposition/manifest-v2.yaml -> build/lib/co_scientist/skills/resources/claim_decomposition
+copying src/co_scientist/skills/resources/generation/manifest-v2.yaml -> build/lib/co_scientist/skills/resources/generation
+copying src/co_scientist/skills/resources/reflection/manifest-v2.yaml -> build/lib/co_scientist/skills/resources/reflection
+copying src/co_scientist/skills/resources/root_literature_review/manifest-v3.yaml -> build/lib/co_scientist/skills/resources/root_literature_review
+copying src/co_scientist/skills/resources/population_evolution/manifest-v3.yaml -> build/lib/co_scientist/skills/resources/population_evolution
+copying src/co_scientist/skills/resources/claim_decomposition/manifest-v3.yaml -> build/lib/co_scientist/skills/resources/claim_decomposition
+copying src/co_scientist/skills/resources/generation/manifest-v3.yaml -> build/lib/co_scientist/skills/resources/generation
+copying src/co_scientist/skills/resources/root_literature_review/manifest-v4.yaml -> build/lib/co_scientist/skills/resources/root_literature_review
+creating build/lib/co_scientist/skills/resources/claim_search_plan/prompts
+copying src/co_scientist/skills/resources/claim_search_plan/prompts/system.md -> build/lib/co_scientist/skills/resources/claim_search_plan/prompts
+creating build/lib/co_scientist/skills/resources/ranking/prompts
+copying src/co_scientist/skills/resources/ranking/prompts/system-baseline-v1.md -> build/lib/co_scientist/skills/resources/ranking/prompts
+copying src/co_scientist/skills/resources/ranking/prompts/system.md -> build/lib/co_scientist/skills/resources/ranking/prompts
+creating build/lib/co_scientist/skills/resources/directive_ethics/prompts
+copying src/co_scientist/skills/resources/directive_ethics/prompts/system.md -> build/lib/co_scientist/skills/resources/directive_ethics/prompts
+creating build/lib/co_scientist/skills/resources/claim_verification/prompts
+copying src/co_scientist/skills/resources/claim_verification/prompts/system.md -> build/lib/co_scientist/skills/resources/claim_verification/prompts
+copying src/co_scientist/skills/resources/claim_verification/prompts/system-v2.md -> build/lib/co_scientist/skills/resources/claim_verification/prompts
+creating build/lib/co_scientist/skills/resources/root_literature_review/prompts
+copying src/co_scientist/skills/resources/root_literature_review/prompts/system-source-review-v2.md -> build/lib/co_scientist/skills/resources/root_literature_review/prompts
+copying src/co_scientist/skills/resources/root_literature_review/prompts/system-query-v4.md -> build/lib/co_scientist/skills/resources/root_literature_review/prompts
+copying src/co_scientist/skills/resources/root_literature_review/prompts/system-query-v3.md -> build/lib/co_scientist/skills/resources/root_literature_review/prompts
+copying src/co_scientist/skills/resources/root_literature_review/prompts/system.md -> build/lib/co_scientist/skills/resources/root_literature_review/prompts
+copying src/co_scientist/skills/resources/root_literature_review/prompts/system-query-v2.md -> build/lib/co_scientist/skills/resources/root_literature_review/prompts
+creating build/lib/co_scientist/skills/resources/population_evolution/prompts
+copying src/co_scientist/skills/resources/population_evolution/prompts/system-baseline-v1.md -> build/lib/co_scientist/skills/resources/population_evolution/prompts
+copying src/co_scientist/skills/resources/population_evolution/prompts/system.md -> build/lib/co_scientist/skills/resources/population_evolution/prompts
+copying src/co_scientist/skills/resources/population_evolution/prompts/system-v2.md -> build/lib/co_scientist/skills/resources/population_evolution/prompts
+creating build/lib/co_scientist/skills/resources/claim_decomposition/prompts
+copying src/co_scientist/skills/resources/claim_decomposition/prompts/system-v3.md -> build/lib/co_scientist/skills/resources/claim_decomposition/prompts
+copying src/co_scientist/skills/resources/claim_decomposition/prompts/system.md -> build/lib/co_scientist/skills/resources/claim_decomposition/prompts
+copying src/co_scientist/skills/resources/claim_decomposition/prompts/system-v2.md -> build/lib/co_scientist/skills/resources/claim_decomposition/prompts
+creating build/lib/co_scientist/skills/resources/proximity/prompts
+copying src/co_scientist/skills/resources/proximity/prompts/system.md -> build/lib/co_scientist/skills/resources/proximity/prompts
+creating build/lib/co_scientist/skills/resources/candidate_ethics/prompts
+copying src/co_scientist/skills/resources/candidate_ethics/prompts/system.md -> build/lib/co_scientist/skills/resources/candidate_ethics/prompts
+creating build/lib/co_scientist/skills/resources/evolution/prompts
+copying src/co_scientist/skills/resources/evolution/prompts/system.md -> build/lib/co_scientist/skills/resources/evolution/prompts
+creating build/lib/co_scientist/skills/resources/meta_review/prompts
+copying src/co_scientist/skills/resources/meta_review/prompts/system.md -> build/lib/co_scientist/skills/resources/meta_review/prompts
+creating build/lib/co_scientist/skills/resources/generation/prompts
+copying src/co_scientist/skills/resources/generation/prompts/system-baseline-v1.md -> build/lib/co_scientist/skills/resources/generation/prompts
+copying src/co_scientist/skills/resources/generation/prompts/system.md -> build/lib/co_scientist/skills/resources/generation/prompts
+copying src/co_scientist/skills/resources/generation/prompts/system-performance-v1.md -> build/lib/co_scientist/skills/resources/generation/prompts
+creating build/lib/co_scientist/skills/resources/reflection/prompts
+copying src/co_scientist/skills/resources/reflection/prompts/system-baseline-v1.md -> build/lib/co_scientist/skills/resources/reflection/prompts
+copying src/co_scientist/skills/resources/reflection/prompts/system.md -> build/lib/co_scientist/skills/resources/reflection/prompts
+installing to build/bdist.macosx-10.15-x86_64/wheel
+running install
+running install_lib
+creating build/bdist.macosx-10.15-x86_64/wheel
+creating build/bdist.macosx-10.15-x86_64/wheel/co_scientist_web
+copying build/lib/co_scientist_web/store.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist_web
+copying build/lib/co_scientist_web/configuration.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist_web
+copying build/lib/co_scientist_web/monitor.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist_web
+creating build/bdist.macosx-10.15-x86_64/wheel/co_scientist_web/frontend
+copying build/lib/co_scientist_web/frontend/index.html -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist_web/frontend
+copying build/lib/co_scientist_web/frontend/styles.css -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist_web/frontend
+copying build/lib/co_scientist_web/frontend/fixture.js -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist_web/frontend
+copying build/lib/co_scientist_web/frontend/backend.js -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist_web/frontend
+copying build/lib/co_scientist_web/frontend/workbench.js -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist_web/frontend
+copying build/lib/co_scientist_web/frontend/app.js -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist_web/frontend
+copying build/lib/co_scientist_web/diagnostics.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist_web
+copying build/lib/co_scientist_web/__init__.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist_web
+copying build/lib/co_scientist_web/jobs.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist_web
+copying build/lib/co_scientist_web/app.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist_web
+copying build/lib/co_scientist_web/progress.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist_web
+copying build/lib/co_scientist_web/driver.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist_web
+copying build/lib/co_scientist_web/__main__.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist_web
+copying build/lib/co_scientist_web/views.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist_web
+creating build/bdist.macosx-10.15-x86_64/wheel/co_scientist_next
+copying build/lib/co_scientist_next/development_cases.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist_next
+copying build/lib/co_scientist_next/store.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist_next
+copying build/lib/co_scientist_next/generation.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist_next
+copying build/lib/co_scientist_next/background_trial.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist_next
+copying build/lib/co_scientist_next/background_ops.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist_next
+creating build/bdist.macosx-10.15-x86_64/wheel/co_scientist_next/frontend
+copying build/lib/co_scientist_next/frontend/index.html -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist_next/frontend
+copying build/lib/co_scientist_next/frontend/background.js -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist_next/frontend
+copying build/lib/co_scientist_next/frontend/app.css -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist_next/frontend
+copying build/lib/co_scientist_next/frontend/generation.js -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist_next/frontend
+copying build/lib/co_scientist_next/frontend/candidate-review.js -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist_next/frontend
+copying build/lib/co_scientist_next/frontend/app.js -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist_next/frontend
+copying build/lib/co_scientist_next/review_fixture.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist_next
+copying build/lib/co_scientist_next/generation_ops.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist_next
+copying build/lib/co_scientist_next/review_export.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist_next
+copying build/lib/co_scientist_next/reading_model.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist_next
+copying build/lib/co_scientist_next/background.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist_next
+copying build/lib/co_scientist_next/__init__.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist_next
+copying build/lib/co_scientist_next/literature_runtime.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist_next
+copying build/lib/co_scientist_next/candidate_review_ops.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist_next
+copying build/lib/co_scientist_next/generation_migration.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist_next
+copying build/lib/co_scientist_next/europe_pmc.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist_next
+copying build/lib/co_scientist_next/_validation.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist_next
+copying build/lib/co_scientist_next/delta.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist_next
+copying build/lib/co_scientist_next/contracts.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist_next
+creating build/bdist.macosx-10.15-x86_64/wheel/co_scientist_next/prompts
+copying build/lib/co_scientist_next/prompts/P09-review-v1.txt -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist_next/prompts
+copying build/lib/co_scientist_next/prompts/P10-review-v1.txt -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist_next/prompts
+copying build/lib/co_scientist_next/remote_generation.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist_next
+copying build/lib/co_scientist_next/scheduler.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist_next
+copying build/lib/co_scientist_next/admission.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist_next
+copying build/lib/co_scientist_next/literature.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist_next
+copying build/lib/co_scientist_next/goal.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist_next
+copying build/lib/co_scientist_next/workspace.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist_next
+copying build/lib/co_scientist_next/migration_export.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist_next
+copying build/lib/co_scientist_next/demo.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist_next
+copying build/lib/co_scientist_next/responses_model.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist_next
+copying build/lib/co_scientist_next/calls.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist_next
+copying build/lib/co_scientist_next/__main__.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist_next
+copying build/lib/co_scientist_next/candidate_review.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist_next
+creating build/bdist.macosx-10.15-x86_64/wheel/co_scientist
+creating build/bdist.macosx-10.15-x86_64/wheel/co_scientist/_migrations
+copying build/lib/co_scientist/_migrations/env.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/_migrations
+creating build/bdist.macosx-10.15-x86_64/wheel/co_scientist/_migrations/versions
+copying build/lib/co_scientist/_migrations/versions/0002_external_call_recovery.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/_migrations/versions
+copying build/lib/co_scientist/_migrations/versions/0003_worker_leases_budget_reservations.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/_migrations/versions
+copying build/lib/co_scientist/_migrations/versions/0004_external_call_observability.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/_migrations/versions
+copying build/lib/co_scientist/_migrations/versions/0001_core_tables.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/_migrations/versions
+creating build/bdist.macosx-10.15-x86_64/wheel/co_scientist/evidence
+copying build/lib/co_scientist/evidence/__init__.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/evidence
+copying build/lib/co_scientist/evidence/loader.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/evidence
+creating build/bdist.macosx-10.15-x86_64/wheel/co_scientist/runtime
+copying build/lib/co_scientist/runtime/worker.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/runtime
+copying build/lib/co_scientist/runtime/registry.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/runtime
+copying build/lib/co_scientist/runtime/single_root.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/runtime
+copying build/lib/co_scientist/runtime/continuous_recovery.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/runtime
+copying build/lib/co_scientist/runtime/__init__.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/runtime
+copying build/lib/co_scientist/runtime/lineage_workflow_contract.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/runtime
+copying build/lib/co_scientist/runtime/core_runner.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/runtime
+copying build/lib/co_scientist/runtime/checkpoints.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/runtime
+copying build/lib/co_scientist/runtime/transport_observability.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/runtime
+copying build/lib/co_scientist/runtime/bounded_transport.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/runtime
+copying build/lib/co_scientist/runtime/task_payload.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/runtime
+copying build/lib/co_scientist/runtime/ideation_trace.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/runtime
+copying build/lib/co_scientist/runtime/context_planning.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/runtime
+copying build/lib/co_scientist/runtime/trace_snapshot.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/runtime
+copying build/lib/co_scientist/runtime/external_calls.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/runtime
+copying build/lib/co_scientist/__init__.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist
+creating build/bdist.macosx-10.15-x86_64/wheel/co_scientist/agents
+copying build/lib/co_scientist/agents/__init__.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/agents
+copying build/lib/co_scientist/agents/result.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/agents
+copying build/lib/co_scientist/agents/payloads.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/agents
+copying build/lib/co_scientist/agents/executor.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/agents
+creating build/bdist.macosx-10.15-x86_64/wheel/co_scientist/release
+copying build/lib/co_scientist/release/service.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/release
+copying build/lib/co_scientist/release/mock_http.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/release
+creating build/bdist.macosx-10.15-x86_64/wheel/co_scientist/release/resources
+copying build/lib/co_scientist/release/resources/g3.yaml -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/release/resources
+copying build/lib/co_scientist/release/resources/deepseek-tokenizer-license.txt -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/release/resources
+copying build/lib/co_scientist/release/resources/tokenizers.json -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/release/resources
+copying build/lib/co_scientist/release/resources/deepseek-v41.json -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/release/resources
+copying build/lib/co_scientist/release/__init__.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/release
+copying build/lib/co_scientist/release/cli.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/release
+copying build/lib/co_scientist/release/resources.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/release
+creating build/bdist.macosx-10.15-x86_64/wheel/co_scientist/cli
+copying build/lib/co_scientist/cli/__init__.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/cli
+copying build/lib/co_scientist/cli/app.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/cli
+creating build/bdist.macosx-10.15-x86_64/wheel/co_scientist/adapters
+creating build/bdist.macosx-10.15-x86_64/wheel/co_scientist/adapters/artifacts
+copying build/lib/co_scientist/adapters/artifacts/filesystem.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/adapters/artifacts
+copying build/lib/co_scientist/adapters/artifacts/__init__.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/adapters/artifacts
+creating build/bdist.macosx-10.15-x86_64/wheel/co_scientist/adapters/llm
+copying build/lib/co_scientist/adapters/llm/output_errors.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/adapters/llm
+copying build/lib/co_scientist/adapters/llm/fake.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/adapters/llm
+copying build/lib/co_scientist/adapters/llm/openai_responses.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/adapters/llm
+copying build/lib/co_scientist/adapters/llm/provider_output.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/adapters/llm
+copying build/lib/co_scientist/adapters/llm/multi_provider.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/adapters/llm
+copying build/lib/co_scientist/adapters/llm/performance_responses.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/adapters/llm
+copying build/lib/co_scientist/adapters/llm/replay.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/adapters/llm
+copying build/lib/co_scientist/adapters/llm/provider_result_contract.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/adapters/llm
+creating build/bdist.macosx-10.15-x86_64/wheel/co_scientist/adapters/literature
+copying build/lib/co_scientist/adapters/literature/pubmed.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/adapters/literature
+copying build/lib/co_scientist/adapters/literature/__init__.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/adapters/literature
+copying build/lib/co_scientist/adapters/literature/replay.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/adapters/literature
+creating build/bdist.macosx-10.15-x86_64/wheel/co_scientist/adapters/persistence
+copying build/lib/co_scientist/adapters/persistence/__init__.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/adapters/persistence
+copying build/lib/co_scientist/adapters/persistence/sqlite.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/adapters/persistence
+copying build/lib/co_scientist/adapters/persistence/migrations.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/adapters/persistence
+creating build/bdist.macosx-10.15-x86_64/wheel/co_scientist/skills
+creating build/bdist.macosx-10.15-x86_64/wheel/co_scientist/skills/resources
+creating build/bdist.macosx-10.15-x86_64/wheel/co_scientist/skills/resources/claim_search_plan
+copying build/lib/co_scientist/skills/resources/claim_search_plan/manifest.yaml -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/skills/resources/claim_search_plan
+creating build/bdist.macosx-10.15-x86_64/wheel/co_scientist/skills/resources/claim_search_plan/prompts
+copying build/lib/co_scientist/skills/resources/claim_search_plan/prompts/system.md -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/skills/resources/claim_search_plan/prompts
+creating build/bdist.macosx-10.15-x86_64/wheel/co_scientist/skills/resources/ranking
+copying build/lib/co_scientist/skills/resources/ranking/manifest.yaml -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/skills/resources/ranking
+creating build/bdist.macosx-10.15-x86_64/wheel/co_scientist/skills/resources/ranking/prompts
+copying build/lib/co_scientist/skills/resources/ranking/prompts/system-baseline-v1.md -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/skills/resources/ranking/prompts
+copying build/lib/co_scientist/skills/resources/ranking/prompts/system.md -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/skills/resources/ranking/prompts
+copying build/lib/co_scientist/skills/resources/ranking/manifest-v2.yaml -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/skills/resources/ranking
+creating build/bdist.macosx-10.15-x86_64/wheel/co_scientist/skills/resources/directive_ethics
+copying build/lib/co_scientist/skills/resources/directive_ethics/manifest.yaml -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/skills/resources/directive_ethics
+creating build/bdist.macosx-10.15-x86_64/wheel/co_scientist/skills/resources/directive_ethics/prompts
+copying build/lib/co_scientist/skills/resources/directive_ethics/prompts/system.md -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/skills/resources/directive_ethics/prompts
+creating build/bdist.macosx-10.15-x86_64/wheel/co_scientist/skills/resources/claim_verification
+copying build/lib/co_scientist/skills/resources/claim_verification/manifest.yaml -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/skills/resources/claim_verification
+creating build/bdist.macosx-10.15-x86_64/wheel/co_scientist/skills/resources/claim_verification/prompts
+copying build/lib/co_scientist/skills/resources/claim_verification/prompts/system.md -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/skills/resources/claim_verification/prompts
+copying build/lib/co_scientist/skills/resources/claim_verification/prompts/system-v2.md -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/skills/resources/claim_verification/prompts
+copying build/lib/co_scientist/skills/resources/claim_verification/manifest-v2.yaml -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/skills/resources/claim_verification
+creating build/bdist.macosx-10.15-x86_64/wheel/co_scientist/skills/resources/root_literature_review
+copying build/lib/co_scientist/skills/resources/root_literature_review/manifest-v4.yaml -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/skills/resources/root_literature_review
+copying build/lib/co_scientist/skills/resources/root_literature_review/manifest.yaml -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/skills/resources/root_literature_review
+creating build/bdist.macosx-10.15-x86_64/wheel/co_scientist/skills/resources/root_literature_review/prompts
+copying build/lib/co_scientist/skills/resources/root_literature_review/prompts/system-source-review-v2.md -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/skills/resources/root_literature_review/prompts
+copying build/lib/co_scientist/skills/resources/root_literature_review/prompts/system-query-v4.md -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/skills/resources/root_literature_review/prompts
+copying build/lib/co_scientist/skills/resources/root_literature_review/prompts/system-query-v3.md -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/skills/resources/root_literature_review/prompts
+copying build/lib/co_scientist/skills/resources/root_literature_review/prompts/system.md -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/skills/resources/root_literature_review/prompts
+copying build/lib/co_scientist/skills/resources/root_literature_review/prompts/system-query-v2.md -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/skills/resources/root_literature_review/prompts
+copying build/lib/co_scientist/skills/resources/root_literature_review/manifest-v2.yaml -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/skills/resources/root_literature_review
+copying build/lib/co_scientist/skills/resources/root_literature_review/manifest-v3.yaml -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/skills/resources/root_literature_review
+creating build/bdist.macosx-10.15-x86_64/wheel/co_scientist/skills/resources/population_evolution
+copying build/lib/co_scientist/skills/resources/population_evolution/manifest.yaml -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/skills/resources/population_evolution
+creating build/bdist.macosx-10.15-x86_64/wheel/co_scientist/skills/resources/population_evolution/prompts
+copying build/lib/co_scientist/skills/resources/population_evolution/prompts/system-baseline-v1.md -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/skills/resources/population_evolution/prompts
+copying build/lib/co_scientist/skills/resources/population_evolution/prompts/system.md -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/skills/resources/population_evolution/prompts
+copying build/lib/co_scientist/skills/resources/population_evolution/prompts/system-v2.md -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/skills/resources/population_evolution/prompts
+copying build/lib/co_scientist/skills/resources/population_evolution/manifest-v2.yaml -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/skills/resources/population_evolution
+copying build/lib/co_scientist/skills/resources/population_evolution/manifest-v3.yaml -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/skills/resources/population_evolution
+creating build/bdist.macosx-10.15-x86_64/wheel/co_scientist/skills/resources/claim_decomposition
+copying build/lib/co_scientist/skills/resources/claim_decomposition/manifest.yaml -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/skills/resources/claim_decomposition
+creating build/bdist.macosx-10.15-x86_64/wheel/co_scientist/skills/resources/claim_decomposition/prompts
+copying build/lib/co_scientist/skills/resources/claim_decomposition/prompts/system-v3.md -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/skills/resources/claim_decomposition/prompts
+copying build/lib/co_scientist/skills/resources/claim_decomposition/prompts/system.md -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/skills/resources/claim_decomposition/prompts
+copying build/lib/co_scientist/skills/resources/claim_decomposition/prompts/system-v2.md -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/skills/resources/claim_decomposition/prompts
+copying build/lib/co_scientist/skills/resources/claim_decomposition/manifest-v2.yaml -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/skills/resources/claim_decomposition
+copying build/lib/co_scientist/skills/resources/claim_decomposition/manifest-v3.yaml -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/skills/resources/claim_decomposition
+creating build/bdist.macosx-10.15-x86_64/wheel/co_scientist/skills/resources/proximity
+copying build/lib/co_scientist/skills/resources/proximity/manifest.yaml -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/skills/resources/proximity
+creating build/bdist.macosx-10.15-x86_64/wheel/co_scientist/skills/resources/proximity/prompts
+copying build/lib/co_scientist/skills/resources/proximity/prompts/system.md -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/skills/resources/proximity/prompts
+creating build/bdist.macosx-10.15-x86_64/wheel/co_scientist/skills/resources/candidate_ethics
+copying build/lib/co_scientist/skills/resources/candidate_ethics/manifest.yaml -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/skills/resources/candidate_ethics
+creating build/bdist.macosx-10.15-x86_64/wheel/co_scientist/skills/resources/candidate_ethics/prompts
+copying build/lib/co_scientist/skills/resources/candidate_ethics/prompts/system.md -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/skills/resources/candidate_ethics/prompts
+creating build/bdist.macosx-10.15-x86_64/wheel/co_scientist/skills/resources/evolution
+copying build/lib/co_scientist/skills/resources/evolution/manifest.yaml -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/skills/resources/evolution
+creating build/bdist.macosx-10.15-x86_64/wheel/co_scientist/skills/resources/evolution/prompts
+copying build/lib/co_scientist/skills/resources/evolution/prompts/system.md -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/skills/resources/evolution/prompts
+creating build/bdist.macosx-10.15-x86_64/wheel/co_scientist/skills/resources/meta_review
+copying build/lib/co_scientist/skills/resources/meta_review/manifest.yaml -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/skills/resources/meta_review
+creating build/bdist.macosx-10.15-x86_64/wheel/co_scientist/skills/resources/meta_review/prompts
+copying build/lib/co_scientist/skills/resources/meta_review/prompts/system.md -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/skills/resources/meta_review/prompts
+creating build/bdist.macosx-10.15-x86_64/wheel/co_scientist/skills/resources/generation
+copying build/lib/co_scientist/skills/resources/generation/manifest.yaml -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/skills/resources/generation
+creating build/bdist.macosx-10.15-x86_64/wheel/co_scientist/skills/resources/generation/prompts
+copying build/lib/co_scientist/skills/resources/generation/prompts/system-baseline-v1.md -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/skills/resources/generation/prompts
+copying build/lib/co_scientist/skills/resources/generation/prompts/system.md -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/skills/resources/generation/prompts
+copying build/lib/co_scientist/skills/resources/generation/prompts/system-performance-v1.md -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/skills/resources/generation/prompts
+copying build/lib/co_scientist/skills/resources/generation/manifest-v2.yaml -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/skills/resources/generation
+copying build/lib/co_scientist/skills/resources/generation/manifest-v3.yaml -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/skills/resources/generation
+creating build/bdist.macosx-10.15-x86_64/wheel/co_scientist/skills/resources/reflection
+copying build/lib/co_scientist/skills/resources/reflection/manifest.yaml -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/skills/resources/reflection
+creating build/bdist.macosx-10.15-x86_64/wheel/co_scientist/skills/resources/reflection/prompts
+copying build/lib/co_scientist/skills/resources/reflection/prompts/system-baseline-v1.md -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/skills/resources/reflection/prompts
+copying build/lib/co_scientist/skills/resources/reflection/prompts/system.md -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/skills/resources/reflection/prompts
+copying build/lib/co_scientist/skills/resources/reflection/manifest-v2.yaml -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/skills/resources/reflection
+copying build/lib/co_scientist/skills/__init__.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/skills
+copying build/lib/co_scientist/skills/loader.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/skills
+creating build/bdist.macosx-10.15-x86_64/wheel/co_scientist/application
+copying build/lib/co_scientist/application/cockpit_settings.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/application
+copying build/lib/co_scientist/application/cockpit.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/application
+copying build/lib/co_scientist/application/cockpit_control.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/application
+copying build/lib/co_scientist/application/service.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/application
+copying build/lib/co_scientist/application/config.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/application
+copying build/lib/co_scientist/application/cockpit_retry.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/application
+copying build/lib/co_scientist/application/output_retry.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/application
+copying build/lib/co_scientist/application/__init__.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/application
+copying build/lib/co_scientist/application/model_catalog.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/application
+copying build/lib/co_scientist/application/queries.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/application
+copying build/lib/co_scientist/application/output_diagnostics.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/application
+copying build/lib/co_scientist/application/commands.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/application
+creating build/bdist.macosx-10.15-x86_64/wheel/co_scientist/export
+copying build/lib/co_scientist/export/__init__.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/export
+copying build/lib/co_scientist/export/run_export.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/export
+creating build/bdist.macosx-10.15-x86_64/wheel/co_scientist/events
+copying build/lib/co_scientist/events/reducers.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/events
+copying build/lib/co_scientist/events/models.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/events
+copying build/lib/co_scientist/events/__init__.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/events
+copying build/lib/co_scientist/events/contracts.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/events
+copying build/lib/co_scientist/events/lineage_replay.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/events
+creating build/bdist.macosx-10.15-x86_64/wheel/co_scientist/ports
+copying build/lib/co_scientist/ports/task_runtime.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/ports
+copying build/lib/co_scientist/ports/external_provider.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/ports
+copying build/lib/co_scientist/ports/event_store.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/ports
+copying build/lib/co_scientist/ports/literature.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/ports
+copying build/lib/co_scientist/ports/artifact_store.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/ports
+creating build/bdist.macosx-10.15-x86_64/wheel/co_scientist/domain
+copying build/lib/co_scientist/domain/evidence_units.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/domain
+copying build/lib/co_scientist/domain/pilot_pricing.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/domain
+copying build/lib/co_scientist/domain/elo.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/domain
+copying build/lib/co_scientist/domain/task.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/domain
+copying build/lib/co_scientist/domain/claim_verification.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/domain
+copying build/lib/co_scientist/domain/convergence.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/domain
+copying build/lib/co_scientist/domain/external_call.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/domain
+copying build/lib/co_scientist/domain/generation_integration.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/domain
+copying build/lib/co_scientist/domain/research_plan.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/domain
+copying build/lib/co_scientist/domain/claim_lineage.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/domain
+copying build/lib/co_scientist/domain/bayesian_ranking.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/domain
+copying build/lib/co_scientist/domain/ranking_output.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/domain
+copying build/lib/co_scientist/domain/identifiers.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/domain
+copying build/lib/co_scientist/domain/budget.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/domain
+copying build/lib/co_scientist/domain/dispatch_limits.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/domain
+copying build/lib/co_scientist/domain/continuous_execution.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/domain
+copying build/lib/co_scientist/domain/single_root.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/domain
+copying build/lib/co_scientist/domain/run_mutations.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/domain
+copying build/lib/co_scientist/domain/__init__.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/domain
+copying build/lib/co_scientist/domain/research_protocol.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/domain
+copying build/lib/co_scientist/domain/hypothesis.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/domain
+copying build/lib/co_scientist/domain/research_feedback.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/domain
+copying build/lib/co_scientist/domain/review.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/domain
+copying build/lib/co_scientist/domain/ideation_core_boundary.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/domain
+copying build/lib/co_scientist/domain/execution_config.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/domain
+copying build/lib/co_scientist/domain/population_evolution.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/domain
+copying build/lib/co_scientist/domain/source_units.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/domain
+copying build/lib/co_scientist/domain/anchors.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/domain
+copying build/lib/co_scientist/domain/transitions.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/domain
+copying build/lib/co_scientist/domain/pilot_output.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/domain
+copying build/lib/co_scientist/domain/pubmed_query_planning.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/domain
+copying build/lib/co_scientist/domain/admission.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/domain
+copying build/lib/co_scientist/domain/provenance.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/domain
+copying build/lib/co_scientist/domain/probe_execution.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/domain
+copying build/lib/co_scientist/domain/states.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/domain
+copying build/lib/co_scientist/domain/proximity.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/domain
+copying build/lib/co_scientist/domain/tournament.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/domain
+copying build/lib/co_scientist/domain/ideation_prerequisites.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/domain
+creating build/bdist.macosx-10.15-x86_64/wheel/co_scientist/supervisor
+copying build/lib/co_scientist/supervisor/scientific_context.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/supervisor
+copying build/lib/co_scientist/supervisor/verification_route_v2.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/supervisor
+copying build/lib/co_scientist/supervisor/scientist_feedback.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/supervisor
+copying build/lib/co_scientist/supervisor/__init__.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/supervisor
+copying build/lib/co_scientist/supervisor/followups.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/supervisor
+copying build/lib/co_scientist/supervisor/decomposition_view.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/supervisor
+copying build/lib/co_scientist/supervisor/orchestrator.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/supervisor
+copying build/lib/co_scientist/supervisor/lineage_event_path.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/supervisor
+copying build/lib/co_scientist/supervisor/feedback_loop.py -> build/bdist.macosx-10.15-x86_64/wheel/./co_scientist/supervisor
+running install_egg_info
+Copying src/co_scientist_replica.egg-info to build/bdist.macosx-10.15-x86_64/wheel/./co_scientist_replica-0.2.0.dev0-py3.12.egg-info
+running install_scripts
+creating build/bdist.macosx-10.15-x86_64/wheel/co_scientist_replica-0.2.0.dev0.dist-info/WHEEL
+creating '/private/tmp/ethics-r0-final-artifacts/.tmp-9i0h65mq/co_scientist_replica-0.2.0.dev0-py3-none-any.whl' and adding 'build/bdist.macosx-10.15-x86_64/wheel' to it
+adding 'co_scientist/__init__.py'
+adding 'co_scientist/_migrations/env.py'
+adding 'co_scientist/_migrations/versions/0001_core_tables.py'
+adding 'co_scientist/_migrations/versions/0002_external_call_recovery.py'
+adding 'co_scientist/_migrations/versions/0003_worker_leases_budget_reservations.py'
+adding 'co_scientist/_migrations/versions/0004_external_call_observability.py'
+adding 'co_scientist/adapters/artifacts/__init__.py'
+adding 'co_scientist/adapters/artifacts/filesystem.py'
+adding 'co_scientist/adapters/literature/__init__.py'
+adding 'co_scientist/adapters/literature/pubmed.py'
+adding 'co_scientist/adapters/literature/replay.py'
+adding 'co_scientist/adapters/llm/fake.py'
+adding 'co_scientist/adapters/llm/multi_provider.py'
+adding 'co_scientist/adapters/llm/openai_responses.py'
+adding 'co_scientist/adapters/llm/output_errors.py'
+adding 'co_scientist/adapters/llm/performance_responses.py'
+adding 'co_scientist/adapters/llm/provider_output.py'
+adding 'co_scientist/adapters/llm/provider_result_contract.py'
+adding 'co_scientist/adapters/llm/replay.py'
+adding 'co_scientist/adapters/persistence/__init__.py'
+adding 'co_scientist/adapters/persistence/migrations.py'
+adding 'co_scientist/adapters/persistence/sqlite.py'
+adding 'co_scientist/agents/__init__.py'
+adding 'co_scientist/agents/executor.py'
+adding 'co_scientist/agents/payloads.py'
+adding 'co_scientist/agents/result.py'
+adding 'co_scientist/application/__init__.py'
+adding 'co_scientist/application/cockpit.py'
+adding 'co_scientist/application/cockpit_control.py'
+adding 'co_scientist/application/cockpit_retry.py'
+adding 'co_scientist/application/cockpit_settings.py'
+adding 'co_scientist/application/commands.py'
+adding 'co_scientist/application/config.py'
+adding 'co_scientist/application/model_catalog.py'
+adding 'co_scientist/application/output_diagnostics.py'
+adding 'co_scientist/application/output_retry.py'
+adding 'co_scientist/application/queries.py'
+adding 'co_scientist/application/service.py'
+adding 'co_scientist/cli/__init__.py'
+adding 'co_scientist/cli/app.py'
+adding 'co_scientist/domain/__init__.py'
+adding 'co_scientist/domain/admission.py'
+adding 'co_scientist/domain/anchors.py'
+adding 'co_scientist/domain/bayesian_ranking.py'
+adding 'co_scientist/domain/budget.py'
+adding 'co_scientist/domain/claim_lineage.py'
+adding 'co_scientist/domain/claim_verification.py'
+adding 'co_scientist/domain/continuous_execution.py'
+adding 'co_scientist/domain/convergence.py'
+adding 'co_scientist/domain/dispatch_limits.py'
+adding 'co_scientist/domain/elo.py'
+adding 'co_scientist/domain/evidence_units.py'
+adding 'co_scientist/domain/execution_config.py'
+adding 'co_scientist/domain/external_call.py'
+adding 'co_scientist/domain/generation_integration.py'
+adding 'co_scientist/domain/hypothesis.py'
+adding 'co_scientist/domain/ideation_core_boundary.py'
+adding 'co_scientist/domain/ideation_prerequisites.py'
+adding 'co_scientist/domain/identifiers.py'
+adding 'co_scientist/domain/pilot_output.py'
+adding 'co_scientist/domain/pilot_pricing.py'
+adding 'co_scientist/domain/population_evolution.py'
+adding 'co_scientist/domain/probe_execution.py'
+adding 'co_scientist/domain/provenance.py'
+adding 'co_scientist/domain/proximity.py'
+adding 'co_scientist/domain/pubmed_query_planning.py'
+adding 'co_scientist/domain/ranking_output.py'
+adding 'co_scientist/domain/research_feedback.py'
+adding 'co_scientist/domain/research_plan.py'
+adding 'co_scientist/domain/research_protocol.py'
+adding 'co_scientist/domain/review.py'
+adding 'co_scientist/domain/run_mutations.py'
+adding 'co_scientist/domain/single_root.py'
+adding 'co_scientist/domain/source_units.py'
+adding 'co_scientist/domain/states.py'
+adding 'co_scientist/domain/task.py'
+adding 'co_scientist/domain/tournament.py'
+adding 'co_scientist/domain/transitions.py'
+adding 'co_scientist/events/__init__.py'
+adding 'co_scientist/events/contracts.py'
+adding 'co_scientist/events/lineage_replay.py'
+adding 'co_scientist/events/models.py'
+adding 'co_scientist/events/reducers.py'
+adding 'co_scientist/evidence/__init__.py'
+adding 'co_scientist/evidence/loader.py'
+adding 'co_scientist/export/__init__.py'
+adding 'co_scientist/export/run_export.py'
+adding 'co_scientist/ports/artifact_store.py'
+adding 'co_scientist/ports/event_store.py'
+adding 'co_scientist/ports/external_provider.py'
+adding 'co_scientist/ports/literature.py'
+adding 'co_scientist/ports/task_runtime.py'
+adding 'co_scientist/release/__init__.py'
+adding 'co_scientist/release/cli.py'
+adding 'co_scientist/release/mock_http.py'
+adding 'co_scientist/release/resources.py'
+adding 'co_scientist/release/service.py'
+adding 'co_scientist/release/resources/deepseek-tokenizer-license.txt'
+adding 'co_scientist/release/resources/deepseek-v41.json'
+adding 'co_scientist/release/resources/g3.yaml'
+adding 'co_scientist/release/resources/tokenizers.json'
+adding 'co_scientist/runtime/__init__.py'
+adding 'co_scientist/runtime/bounded_transport.py'
+adding 'co_scientist/runtime/checkpoints.py'
+adding 'co_scientist/runtime/context_planning.py'
+adding 'co_scientist/runtime/continuous_recovery.py'
+adding 'co_scientist/runtime/core_runner.py'
+adding 'co_scientist/runtime/external_calls.py'
+adding 'co_scientist/runtime/ideation_trace.py'
+adding 'co_scientist/runtime/lineage_workflow_contract.py'
+adding 'co_scientist/runtime/registry.py'
+adding 'co_scientist/runtime/single_root.py'
+adding 'co_scientist/runtime/task_payload.py'
+adding 'co_scientist/runtime/trace_snapshot.py'
+adding 'co_scientist/runtime/transport_observability.py'
+adding 'co_scientist/runtime/worker.py'
+adding 'co_scientist/skills/__init__.py'
+adding 'co_scientist/skills/loader.py'
+adding 'co_scientist/skills/resources/candidate_ethics/manifest.yaml'
+adding 'co_scientist/skills/resources/candidate_ethics/prompts/system.md'
+adding 'co_scientist/skills/resources/claim_decomposition/manifest-v2.yaml'
+adding 'co_scientist/skills/resources/claim_decomposition/manifest-v3.yaml'
+adding 'co_scientist/skills/resources/claim_decomposition/manifest.yaml'
+adding 'co_scientist/skills/resources/claim_decomposition/prompts/system-v2.md'
+adding 'co_scientist/skills/resources/claim_decomposition/prompts/system-v3.md'
+adding 'co_scientist/skills/resources/claim_decomposition/prompts/system.md'
+adding 'co_scientist/skills/resources/claim_search_plan/manifest.yaml'
+adding 'co_scientist/skills/resources/claim_search_plan/prompts/system.md'
+adding 'co_scientist/skills/resources/claim_verification/manifest-v2.yaml'
+adding 'co_scientist/skills/resources/claim_verification/manifest.yaml'
+adding 'co_scientist/skills/resources/claim_verification/prompts/system-v2.md'
+adding 'co_scientist/skills/resources/claim_verification/prompts/system.md'
+adding 'co_scientist/skills/resources/directive_ethics/manifest.yaml'
+adding 'co_scientist/skills/resources/directive_ethics/prompts/system.md'
+adding 'co_scientist/skills/resources/evolution/manifest.yaml'
+adding 'co_scientist/skills/resources/evolution/prompts/system.md'
+adding 'co_scientist/skills/resources/generation/manifest-v2.yaml'
+adding 'co_scientist/skills/resources/generation/manifest-v3.yaml'
+adding 'co_scientist/skills/resources/generation/manifest.yaml'
+adding 'co_scientist/skills/resources/generation/prompts/system-baseline-v1.md'
+adding 'co_scientist/skills/resources/generation/prompts/system-performance-v1.md'
+adding 'co_scientist/skills/resources/generation/prompts/system.md'
+adding 'co_scientist/skills/resources/meta_review/manifest.yaml'
+adding 'co_scientist/skills/resources/meta_review/prompts/system.md'
+adding 'co_scientist/skills/resources/population_evolution/manifest-v2.yaml'
+adding 'co_scientist/skills/resources/population_evolution/manifest-v3.yaml'
+adding 'co_scientist/skills/resources/population_evolution/manifest.yaml'
+adding 'co_scientist/skills/resources/population_evolution/prompts/system-baseline-v1.md'
+adding 'co_scientist/skills/resources/population_evolution/prompts/system-v2.md'
+adding 'co_scientist/skills/resources/population_evolution/prompts/system.md'
+adding 'co_scientist/skills/resources/proximity/manifest.yaml'
+adding 'co_scientist/skills/resources/proximity/prompts/system.md'
+adding 'co_scientist/skills/resources/ranking/manifest-v2.yaml'
+adding 'co_scientist/skills/resources/ranking/manifest.yaml'
+adding 'co_scientist/skills/resources/ranking/prompts/system-baseline-v1.md'
+adding 'co_scientist/skills/resources/ranking/prompts/system.md'
+adding 'co_scientist/skills/resources/reflection/manifest-v2.yaml'
+adding 'co_scientist/skills/resources/reflection/manifest.yaml'
+adding 'co_scientist/skills/resources/reflection/prompts/system-baseline-v1.md'
+adding 'co_scientist/skills/resources/reflection/prompts/system.md'
+adding 'co_scientist/skills/resources/root_literature_review/manifest-v2.yaml'
+adding 'co_scientist/skills/resources/root_literature_review/manifest-v3.yaml'
+adding 'co_scientist/skills/resources/root_literature_review/manifest-v4.yaml'
+adding 'co_scientist/skills/resources/root_literature_review/manifest.yaml'
+adding 'co_scientist/skills/resources/root_literature_review/prompts/system-query-v2.md'
+adding 'co_scientist/skills/resources/root_literature_review/prompts/system-query-v3.md'
+adding 'co_scientist/skills/resources/root_literature_review/prompts/system-query-v4.md'
+adding 'co_scientist/skills/resources/root_literature_review/prompts/system-source-review-v2.md'
+adding 'co_scientist/skills/resources/root_literature_review/prompts/system.md'
+adding 'co_scientist/supervisor/__init__.py'
+adding 'co_scientist/supervisor/decomposition_view.py'
+adding 'co_scientist/supervisor/feedback_loop.py'
+adding 'co_scientist/supervisor/followups.py'
+adding 'co_scientist/supervisor/lineage_event_path.py'
+adding 'co_scientist/supervisor/orchestrator.py'
+adding 'co_scientist/supervisor/scientific_context.py'
+adding 'co_scientist/supervisor/scientist_feedback.py'
+adding 'co_scientist/supervisor/verification_route_v2.py'
+adding 'co_scientist_next/__init__.py'
+adding 'co_scientist_next/__main__.py'
+adding 'co_scientist_next/_validation.py'
+adding 'co_scientist_next/admission.py'
+adding 'co_scientist_next/background.py'
+adding 'co_scientist_next/background_ops.py'
+adding 'co_scientist_next/background_trial.py'
+adding 'co_scientist_next/calls.py'
+adding 'co_scientist_next/candidate_review.py'
+adding 'co_scientist_next/candidate_review_ops.py'
+adding 'co_scientist_next/contracts.py'
+adding 'co_scientist_next/delta.py'
+adding 'co_scientist_next/demo.py'
+adding 'co_scientist_next/development_cases.py'
+adding 'co_scientist_next/europe_pmc.py'
+adding 'co_scientist_next/generation.py'
+adding 'co_scientist_next/generation_migration.py'
+adding 'co_scientist_next/generation_ops.py'
+adding 'co_scientist_next/goal.py'
+adding 'co_scientist_next/literature.py'
+adding 'co_scientist_next/literature_runtime.py'
+adding 'co_scientist_next/migration_export.py'
+adding 'co_scientist_next/reading_model.py'
+adding 'co_scientist_next/remote_generation.py'
+adding 'co_scientist_next/responses_model.py'
+adding 'co_scientist_next/review_export.py'
+adding 'co_scientist_next/review_fixture.py'
+adding 'co_scientist_next/scheduler.py'
+adding 'co_scientist_next/store.py'
+adding 'co_scientist_next/workspace.py'
+adding 'co_scientist_next/frontend/app.css'
+adding 'co_scientist_next/frontend/app.js'
+adding 'co_scientist_next/frontend/background.js'
+adding 'co_scientist_next/frontend/candidate-review.js'
+adding 'co_scientist_next/frontend/generation.js'
+adding 'co_scientist_next/frontend/index.html'
+adding 'co_scientist_next/prompts/P09-review-v1.txt'
+adding 'co_scientist_next/prompts/P10-review-v1.txt'
+adding 'co_scientist_web/__init__.py'
+adding 'co_scientist_web/__main__.py'
+adding 'co_scientist_web/app.py'
+adding 'co_scientist_web/configuration.py'
+adding 'co_scientist_web/diagnostics.py'
+adding 'co_scientist_web/driver.py'
+adding 'co_scientist_web/jobs.py'
+adding 'co_scientist_web/monitor.py'
+adding 'co_scientist_web/progress.py'
+adding 'co_scientist_web/store.py'
+adding 'co_scientist_web/views.py'
+adding 'co_scientist_web/frontend/app.js'
+adding 'co_scientist_web/frontend/backend.js'
+adding 'co_scientist_web/frontend/fixture.js'
+adding 'co_scientist_web/frontend/index.html'
+adding 'co_scientist_web/frontend/styles.css'
+adding 'co_scientist_web/frontend/workbench.js'
+adding 'co_scientist_replica-0.2.0.dev0.dist-info/METADATA'
+adding 'co_scientist_replica-0.2.0.dev0.dist-info/WHEEL'
+adding 'co_scientist_replica-0.2.0.dev0.dist-info/entry_points.txt'
+adding 'co_scientist_replica-0.2.0.dev0.dist-info/top_level.txt'
+adding 'co_scientist_replica-0.2.0.dev0.dist-info/RECORD'
+removing build/bdist.macosx-10.15-x86_64/wheel
+Successfully built co_scientist_replica-0.2.0.dev0.tar.gz and co_scientist_replica-0.2.0.dev0-py3-none-any.whl

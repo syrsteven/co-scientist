@@ -1,0 +1,11 @@
+{
+  "fixture_db_sha256_before_refresh": "cbd35dcb9bb9402b3f71ca96cfd154d97f00cb5dde17c21bbcd3893e71d47bc2",
+  "fixture_db_sha256_after_refresh": "cbd35dcb9bb9402b3f71ca96cfd154d97f00cb5dde17c21bbcd3893e71d47bc2",
+  "fixture_attempts_before": 2,
+  "fixture_attempts_after": 2,
+  "original_real_db_sha256": "a1414816be01c06535e9493f9eaa62d40ee892ad45cf024af61dc7776ab7a2b9",
+  "original_real_db_unchanged": true,
+  "real_model_requests": 0,
+  "model_credentials_read": false,
+  "science_validated": false
+}

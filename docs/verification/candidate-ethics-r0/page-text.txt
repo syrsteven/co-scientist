@@ -1,0 +1,38 @@
+候选伦理与 R0 初审
+
+开发测试 · 确定性替身结论，非真实伦理或科学审查；science_validated=false。
+
+来源 epmc:PPR:PPR1217875 · abstract · 0–2746
+来源 epmc:MED:35112738 · full_text · 33770–41370
+来源 epmc:MED:41691309 · abstract · 0–1714
+来源 epmc:MED:42031697 · abstract · 0–2097
+来源 epmc:MED:28831067 · abstract · 0–1188
+Candidate Ethics
+
+开发结论 · 状态：pass
+
+政策：CANDIDATE-DEV-ONLY@1 · development；Prompt：w1-candidate-ethics-r0-v1
+
+OFFLINE deterministic engineering fixture, not an ethical assessment.
+
+限制/缺少信息：Development test only; no production approval.
+
+技术详情：固定输入、政策、调用状态与用量
+R0 · 初步科学检查
+
+开发结论 · 状态：proceed_to_R1
+
+政策：R0-DEV-ONLY@1 · development；Prompt：w1-candidate-ethics-r0-v1
+
+OFFLINE fixture: Goal retained; no scientific judgment.
+
+科学未知：OFFLINE: unknown causal bridge, no scientific validation.
+
+下一步 R1 核查（尚未执行）：OFFLINE: verify source wording and original experimental context; no R1 executed.
+
+限制：OFFLINE development fixture only.
+
+等待 R1 能力；不是科学准入或已完成评议。
+
+技术详情：固定输入、政策、调用状态与用量
+显式设置用途和政策并执行一次审查
