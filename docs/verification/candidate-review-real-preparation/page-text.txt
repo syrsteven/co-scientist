@@ -1,0 +1,21 @@
+候选伦理与 R0 初审
+
+非生产政策模式 · 不代表组织伦理批准或科学准入；science_validated=false。
+
+执行方式：真实模型适配器；当前未配置凭据或未授权发送；不会发送，执行事实见各记录。
+
+刷新只读，不执行或查询供应商。
+
+来源 epmc:PPR:PPR1217875 · abstract · 0–2746
+来源 epmc:MED:35112738 · full_text · 33770–41370
+来源 epmc:MED:41691309 · abstract · 0–1714
+来源 epmc:MED:42031697 · abstract · 0–2097
+来源 epmc:MED:28831067 · abstract · 0–1188
+
+已保存候选审查记录：0；未执行的准备不计为审查结果。
+
+隔离试跑快照：源科学记录保留，后续新审查只保存本试跑库，不写原真实库。
+
+已冻结非生产真实试跑，专属身份：p09-real-nonprod-single-v1 / p10-real-nonprod-single-v1；使用已审查命令单独授权提交，页面不创建其他身份。
+
+P10须绑定真实P09 completed且pass并核对来源后组装；没有fixture pass或占位真实通过。

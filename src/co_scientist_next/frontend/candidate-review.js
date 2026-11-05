@@ -13,7 +13,10 @@ function showCandidateReviews(card, generation, runId, saved) {
   const panel = document.createElement("section");
   panel.className = "candidate-review";
   const heading = document.createElement("h3"); heading.textContent = "候选伦理与 R0 初审"; panel.append(heading);
-  note(saved.development ? "开发测试 · 确定性替身结论，非真实伦理或科学审查；science_validated=false。" : "生产政策须显式配置；未配置时不产生通过结论。刷新只读，不执行或查询供应商。", panel);
+  const executionMode = saved.model_config.execution_mode;
+  note(saved.development ? "非生产政策模式 · 不代表组织伦理批准或科学准入；science_validated=false。" : "生产政策须显式配置；未配置时不产生通过结论。", panel);
+  note(executionMode === "development_fixture" ? "执行方式：确定性开发替身，不是真实模型。" : executionMode === "real_model" ? "执行方式：真实模型适配器；" + (saved.real_calls_authorized && saved.model_config.credential_configured ? "仅显式授权操作才发送。" : "当前未配置凭据或未授权发送；不会发送，执行事实见各记录。") : "执行方式：未配置，不会自动使用替身。", panel);
+  note("刷新只读，不执行或查询供应商。", panel);
   for (const ref of generation.input.actual_frozen_seed_background_packet.source_views) {
     const details = document.createElement("details");
     const title = document.createElement("summary"); title.textContent = "来源 " + ref.source_ref + " · " + ref.access + " · " + ref.character_range.join("–");
@@ -21,11 +24,13 @@ function showCandidateReviews(card, generation, runId, saved) {
     details.append(title, text); panel.append(details);
   }
   const actions = saved.actions.filter((a) => a.generation_ref === generation.request_id);
+  note("已保存候选审查记录：" + actions.length + "；未执行的准备不计为审查结果。", panel);
   for (const a of actions) {
     const block = document.createElement("div"); block.className = "block";
     const title = document.createElement("h4"); title.textContent = a.operation === "P09" ? "Candidate Ethics" : "R0 · 初步科学检查"; block.append(title);
     const result = a.result; const value = result?.artifact;
-    note((result?.development ? "开发结论 · " : "") + "状态：" + (value?.decision_per_approved_policy || value?.disposition || result?.review_status || a.task_status), block);
+    note("政策范围：" + (result?.policy_mode || a.request.policy?.mode || "未配置") + "；实际执行标识：" + (result?.execution_mode || a.config.execution_mode), block);
+    note("状态：" + (value?.decision_per_approved_policy || value?.disposition || result?.review_status || a.task_status), block);
     note("政策：" + (a.request.policy ? a.request.policy.id + "@" + a.request.policy.version + " · " + a.request.policy.mode : "未配置") + "；Prompt：" + a.prompt_version, block);
     if (value) {
       note(value.rationale || value.goal_alignment, block);
@@ -58,6 +63,13 @@ function showCandidateReviews(card, generation, runId, saved) {
     genTextSection(block, "技术详情：固定输入、政策、调用状态与用量", a);
     panel.append(block);
   }
+  const trial = saved.prepared_trial?.find((t) => t.generation_ref === generation.request_id);
+  if (trial) {
+    note("隔离试跑快照：源科学记录保留，后续新审查只保存本试跑库，不写原真实库。", panel);
+    note("已冻结非生产真实试跑，专属身份：" + trial.request_ids.P09 + " / " + trial.request_ids.P10 + "；使用已审查命令单独授权提交，页面不创建其他身份。", panel);
+    note("P10须绑定真实P09 completed且pass并核对来源后组装；没有fixture pass或占位真实通过。", panel);
+    card.append(panel); return;
+  }
   const setup = document.createElement("details"); const summary = document.createElement("summary"); summary.textContent = "显式设置用途和政策并执行一次审查"; setup.append(summary);
   const latestEthics = [...actions].reverse().find((a) => a.operation === "P09");
   const use = reviewField(setup, "本候选实际拟议用途", latestEthics?.request.intended_use || generation.input.goal_context.intended_use || "");
@@ -66,7 +78,7 @@ function showCandidateReviews(card, generation, runId, saved) {
   const policy = reviewField(setup, "Candidate Ethics 政策文本（无生产默认值）");
   const taxonomy = reviewField(setup, "decision_policy JSON（显式版本和决策路由）");
   const r0id = reviewField(setup, "R0 政策标识"); const r0version = reviewField(setup, "R0 政策版本"); const r0text = reviewField(setup, "R0 政策文本");
-  if (saved.development) {
+  if (saved.development && executionMode === "development_fixture") {
     const fill = document.createElement("button"); fill.textContent = "明确填入开发测试政策（非生产批准）";
     fill.onclick = () => {id.value="CANDIDATE-DEV-ONLY";version.value="1";policy.value="DEV-1: Offline engineering policy ONLY, not production approval. DEV-2: Non-clinical conceptual ideation is not execution authorization. DEV-3: Scientific uncertainty alone is not an ethical violation.";taxonomy.value=JSON.stringify({id:"CANDIDATE-DEV-DECISIONS",version:"1",routes:{pass:"continue",reject:"stop",incomplete:"hold"}});r0id.value="R0-DEV-ONLY";r0version.value="1";r0text.value="Development engineering policy only. Core reliable visible factual errors may block; unknown bridges, local distortion and dispute go to R1. No scientific validation.";}; setup.append(fill);
   }

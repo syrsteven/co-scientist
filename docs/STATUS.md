@@ -1,3 +1,22 @@
+# 项目状态 — Candidate Ethics／R0 非生产真实试跑准备
+
+## PR15合并后连续准备（2026-11-05）
+
+PR15固定head `988aabd00743722ae9e622ffd7c519614dbbf15a` 经4项CI成功、无冲突及新增阻断后合并；实际merge及本轮起点 `d6e20cb1744ffad2e844d6ab5e23d9ad55c244e0`。独立分支 `codex/candidate-review-real-preparation`；本轮新PR保持未合并。
+
+| 维度 | 本轮事实 |
+|---|---|
+| 政策 | 版本化development／非生产政策，限定非临床机制假说阅读、评议与方法开发；不授权患者、动物/人体或实际实验。显式pass→continue/reject→stop/incomplete→hold，仅适用于本次试验，无生产默认通过 |
+| 后端／M12 | 政策成熟度与执行方式分别记录。隔离试跑固定P09/P10身份、完整输入及配置；只有真实Responses completed且有效pass、M15来源完整的P09才能组装P10，fixture或伪改标签不能替代 |
+| 准备包 | 原真实库只读一致性快照到唯一指定隔离库；候选/Goal/5份原文及历史科学记录不改。完整未发送P09为31644字节；P10仅模板且真实pass字段null、不可执行。无P09/P10 Task/Attempt/结论 |
+| 恢复与保护 | 后续命令另需显式POST/同ID查询授权；先只读验证数据库身份，再打开写连接；已有Attempt不重发、无ID uncertain停止。旧两次uncertain/未知用量不变，无全局放行 |
+| 页面 | 仅必要状态调整：非生产政策与真实适配器未配置凭据/未授权分别展示，准备快照审查记录0、固定身份和P10前提清楚可见。浏览器刷新前后库哈希及记录不变 |
+| 验证 | 见本轮验证报告：新系统回归、Ruff、JS、构建、跨进程恢复、实际只读准备包/来源一致性及浏览器证据；没有用替身结果冒充真实P09 pass |
+| 真实／科学 | 真实模型请求0、模型密钥读取0；原真实库字节及原工作区232项改动不变。science_validated=false；真实P09/P10、政策成熟度、伦理准确性和独立科学审阅未验证；未执行R1、重新生成或新检索 |
+
+[政策全文、拟议用途、完整P09、P10条件组装与后续命令](preparations/candidate-review-real-trial/README.md) · [本轮检查及页面证据](verification/candidate-review-real-preparation/RESULTS.md)。
+原候选措辞失真及历史初审保留，不修补输出、不把初审放入模型请求。原Accepted/Proposed状态不变，无需变更M00科学规则。以下历史记录原样保留。
+
 # 项目状态 — W1 Candidate Ethics／R0 最小纵向切片
 
 ## PR14合并后连续开发（2026-11-05）

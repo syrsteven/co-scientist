@@ -1,0 +1,7 @@
+{
+  "status": "wheel and sdist built successfully; wheel installed with --no-deps --no-index outside checkout; review_trial --help succeeded",
+  "artifacts": {
+    "co_scientist_replica-0.2.0.dev0.tar.gz": "8ecf49103402f8bd204ba4acc03389250341b8cf8de0e19c653662ee0910ae22",
+    "co_scientist_replica-0.2.0.dev0-py3-none-any.whl": "1aa72bcd0ee669e851b0e1c30f164e4ef46e1a94435edcbfc8119ef01c3fa1c2"
+  }
+}

@@ -375,7 +375,18 @@ def main():
         "--review-responses-config",
         help="Explicit public Responses configuration for candidate review; no default model",
     )
+    parser.add_argument(
+        "--allow-development-review-policy",
+        action="store_true",
+        help="Permit explicit nonproduction policies with a real Responses profile; does not select fixtures or authorize calls",
+    )
     args = parser.parse_args()
+    if args.allow_development_review_policy and (
+        not args.review_responses_config or args.development_review
+    ):
+        parser.error(
+            "Nonproduction real review requires explicit review Responses profile, separate from fixture mode"
+        )
     if args.development_review and (
         args.review_responses_config
         or args.credential_env
@@ -454,7 +465,7 @@ def main():
             public_literature=args.public_literature,
             reading_adapter=adapter,
             review_adapter=review_adapter,
-            development_review=args.development_review,
+            development_review=args.development_review or args.allow_development_review_policy,
             generation_adapter=(
                 DevelopmentGenerationAdapter()
                 if args.development_generation

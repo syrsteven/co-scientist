@@ -384,7 +384,7 @@ el("refresh").onclick = () =>
   try {
     state.config = await api("/api/config");
     el("mode").textContent = state.config.development_test
-      ? "开发测试模式 · Goal 制备和伦理筛查为确定性测试结果；文献与背景模型调用分别显式配置。实际执行标识和用量见各记录，不代表真实伦理审查。"
+      ? "开发测试模式 · Goal 制备与 Goal Ethics 是历史确定性测试结果；Candidate Ethics/R0 的政策范围及真实／替身执行方式见各自记录。不代表组织伦理批准。"
       : "Goal 模型适配器未配置 · 背景阅读的供应商配置与执行标识另见下方；没有默认替身。";
     el("example-policy").hidden = !state.config.development_test;
     el("fixture-label").hidden = !state.config.development_test;

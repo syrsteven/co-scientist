@@ -1,0 +1,82 @@
+{
+  "source_database": "/private/tmp/co-scientist-p04-v2/runs/p04-v2-prepared.sqlite",
+  "source_database_sha256_before": "a1414816be01c06535e9493f9eaa62d40ee892ad45cf024af61dc7776ab7a2b9",
+  "source_database_sha256_after": "a1414816be01c06535e9493f9eaa62d40ee892ad45cf024af61dc7776ab7a2b9",
+  "isolated_database": "/private/tmp/co-scientist-candidate-review-trial/runs/candidate-review.sqlite",
+  "isolated_snapshot_sha256": "a1170155a9564584ee1bf76e857b913f66d345b017a41e499117c7ed26007d03",
+  "preparation_sha256": "1890c42d8fdea5872f01018a7bb84f302a6ce9b5cc3022369f81647af9ce0951",
+  "source_run_id": "cea909fe8a004010b1896df1c1d98e02",
+  "source_goal_ref": "goal-38a4a7a321d54c1eb475b9c7646930f0",
+  "source_candidate_id": "planned-p08-direct-responses",
+  "candidate_sha256": "ba61dbc62315e7f5ad2cb360df4aa86da625a40df4b3dfc852d6effceb981fd9",
+  "source_views_sha256": "9b1c176e204536faaee3dde950b580c14fcc48d6cb50251b343447c215128f98",
+  "source_rows_preserved": {
+    "projects": {
+      "count": 1,
+      "sha256": "cb0f5302783bc9fb565226f38666cd019bfb11803fe903cd6ea3624432980177"
+    },
+    "brief_revisions": {
+      "count": 1,
+      "sha256": "3d08ed2d71d15f6ea55ce0bd908578e9bd2cd3f080e2bac98446389b9e8f0dee"
+    },
+    "runs": {
+      "count": 1,
+      "sha256": "9498b5a3cbb164e8638d1e77c764ea128b2900be3abdeb5b63794f33b499b309"
+    },
+    "tasks": {
+      "count": 25,
+      "sha256": "0767203691147331def397fea43e1cdfcc0f1056e589862f4f4ffc13e3f490fe"
+    },
+    "results": {
+      "count": 24,
+      "sha256": "0d78321cdf31e57c41c515451b85d7ffca16191092b5b829333224abd0be955a"
+    },
+    "attempts": {
+      "count": 32,
+      "sha256": "9d5afba7c7e10c50559444d8b21df7b5a4694aeb268468ad7497f10b67317bfc"
+    },
+    "goal_contexts": {
+      "count": 1,
+      "sha256": "1e6ca86748c8bbce9d363abce152922edf173111c2e335ea0d412e74bf81593d"
+    },
+    "goal_run_config": {
+      "count": 1,
+      "sha256": "d2f9224873ee33559132073f5554572a4aeb2d9fd97ca36169e5d685cf8bf405"
+    },
+    "literature_actions": {
+      "count": 10,
+      "sha256": "be54cd7811593d89fb45ea528d6f93a555f0c1f83b54fb56d2094727cca25a4d"
+    },
+    "material_views": {
+      "count": 5,
+      "sha256": "ef8bc3e9ac5928e9d9545a87b254dc57472555615f9b0c3322ab208f595d607d"
+    },
+    "background_actions": {
+      "count": 11,
+      "sha256": "9b6e5301c938bf9cf24b9a9d53c408fa997144dcbabeeda2c15b95a4dbb7c75f"
+    },
+    "execution_facts": {
+      "count": 69,
+      "sha256": "53564c32f5e10611cc3cbe380f2a53b52e7848fd033e283cdf3a8effc3d308c6"
+    },
+    "generation_actions": {
+      "count": 2,
+      "sha256": "2a50b4104fd731bab8a19e0949c6175c9631dc283e9f1f14d11e1df11a70180d"
+    },
+    "generation_migrations": {
+      "count": 1,
+      "sha256": "fa8bce3b5cd8202a9fbcfd873ed643bdc6e5c8e8d48ab48c32fede096924ff31"
+    },
+    "remote_generations": {
+      "count": 1,
+      "sha256": "c07f885249c3a5fb148f8d49d5b87d39abf2f7531d6419ae6d355c5355a0ade4"
+    }
+  },
+  "new_review_tasks": 0,
+  "new_review_attempts": 0,
+  "P09_decision": null,
+  "P10_executable": false,
+  "model_credentials_read": false,
+  "model_requests": 0,
+  "science_validated": false
+}
