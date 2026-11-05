@@ -1,0 +1,66 @@
+{
+  "scope": "GET only, no credentials, no model execution, no DB access",
+  "proxy": {
+    "effective_proxies": {
+      "http": {
+        "scheme": "http",
+        "host": "127.0.0.1",
+        "port": 7897,
+        "credentials_present": false
+      },
+      "https": {
+        "scheme": "http",
+        "host": "127.0.0.1",
+        "port": 7897,
+        "credentials_present": false
+      }
+    },
+    "openai_proxy_bypass": false,
+    "route_confirmed": false,
+    "source": "current urllib environment/OS discovery"
+  },
+  "tests": [
+    {
+      "route": "system",
+      "http_status": 401,
+      "socket_fileno": 3,
+      "socket_closed": true,
+      "original_timeout_step": "error",
+      "error_class": "OSError",
+      "safe_errno": 9,
+      "socket_fileno_on_error": -1,
+      "read_iterations": 2,
+      "response_bytes": 151,
+      "response_json_valid": true,
+      "elapsed_seconds": 1.005
+    },
+    {
+      "route": "direct",
+      "http_status": 401,
+      "socket_fileno": 4,
+      "socket_closed": true,
+      "original_timeout_step": "error",
+      "error_class": "OSError",
+      "safe_errno": 9,
+      "socket_fileno_on_error": -1,
+      "read_iterations": 2,
+      "response_bytes": 151,
+      "response_json_valid": true,
+      "elapsed_seconds": 1.068
+    },
+    {
+      "route": "explicit",
+      "http_status": 401,
+      "socket_fileno": 4,
+      "socket_closed": true,
+      "original_timeout_step": "error",
+      "error_class": "OSError",
+      "safe_errno": 9,
+      "socket_fileno_on_error": -1,
+      "read_iterations": 2,
+      "response_bytes": 151,
+      "response_json_valid": true,
+      "elapsed_seconds": 1.016
+    }
+  ]
+}

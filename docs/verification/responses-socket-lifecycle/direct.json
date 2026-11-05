@@ -1,0 +1,41 @@
+{
+  "route": "direct",
+  "endpoint": "https://api.openai.com/v1/models",
+  "method": "GET",
+  "authorization_sent": false,
+  "model_post_attempts": 0,
+  "credentials_read": false,
+  "system_proxy_discovery": {
+    "effective_proxies": {
+      "http": {
+        "scheme": "http",
+        "host": "127.0.0.1",
+        "port": 7897,
+        "credentials_present": false
+      },
+      "https": {
+        "scheme": "http",
+        "host": "127.0.0.1",
+        "port": 7897,
+        "credentials_present": false
+      }
+    },
+    "openai_proxy_bypass": false,
+    "route_confirmed": false,
+    "source": "current urllib environment/OS discovery"
+  },
+  "proxy_environment_present": {
+    "http_proxy": false,
+    "https_proxy": false,
+    "all_proxy": false,
+    "HTTP_PROXY": false,
+    "HTTPS_PROXY": false
+  },
+  "application_proxy_disabled": true,
+  "http_status": 401,
+  "bytes": 151,
+  "body_sha256": "020cefc21c2f2477bc862fb750a476414029d287454ca6a67d0b1d19d82d219d",
+  "complete_body": true,
+  "json_object": true,
+  "elapsed_seconds": 0.8309493970009498
+}

@@ -1,3 +1,19 @@
+# 项目状态 — Responses正文结束时的socket生命周期修复
+
+## TUN／代理对照与窄传输修复（2026-11-05）
+
+起点main `b677c7f94f588aa71c3f453a13620f4e6bb0ad6c`；独立分支`codex/responses-socket-lifecycle`。不合并本轮PR，不重发P09/P08 uncertain，不执行任何科学模块。
+
+| 维度 | 本轮事实 |
+|---|---|
+| 已复现缺陷 | 旧Responses read1循环在Content-Length正文恰好读完后，下一轮对已释放的连接socket(fd=-1)执行settimeout，触发EBADF并丢弃已读完整响应。系统默认、无应用代理、显式7897代理三条无凭据GET均复现；不是“必须export代理”能解决的问题 |
+| 修复 | 保留活跃fd的逐读超时；fd已释放时让HTTPResponse返回EOF，不对失效fd设超时。总deadline/截断/大小限制/无重试不变；安全诊断允许列表增加EBADF，不记录原始异常或凭据 |
+| 连通性 | 修复后共用生产读取函数的三条GET均收到完整401 JSON。禁用应用代理也通（约0.83秒）；无export时urllib仍发现macOS系统HTTP(S)代理7897，因此“未export”不等于“没有系统代理”。不推断或修改TUN规则 |
+| 历史与科学 | 本轮付费模型POST0、模型密钥读取0；不访问或改写真实执行数据库。既有uncertain/未知费用保持，不因复现客户端缺陷推定历史供应商结果。science_validated=false |
+| 检查 | 真实socketpair+HTTPResponse回归覆盖200/401及三种报文结束方式、截断/活跃错误/安全错误码。新系统382通过（373既有+9新增），Ruff/format及wheel/sdist构建/仓库外安装通过；不声称真实模型POST/生产科学恢复已验收 |
+
+[复现、修复、无凭据测试命令与限制](verification/responses-socket-lifecycle/RESULTS.md)。用户要求的长期记忆只记录确认事实、正确诊断方式与禁止自动重试；历史科学输出/原工作区232项不变。下方历史状态原样保留。
+
 # 项目状态 — Candidate Ethics／R0 非生产真实试跑准备
 
 ## PR15合并后连续准备（2026-11-05）

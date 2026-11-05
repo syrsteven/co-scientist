@@ -62,6 +62,7 @@ class TransportUncertain(RuntimeError):
             "ECONNABORTED",
             "ECONNREFUSED",
             "EPIPE",
+            "EBADF",
             "ENETUNREACH",
             "EHOSTUNREACH",
             "EAI_AGAIN",

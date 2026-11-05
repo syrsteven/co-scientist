@@ -133,6 +133,39 @@ class TrackedHandler(urllib.request.HTTPSHandler):
         )
 
 
+def read_response_body(response, trace, socket_timeout):
+    """Keep stdlib EOF semantics; response.makefile owns the socket after urlopen.
+
+    Content-Length completion may close the last socket reference inside read1.
+    The next iteration must read EOF without setting a timeout on fd=-1.
+    A socket marked _closed may still back a live makefile: use fileno, not _closed.
+    """
+    chunks, length = [], 0
+    while True:
+        if time.monotonic() >= trace["deadline"]:
+            raise TimeoutError()
+        sock = trace.get("socket")
+        if sock is not None and sock.fileno() >= 0:
+            sock.settimeout(
+                min(
+                    socket_timeout,
+                    max(0.001, trace["deadline"] - time.monotonic()),
+                )
+            )
+        chunk = response.read1(min(65536, 16_000_001 - length))
+        if time.monotonic() >= trace["deadline"]:
+            raise TimeoutError()
+        if not chunk:
+            if getattr(response, "length", None) not in (None, 0):
+                raise http.client.IncompleteRead(b"")
+            break
+        chunks.append(chunk)
+        length += len(chunk)
+        if length > 16_000_000:
+            break
+    return b"".join(chunks), length > 16_000_000
+
+
 class OpenAIResponses:
     execution_mode = "real_model"
     background_responses = True
@@ -237,30 +270,7 @@ class OpenAIResponses:
                 response = exc
             with response:
                 trace["phase"] = "response_read"
-                chunks, length = [], 0
-                while True:
-                    if time.monotonic() >= trace["deadline"]:
-                        raise TimeoutError()
-                    sock = trace.get("socket")
-                    if sock is not None:
-                        sock.settimeout(
-                            min(
-                                actual["timeout_seconds"],
-                                max(0.001, trace["deadline"] - time.monotonic()),
-                            )
-                        )
-                    chunk = response.read1(min(65536, 16_000_001 - length))
-                    if time.monotonic() >= trace["deadline"]:
-                        raise TimeoutError()
-                    if not chunk:
-                        if getattr(response, "length", None) not in (None, 0):
-                            raise http.client.IncompleteRead(b"")
-                        break
-                    chunks.append(chunk)
-                    length += len(chunk)
-                    if length > 16_000_000:
-                        break
-                raw = b"".join(chunks)
+                raw, truncated = read_response_body(response, trace, actual["timeout_seconds"])
                 text = raw.decode("utf8", errors="replace")
                 redacted = self._api_key in text
                 text = text.replace(self._api_key, "[CREDENTIAL REDACTED]")
@@ -271,7 +281,7 @@ class OpenAIResponses:
                     "body_sha256": hashlib.sha256(retained).hexdigest(),
                     "http_status": response.code,
                     "received_at": now(),
-                    "truncated": length > 16_000_000,
+                    "truncated": truncated,
                     "credential_redactions": redacted,
                     "transport": {
                         "elapsed_seconds": time.monotonic() - start,

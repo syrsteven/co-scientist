@@ -564,3 +564,130 @@ def test_https_handler_uses_cross_version_context_interface(monkeypatch):
 
     monkeypatch.setattr(handler, "do_open", open_connection)
     assert handler.https_open(object()) == "OFFLINE no socket connected"
+
+
+@pytest.mark.parametrize("http_status", [200, 401])
+@pytest.mark.parametrize("framing", ["content-length", "chunked", "connection-close"])
+def test_real_http_response_socket_release_keeps_complete_response(
+    monkeypatch, framing, http_status
+):
+    """Real stdlib HTTPResponse/socket ownership, no provider or model key."""
+    import http.client
+    import socket
+
+    from co_scientist_next.contracts import SubmissionUncertain
+    from co_scientist_next.responses_model import TrackedHandler
+
+    value = envelope() if http_status == 200 else {"error": {"type": "OFFLINE_auth_error"}}
+    body = json.dumps(value).encode()
+    reader, writer = socket.socketpair()
+    if framing == "content-length":
+        headers = b"Content-Length: " + str(len(body)).encode() + b"\r\n"
+        framed = body
+    elif framing == "chunked":
+        headers = b"Transfer-Encoding: chunked\r\n"
+        framed = hex(len(body))[2:].encode() + b"\r\n" + body + b"\r\n0\r\n\r\n"
+    else:
+        headers, framed = b"", body
+    writer.sendall(
+        ("HTTP/1.1 " + str(http_status) + " OFFLINE\r\nConnection: close\r\n").encode()
+        + headers
+        + b"\r\n"
+        + framed
+    )
+    writer.close()
+    response = http.client.HTTPResponse(reader)
+    response.begin()
+    reader.close()  # urllib closes its reference; response.makefile still owns the fd.
+    assert reader.fileno() >= 0
+
+    class Opener:
+        def open(self, *_args, **_kwargs):
+            return response
+
+    def build(*handlers):
+        trace = next(h.trace for h in handlers if isinstance(h, TrackedHandler))
+        trace["socket"] = reader
+        return Opener()
+
+    monkeypatch.setattr(urllib.request, "build_opener", build)
+    adapter = OpenAIResponses(CONFIG, SECRET, authorized=True)
+    messages = [{"role": "user", "content": "OFFLINE JSON socket ownership fixture"}]
+    try:
+        if http_status == 200:
+            result = adapter({"messages": messages, "actual_request": adapter.request(messages)})
+            saved = result.output
+            assert result.usage.input_tokens is None
+        else:
+            with pytest.raises(SubmissionUncertain) as caught:
+                adapter({"messages": messages, "actual_request": adapter.request(messages)})
+            saved = caught.value.response
+            assert caught.value.usage.input_tokens is None
+        assert json.loads(saved["raw_response"]) == value
+        assert saved["http_status"] == http_status and saved["truncated"] is False
+        assert reader.fileno() == -1
+    finally:
+        response.close()
+        reader.close()
+
+
+def test_closed_socket_does_not_hide_content_length_truncation():
+    import http.client
+    import socket
+    import time
+
+    from co_scientist_next.responses_model import read_response_body
+
+    reader, writer = socket.socketpair()
+    writer.sendall(b"HTTP/1.1 200 OK\r\nContent-Length: 99\r\nConnection: close\r\n\r\n{}")
+    writer.close()
+    response = http.client.HTTPResponse(reader)
+    response.begin()
+    reader.close()
+    trace = {"socket": reader, "deadline": time.monotonic() + 5}
+    try:
+        with pytest.raises(http.client.IncompleteRead):
+            read_response_body(response, trace, 5)
+    finally:
+        response.close()
+        reader.close()
+
+
+def test_bad_descriptor_diagnostic_is_safe_and_stays_uncertain():
+    import errno
+
+    from co_scientist_next.reading_model import transport_error
+
+    error = transport_error(OSError(errno.EBADF, SECRET), "response_read")
+    assert isinstance(error, TransportUncertain)
+    record = error.error_record()
+    assert record["diagnostic"] == {
+        "category": "connection",
+        "phase": "response_read",
+        "code": "EBADF",
+    }
+    assert SECRET not in encode(record)
+
+
+def test_timeout_on_live_socket_is_not_silently_ignored():
+    import errno
+    import time
+
+    from co_scientist_next.responses_model import read_response_body
+
+    class LiveSocket:
+        def fileno(self):
+            return 10
+
+        def settimeout(self, _):
+            raise OSError(errno.ECONNRESET, SECRET)
+
+    class UnreadResponse:
+        def read1(self, _):
+            raise AssertionError("Must not ignore real live socket errors")
+
+    with pytest.raises(OSError) as caught:
+        read_response_body(
+            UnreadResponse(), {"socket": LiveSocket(), "deadline": time.monotonic() + 5}, 5
+        )
+    assert caught.value.errno == errno.ECONNRESET
