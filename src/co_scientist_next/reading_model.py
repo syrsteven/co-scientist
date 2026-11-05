@@ -56,6 +56,7 @@ def transport_error(exc, phase):
         errno.EPIPE,
         errno.ENETUNREACH,
         errno.EHOSTUNREACH,
+        errno.EBADF,
     }:
         category, code = "connection", errno.errorcode[exc.errno]
     else:

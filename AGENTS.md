@@ -74,6 +74,13 @@
   Nondecisive matches do not update ratings. UCB selects only qualified admitted
   parents; final selection uses highest qualified μ, or no qualified winner.
   Children undergo their own scientific review and never inherit ratings.
+- Responses transport diagnostic: `scripts/check_responses_transport.py` performs only
+  unauthenticated GETs using the production body reader. Compare system/direct/explicit
+  routes; a complete 401 proves HTTP read connectivity, never generation success.
+  TUN does not require application proxy variables. No export may still inherit macOS
+  system proxies. Do not set timeouts on a released fd after Content-Length EOF;
+  keep deadline/truncation checks. Never resolve or retry historical uncertain calls
+  merely because a local transport defect was fixed.
 - Record actual requests, responses/errors, retry lineage and available usage;
   unknown consumption stays unknown. Replay saved success locally. Applying one
   result and creating its successor must be atomic and idempotent. Ambiguous

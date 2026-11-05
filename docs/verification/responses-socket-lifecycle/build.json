@@ -1,0 +1,7 @@
+{
+  "status": "wheel/sdist build succeeded; no-deps/no-index outside-checkout installation and production reader import succeeded",
+  "artifacts": {
+    "co_scientist_replica-0.2.0.dev0.tar.gz": "b8f1385074aaa35066d5aa8dac3da2f7d8570c13ab28f9d03b461cec7e6c0752",
+    "co_scientist_replica-0.2.0.dev0-py3-none-any.whl": "da8a3d5b075d26fdb6a22e5f24f97878ad2f9237b437c6877c59107c91d6980a"
+  }
+}
