@@ -331,7 +331,7 @@ class Store:
             self.db.execute("UPDATE tasks SET status='ready' WHERE id=?", (task_id,))
             self.db.execute("UPDATE runs SET status='ready' WHERE id=?", (task["run_id"],))
 
-    def recover(self, run_id=None):
+    def recover(self, run_id=None, *, task_id=None):
         """Call once after exclusively opening a database in a new runtime.
 
         Running modules may execute again: they must put external effects through
@@ -344,6 +344,9 @@ class Store:
             if run_id is not None:
                 query += " AND run_id=?"
                 params = (run_id,)
+            if task_id is not None:
+                query += " AND id=?"
+                params += (task_id,)
             for task in self.rows(query, params):
                 inflight = self.rows(
                     "SELECT id FROM attempts WHERE task_id=? AND status='in_flight'", (task["id"],)

@@ -33,6 +33,31 @@ class RemoteP08:
         self.g = generation
         self.store, self.adapter = generation.store, generation.adapter
 
+    def request_record(self, a, payload, binding, *, job=None, query=False):
+        messages = self.g.messages(payload, a["prompt_version"])
+        actual = (
+            self.adapter.query_request(job["response_id"])
+            if query
+            else self.adapter.request(messages)
+        )
+        request = {
+            "operation": (a.get("operation", "P08") + ".remote_query")
+            if query
+            else a.get("operation", "P08"),
+            "actual_request": actual,
+            "model_config": json.loads(a["config"]),
+            "binding": {**binding, **json.loads(a["request"])},
+            "prompt_version": a["prompt_version"],
+        }
+        if query:
+            request["response_id"] = job["response_id"]
+        else:
+            request["messages"] = messages
+        return request
+
+    def submission_retry_allowed(self, action, previous, request):
+        return False  # Review-only explicit reservation; P08 never opts in.
+
     def execute(self, action, *, query=False, recover=False):
         s, a = self.store, action
         task = s.one("SELECT * FROM tasks WHERE id=?", (a["task_id"],))
@@ -64,25 +89,8 @@ class RemoteP08:
             return self.g.snapshot(a["run_id"])
         if not job and task["status"] == "running" and not recover:
             raise ValueError("Explicit recovery required after interrupted submission")
-        messages = self.g.messages(payload, a["prompt_version"])
-        actual = (
-            self.adapter.query_request(job["response_id"])
-            if query
-            else self.adapter.request(messages)
-        )
-        request = {
-            "operation": (a.get("operation", "P08") + ".remote_query")
-            if query
-            else a.get("operation", "P08"),
-            "actual_request": actual,
-            "model_config": json.loads(a["config"]),
-            "binding": {**binding, **json.loads(a["request"])},
-            "prompt_version": a["prompt_version"],
-        }
-        if query:
-            request["response_id"] = job["response_id"]
-        else:
-            request["messages"] = messages
+        request = self.request_record(a, payload, binding, job=job, query=query)
+        actual = request["actual_request"]
         self.adapter.preflight(request)
         if len(encode(actual).encode()) > self.adapter.config["max_request_bytes"]:
             raise ValueError("Responses capacity exceeded; complete input retained, nothing sent")
@@ -91,9 +99,14 @@ class RemoteP08:
             "SELECT * FROM attempts WHERE task_id=? AND call_key='responses.submit' ORDER BY ordinal DESC",
             (a["task_id"],),
         )
-        if not job and old and old[0]["status"] != "succeeded":
+        if (
+            not job
+            and old
+            and old[0]["status"] != "succeeded"
+            and not self.submission_retry_allowed(a, old[0], request)
+        ):
             if old[0]["status"] == "in_flight" and recover:
-                s.recover(run_id=a["run_id"])
+                s.recover(run_id=a["run_id"], task_id=a["task_id"])
             return self.g.snapshot(a["run_id"])
         query_key = None
         if query:
@@ -106,7 +119,7 @@ class RemoteP08:
                     raise ValueError("Interrupted query identity needs explicit inspection")
                 previous = interrupted[0]
                 if previous["status"] == "in_flight":
-                    s.recover(run_id=a["run_id"])
+                    s.recover(run_id=a["run_id"], task_id=a["task_id"])
                 if not previous["retry_authorization"]:
                     s.authorize_uncertain_retry(
                         previous["id"],

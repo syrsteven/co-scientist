@@ -540,6 +540,11 @@ class CandidateReviewService:
 class RemoteReview(RemoteP08):
     """Reuse only the existing durable-ID transport, with stage-specific result application."""
 
+    def submission_retry_allowed(self, action, previous, request):
+        from .review_trial import p09_retry_allowed
+
+        return p09_retry_allowed(self.g, action, previous, request)
+
     def finish(self, a, job):
         from .responses_model import OpenAIResponses
 
