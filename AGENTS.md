@@ -55,6 +55,10 @@
   No R1, rewrite, retrieval, repair or admission. Refresh/restart never sends or queries.
   Copied real-candidate fixtures are isolated, explicitly development; never write
   test reviews to the original database or present them as production judgments.
+  Nonproduction real-review preparation: docs/preparations/candidate-review-real-trial/README.md.
+  Policy mode and execution mode are independent; development policy does not imply a fixture.
+  The prepared trial permits P10 only with completed real Responses/M15 P09 pass provenance,
+  never a fixture or relabeled pass. Preparation is offline; paid POST/GET need separate authority.
 - Completed Goal Ethics decisions are only pass/reject. Clarification, policy/input
   problems and failures are execution states, not a third verdict. This does not
   change Candidate Ethics. R0 now has a minimal review implementation; its accepted policy permits

@@ -14,7 +14,7 @@ from .candidate_review_ops import (
 )
 from .contracts import ModuleResult
 from .generation import GenerationService
-from .generation_migration import scoped_exemptions
+from .generation_migration import profile, scoped_exemptions
 from .generation_ops import parse_candidate
 from .remote_generation import RemoteP08, remote_snapshot
 from .scheduler import Registry, Scheduler
@@ -102,6 +102,36 @@ class CandidateReviewService:
             (a["task_id"],),
         ) and (not self.development or pol and pol["mode"] != "development"):
             raise ValueError("Imported candidate fixture supports development review only")
+        trial = self.store.rows(
+            "SELECT id FROM execution_facts WHERE task_id=? AND kind='candidate_review_trial_prepared'",
+            (a["task_id"],),
+        )
+        if trial and self.config().get("execution_mode") != "real_model":
+            raise ValueError(
+                "Prepared real-review trial requires a real-model execution profile, not a fixture"
+            )
+        if trial:
+            detail = json.loads(
+                self.store.one("SELECT detail FROM execution_facts WHERE id=?", (trial[0]["id"],))[
+                    "detail"
+                ]
+            )
+            frozen = detail["frozen"]
+            expected = frozen["p09_request"] if op == "P09" else frozen["p10_request"]
+            if (
+                request != expected
+                or digest(c) != frozen["candidate_sha256"]
+                or digest(goal) != frozen["goal_sha256"]
+                or digest(generated["actual_frozen_seed_background_packet"]["source_views"])
+                != frozen["source_views_sha256"]
+            ):
+                raise ValueError("Prepared trial candidate/Goal/sources/policy/use changed")
+            from .responses_model import OpenAIResponses
+
+            if profile(self.config()) != profile(
+                OpenAIResponses(frozen["model_config"]).public_config()
+            ):
+                raise ValueError("Prepared trial model configuration changed; no fallback")
         if pol and pol["mode"] == "development" and not self.development:
             raise ValueError("Development policy requires explicit development review mode")
         binding = {
@@ -173,6 +203,8 @@ class CandidateReviewService:
             if old_payload != passed["input"] or old_binding != passed["binding"]:
                 raise ValueError("Frozen Ethics policy/use/input changed")
             parse_review(encode(out["artifact"]), "P09", old_payload, passed["request"])
+            if trial or self.config().get("execution_mode") == "real_model":
+                self.require_real_ethics(passed)
             views = generated["actual_frozen_seed_background_packet"]["source_views"]
             if not views or any(
                 not isinstance(v.get("text"), str)
@@ -200,6 +232,64 @@ class CandidateReviewService:
                 intended_use_sha256=passed["binding"]["intended_use_sha256"],
             )
         return payload, binding
+
+    def require_real_ethics(self, passed):
+        """Nonproduction policy may be real-model; fixture PASS is never real provenance."""
+        from .responses_model import OpenAIResponses
+
+        out, cfg = passed["result"], passed["config"]
+        if (
+            cfg.get("execution_mode") != "real_model"
+            or cfg.get("api_mode") != "responses_background_v1"
+        ):
+            raise ValueError("Real R0 requires real Responses P09, not fixture pass")
+        jobs = self.store.rows(
+            "SELECT * FROM remote_generations WHERE task_id=?", (passed["task_id"],)
+        )
+        if len(jobs) != 1 or jobs[0]["status"] != "completed":
+            raise ValueError("Real P09 completed remote record required")
+        job = jobs[0]
+        submit = self.store.one(
+            "SELECT * FROM attempts WHERE id=? AND task_id=?",
+            (job["submission_attempt_id"], passed["task_id"]),
+        )
+        latest = self.store.one(
+            "SELECT * FROM attempts WHERE id=? AND task_id=?",
+            (job["latest_attempt_id"], passed["task_id"]),
+        )
+        expected_messages = self.messages(passed["input"], passed["prompt_version"])
+        adapter = OpenAIResponses(
+            {
+                k: v
+                for k, v in cfg.items()
+                if k not in ("execution_mode", "api_mode", "credential_configured")
+            }
+        )
+        request = json.loads(submit["request"])
+        provenance = out.get("call_provenance", {})
+        response = json.loads(job["response"])
+        if (
+            submit["status"] != "succeeded"
+            or latest["status"] != "succeeded"
+            or submit["call_key"] != "responses.submit"
+            or submit["target"] != adapter.target + "/create"
+            or latest["target"] not in (adapter.target + "/create", adapter.target + "/retrieve")
+            or request.get("operation") != "P09"
+            or request.get("actual_request") != adapter.request(expected_messages)
+            or request.get("messages") != expected_messages
+            or request.get("model_config") != cfg
+            or request.get("binding") != {**passed["binding"], **passed["request"]}
+            or provenance.get("task_id") != passed["task_id"]
+            or provenance.get("submission_attempt_id") != submit["id"]
+            or provenance.get("attempt_id") != latest["id"]
+            or out.get("remote_response_id") != job["response_id"]
+            or json.loads(latest["response"]) != response
+            or OpenAIResponses.envelope(response)["id"] != job["response_id"]
+            or json.loads(OpenAIResponses.text(response)) != out["artifact"]
+        ):
+            raise ValueError(
+                "Real P09 response/Attempt/input binding invalid; fixture cannot be promoted"
+            )
 
     @staticmethod
     def messages(payload, version):
@@ -229,7 +319,15 @@ class CandidateReviewService:
         if any(p["id"] not in allowed for p in unresolved):
             raise ValueError("Other unresolved external call remains blocked")
 
+    def trial_record(self, generation_ref, run_id):
+        return self.store.rows(
+            "SELECT f.detail FROM execution_facts f JOIN generation_actions a ON a.task_id=f.task_id WHERE a.request_id=? AND a.run_id=? AND f.kind='candidate_review_trial_prepared'",
+            (generation_ref, run_id),
+        )
+
     def config_matches(self, action):
+        if self.trial_record(action["generation_ref"], action["run_id"]):
+            return profile(json.loads(action["config"])) == profile(self.config())
         return json.loads(action["config"]) == self.config()
 
     def submit(self, run_id, request_id, request):
@@ -237,6 +335,13 @@ class CandidateReviewService:
             raise ValueError("Explicit review request identity required")
         payload, binding = self.ready_input(run_id, request)
         s = self.store
+        trial = self.trial_record(request["generation_ref"], run_id)
+        if (
+            trial
+            and request_id
+            != json.loads(trial[0]["detail"])["frozen"]["request_ids"][request["operation"]]
+        ):
+            raise ValueError("Prepared trial reserves only one execution identity per operation")
         old = s.rows("SELECT * FROM candidate_review_actions WHERE request_id=?", (request_id,))
         if old:
             if (
@@ -279,7 +384,7 @@ class CandidateReviewService:
                     encode(request),
                     encode(payload),
                     encode(binding),
-                    encode(self.config()),
+                    encode(profile(self.config()) if trial else self.config()),
                     VERSION,
                 ),
             )
@@ -294,9 +399,9 @@ class CandidateReviewService:
             "binding": json.loads(a["binding"]),
             "prompt_version": a["prompt_version"],
             "model_config": json.loads(a["config"]),
-            "development": bool(
-                self.development or request["policy"] and request["policy"]["mode"] == "development"
-            ),
+            "development": bool(request["policy"] and request["policy"]["mode"] == "development"),
+            "policy_mode": request["policy"]["mode"] if request["policy"] else "not_configured",
+            "execution_mode": json.loads(a["config"])["execution_mode"],
             "science_validated": False,
         }
 
@@ -414,6 +519,19 @@ class CandidateReviewService:
             "model_config": self.config(),
             "prompt_version": VERSION,
             "development": self.development,
+            "development_policies_allowed": self.development,
+            "prepared_trial": [
+                {
+                    "preparation_sha256": json.loads(f["detail"])["preparation_sha256"],
+                    "candidate_id": json.loads(f["detail"])["frozen"]["candidate_id"],
+                    "generation_ref": json.loads(f["detail"])["frozen"]["generation_ref"],
+                    "request_ids": json.loads(f["detail"])["frozen"]["request_ids"],
+                }
+                for f in self.store.rows(
+                    "SELECT f.detail FROM execution_facts f JOIN tasks t ON t.id=f.task_id WHERE t.run_id=? AND f.kind='candidate_review_trial_prepared'",
+                    (run_id,),
+                )
+            ],
             "real_calls_authorized": bool(self.adapter and self.adapter.authorized),
             "science_validated": False,
         }
