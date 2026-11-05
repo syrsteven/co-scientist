@@ -15,7 +15,7 @@
   review or a production scientific chain. That slice did not include reading.
   W1-L2 separately authorizes P03–P07 background preparation and a configurable
   real model boundary. Read docs/W1_L2_BACKGROUND.md. No automatic paid calls.
-  Candidate Ethics and R0 remain excluded. P08 separately authorizes the minimal
+  Candidate Ethics and R0 were excluded from W1-L2. P08 separately authorizes the minimal
   single-call DIRECT / ASSUMPTION_STRUCTURED generation slice; read docs/W1_P08.md.
   Require a saved same-Run/Goal/seed/packet ready record; six-field USER input only.
   Save immutable candidates, stop pending Candidate Ethics/R0, never auto-generate.
@@ -45,9 +45,19 @@
   qualification. M11 proposes Delta intent, M03 resolves it after child Inventory;
   M04/M05 independently decide material/appraisal reuse. Contract checks cannot
   prove scientific decisions, real Inventory completion or source access truth.
+- Current candidate-review slice: `docs/W1_CANDIDATE_REVIEW.md`.
+  P09 and P10 are independent explicit operations; only the saved same-candidate,
+  Goal/Run/content/use/policy bound Candidate Ethics pass permits R0. Candidate
+  Ethics taxonomy comes from an explicit versioned decision_policy, never Goal's
+  binary rule. No production policy/default pass. R0 may block indispensable core
+  factual errors only with reliable located visible original sources; memory,
+  assistant paraphrase, local distortion and scientific unknown cannot substitute.
+  No R1, rewrite, retrieval, repair or admission. Refresh/restart never sends or queries.
+  Copied real-candidate fixtures are isolated, explicitly development; never write
+  test reviews to the original database or present them as production judgments.
 - Completed Goal Ethics decisions are only pass/reject. Clarification, policy/input
   problems and failures are execution states, not a third verdict. This does not
-  change Candidate Ethics. R0 is not implemented; its accepted policy permits
+  change Candidate Ethics. R0 now has a minimal review implementation; its accepted policy permits
   reliable core factual-error blocking, but not solely model memory or assistant
   paraphrase presented as original-source contradiction.
 - M14 owns immutable Brief revisions; M01 owns scientific Goal preparation;

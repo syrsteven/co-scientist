@@ -108,6 +108,13 @@ class Store:
                     request TEXT NOT NULL, input TEXT NOT NULL, binding TEXT NOT NULL,
                     config TEXT NOT NULL, prompt_version TEXT NOT NULL
                 );
+                CREATE TABLE IF NOT EXISTS candidate_review_actions (
+                    request_id TEXT PRIMARY KEY, run_id TEXT NOT NULL REFERENCES runs(id),
+                    task_id TEXT NOT NULL UNIQUE REFERENCES tasks(id), operation TEXT NOT NULL,
+                    generation_ref TEXT NOT NULL REFERENCES generation_actions(request_id),
+                    request TEXT NOT NULL, input TEXT NOT NULL, binding TEXT NOT NULL,
+                    config TEXT NOT NULL, prompt_version TEXT NOT NULL
+                );
                 CREATE TABLE IF NOT EXISTS generation_migrations (
                     id TEXT PRIMARY KEY, run_id TEXT NOT NULL REFERENCES runs(id),
                     source_task_id TEXT NOT NULL UNIQUE REFERENCES tasks(id),

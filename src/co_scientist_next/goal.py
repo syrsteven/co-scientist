@@ -486,5 +486,5 @@ class GoalSlice:
             "policy": config["policy"],
             "usage": self.store.usage(run_id=run_id),
             "science_validated": False,
-            "unimplemented": ["background_research", "generation", "candidate_ethics", "r0"],
+            "unimplemented": ["r1", "r2", "candidate_admission"],
         }

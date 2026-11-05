@@ -62,6 +62,12 @@ class Scheduler:
                 store.submit_result(
                     task["id"], result.output, stop_status=generation_route(result.output)
                 )
+            elif task["module"].startswith("candidate_review."):
+                from .candidate_review import review_route
+
+                store.submit_result(
+                    task["id"], result.output, stop_status=review_route(result.output)
+                )
             elif task["module"].startswith("background."):
                 from .background import background_route
 

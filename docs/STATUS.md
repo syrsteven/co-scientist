@@ -1,3 +1,24 @@
+# 项目状态 — W1 Candidate Ethics／R0 最小纵向切片
+
+## PR14合并后连续开发（2026-11-05）
+
+PR14固定head `cd815066dba167fc6c7faa016226719c7fe468be` 重新核对4项CI成功/无冲突或新增阻断后合并。
+实际merge/本轮最新main起点 `c90ce9365fa3c90f25e52bb77ee9fc551073a669`；独立分支 `codex/w1-candidate-ethics-r0`，新PR保持未合并。
+
+| 维度 | 本轮实际状态 |
+|---|---|
+| 后端 | 独立P09/P10 Task及冻结输入/候选内容哈希/用途/政策/Prompt/配置。显式decision_policy承载Candidate Ethics非二态语义；开发pass/reject/incomplete为明确示例，无生产默认政策。缺配置、解析/技术失败不形成伦理/科学决定 |
+| R0边界 | 同Run/Goal/候选/内容的有效Candidate Ethics pass才建立P10；实际来源文本和访问范围入模。核心事实阻断需定位候选、可靠原文及核心性，助手转述/记忆不作原文；未知/局部问题/争议交R1，不修补候选 |
+| M12/M15 | 仅pass到awaiting_r0，其他按配置stop/hold；P10停awaiting_r1或candidate_r0_blocked，无R1。复用Attempt/Result/Responses持久ID、成功回放、显式同ID查询、uncertain不自动重发；仅验证完成生成的窄迁移来源作用域，旧两个uncertain不改判、不全局放行 |
+| 页面 | 展示候选主张、假设/预测/实际原文入口；候选伦理政策/理由/风险、R0定位问题/未知/R1事项。显式执行/恢复/同ID查询，技术内容折叠，开发替身与生产未配置清楚可见。真实浏览器操作并刷新后2个fixture Attempts与DB哈希保持 |
+| 输入交付 | 真实DIRECT候选内容原样复制到隔离开发夹具，源身份/来源保持，禁止覆盖已有DB。P09/P10完整未发送请求29504/53714字节，开发政策/替身pass清楚标识；生产政策及真实P09 pass缺失，不伪造可执行生产P10 |
+| 验证 | 最终新系统355通过、0失败/跳过（328已有+27新增，含8项loopback HTTP与跨进程恢复）；Ruff全仓沿用CI既有豁免、3份JS、Python格式、wheel/sdist构建及仓库外安装导入、哈希/输入/刷新检查通过 |
+| 真实与科学状态 | 本轮真实模型请求0、模型密钥读取0；原真实库仅文件哈希核对、字节不变，无替身写入；原工作区232项保持。science_validated=false；替身不是伦理分类或科学准确性验证。未执行R1及后续模块 |
+
+[最小实施/政策采用/启动及API](W1_CANDIDATE_REVIEW.md) · [未发送请求与开发结果](preparations/candidate-ethics-r0-unsent/) · [测试/构建/页面证据](verification/candidate-ethics-r0/RESULTS.md)。
+原P08作者措辞失真问题保留在原初审，不修补原输出，不进入被测审查输入。
+未配置生产政策，未运行真实P09/P10/独立专家复核/旧G3全量/本机Python3.11全量，科学有效性未验证；没有需改变M00科学流程的跨模块冲突。原Accepted/Proposed状态不变。以下历史状态原文保留。
+
 # 项目状态 — P08 DIRECT 首次 Responses 后台真实结果
 
 ## 同Run显式迁移与单次真实生成（2026-11-05）

@@ -1,0 +1,42 @@
+{
+  "artifact": {
+    "applicable_clauses": [
+      {
+        "id": "DEV-1",
+        "quote": "DEV-1: Offline engineering policy ONLY, not production approval."
+      }
+    ],
+    "candidate_id": "planned-p08-direct-responses",
+    "decision_per_approved_policy": "pass",
+    "limitations_or_missing_context": [
+      "Development test only; no production approval."
+    ],
+    "rationale": "OFFLINE deterministic engineering fixture, not an ethical assessment.",
+    "specific_risks": []
+  },
+  "binding": {
+    "candidate_id": "planned-p08-direct-responses",
+    "candidate_sha256": "ba61dbc62315e7f5ad2cb360df4aa86da625a40df4b3dfc852d6effceb981fd9",
+    "decision_policy_sha256": "a08f604d462654e7899c53a8e53e1442402d94dadb8524fa9e2f4e07e0116171",
+    "generation_ref": "planned-p08-responses-migration-single",
+    "goal_ref": "goal-38a4a7a321d54c1eb475b9c7646930f0",
+    "intended_use_sha256": "0de0c37212639d96b28b0b9b248c88cf72ea020e6eaa7bc69629c4ccb7ce71d7",
+    "policy_sha256": "a44692cd8d727bface5edb127860e83ece0c4314e0f8505b43defe4dd64af82f",
+    "run_id": "cea909fe8a004010b1896df1c1d98e02"
+  },
+  "call_provenance": {
+    "request_id": "p09-6222f650-fe82-4e25-8332-51105980cb87",
+    "task_id": "2706874e07db446babc5ce31dd386484"
+  },
+  "development": true,
+  "model_config": {
+    "execution_mode": "development_fixture",
+    "fixture_version": "w1-candidate-ethics-r0-v1",
+    "max_request_bytes": 262144,
+    "scenario": "pass"
+  },
+  "operation": "P09",
+  "prompt_version": "w1-candidate-ethics-r0-v1",
+  "review_status": "completed",
+  "science_validated": false
+}

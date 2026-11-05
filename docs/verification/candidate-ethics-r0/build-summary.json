@@ -1,0 +1,20 @@
+{
+  "build_exit_code": 0,
+  "artifacts": [
+    {
+      "name": "co_scientist_replica-0.2.0.dev0-py3-none-any.whl",
+      "sha256": "31ade25ca9e5eea79d147055c21b2b707c3e63e9c24321d7a1337ab6a3f8ef9a",
+      "bytes": 2570550
+    },
+    {
+      "name": "co_scientist_replica-0.2.0.dev0.tar.gz",
+      "sha256": "961b1ea289b27b8a103f52dbe92873b9941d5914c0811e54a4da10a743a1ba9f",
+      "bytes": 5362557
+    }
+  ],
+  "wheel_installed_no_deps_no_index": true,
+  "smoke_import_outside_checkout": true,
+  "both_fixed_prompts_and_final_js_present": true,
+  "real_model_requests": 0,
+  "model_credentials_read": false
+}

@@ -30,6 +30,12 @@ const labels = {
   background_no_progress: "无新资料，已停止重复检查",
   awaiting_generation: "seed 已 ready · 可显式生成",
   awaiting_candidate_ethics: "已生成 · 待 Candidate Ethics/R0",
+  awaiting_r0: "Candidate Ethics通过 · 待R0",
+  awaiting_r1: "R0允许进入R1 · R1未实现",
+  candidate_ethics_hold: "候选伦理待补充 · 未放行",
+  candidate_ethics_stopped: "候选伦理按政策停止",
+  candidate_r0_blocked: "R0明确阻断",
+  candidate_review_problem: "候选审查未完成 · 查看执行问题",
   generation_problem: "生成准备/执行问题（非科学否定）",
 };
 async function api(path, data) {

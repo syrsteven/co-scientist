@@ -9,6 +9,8 @@ from urllib.parse import parse_qs, urlsplit
 
 from .background import BackgroundService
 from .background_ops import DevelopmentReadingAdapter
+from .candidate_review import CandidateReviewService
+from .candidate_review_ops import DevelopmentReviewAdapter
 from .europe_pmc import public_http
 from .generation import GenerationService
 from .generation_migration import MigrationService
@@ -29,6 +31,8 @@ def make_server(
     literature_transport=public_http,
     reading_adapter=None,
     generation_adapter=None,
+    review_adapter=None,
+    development_review=False,
 ):
     service = GoalSlice(
         store, DevelopmentAdapter() if development_test else None, development_test=development_test
@@ -38,6 +42,7 @@ def make_server(
 
     background = BackgroundService(store, reading_adapter)
     generation = GenerationService(store, generation_adapter)
+    reviews = CandidateReviewService(store, review_adapter, development=development_review)
 
     class Handler(BaseHTTPRequestHandler):
         def log_message(self, *_):
@@ -74,12 +79,20 @@ def make_server(
                 self.allowed_origin()
                 parsed = urlsplit(self.path)
                 path = parsed.path
-                if path in ("/", "/app.js", "/app.css", "/background.js", "/generation.js"):
+                if path in (
+                    "/",
+                    "/app.js",
+                    "/app.css",
+                    "/background.js",
+                    "/generation.js",
+                    "/candidate-review.js",
+                ):
                     asset, mime = {
                         "/": ("index.html", "text/html"),
                         "/app.js": ("app.js", "text/javascript"),
                         "/background.js": ("background.js", "text/javascript"),
                         "/generation.js": ("generation.js", "text/javascript"),
+                        "/candidate-review.js": ("candidate-review.js", "text/javascript"),
                         "/app.css": ("app.css", "text/css"),
                     }[path]
                     self.reply(
@@ -122,6 +135,16 @@ def make_server(
                             ],
                             "runs": runs,
                         },
+                    )
+                elif path == "/api/candidate-review":
+                    self.reply(200, reviews.snapshot(parse_qs(parsed.query)["run_id"][0]))
+                elif path == "/api/candidate-review/attempt":
+                    self.reply(
+                        200,
+                        store.one(
+                            "SELECT p.* FROM attempts p JOIN candidate_review_actions a ON a.task_id=p.task_id WHERE p.id=?",
+                            (parse_qs(parsed.query)["attempt_id"][0],),
+                        ),
                     )
                 elif path == "/api/generation":
                     self.reply(200, generation.snapshot(parse_qs(parsed.query)["run_id"][0]))
@@ -245,6 +268,18 @@ def make_server(
                                 data["acknowledgements"],
                             ),
                         )
+                elif path == "/api/candidate-review":
+                    action = reviews.submit(data["run_id"], data["request_id"], data["request"])
+                    self.reply(
+                        201, {"task_id": action["task_id"], "request_id": action["request_id"]}
+                    )
+                elif path == "/api/candidate-review/execute":
+                    self.reply(
+                        200,
+                        reviews.execute(data["request_id"], recover=data.get("recover") is True),
+                    )
+                elif path == "/api/candidate-review/query":
+                    self.reply(200, reviews.query_remote(data["request_id"]))
                 elif path == "/api/generation/query":
                     self.reply(200, generation.query_remote(data["request_id"]))
                 elif path == "/api/generation/execute":
@@ -331,7 +366,23 @@ def main():
         action="store_true",
         help="Explicitly authorize model sends only when operations are clicked",
     )
+    parser.add_argument(
+        "--development-review",
+        action="store_true",
+        help="Explicit offline Candidate Ethics/R0 fixtures and development policies only",
+    )
+    parser.add_argument(
+        "--review-responses-config",
+        help="Explicit public Responses configuration for candidate review; no default model",
+    )
     args = parser.parse_args()
+    if args.development_review and (
+        args.review_responses_config
+        or args.credential_env
+        or args.credential_file
+        or args.allow_real_model_calls
+    ):
+        parser.error("Development review cannot load model credentials or authorize real calls")
     if args.generation_responses_config and (
         args.development_generation or args.reading_model_config or args.development_reading
     ):
@@ -343,9 +394,11 @@ def main():
         or args.credential_file
     ):
         parser.error("Select explicit development reading or real configuration; no fallback")
-    if not (args.reading_model_config or args.generation_responses_config) and (
-        args.credential_env or args.credential_file or args.allow_real_model_calls
-    ):
+    if not (
+        args.reading_model_config
+        or args.generation_responses_config
+        or args.review_responses_config
+    ) and (args.credential_env or args.credential_file or args.allow_real_model_calls):
         parser.error(
             "Explicit model configuration required; credentials/authorization alone do not select a model"
         )
@@ -379,6 +432,20 @@ def main():
             parser.error(
                 "Responses configuration/credential unavailable; no fallback or secret details printed"
             )
+    review_adapter = DevelopmentReviewAdapter() if args.development_review else None
+    if args.review_responses_config:
+        try:
+            config = json.loads(Path(args.review_responses_config).read_text())
+            secret = (
+                load_credential(env_name=args.credential_env, credential_file=args.credential_file)
+                if args.credential_env or args.credential_file
+                else None
+            )
+            review_adapter = OpenAIResponses(config, secret, authorized=args.allow_real_model_calls)
+        except (ValueError, OSError):
+            parser.error(
+                "Review configuration/credential unavailable; no fallback or secret details printed"
+            )
     with Store(args.db) as store:
         server = make_server(
             store,
@@ -386,6 +453,8 @@ def main():
             development_test=args.development_test,
             public_literature=args.public_literature,
             reading_adapter=adapter,
+            review_adapter=review_adapter,
+            development_review=args.development_review,
             generation_adapter=(
                 DevelopmentGenerationAdapter()
                 if args.development_generation

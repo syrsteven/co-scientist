@@ -1,0 +1,43 @@
+{
+  "artifact": {
+    "blocking_defects": [],
+    "candidate_id": "planned-p08-direct-responses",
+    "disposition": "proceed_to_R1",
+    "goal_alignment": "OFFLINE fixture: Goal retained; no scientific judgment.",
+    "limitations": [
+      "OFFLINE development fixture only."
+    ],
+    "required_R1_checks": [
+      "OFFLINE: verify source wording and original experimental context; no R1 executed."
+    ],
+    "scientific_unknowns": [
+      "OFFLINE: unknown causal bridge, no scientific validation."
+    ]
+  },
+  "binding": {
+    "candidate_id": "planned-p08-direct-responses",
+    "candidate_sha256": "ba61dbc62315e7f5ad2cb360df4aa86da625a40df4b3dfc852d6effceb981fd9",
+    "ethics_ref": "p09-6222f650-fe82-4e25-8332-51105980cb87",
+    "ethics_result_sha256": "8f79514821f798bafd45b61ed532af4c8ad38d1c7559160c795ade2ec79ae98a",
+    "generation_ref": "planned-p08-responses-migration-single",
+    "goal_ref": "goal-38a4a7a321d54c1eb475b9c7646930f0",
+    "intended_use_sha256": "0de0c37212639d96b28b0b9b248c88cf72ea020e6eaa7bc69629c4ccb7ce71d7",
+    "policy_sha256": "b6b937e9d78aaba353559a4a34973968afdf9ea5afab00d15b2bcf5e6016571d",
+    "run_id": "cea909fe8a004010b1896df1c1d98e02"
+  },
+  "call_provenance": {
+    "request_id": "p10-a259686e-88cc-42a4-ada1-eeb2c0c994a6",
+    "task_id": "af766ef097de41f69252cb0b16203227"
+  },
+  "development": true,
+  "model_config": {
+    "execution_mode": "development_fixture",
+    "fixture_version": "w1-candidate-ethics-r0-v1",
+    "max_request_bytes": 262144,
+    "scenario": "pass"
+  },
+  "operation": "P10",
+  "prompt_version": "w1-candidate-ethics-r0-v1",
+  "review_status": "completed",
+  "science_validated": false
+}

@@ -1,0 +1,3 @@
+Processing /private/tmp/ethics-r0-final-artifacts/co_scientist_replica-0.2.0.dev0-py3-none-any.whl
+Installing collected packages: co-scientist-replica
+Successfully installed co-scientist-replica-0.2.0.dev0

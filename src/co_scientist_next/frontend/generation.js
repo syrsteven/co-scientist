@@ -47,6 +47,7 @@ async function showGeneration(data) {
   generationSpecificity();
   el("generation-submit").disabled = !saved.can_submit || mode === "not_configured" || (mode === "real_model" && (!saved.real_calls_authorized || !saved.model_config.credential_configured));
   el("generation-records").replaceChildren();
+  const reviews = await api("/api/candidate-review?run_id=" + encodeURIComponent(data.run.id));
   for (const a of saved.actions) {
     const card = document.createElement("div");
     card.className = "block candidate-card";
@@ -57,7 +58,14 @@ async function showGeneration(data) {
     card.append(title);
     note("候选身份：" + a.candidate_id + " · 方式：" + a.request.mode, card);
     const status = a.result?.generation_status;
-    note(status === "generated" ? "已生成，待Candidate Ethics/R0；未准入、未评分、科学未验证。" : "调用状态：" + ({blocked: "发送不确定，已停止；不自动重发", failed: "技术失败（非科学否定）", running: "执行中，尚未收尾", waiting_remote: "远端任务已保存，等待显式查询", ready: "已保存待显式执行"}[a.task_status] || a.task_status) + " · " + (status || "结果未完成"), card);
+    const lastReview = [...reviews.actions].reverse().find((r) => r.generation_ref === a.request_id);
+    const reviewArtifact = lastReview?.result?.artifact;
+    const candidateStage = !lastReview ? "已生成，待Candidate Ethics/R0；未准入、未评分、科学未验证。"
+      : reviewArtifact?.disposition === "proceed_to_R1" ? "R0允许进入R1，等待R1能力；未准入、科学未验证。"
+      : reviewArtifact?.disposition === "blocked" ? "R0明确阻断；候选原文保留，未修复。"
+      : reviewArtifact?.decision_per_approved_policy === "pass" ? "Candidate Ethics已通过，待独立R0；不代表科学通过。"
+      : "候选审查尚未放行：" + (reviewArtifact?.decision_per_approved_policy || lastReview.result?.review_status || lastReview.task_status);
+    note(status === "generated" ? candidateStage : "调用状态：" + ({blocked: "发送不确定，已停止；不自动重发", failed: "技术失败（非科学否定）", running: "执行中，尚未收尾", waiting_remote: "远端任务已保存，等待显式查询", ready: "已保存待显式执行"}[a.task_status] || a.task_status) + " · " + (status || "结果未完成"), card);
     note("执行标识：" + a.config.execution_mode + " · 固定Prompt：" + a.prompt_version, card);
     note("seed：" + a.request.seed_id + " · 背景包：" + a.request.packet_ref + " · readiness：" + a.request.readiness_ref, card);
     if (a.remote) {
@@ -79,6 +87,8 @@ async function showGeneration(data) {
     if (status === "capacity_exceeded") note("完整输入超出容量，未发送、未静默裁剪。", card);
     if (candidate) {
       note(candidate.scoped_claim, card);
+      for (const assumption of candidate.assumption_ledger) note("关键假设：" + assumption.assumption, card);
+      for (const prediction of candidate.predictions) note("可检验预测：" + prediction.claim_prediction + "；竞争解释预期：" + prediction.alternative_prediction, card);
       for (const [label, value] of [
         ["主张与实验情境", {claim: candidate.scoped_claim, context: candidate.biological_context}],
         ["机制步骤：来源报告 / 作者解释 / 新猜想", candidate.mechanism_steps],
@@ -89,6 +99,7 @@ async function showGeneration(data) {
         ["近邻范围、引用与限制", {scope: candidate.nearest_prior_work_scope, sources: candidate.source_refs, limitations: candidate.limitations}],
       ]) genTextSection(card, label, value);
     }
+    if (candidate) showCandidateReviews(card, a, data.run.id, reviews);
     for (const attempt of a.attempts) {
       note("Attempt " + attempt.id + " · " + attempt.status + " · 用量：" + attempt.usage + "（null为未知）", card);
       const button = document.createElement("button");

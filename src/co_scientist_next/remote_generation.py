@@ -71,7 +71,9 @@ class RemoteP08:
             else self.adapter.request(messages)
         )
         request = {
-            "operation": "P08.remote_query" if query else "P08",
+            "operation": (a.get("operation", "P08") + ".remote_query")
+            if query
+            else a.get("operation", "P08"),
             "actual_request": actual,
             "model_config": json.loads(a["config"]),
             "binding": {**binding, **json.loads(a["request"])},
