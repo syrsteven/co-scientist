@@ -1,0 +1,86 @@
+{
+  "base_main": "9dfd07e8b690a907fce46479fec2f09a3686a572",
+  "execution_code_commit": "32abb8f89236ca262a4576d0adea9b506691b1c5",
+  "preparation_sha256": "1890c42d8fdea5872f01018a7bb84f302a6ce9b5cc3022369f81647af9ce0951",
+  "new_generation_posts": 2,
+  "original_P09_unknown_usage": {
+    "cost": null,
+    "input_tokens": null,
+    "output_tokens": null,
+    "tool_units": null
+  },
+  "original_P09_stays_uncertain": true,
+  "policy_mode": "development",
+  "execution_mode": "real_model",
+  "science_validated": false,
+  "stages": [
+    {
+      "operation": "P09",
+      "request_id": "p09-real-nonprod-single-v1",
+      "task_id": "250e3e6dea7a430fb07e71080c20a345",
+      "response_id": "resp_03168064b28562b1006aec5c6a23d087d1a90320f5cd85ba84",
+      "submission_attempt_id": "69fa1539d29047608a2eb8178126b5eb",
+      "new_posts": 1,
+      "queries": 2,
+      "remote_status": "completed",
+      "review_status": "completed",
+      "decision": "pass",
+      "usage_once_per_response_id": {
+        "input_tokens": 8611,
+        "input_tokens_details": {
+          "cache_write_tokens": 8608,
+          "cached_tokens": 0
+        },
+        "output_tokens": 1541,
+        "output_tokens_details": {
+          "reasoning_tokens": 511
+        },
+        "total_tokens": 10152
+      },
+      "usage_selection_attempt_id": "77cb1287eeb0411e93982e686a7085fa",
+      "usage_observations_not_summed": true,
+      "cost": null,
+      "finish_reason_reported": false,
+      "finish_reason": null,
+      "actual_request_bytes": 31644,
+      "request_sha256": "90b0dcdfb22ddb63b9037eb58d2b3899c26919ea60270a5d67c4fe922821b39f",
+      "original_query_intervals_seconds": [
+        15.375051975250244
+      ]
+    },
+    {
+      "operation": "P10",
+      "request_id": "p10-real-nonprod-single-v1",
+      "task_id": "546f6e1441394119a4fb64bb206b7941",
+      "response_id": "resp_0638e667bacc3d37006aec5cdba82887d185e87622e30e4799",
+      "submission_attempt_id": "9abd25b20feb4fe0bc5c83e000e31e97",
+      "new_posts": 1,
+      "queries": 2,
+      "remote_status": "completed",
+      "review_status": "completed",
+      "decision": "proceed_to_R1",
+      "usage_once_per_response_id": {
+        "input_tokens": 15668,
+        "input_tokens_details": {
+          "cache_write_tokens": 15665,
+          "cached_tokens": 0
+        },
+        "output_tokens": 2018,
+        "output_tokens_details": {
+          "reasoning_tokens": 776
+        },
+        "total_tokens": 17686
+      },
+      "usage_selection_attempt_id": "2e96b20962aa45e0a4d87057360e0340",
+      "usage_observations_not_summed": true,
+      "cost": null,
+      "finish_reason_reported": false,
+      "finish_reason": null,
+      "actual_request_bytes": 59369,
+      "request_sha256": "fd1eb6a433ccd26944dbd89f7cb7f91e4fc22305dca8a6c59b3018e7552ff3fc",
+      "original_query_intervals_seconds": [
+        15.213583946228027
+      ]
+    }
+  ]
+}

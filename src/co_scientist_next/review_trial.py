@@ -305,6 +305,162 @@ def assemble_p10(database, package, output):
     }
 
 
+# Narrow scope: this one prepared P09 only, never P08/P10 or another Run/task.
+RECOVERY_TASK = "250e3e6dea7a430fb07e71080c20a345"
+RECOVERY_ATTEMPT = "da49fb3eb36c4e8aadee6f34e0757d15"
+RECOVERY_ACKS = frozenset({"prior_execution_unknown", "duplicate_execution_charge", "store_true"})
+RECOVERY_REASON = "Explicit user authorization: prior P09 may have executed/charged; accept one additional identical POST and duplicate execution/charge risk, store=true. No third submit."
+RECOVERY_MARKER = "p09_single_retry_reserved"
+
+
+def recovery_scope(service, frozen, original_id):
+    if original_id != RECOVERY_ATTEMPT:
+        raise ValueError("Only the named original P09 Attempt is authorized")
+    action = service.store.one(
+        "SELECT * FROM candidate_review_actions WHERE request_id=?",
+        (frozen["request_ids"]["P09"],),
+    )
+    if action["task_id"] != RECOVERY_TASK or action["operation"] != "P09":
+        raise ValueError("Only the named same-Task P09 recovery is authorized")
+    original = service.store.one(
+        "SELECT * FROM attempts WHERE id=? AND task_id=?", (original_id, RECOVERY_TASK)
+    )
+    payload, binding = service.ready_input(frozen["run_id"], frozen["p09_request"])
+    from .candidate_review import RemoteReview
+
+    expected = RemoteReview(service).request_record(action, payload, binding)
+    if (
+        original["status"] != "uncertain"
+        or original["call_key"] != "responses.submit"
+        or original["target"] != service.adapter.target + "/create"
+        or original["request"] != encode(expected)
+        or action["input"] != encode(payload)
+        or action["binding"] != encode(binding)
+        or not service.config_matches(action)
+    ):
+        raise ValueError("Frozen original request/input/config/Prompt/policy binding changed")
+    return action, original
+
+
+def p09_retry_allowed(service, action, previous, request):
+    if (
+        action["task_id"] != RECOVERY_TASK
+        or action.get("operation") != "P09"
+        or previous["id"] != RECOVERY_ATTEMPT
+        or previous["status"] != "uncertain"
+        or previous["retry_authorization"] != RECOVERY_REASON
+        or previous["request"] != encode(request)
+    ):
+        return False
+    markers = service.store.rows(
+        "SELECT detail FROM execution_facts WHERE task_id=? AND kind=?",
+        (RECOVERY_TASK, RECOVERY_MARKER),
+    )
+    attempts = service.store.rows(
+        "SELECT id FROM attempts WHERE task_id=? AND call_key='responses.submit'", (RECOVERY_TASK,)
+    )
+    return (
+        len(markers) == 1
+        and len(attempts) == 1
+        and json.loads(markers[0]["detail"])["original_attempt_id"] == RECOVERY_ATTEMPT
+        and json.loads(markers[0]["detail"])["request_sha256"] == digest(request)
+    )
+
+
+def reserve_p09_retry(service, frozen, original_id):
+    """Offline only. Original retry_authorization is the only permitted row change."""
+    s = service.store
+    a, old = recovery_scope(service, frozen, original_id)
+    attempts = s.rows(
+        "SELECT * FROM attempts WHERE task_id=? AND call_key='responses.submit' ORDER BY ordinal",
+        (RECOVERY_TASK,),
+    )
+    jobs = s.rows("SELECT * FROM remote_generations WHERE task_id=?", (RECOVERY_TASK,))
+    if jobs or len(attempts) > 1:
+        # A committed second in-flight fact is already the single authorized send.
+        # On restart scope recovery to this Task, never globally reset other calls.
+        if any(p["status"] == "in_flight" for p in attempts[1:]):
+            s.recover(run_id=a["run_id"], task_id=RECOVERY_TASK)
+        return False
+    if old["response"] is not None:
+        raise ValueError("Saved original response needs inspection/recovery, never a new POST")
+    service.clear_calls(a["run_id"], RECOVERY_TASK)
+    markers = s.rows(
+        "SELECT detail FROM execution_facts WHERE task_id=? AND kind=?",
+        (RECOVERY_TASK, RECOVERY_MARKER),
+    )
+    detail = {
+        "original_attempt_id": original_id,
+        "task_id": RECOVERY_TASK,
+        "call_key": old["call_key"],
+        "request_sha256": digest(json.loads(old["request"])),
+        "preparation_sha256": digest(frozen),
+        "acknowledgements": sorted(RECOVERY_ACKS),
+        "additional_post_limit": 1,
+        "original_row_sha256_before_authorization": digest(
+            {k: v for k, v in old.items() if k != "retry_authorization"}
+        ),
+    }
+    if markers and (len(markers) != 1 or json.loads(markers[0]["detail"]) != detail):
+        raise ValueError("Retry reservation changed")
+    if old["retry_authorization"] not in (None, RECOVERY_REASON):
+        raise ValueError("Different retry authorization requires inspection")
+    # Single Store writer. Marker and M15 authorization commit together; a crash
+    # before task_retry is safe: another explicit command resumes the same grant.
+    if not markers:
+        with s.db:
+            s.fact(RECOVERY_TASK, RECOVERY_MARKER, detail)
+            s.authorize_uncertain_retry(original_id, RECOVERY_REASON)
+    task = s.one("SELECT status FROM tasks WHERE id=?", (RECOVERY_TASK,))
+    if task["status"] == "blocked":
+        s.retry_task(RECOVERY_TASK, RECOVERY_REASON)
+    return True
+
+
+def recover_p09(
+    database,
+    package,
+    original_id,
+    *,
+    acknowledgements=(),
+    credential_env=None,
+    credential_file=None,
+):
+    if frozenset(acknowledgements) != RECOVERY_ACKS:
+        raise ValueError(
+            "Explicit prior-unknown, duplicate-charge and store=true acknowledgements required"
+        )
+    with ReadOnlyStore(database) as readonly:
+        frozen, service = validate_package(readonly, package)
+        recovery_scope(service, frozen, original_id)
+    with Store(database) as store:
+        frozen, service = validate_package(store, package)
+        if not reserve_p09_retry(service, frozen, original_id):
+            jobs = store.rows("SELECT * FROM remote_generations WHERE task_id=?", (RECOVERY_TASK,))
+            if jobs and jobs[0]["status"] not in ("queued", "in_progress", "unknown"):
+                from .candidate_review import RemoteReview
+
+                action = store.one(
+                    "SELECT * FROM candidate_review_actions WHERE task_id=?", (RECOVERY_TASK,)
+                )
+                RemoteReview(service).execute(action, recover=True)  # Local apply, no key/send.
+            return {
+                "sent": False,
+                "reason": "Single retry already attempted or saved response ID exists; inspect/query only",
+                "review_records": service.snapshot(frozen["run_id"]),
+            }
+        adapter = OpenAIResponses(
+            frozen["model_config"],
+            load_credential(env_name=credential_env, credential_file=credential_file),
+            authorized=True,
+        )
+        service = CandidateReviewService(store, adapter, development=True)
+        return {
+            "recovery": "single_identical_P09_retry",
+            "review_records": service.execute(frozen["request_ids"]["P09"], recover=True),
+        }
+
+
 def operate(
     database, package, operation, *, query=False, credential_env=None, credential_file=None
 ):
@@ -385,6 +541,7 @@ def main():
             "query-p09",
             "submit-p10",
             "query-p10",
+            "recover-p09",
         ],
     )
     p.add_argument("--db", required=True)
@@ -394,10 +551,14 @@ def main():
     p.add_argument("--output")
     p.add_argument("--credential-env")
     p.add_argument("--credential-file")
+    p.add_argument("--original-attempt")
+    p.add_argument("--accept-unknown-prior-execution", action="store_true")
+    p.add_argument("--accept-duplicate-charge", action="store_true")
+    p.add_argument("--accept-store-true", action="store_true")
     p.add_argument("--authorize-paid-post", action="store_true")
     p.add_argument("--authorize-same-id-query", action="store_true")
     a = p.parse_args()
-    network = a.command.startswith(("submit-", "query-"))
+    network = a.command.startswith(("submit-", "query-", "recover-"))
     if not network and (
         a.credential_env or a.credential_file or a.authorize_paid_post or a.authorize_same_id_query
     ):
@@ -405,7 +566,22 @@ def main():
             "Preparation/read-only commands do not accept credentials or model execution authorization"
         )
     try:
-        if a.command == "prepare":
+        if a.command == "recover-p09":
+            if not a.authorize_paid_post or not (
+                a.accept_unknown_prior_execution
+                and a.accept_duplicate_charge
+                and a.accept_store_true
+            ):
+                raise ValueError("Separate explicit P09 retry authorization and all risks required")
+            result = recover_p09(
+                a.db,
+                a.package,
+                a.original_attempt,
+                acknowledgements=RECOVERY_ACKS,
+                credential_env=a.credential_env,
+                credential_file=a.credential_file,
+            )
+        elif a.command == "prepare":
             if not a.source_db or not a.policies:
                 raise ValueError("Explicit original source DB and versioned policies required")
             result = prepare(a.source_db, a.db, a.policies, a.package)

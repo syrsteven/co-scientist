@@ -100,8 +100,9 @@ async function showGeneration(data) {
       ]) genTextSection(card, label, value);
     }
     if (candidate) showCandidateReviews(card, a, data.run.id, reviews);
+    note("P08 生成调用历史（仅 P08；P09/P10 见独立审查区）", card);
     for (const attempt of a.attempts) {
-      note("Attempt " + attempt.id + " · " + attempt.status + " · 用量：" + attempt.usage + "（null为未知）", card);
+      note("P08 Attempt " + attempt.id + " · " + attempt.status + " · 用量：" + attempt.usage + "（null为未知）", card);
       const button = document.createElement("button");
       button.textContent = "查看保存的实际请求 / 原始响应";
       button.onclick = () => action(async () => {

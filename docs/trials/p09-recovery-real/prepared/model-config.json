@@ -1,0 +1,17 @@
+{
+  "provider": "openai",
+  "endpoint": "https://api.openai.com/v1/responses",
+  "model": "gpt-6.1-sol",
+  "parameters": {
+    "reasoning_effort": "high",
+    "max_completion_tokens": 32768,
+    "response_format": {
+      "type": "json_object"
+    }
+  },
+  "timeout_seconds": 600,
+  "total_wait_seconds": 600,
+  "max_request_bytes": 262144,
+  "store": true,
+  "retention_ack": "explicit-store-true-provider-retention-acknowledged-v1"
+}

@@ -47,6 +47,9 @@ function showCandidateReviews(card, generation, runId, saved) {
     }
     if (result?.parse_error) note(result.parse_error, block);
     if (a.error) note("技术错误（不是伦理/科学结论）：" + a.error.message, block);
+    for (const attempt of a.attempts) {
+      note(a.operation + " Attempt " + attempt.id + " · " + attempt.status + (attempt.previous_id ? " · 恢复自 " + attempt.previous_id : "") + "；用量：" + JSON.stringify(attempt.usage) + "（null为未知；同一远端任务GET用量不重复累计）", block);
+    }
     if (a.remote) {
       note("远端状态：" + a.remote.status + "；ID：" + a.remote.response_id + "；已等待 " + Math.floor(a.remote.elapsed_seconds) + " 秒；最近查询：" + JSON.stringify(a.remote.latest_query), block);
       if (["queued", "in_progress", "unknown"].includes(a.remote.status)) {

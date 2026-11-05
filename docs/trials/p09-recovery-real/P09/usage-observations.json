@@ -1,0 +1,34 @@
+[
+  {
+    "attempt_id": "69fa1539d29047608a2eb8178126b5eb",
+    "call_key": "responses.submit",
+    "status": "queued",
+    "usage": null,
+    "received_at": "2026-11-05T10:37:30.746181+00:00"
+  },
+  {
+    "attempt_id": "5783d11a6e5345f39f7859f13bd8cd22",
+    "call_key": "responses.query.1",
+    "status": "in_progress",
+    "usage": null,
+    "received_at": "2026-11-05T10:37:57.834849+00:00"
+  },
+  {
+    "attempt_id": "77cb1287eeb0411e93982e686a7085fa",
+    "call_key": "responses.query.2",
+    "status": "completed",
+    "usage": {
+      "input_tokens": 8611,
+      "input_tokens_details": {
+        "cache_write_tokens": 8608,
+        "cached_tokens": 0
+      },
+      "output_tokens": 1541,
+      "output_tokens_details": {
+        "reasoning_tokens": 511
+      },
+      "total_tokens": 10152
+    },
+    "received_at": "2026-11-05T10:38:14.414834+00:00"
+  }
+]

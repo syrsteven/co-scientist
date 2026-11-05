@@ -1,0 +1,11 @@
+{
+  "candidate_id": "planned-p08-direct-responses",
+  "candidate_sha256": "ba61dbc62315e7f5ad2cb360df4aa86da625a40df4b3dfc852d6effceb981fd9",
+  "ethics_ref": "p09-real-nonprod-single-v1",
+  "ethics_result_sha256": "1ba89d7ae9fad93c463f875bf97999601213e0037b42f8bb5ee26c1aaca6824c",
+  "generation_ref": "planned-p08-responses-migration-single",
+  "goal_ref": "goal-38a4a7a321d54c1eb475b9c7646930f0",
+  "intended_use_sha256": "9f093efa97784743bf8c6d1eca67178caa39b7debf329b5f3ea76a0f80e1f196",
+  "policy_sha256": "11fffefd7b050424f37c5b9a1faa041e07ca6b91a11e8e054e69563da39f631e",
+  "run_id": "cea909fe8a004010b1896df1c1d98e02"
+}

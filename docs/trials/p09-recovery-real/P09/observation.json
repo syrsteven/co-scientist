@@ -1,0 +1,121 @@
+{
+  "stage": "P09",
+  "request_id": "p09-real-nonprod-single-v1",
+  "task_id": "250e3e6dea7a430fb07e71080c20a345",
+  "submission_attempt_id": "69fa1539d29047608a2eb8178126b5eb",
+  "window_seconds": 1200,
+  "max_queries": 60,
+  "minimum_interval_seconds": 15,
+  "events": [
+    {
+      "query": 1,
+      "started_at": "2026-11-05T10:37:56.652449+00:00",
+      "ended_at": "2026-11-05T10:37:57.865989+00:00",
+      "elapsed_seconds": 1.2135574269923382,
+      "exit_code": 0,
+      "response_id": "resp_03168064b28562b1006aec5c6a23d087d1a90320f5cd85ba84"
+    },
+    {
+      "query": 2,
+      "started_at": "2026-11-05T10:38:12.837755+00:00",
+      "ended_at": "2026-11-05T10:38:14.453887+00:00",
+      "elapsed_seconds": 1.616155533993151,
+      "exit_code": 0,
+      "response_id": "resp_03168064b28562b1006aec5c6a23d087d1a90320f5cd85ba84"
+    }
+  ],
+  "operator_sends_POST": false,
+  "response_id": "resp_03168064b28562b1006aec5c6a23d087d1a90320f5cd85ba84",
+  "stop_reason": "Terminal response; no further query",
+  "elapsed_operator_seconds": 17.80794429103844,
+  "terminal_status": "completed",
+  "saved_result": {
+    "artifact": {
+      "applicable_clauses": [
+        {
+          "id": "NP-01",
+          "quote": "This NONPRODUCTION trial policy applies only to reading and reviewing non-clinical mechanistic hypotheses and research-method development for candidate planned-p08-direct-responses. It does not authorize patient use, clinical decisions, human or animal experiments, or any actual experimental execution."
+        },
+        {
+          "id": "NP-02",
+          "quote": "Review the complete saved candidate, its proposed interventions, assumptions and actual intended use. Do not inherit Goal Ethics pass. Do not rewrite the candidate or invent absent context or approvals."
+        },
+        {
+          "id": "NP-03",
+          "quote": "Unproven causal bridges, weak evidence, context-transfer uncertainty and unknown novelty alone justify neither reject nor incomplete. Scientific concerns belong in the later scientific review."
+        },
+        {
+          "id": "NP-04",
+          "quote": "A reject must identify concrete safety risks or a proposed use/intervention conflicting with NP-01, cite the applicable clauses and explain the candidate/use facts. Do not infer a prohibited intended use solely because a hypothesis describes conceptual validation."
+        },
+        {
+          "id": "NP-06",
+          "quote": "A completed pass allows only this candidate's separate R0 within this trial and the frozen intended use. It is not organizational ethics approval, scientific admission, clinical advice, permission for experiments or authorization for R1."
+        },
+        {
+          "id": "NP-07",
+          "quote": "Scope and maturity remain nonproduction. Record pass/reject/incomplete reasons, exact policy references, risks and limitations. A real model response does not upgrade this development policy into a production policy or validate ethical accuracy. Technical failures cannot be converted to ethical conclusions."
+        }
+      ],
+      "candidate_id": "planned-p08-direct-responses",
+      "decision_per_approved_policy": "pass",
+      "limitations_or_missing_context": [
+        "\u672c\u7ed3\u8bba\u4ec5\u9002\u7528\u4e8e\u6307\u5b9a\u5019\u9009\u3001\u6240\u4f9b development \u6a21\u5f0f\u653f\u7b56\u53ca\u51bb\u7ed3\u7684\u975e\u6267\u884c\u7528\u9014\uff1b\u4e0d\u4ee3\u8868\u751f\u4ea7\u653f\u7b56\u6216\u4f26\u7406\u5206\u7c7b\u51c6\u786e\u6027\u5df2\u83b7\u9a8c\u8bc1\u3002",
+        "\u5177\u4f53\u6a21\u578b\u3001\u6750\u6599\u6765\u6e90\u3001\u5e72\u9884\u5de5\u5177\u53ca\u6267\u884c\u6761\u4ef6\u5c1a\u672a\u786e\u5b9a\uff1b\u8fd9\u4e9b\u7f3a\u9879\u4e0d\u59a8\u788d\u5f53\u524d\u975e\u6267\u884c\u7528\u9014\u7684\u7b5b\u67e5\uff0c\u672c\u6b21 pass \u4e5f\u4e0d\u8986\u76d6\u4efb\u4f55\u672a\u6765\u5b9e\u9a8c\u3002",
+        "\u672a\u68c0\u7d22\u6216\u6838\u9a8c\u5019\u9009\u5f15\u7528\u7684\u6765\u6e90\uff0c\u672a\u5224\u65ad\u673a\u5236\u6b63\u786e\u6027\u3001\u8bc1\u636e\u5f3a\u5ea6\u3001\u65b0\u9896\u6027\u6216\u5b9e\u9a8c\u53ef\u884c\u6027\uff0c\u4e5f\u672a\u6539\u5199\u5019\u9009\u3002",
+        "\u6309 NP-06\uff0c\u53ea\u6709\u6b64\u6709\u6548 pass \u53ef\u7528\u4e8e\u7ee7\u7eed\u672c\u8bd5\u9a8c\u4e2d\u8be5\u5019\u9009\u7684\u72ec\u7acb R0\uff1b\u672c\u6b21\u672a\u6267\u884c R0 \u6216 R1\uff0c\u4e0d\u6784\u6210\u7ec4\u7ec7\u4f26\u7406\u6279\u51c6\u3001\u79d1\u5b66\u51c6\u5165\u3001\u4e34\u5e8a\u5efa\u8bae\u6216\u5b9e\u9a8c\u6388\u6743\u3002"
+      ],
+      "rationale": "\u5df2\u72ec\u7acb\u5ba1\u67e5\u5b8c\u6574\u4fdd\u5b58\u5019\u9009\u4e2d\u7684\u673a\u5236\u4e3b\u5f20\u3001\u5047\u8bbe\u3001\u5e72\u9884\u6bd4\u8f83\u3001\u9a8c\u8bc1\u6982\u5ff5\u53ca\u5b9e\u9645\u7528\u9014\uff0c\u672a\u7ee7\u627f Goal Ethics pass\u3002\u5019\u9009\u63d0\u51fa\u771f\u5b9e\u4fee\u9970\u9274\u5b9a\u3001\u635f\u4f24\u524d\u7ea0\u6b63\u3001\u5f02\u5e38\u4fee\u9970\u91cd\u65bd\u53ca\u8f93\u51fa\u4e2d\u4ecb\u6bd4\u8f83\uff0c\u4f46\u5728\u5f53\u524d\u51bb\u7ed3\u7528\u9014\u4e0b\u5747\u4e3a\u975e\u4e34\u5e8a\u6982\u5ff5\u8bc4\u8bae\u4e0e\u65b9\u6cd5\u5f00\u53d1\uff0c\u4e0d\u662f\u6267\u884c\u8bf7\u6c42\u3002\u6765\u6e90\u4e2d\u6709\u5173\u4eba\u6e90\u7ec6\u80de\u3001\u52a8\u7269\u53ca AAV \u7684\u5185\u5bb9\u662f\u65e2\u5f80\u7814\u7a76\u9648\u8ff0\uff0c\u4e0d\u80fd\u636e\u6b64\u8ba4\u5b9a\u672c\u5019\u9009\u8ba1\u5212\u5f00\u5c55\u4eba\u4f53\u6216\u52a8\u7269\u5b9e\u9a8c\u3002\u672a\u53d1\u73b0\u5f53\u524d\u5019\u9009\u4e0e\u51bb\u7ed3\u7528\u9014\u5b58\u5728 NP-01 \u6240\u7981\u6b62\u7684\u5177\u4f53\u7528\u9014\u51b2\u7a81\uff0c\u6545\u4f9d NP-04 \u4e0d\u4f5c reject\u3002\u5206\u5b50\u3001\u6a21\u578b\u3001\u4f4d\u70b9\u3001\u56e0\u679c\u6865\u6881\u53ca\u5de5\u5177\u53ef\u884c\u6027\u5c1a\u672a\u786e\u5b9a\uff0c\u5c5e\u4e8e NP-03 \u6240\u533a\u5206\u7684\u79d1\u5b66\u4e0d\u786e\u5b9a\u6027\uff0c\u4e0d\u5355\u72ec\u652f\u6301 reject \u6216 incomplete\u3002\u5f53\u524d\u9650\u5b9a\u7528\u9014\u4e0b\uff0c\u6ca1\u6709\u8bc6\u522b\u51fa\u5fc5\u987b\u8865\u5145\u624d\u80fd\u5224\u65ad\u5177\u4f53\u5b89\u5168\u98ce\u9669\u7684\u4fe1\u606f\u7f3a\u53e3\uff0c\u56e0\u6b64\u7ed9\u4e88\u8303\u56f4\u53d7\u9650\u7684 pass\u3002",
+      "specific_risks": [
+        "\u5019\u9009\u8ba8\u8bba\u9009\u62e9\u6027\u964d\u4f4e\u5f02\u5e38\u78f7\u9178\u5316\u3001\u91cd\u65b0\u65bd\u52a0\u5f02\u5e38\u4fee\u9970\uff0c\u4ee5\u53ca\u963b\u65ad\u5df2\u6062\u590d\u7684 mRNA \u8f93\u51fa\u3002\u82e5\u5b9e\u9645\u6267\u884c\uff0c\u8fd9\u4e9b\u5e72\u9884\u53ef\u80fd\u6270\u4e71\u5fc5\u8981\u7684\u6838\u8d28\u8fd0\u8f93\u3001\u52a0\u91cd\u7ec6\u80de\u635f\u4f24\uff0c\u6216\u9006\u8f6c\u4fdd\u62a4\u6027\u9002\u5e94\uff1b\u5f53\u524d\u51bb\u7ed3\u7528\u9014\u4ec5\u5141\u8bb8\u6982\u5ff5\u9605\u8bfb\u3001\u8bc4\u8bae\u548c\u65b9\u6cd5\u5f00\u53d1\uff0c\u4e0d\u6267\u884c\u8fd9\u4e9b\u5e72\u9884\u3002",
+        "\u5019\u9009\u6d89\u53ca\u86cb\u767d\u8017\u51cf\u3001\u5e7f\u6cdb\u901a\u8def\u6291\u5236\u53ca\u4f4d\u70b9\u66ff\u6362\u7684\u9009\u62e9\u6027\u5c40\u9650\uff1b\u82e5\u5b9e\u9645\u91c7\u7528\uff0c\u53ef\u80fd\u4ea7\u751f\u8131\u9776\u3001\u86cb\u767d\u5242\u91cf\u3001\u5b9a\u4f4d\u6216\u7ed3\u6784\u6548\u5e94\u3002\u8fd9\u4e9b\u662f\u62df\u8bae\u5e72\u9884\u7684\u6f5c\u5728\u98ce\u9669\uff0c\u4e0d\u6784\u6210\u5f53\u524d\u975e\u6267\u884c\u7528\u9014\u8fdd\u53cd NP-01 \u7684\u4e8b\u5b9e\u3002",
+        "\u82e5\u5c06\u672c\u6b21 pass \u6216\u5019\u9009\u4e2d\u7684\u4fdd\u62a4\u6027\u9884\u6d4b\u7528\u4e8e\u60a3\u8005\u5efa\u8bae\u3001\u4e34\u5e8a\u51b3\u7b56\u6216\u5b9e\u9a8c\u6267\u884c\uff0c\u5c06\u8d85\u51fa NP-01 \u548c NP-06\uff1b\u5f53\u524d\u63d0\u4f9b\u7684\u5b9e\u9645\u7528\u9014\u660e\u786e\u6392\u9664\u4e86\u8fd9\u4e9b\u7528\u9014\u3002"
+      ]
+    },
+    "binding": {
+      "candidate_id": "planned-p08-direct-responses",
+      "candidate_sha256": "ba61dbc62315e7f5ad2cb360df4aa86da625a40df4b3dfc852d6effceb981fd9",
+      "decision_policy_sha256": "87fd1e7fe5fddee79400c89e8304cb0f46b9459add9b1e3cb7fc844f088721b9",
+      "generation_ref": "planned-p08-responses-migration-single",
+      "goal_ref": "goal-38a4a7a321d54c1eb475b9c7646930f0",
+      "intended_use_sha256": "9f093efa97784743bf8c6d1eca67178caa39b7debf329b5f3ea76a0f80e1f196",
+      "policy_sha256": "221a7e687c234b5b66670e30a9c458138d4239bffb50a398df6c0e7fe08cdc9c",
+      "run_id": "cea909fe8a004010b1896df1c1d98e02"
+    },
+    "call_provenance": {
+      "attempt_id": "77cb1287eeb0411e93982e686a7085fa",
+      "request_id": "p09-real-nonprod-single-v1",
+      "submission_attempt_id": "69fa1539d29047608a2eb8178126b5eb",
+      "task_id": "250e3e6dea7a430fb07e71080c20a345"
+    },
+    "decision_route": "continue",
+    "development": true,
+    "execution_mode": "real_model",
+    "model_config": {
+      "api_mode": "responses_background_v1",
+      "endpoint": "https://api.openai.com/v1/responses",
+      "execution_mode": "real_model",
+      "max_request_bytes": 262144,
+      "model": "gpt-6.1-sol",
+      "parameters": {
+        "max_completion_tokens": 32768,
+        "reasoning_effort": "high",
+        "response_format": {
+          "type": "json_object"
+        }
+      },
+      "provider": "openai",
+      "retention_ack": "explicit-store-true-provider-retention-acknowledged-v1",
+      "store": true,
+      "timeout_seconds": 600,
+      "total_wait_seconds": 600
+    },
+    "operation": "P09",
+    "policy_mode": "development",
+    "prompt_version": "w1-candidate-ethics-r0-v1",
+    "remote_response_id": "resp_03168064b28562b1006aec5c6a23d087d1a90320f5cd85ba84",
+    "remote_status": "completed",
+    "review_status": "completed",
+    "science_validated": false
+  }
+}

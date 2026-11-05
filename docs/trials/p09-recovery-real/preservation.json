@@ -1,0 +1,152 @@
+{
+  "canonical_database_sha256": "a1414816be01c06535e9493f9eaa62d40ee892ad45cf024af61dc7776ab7a2b9",
+  "canonical_unchanged": true,
+  "trial_table_comparison": {
+    "projects": {
+      "original_count": 1,
+      "current_count": 1,
+      "permitted_changes": [],
+      "other_original_rows_identical": true
+    },
+    "brief_revisions": {
+      "original_count": 1,
+      "current_count": 1,
+      "permitted_changes": [],
+      "other_original_rows_identical": true
+    },
+    "runs": {
+      "original_count": 1,
+      "current_count": 1,
+      "permitted_changes": [
+        {
+          "id": "cea909fe8a004010b1896df1c1d98e02",
+          "changed_fields": [
+            "plan",
+            "status"
+          ]
+        }
+      ],
+      "other_original_rows_identical": true
+    },
+    "tasks": {
+      "original_count": 26,
+      "current_count": 27,
+      "permitted_changes": [
+        {
+          "id": "250e3e6dea7a430fb07e71080c20a345",
+          "changed_fields": [
+            "status",
+            "error"
+          ]
+        }
+      ],
+      "other_original_rows_identical": true
+    },
+    "results": {
+      "original_count": 24,
+      "current_count": 26,
+      "permitted_changes": [],
+      "other_original_rows_identical": true
+    },
+    "attempts": {
+      "original_count": 33,
+      "current_count": 39,
+      "permitted_changes": [
+        {
+          "id": "da49fb3eb36c4e8aadee6f34e0757d15",
+          "changed_fields": [
+            "retry_authorization"
+          ]
+        }
+      ],
+      "other_original_rows_identical": true
+    },
+    "goal_contexts": {
+      "original_count": 1,
+      "current_count": 1,
+      "permitted_changes": [],
+      "other_original_rows_identical": true
+    },
+    "goal_run_config": {
+      "original_count": 1,
+      "current_count": 1,
+      "permitted_changes": [],
+      "other_original_rows_identical": true
+    },
+    "literature_actions": {
+      "original_count": 10,
+      "current_count": 10,
+      "permitted_changes": [],
+      "other_original_rows_identical": true
+    },
+    "material_views": {
+      "original_count": 5,
+      "current_count": 5,
+      "permitted_changes": [],
+      "other_original_rows_identical": true
+    },
+    "background_actions": {
+      "original_count": 11,
+      "current_count": 11,
+      "permitted_changes": [],
+      "other_original_rows_identical": true
+    },
+    "execution_facts": {
+      "original_count": 72,
+      "current_count": 90,
+      "permitted_changes": [],
+      "other_original_rows_identical": true
+    },
+    "generation_actions": {
+      "original_count": 2,
+      "current_count": 2,
+      "permitted_changes": [],
+      "other_original_rows_identical": true
+    },
+    "generation_migrations": {
+      "original_count": 1,
+      "current_count": 1,
+      "permitted_changes": [],
+      "other_original_rows_identical": true
+    },
+    "remote_generations": {
+      "original_count": 1,
+      "current_count": 3,
+      "permitted_changes": [],
+      "other_original_rows_identical": true
+    },
+    "candidate_review_actions": {
+      "original_count": 1,
+      "current_count": 2,
+      "permitted_changes": [],
+      "other_original_rows_identical": true
+    }
+  },
+  "candidate_sha256": "ba61dbc62315e7f5ad2cb360df4aa86da625a40df4b3dfc852d6effceb981fd9",
+  "old_attempt_status_error_request_response_usage_preserved": true,
+  "only_original_attempt_change": "retry_authorization added via M15",
+  "historical_P08_uncertain": [
+    {
+      "id": "5ad8cea64b1146c7bf2eb80e194e0798",
+      "status": "uncertain",
+      "usage": {
+        "cost": null,
+        "input_tokens": null,
+        "output_tokens": null,
+        "tool_units": null
+      },
+      "row_sha256": "54d601f181f57f3a2c1affaadfbb97261f2c2bfaf4239e897a06fef2b5db596a"
+    },
+    {
+      "id": "86948ac23ee2477cac992b24f6016796",
+      "status": "uncertain",
+      "usage": {
+        "cost": null,
+        "input_tokens": null,
+        "output_tokens": null,
+        "tool_units": null
+      },
+      "row_sha256": "07f13da28e5018e71cf137d7c46b5f2566f0c5b6fe685753d2074e4462ff664b"
+    }
+  ]
+}

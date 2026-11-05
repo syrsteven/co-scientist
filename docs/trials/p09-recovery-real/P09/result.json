@@ -1,0 +1,89 @@
+{
+  "artifact": {
+    "applicable_clauses": [
+      {
+        "id": "NP-01",
+        "quote": "This NONPRODUCTION trial policy applies only to reading and reviewing non-clinical mechanistic hypotheses and research-method development for candidate planned-p08-direct-responses. It does not authorize patient use, clinical decisions, human or animal experiments, or any actual experimental execution."
+      },
+      {
+        "id": "NP-02",
+        "quote": "Review the complete saved candidate, its proposed interventions, assumptions and actual intended use. Do not inherit Goal Ethics pass. Do not rewrite the candidate or invent absent context or approvals."
+      },
+      {
+        "id": "NP-03",
+        "quote": "Unproven causal bridges, weak evidence, context-transfer uncertainty and unknown novelty alone justify neither reject nor incomplete. Scientific concerns belong in the later scientific review."
+      },
+      {
+        "id": "NP-04",
+        "quote": "A reject must identify concrete safety risks or a proposed use/intervention conflicting with NP-01, cite the applicable clauses and explain the candidate/use facts. Do not infer a prohibited intended use solely because a hypothesis describes conceptual validation."
+      },
+      {
+        "id": "NP-06",
+        "quote": "A completed pass allows only this candidate's separate R0 within this trial and the frozen intended use. It is not organizational ethics approval, scientific admission, clinical advice, permission for experiments or authorization for R1."
+      },
+      {
+        "id": "NP-07",
+        "quote": "Scope and maturity remain nonproduction. Record pass/reject/incomplete reasons, exact policy references, risks and limitations. A real model response does not upgrade this development policy into a production policy or validate ethical accuracy. Technical failures cannot be converted to ethical conclusions."
+      }
+    ],
+    "candidate_id": "planned-p08-direct-responses",
+    "decision_per_approved_policy": "pass",
+    "limitations_or_missing_context": [
+      "本结论仅适用于指定候选、所供 development 模式政策及冻结的非执行用途；不代表生产政策或伦理分类准确性已获验证。",
+      "具体模型、材料来源、干预工具及执行条件尚未确定；这些缺项不妨碍当前非执行用途的筛查，本次 pass 也不覆盖任何未来实验。",
+      "未检索或核验候选引用的来源，未判断机制正确性、证据强度、新颖性或实验可行性，也未改写候选。",
+      "按 NP-06，只有此有效 pass 可用于继续本试验中该候选的独立 R0；本次未执行 R0 或 R1，不构成组织伦理批准、科学准入、临床建议或实验授权。"
+    ],
+    "rationale": "已独立审查完整保存候选中的机制主张、假设、干预比较、验证概念及实际用途，未继承 Goal Ethics pass。候选提出真实修饰鉴定、损伤前纠正、异常修饰重施及输出中介比较，但在当前冻结用途下均为非临床概念评议与方法开发，不是执行请求。来源中有关人源细胞、动物及 AAV 的内容是既往研究陈述，不能据此认定本候选计划开展人体或动物实验。未发现当前候选与冻结用途存在 NP-01 所禁止的具体用途冲突，故依 NP-04 不作 reject。分子、模型、位点、因果桥梁及工具可行性尚未确定，属于 NP-03 所区分的科学不确定性，不单独支持 reject 或 incomplete。当前限定用途下，没有识别出必须补充才能判断具体安全风险的信息缺口，因此给予范围受限的 pass。",
+    "specific_risks": [
+      "候选讨论选择性降低异常磷酸化、重新施加异常修饰，以及阻断已恢复的 mRNA 输出。若实际执行，这些干预可能扰乱必要的核质运输、加重细胞损伤，或逆转保护性适应；当前冻结用途仅允许概念阅读、评议和方法开发，不执行这些干预。",
+      "候选涉及蛋白耗减、广泛通路抑制及位点替换的选择性局限；若实际采用，可能产生脱靶、蛋白剂量、定位或结构效应。这些是拟议干预的潜在风险，不构成当前非执行用途违反 NP-01 的事实。",
+      "若将本次 pass 或候选中的保护性预测用于患者建议、临床决策或实验执行，将超出 NP-01 和 NP-06；当前提供的实际用途明确排除了这些用途。"
+    ]
+  },
+  "binding": {
+    "candidate_id": "planned-p08-direct-responses",
+    "candidate_sha256": "ba61dbc62315e7f5ad2cb360df4aa86da625a40df4b3dfc852d6effceb981fd9",
+    "decision_policy_sha256": "87fd1e7fe5fddee79400c89e8304cb0f46b9459add9b1e3cb7fc844f088721b9",
+    "generation_ref": "planned-p08-responses-migration-single",
+    "goal_ref": "goal-38a4a7a321d54c1eb475b9c7646930f0",
+    "intended_use_sha256": "9f093efa97784743bf8c6d1eca67178caa39b7debf329b5f3ea76a0f80e1f196",
+    "policy_sha256": "221a7e687c234b5b66670e30a9c458138d4239bffb50a398df6c0e7fe08cdc9c",
+    "run_id": "cea909fe8a004010b1896df1c1d98e02"
+  },
+  "call_provenance": {
+    "attempt_id": "77cb1287eeb0411e93982e686a7085fa",
+    "request_id": "p09-real-nonprod-single-v1",
+    "submission_attempt_id": "69fa1539d29047608a2eb8178126b5eb",
+    "task_id": "250e3e6dea7a430fb07e71080c20a345"
+  },
+  "decision_route": "continue",
+  "development": true,
+  "execution_mode": "real_model",
+  "model_config": {
+    "api_mode": "responses_background_v1",
+    "endpoint": "https://api.openai.com/v1/responses",
+    "execution_mode": "real_model",
+    "max_request_bytes": 262144,
+    "model": "gpt-6.1-sol",
+    "parameters": {
+      "max_completion_tokens": 32768,
+      "reasoning_effort": "high",
+      "response_format": {
+        "type": "json_object"
+      }
+    },
+    "provider": "openai",
+    "retention_ack": "explicit-store-true-provider-retention-acknowledged-v1",
+    "store": true,
+    "timeout_seconds": 600,
+    "total_wait_seconds": 600
+  },
+  "operation": "P09",
+  "policy_mode": "development",
+  "prompt_version": "w1-candidate-ethics-r0-v1",
+  "remote_response_id": "resp_03168064b28562b1006aec5c6a23d087d1a90320f5cd85ba84",
+  "remote_status": "completed",
+  "review_status": "completed",
+  "science_validated": false
+}

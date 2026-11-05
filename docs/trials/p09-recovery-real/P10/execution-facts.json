@@ -1,0 +1,58 @@
+[
+  {
+    "id": 83,
+    "task_id": "546f6e1441394119a4fb64bb206b7941",
+    "kind": "nonproduction_trial_post_explicitly_authorized",
+    "detail": "{\"operation\": \"P10\", \"preparation_sha256\": \"1890c42d8fdea5872f01018a7bb84f302a6ce9b5cc3022369f81647af9ce0951\", \"scope\": \"one POST for this task only; nonproduction policy\", \"store_true_acknowledged\": true}",
+    "created_at": "2026-11-05T10:39:22.049853+00:00"
+  },
+  {
+    "id": 84,
+    "task_id": "546f6e1441394119a4fb64bb206b7941",
+    "kind": "remote_submit_requested",
+    "detail": "{}",
+    "created_at": "2026-11-05T10:39:22.100203+00:00"
+  },
+  {
+    "id": 85,
+    "task_id": "546f6e1441394119a4fb64bb206b7941",
+    "kind": "remote_response_saved",
+    "detail": "{\"attempt_id\": \"9abd25b20feb4fe0bc5c83e000e31e97\", \"response_id\": \"resp_0638e667bacc3d37006aec5cdba82887d185e87622e30e4799\", \"status\": \"queued\"}",
+    "created_at": "2026-11-05T10:39:24.272881+00:00"
+  },
+  {
+    "id": 86,
+    "task_id": "546f6e1441394119a4fb64bb206b7941",
+    "kind": "remote_query_requested",
+    "detail": "{}",
+    "created_at": "2026-11-05T10:40:11.351266+00:00"
+  },
+  {
+    "id": 87,
+    "task_id": "546f6e1441394119a4fb64bb206b7941",
+    "kind": "remote_response_saved",
+    "detail": "{\"attempt_id\": \"28077dd60e8245a1bd30bd6d43c03715\", \"response_id\": \"resp_0638e667bacc3d37006aec5cdba82887d185e87622e30e4799\", \"status\": \"in_progress\"}",
+    "created_at": "2026-11-05T10:40:12.366700+00:00"
+  },
+  {
+    "id": 88,
+    "task_id": "546f6e1441394119a4fb64bb206b7941",
+    "kind": "remote_query_requested",
+    "detail": "{}",
+    "created_at": "2026-11-05T10:40:27.576674+00:00"
+  },
+  {
+    "id": 89,
+    "task_id": "546f6e1441394119a4fb64bb206b7941",
+    "kind": "remote_response_saved",
+    "detail": "{\"attempt_id\": \"2e96b20962aa45e0a4d87057360e0340\", \"response_id\": \"resp_0638e667bacc3d37006aec5cdba82887d185e87622e30e4799\", \"status\": \"completed\"}",
+    "created_at": "2026-11-05T10:40:29.276828+00:00"
+  },
+  {
+    "id": 90,
+    "task_id": "546f6e1441394119a4fb64bb206b7941",
+    "kind": "result_applied",
+    "detail": "{}",
+    "created_at": "2026-11-05T10:40:29.282683+00:00"
+  }
+]
