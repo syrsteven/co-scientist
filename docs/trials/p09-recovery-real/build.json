@@ -1,0 +1,7 @@
+{
+  "status": "wheel/sdist and no-deps/no-index external installation succeeded; installed review_trial help includes explicit recovery flags",
+  "artifacts": {
+    "co_scientist_replica-0.2.0.dev0.tar.gz": "6c072a88e3eb7437403c760e6f20474c0a6d6874759292fa851d741c6936c692",
+    "co_scientist_replica-0.2.0.dev0-py3-none-any.whl": "ffae311f477b82274f7b7dbbfaf2fc3843172a4ffa15654f13567e5aaffbf3aa"
+  }
+}

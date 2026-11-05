@@ -1,0 +1,29 @@
+{
+  "merges": [
+    {
+      "number": 17,
+      "head": "baa0240a34276123c9e823435674f94ba3716333",
+      "merge_commit": "468386cdbbf9d25d201d726c1e3084514225def9",
+      "merged": true
+    },
+    {
+      "number": 18,
+      "head": "3a324cea29d9114527e68d7cbe548063513662bb",
+      "merge_commit": "9dfd07e8b690a907fce46479fec2f09a3686a572",
+      "merged": true
+    }
+  ],
+  "main": "9dfd07e8b690a907fce46479fec2f09a3686a572",
+  "main_checks": [
+    {
+      "name": "offline (3.12)",
+      "status": "completed",
+      "conclusion": "success"
+    },
+    {
+      "name": "offline (3.11)",
+      "status": "completed",
+      "conclusion": "success"
+    }
+  ]
+}

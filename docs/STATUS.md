@@ -1,3 +1,26 @@
+# 项目状态 — 原P09显式恢复与真实P10
+
+## PR17/18合并后连续执行（2026-11-05）
+
+PR17固定head `baa0240a34276123c9e823435674f94ba3716333` → merge `468386cdbbf9d25d201d726c1e3084514225def9`。
+PR18固定head `3a324cea29d9114527e68d7cbe548063513662bb` → merge/本轮起点main `9dfd07e8b690a907fce46479fec2f09a3686a572`。
+两项各4项CI成功后合并；仅STATUS冲突，保留两份交付事实，src/tests/scripts与PR18相同。main两项CI也成功后才执行付费恢复。
+独立分支`codex/p09-explicit-recovery`，本轮交付PR不合并；实际执行代码`32abb8f89236ca262a4576d0adea9b506691b1c5`。
+
+| 维度 | 本轮事实 |
+|---|---|
+| 恢复入口 | 限定原P09Task/Attempt，完整请求hash不变；M15显式重复执行/收费/store风险授权、同call_key追加previous_id。原Attempt保持uncertain，只增加retry_authorization；重复命令/崩溃/再次uncertain/已有ID均不再POST，不全局解除旧调用阻断 |
+| 真实P09 | 新增1次恢复POST、2次同ID GET；completed/解析有效/pass。原Task 250e3e6dea7a430fb07e71080c20a345，新Attempt69fa1539d29047608a2eb8178126b5eb关联原da49fb…，原错误/未知usage不变 |
+| 条件P10／M12 | 仅真实P09有效pass及来源核验后组装全部5份原文；1次POST、2次同ID GET，completed/proceed_to_R1，停awaiting_r1。未执行R1或科学准入，无候选修补 |
+| 请求 | 固定Goal/候选/用途/政策/Prompt及gpt-6.1-sol/high/32768/JSON/无temperature/600秒/后台store=true/truncation=disabled不变；P09 31644字节，P10 59369字节，未裁剪 |
+| 用量 | P09 input8611/output1541（reasoning511）/total10152；P10 input15668/output2018（reasoning776）/total17686。完整provider usage保存，每个ID最后累计值计一次，不累加GET；费用及历史unknown仍null。finish_reason未返回，不补stop |
+| 页面 | 明确P08历史调用与当前P09/P10，展示真实结果、development政策、原uncertain及恢复谱系、等待R1。无凭据页面实际刷新2次/服务重启，所有逻辑行及39条Attempt相同，未新增供应商请求；不谎称SQLite文件字节不变 |
+| 检查与保护 | 新增11项恢复测试，全量393通过、0失败/跳过；Ruff/JS/构建/仓库外安装及审阅包验证通过。原真实库字节、候选/来源/历史科学记录及232项工作区改动保持；试跑库只新增授权/恢复/P10事实 |
+| 初审与科学 | Codex初审待独立人工复核；未把科学未知自动拒绝/阻断，但R0未逐项点名原候选ANXA11/SUN1措辞弱化及所有阴性覆盖，原问题保留。science_validated=false；真实执行不使非生产政策变生产，未验证科学准确性/稳定性 |
+
+[恢复入口/命令](P09_EXPLICIT_RECOVERY.md) · [完整真实记录与审阅](trials/p09-recovery-real/README.md) · [ZIP](trials/p09-recovery-real-review.zip) · [SHA256](trials/p09-recovery-real-review.zip.sha256)。
+不执行R1、检索、生成、候选修补或其他模块。无原响应证据时未推测ID或改判旧调用；本轮授权已使用，后续不自动重试。以下历史状态原样保留。
+
 # 项目状态 — Responses正文结束时的socket生命周期修复
 
 ## TUN／代理对照与窄传输修复（2026-11-05）

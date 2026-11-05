@@ -1,0 +1,86 @@
+[
+  {
+    "id": 71,
+    "task_id": "250e3e6dea7a430fb07e71080c20a345",
+    "kind": "nonproduction_trial_post_explicitly_authorized",
+    "detail": "{\"operation\": \"P09\", \"preparation_sha256\": \"1890c42d8fdea5872f01018a7bb84f302a6ce9b5cc3022369f81647af9ce0951\", \"scope\": \"one POST for this task only; nonproduction policy\", \"store_true_acknowledged\": true}",
+    "created_at": "2026-11-05T08:53:14.073080+00:00"
+  },
+  {
+    "id": 72,
+    "task_id": "250e3e6dea7a430fb07e71080c20a345",
+    "kind": "remote_submit_requested",
+    "detail": "{}",
+    "created_at": "2026-11-05T08:53:14.113044+00:00"
+  },
+  {
+    "id": 73,
+    "task_id": "250e3e6dea7a430fb07e71080c20a345",
+    "kind": "p09_single_retry_reserved",
+    "detail": "{\"acknowledgements\": [\"duplicate_execution_charge\", \"prior_execution_unknown\", \"store_true\"], \"additional_post_limit\": 1, \"call_key\": \"responses.submit\", \"original_attempt_id\": \"da49fb3eb36c4e8aadee6f34e0757d15\", \"original_row_sha256_before_authorization\": \"b3e290581ad5480899fa0271b029348404955c367a19d49babb85bfe1185d473\", \"preparation_sha256\": \"1890c42d8fdea5872f01018a7bb84f302a6ce9b5cc3022369f81647af9ce0951\", \"request_sha256\": \"90b0dcdfb22ddb63b9037eb58d2b3899c26919ea60270a5d67c4fe922821b39f\", \"task_id\": \"250e3e6dea7a430fb07e71080c20a345\"}",
+    "created_at": "2026-11-05T10:37:27.616733+00:00"
+  },
+  {
+    "id": 74,
+    "task_id": "250e3e6dea7a430fb07e71080c20a345",
+    "kind": "uncertain_retry_authorized",
+    "detail": "{\"attempt_id\": \"da49fb3eb36c4e8aadee6f34e0757d15\", \"reason\": \"Explicit user authorization: prior P09 may have executed/charged; accept one additional identical POST and duplicate execution/charge risk, store=true. No third submit.\"}",
+    "created_at": "2026-11-05T10:37:27.618473+00:00"
+  },
+  {
+    "id": 75,
+    "task_id": "250e3e6dea7a430fb07e71080c20a345",
+    "kind": "task_retry",
+    "detail": "{\"previous_error\": \"{\\\"message\\\": \\\"Submission outcome uncertain; no saved ID, explicit recovery required\\\", \\\"type\\\": \\\"RemoteExecution\\\"}\", \"reason\": \"Explicit user authorization: prior P09 may have executed/charged; accept one additional identical POST and duplicate execution/charge risk, store=true. No third submit.\"}",
+    "created_at": "2026-11-05T10:37:27.620388+00:00"
+  },
+  {
+    "id": 76,
+    "task_id": "250e3e6dea7a430fb07e71080c20a345",
+    "kind": "remote_submit_requested",
+    "detail": "{}",
+    "created_at": "2026-11-05T10:37:27.660815+00:00"
+  },
+  {
+    "id": 77,
+    "task_id": "250e3e6dea7a430fb07e71080c20a345",
+    "kind": "remote_response_saved",
+    "detail": "{\"attempt_id\": \"69fa1539d29047608a2eb8178126b5eb\", \"response_id\": \"resp_03168064b28562b1006aec5c6a23d087d1a90320f5cd85ba84\", \"status\": \"queued\"}",
+    "created_at": "2026-11-05T10:37:30.749843+00:00"
+  },
+  {
+    "id": 78,
+    "task_id": "250e3e6dea7a430fb07e71080c20a345",
+    "kind": "remote_query_requested",
+    "detail": "{}",
+    "created_at": "2026-11-05T10:37:56.854977+00:00"
+  },
+  {
+    "id": 79,
+    "task_id": "250e3e6dea7a430fb07e71080c20a345",
+    "kind": "remote_response_saved",
+    "detail": "{\"attempt_id\": \"5783d11a6e5345f39f7859f13bd8cd22\", \"response_id\": \"resp_03168064b28562b1006aec5c6a23d087d1a90320f5cd85ba84\", \"status\": \"in_progress\"}",
+    "created_at": "2026-11-05T10:37:57.836487+00:00"
+  },
+  {
+    "id": 80,
+    "task_id": "250e3e6dea7a430fb07e71080c20a345",
+    "kind": "remote_query_requested",
+    "detail": "{}",
+    "created_at": "2026-11-05T10:38:13.205426+00:00"
+  },
+  {
+    "id": 81,
+    "task_id": "250e3e6dea7a430fb07e71080c20a345",
+    "kind": "remote_response_saved",
+    "detail": "{\"attempt_id\": \"77cb1287eeb0411e93982e686a7085fa\", \"response_id\": \"resp_03168064b28562b1006aec5c6a23d087d1a90320f5cd85ba84\", \"status\": \"completed\"}",
+    "created_at": "2026-11-05T10:38:14.418022+00:00"
+  },
+  {
+    "id": 82,
+    "task_id": "250e3e6dea7a430fb07e71080c20a345",
+    "kind": "result_applied",
+    "detail": "{}",
+    "created_at": "2026-11-05T10:38:14.425360+00:00"
+  }
+]

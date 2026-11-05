@@ -1,0 +1,15 @@
+{
+  "all_logical_rows_before_after_identical": true,
+  "attempts_before": 39,
+  "attempts_after": 39,
+  "no_new_provider_requests": true,
+  "page_credentials_configured": false,
+  "page_paid_calls_authorized": false,
+  "browser_reload_count": 2,
+  "server_restart_verified": true,
+  "db_sha256_before": "dda66031df52df07aff4212d28712ad107b7adbf8579c00fb9da7cb52c3784e7",
+  "db_sha256_after": "3da6812c150d38c712952ed1148c4a8f740b22a96886a69cc1bb296a5db70874",
+  "binary_hash_equal": false,
+  "byte_hash_note": "Server initialization may change SQLite file metadata; logical rows and all M15 facts unchanged",
+  "science_validated": false
+}

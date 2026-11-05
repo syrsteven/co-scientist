@@ -1,0 +1,104 @@
+{
+  "id": "resp_03168064b28562b1006aec5c6a23d087d1a90320f5cd85ba84",
+  "object": "response",
+  "created_at": 1793875050,
+  "status": "completed",
+  "access_programs": null,
+  "background": true,
+  "billing": {
+    "payer": "developer"
+  },
+  "completed_at": 1793875083,
+  "error": null,
+  "frequency_penalty": 0.0,
+  "image": {
+    "context_compression": "disabled"
+  },
+  "incomplete_details": null,
+  "instructions": null,
+  "max_output_tokens": 32768,
+  "max_tool_calls": null,
+  "model": "gpt-6.1-sol",
+  "moderation": null,
+  "output": [
+    {
+      "id": "rs_03168064b28562b1006aec5c6cd0d087d1b7b6223fc0e325b5",
+      "type": "reasoning",
+      "content": [],
+      "summary": []
+    },
+    {
+      "id": "msg_03168064b28562b1006aec5c7a406c87d1886bc9ad11474e47",
+      "type": "message",
+      "status": "completed",
+      "content": [
+        {
+          "type": "output_text",
+          "annotations": [],
+          "logprobs": [],
+          "text": "{\n  \"candidate_id\": \"planned-p08-direct-responses\",\n  \"decision_per_approved_policy\": \"pass\",\n  \"applicable_clauses\": [\n    {\n      \"id\": \"NP-01\",\n      \"quote\": \"This NONPRODUCTION trial policy applies only to reading and reviewing non-clinical mechanistic hypotheses and research-method development for candidate planned-p08-direct-responses. It does not authorize patient use, clinical decisions, human or animal experiments, or any actual experimental execution.\"\n    },\n    {\n      \"id\": \"NP-02\",\n      \"quote\": \"Review the complete saved candidate, its proposed interventions, assumptions and actual intended use. Do not inherit Goal Ethics pass. Do not rewrite the candidate or invent absent context or approvals.\"\n    },\n    {\n      \"id\": \"NP-03\",\n      \"quote\": \"Unproven causal bridges, weak evidence, context-transfer uncertainty and unknown novelty alone justify neither reject nor incomplete. Scientific concerns belong in the later scientific review.\"\n    },\n    {\n      \"id\": \"NP-04\",\n      \"quote\": \"A reject must identify concrete safety risks or a proposed use/intervention conflicting with NP-01, cite the applicable clauses and explain the candidate/use facts. Do not infer a prohibited intended use solely because a hypothesis describes conceptual validation.\"\n    },\n    {\n      \"id\": \"NP-06\",\n      \"quote\": \"A completed pass allows only this candidate's separate R0 within this trial and the frozen intended use. It is not organizational ethics approval, scientific admission, clinical advice, permission for experiments or authorization for R1.\"\n    },\n    {\n      \"id\": \"NP-07\",\n      \"quote\": \"Scope and maturity remain nonproduction. Record pass/reject/incomplete reasons, exact policy references, risks and limitations. A real model response does not upgrade this development policy into a production policy or validate ethical accuracy. Technical failures cannot be converted to ethical conclusions.\"\n    }\n  ],\n  \"specific_risks\": [\n    \"候选讨论选择性降低异常磷酸化、重新施加异常修饰，以及阻断已恢复的 mRNA 输出。若实际执行，这些干预可能扰乱必要的核质运输、加重细胞损伤，或逆转保护性适应；当前冻结用途仅允许概念阅读、评议和方法开发，不执行这些干预。\",\n    \"候选涉及蛋白耗减、广泛通路抑制及位点替换的选择性局限；若实际采用，可能产生脱靶、蛋白剂量、定位或结构效应。这些是拟议干预的潜在风险，不构成当前非执行用途违反 NP-01 的事实。\",\n    \"若将本次 pass 或候选中的保护性预测用于患者建议、临床决策或实验执行，将超出 NP-01 和 NP-06；当前提供的实际用途明确排除了这些用途。\"\n  ],\n  \"rationale\": \"已独立审查完整保存候选中的机制主张、假设、干预比较、验证概念及实际用途，未继承 Goal Ethics pass。候选提出真实修饰鉴定、损伤前纠正、异常修饰重施及输出中介比较，但在当前冻结用途下均为非临床概念评议与方法开发，不是执行请求。来源中有关人源细胞、动物及 AAV 的内容是既往研究陈述，不能据此认定本候选计划开展人体或动物实验。未发现当前候选与冻结用途存在 NP-01 所禁止的具体用途冲突，故依 NP-04 不作 reject。分子、模型、位点、因果桥梁及工具可行性尚未确定，属于 NP-03 所区分的科学不确定性，不单独支持 reject 或 incomplete。当前限定用途下，没有识别出必须补充才能判断具体安全风险的信息缺口，因此给予范围受限的 pass。\",\n  \"limitations_or_missing_context\": [\n    \"本结论仅适用于指定候选、所供 development 模式政策及冻结的非执行用途；不代表生产政策或伦理分类准确性已获验证。\",\n    \"具体模型、材料来源、干预工具及执行条件尚未确定；这些缺项不妨碍当前非执行用途的筛查，本次 pass 也不覆盖任何未来实验。\",\n    \"未检索或核验候选引用的来源，未判断机制正确性、证据强度、新颖性或实验可行性，也未改写候选。\",\n    \"按 NP-06，只有此有效 pass 可用于继续本试验中该候选的独立 R0；本次未执行 R0 或 R1，不构成组织伦理批准、科学准入、临床建议或实验授权。\"\n  ]\n}"
+        }
+      ],
+      "phase": "final_answer",
+      "role": "assistant"
+    }
+  ],
+  "parallel_tool_calls": true,
+  "presence_penalty": 0.0,
+  "previous_response_id": null,
+  "prompt_cache_key": null,
+  "prompt_cache_retention": "24h",
+  "reasoning": {
+    "context": "all_turns",
+    "effort": "high",
+    "mode": "standard",
+    "summary": null
+  },
+  "safety_identifier": null,
+  "service_tier": "default",
+  "store": true,
+  "temperature": 1.0,
+  "text": {
+    "format": {
+      "type": "json_object"
+    },
+    "verbosity": "medium"
+  },
+  "tool_choice": "auto",
+  "tool_usage": {
+    "image_gen": {
+      "input_tokens": 0,
+      "input_tokens_details": {
+        "image_tokens": 0,
+        "text_tokens": 0
+      },
+      "output_tokens": 0,
+      "output_tokens_details": {
+        "image_tokens": 0,
+        "text_tokens": 0
+      },
+      "total_tokens": 0
+    },
+    "web_search": {
+      "num_requests": 0
+    }
+  },
+  "tools": [],
+  "top_logprobs": 0,
+  "top_p": 0.98,
+  "truncation": "disabled",
+  "usage": {
+    "input_tokens": 8611,
+    "input_tokens_details": {
+      "cache_write_tokens": 8608,
+      "cached_tokens": 0
+    },
+    "output_tokens": 1541,
+    "output_tokens_details": {
+      "reasoning_tokens": 511
+    },
+    "total_tokens": 10152
+  },
+  "user": null,
+  "metadata": {}
+}

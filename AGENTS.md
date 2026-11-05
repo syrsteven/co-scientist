@@ -81,6 +81,9 @@
   system proxies. Do not set timeouts on a released fd after Content-Length EOF;
   keep deadline/truncation checks. Never resolve or retry historical uncertain calls
   merely because a local transport defect was fixed.
+  One specifically authorized P09 recovery: docs/P09_EXPLICIT_RECOVERY.md.
+  It appends one same-Task/identical-request M15 Attempt only; old uncertain stays
+  unknown. Reservation never authorizes P08/P10 retries or another task.
 - Record actual requests, responses/errors, retry lineage and available usage;
   unknown consumption stays unknown. Replay saved success locally. Applying one
   result and creating its successor must be atomic and idempotent. Ambiguous
