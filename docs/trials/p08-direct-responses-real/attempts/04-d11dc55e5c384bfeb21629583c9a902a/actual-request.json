@@ -1,0 +1,6 @@
+{
+  "endpoint": "https://api.openai.com/v1/responses/resp_0880c479f87ca5bf006aebe66dbbe887d297c8a8e4104c3708",
+  "method": "GET",
+  "timeout_seconds": 600,
+  "total_wait_seconds": 600
+}

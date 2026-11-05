@@ -1,0 +1,26 @@
+{
+  "task": {
+    "id": "175a05d2d2aa4830a6e1bd974907e0dd",
+    "run_id": "cea909fe8a004010b1896df1c1d98e02",
+    "step": 24,
+    "module": "generation.P08",
+    "input": "{\"brief\": {\"background\": \"采用既有 ALS Goal 的开发者转述，非原文逐字引用。\", \"hard_constraints\": [\"保留核孔蛋白磷酸化问题\", \"不预选具体分子或实验模型\"], \"intended_use\": \"非临床文献检索开发验证\", \"materials\": [], \"preferences\": [], \"question\": \"针对核孔复合体中某核孔蛋白的磷酸化，提出解释导致 ALS 的关键因素或过程的新假说；详细说明作用机制，并给出可行的检验实验。\"}, \"brief_revision_id\": \"997d55886d634f289612ba79e1755f16\", \"goal_context_ref\": \"goal-38a4a7a321d54c1eb475b9c7646930f0\", \"policy_ref\": \"POLICY-W1-DEMO-PROPOSED@w0-t4-dev-1\", \"previous_result\": null, \"run_id\": \"cea909fe8a004010b1896df1c1d98e02\", \"task_id\": \"175a05d2d2aa4830a6e1bd974907e0dd\"}",
+    "status": "waiting_remote",
+    "error": null
+  },
+  "remote": {
+    "task_id": "175a05d2d2aa4830a6e1bd974907e0dd",
+    "response_id": "resp_0880c479f87ca5bf006aebe66dbbe887d297c8a8e4104c3708",
+    "status": "queued",
+    "submission_attempt_id": "b14e5fbc561a40d2869b0241126feb2d",
+    "latest_attempt_id": "b14e5fbc561a40d2869b0241126feb2d",
+    "submitted_at": "2026-11-05T02:14:06.760436+00:00",
+    "observed_at": "2026-11-05T02:14:06.760451+00:00",
+    "latest_query": null
+  },
+  "post_attempts": 1,
+  "query_attempts": 0,
+  "candidate_saved": false,
+  "at": "2026-11-05T02:14:06.805385+00:00",
+  "operator_elapsed_seconds": 2.958140771021135
+}

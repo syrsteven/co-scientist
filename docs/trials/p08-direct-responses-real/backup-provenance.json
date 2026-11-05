@@ -1,0 +1,6 @@
+{
+  "source": "/private/tmp/co-scientist-p04-v2/runs/p04-v2-prepared.sqlite",
+  "backup": "/private/tmp/co-scientist-p08-responses-real-backups/pre-migration-20261105T021234Z.sqlite",
+  "source_sha256": "4ffef4c2e8f257b7ff0e1a8c10332c09bef68176856837e095104c7cc4fc608f",
+  "backup_sha256": "cfcefa004e25ac5e2a12e78b73515fba8fcfbc6dc0a77a778726c017197ad755"
+}

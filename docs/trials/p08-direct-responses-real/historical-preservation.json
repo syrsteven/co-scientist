@@ -1,0 +1,62 @@
+{
+  "projects": {
+    "all_original_rows_unchanged": true,
+    "original_count": 1,
+    "current_count": 1
+  },
+  "brief_revisions": {
+    "all_original_rows_unchanged": true,
+    "original_count": 1,
+    "current_count": 1
+  },
+  "tasks": {
+    "all_original_rows_unchanged": true,
+    "original_count": 24,
+    "current_count": 25
+  },
+  "results": {
+    "all_original_rows_unchanged": true,
+    "original_count": 23,
+    "current_count": 24
+  },
+  "attempts": {
+    "all_original_rows_unchanged": true,
+    "original_count": 27,
+    "current_count": 32
+  },
+  "goal_contexts": {
+    "all_original_rows_unchanged": true,
+    "original_count": 1,
+    "current_count": 1
+  },
+  "goal_run_config": {
+    "all_original_rows_unchanged": true,
+    "original_count": 1,
+    "current_count": 1
+  },
+  "literature_actions": {
+    "all_original_rows_unchanged": true,
+    "original_count": 10,
+    "current_count": 10
+  },
+  "material_views": {
+    "all_original_rows_unchanged": true,
+    "original_count": 5,
+    "current_count": 5
+  },
+  "background_actions": {
+    "all_original_rows_unchanged": true,
+    "original_count": 11,
+    "current_count": 11
+  },
+  "generation_actions": {
+    "all_original_rows_unchanged": true,
+    "original_count": 1,
+    "current_count": 2
+  },
+  "execution_facts": {
+    "all_original_rows_unchanged": true,
+    "original_count": 56,
+    "current_count": 69
+  }
+}

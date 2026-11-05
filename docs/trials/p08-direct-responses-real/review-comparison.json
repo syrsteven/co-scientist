@@ -1,0 +1,294 @@
+{
+  "reviewer": "Codex 初审，待独立人工复核",
+  "review_scope": "Only actual frozen views, original cards/packet/readiness and saved P08 output; no new scientific retrieval or paid calls",
+  "science_validated": false,
+  "rows": [
+    {
+      "id": "R01",
+      "source_view_ref": null,
+      "source_ref": null,
+      "source_excerpt": "固定Goal两项约束及ready.allowed_specificity",
+      "view_character_range": null,
+      "candidate_json_pointer": "/scoped_claim",
+      "assessment": "符合当前工程绑定与条件性范围，非科学通过",
+      "codex_initial_review": "保留核孔蛋白磷酸化、不预选分子或模型；以若实测发现为前提，没有把TPR、SUN1或来源模型自动变成用户约束。Goal与Ethics仍为开发测试结果。",
+      "independent_human_review": "pending"
+    },
+    {
+      "id": "R02",
+      "source_view_ref": null,
+      "source_ref": null,
+      "source_excerpt": "seed.question与readiness.premise_gaps/hypothetical_unknowns",
+      "view_character_range": null,
+      "candidate_json_pointer": "/proposed_new_links",
+      "assessment": "新因果桥明确，待科学验证",
+      "codex_initial_review": "持续升高→成熟mRNP核孔释放延迟→输出降低→损伤是本次新猜想，非任何已读来源结论；方向/对象选择仍需后续发现和独立预注册，不能将未找到异常当整个ALS机制不存在。",
+      "independent_human_review": "pending"
+    },
+    {
+      "id": "R03",
+      "source_view_ref": "75bf96a0e25b4e6aa10e54f6781a5382",
+      "source_ref": "epmc:PPR:PPR1217875",
+      "source_excerpt": "ANXA11 aggregation was associated with nuclear envelope abnormalities, altered nucleoporin distribution, impaired mRNA export, and progressive neuronal toxicity in iPSC-derived neurons.",
+      "view_character_range": [
+        1226,
+        1411
+      ],
+      "candidate_json_pointer": "/evidence_anchors/0",
+      "assessment": "主要忠实保留关联与终点",
+      "codex_initial_review": "未把共现排成已证明因果链；各终点是否同批细胞/同时间窗当前视图未报告。",
+      "independent_human_review": "pending"
+    },
+    {
+      "id": "R04",
+      "source_view_ref": "75bf96a0e25b4e6aa10e54f6781a5382",
+      "source_ref": "epmc:PPR:PPR1217875",
+      "source_excerpt": "ANXA11 fibrils supports homotypic seeding and propagate within SH-SY5Y cells and iPSC-derived neurons.",
+      "view_character_range": [
+        1921,
+        2023
+      ],
+      "candidate_json_pointer": "/nearest_prior_work_scope",
+      "assessment": "互补情境分别保留",
+      "codex_initial_review": "SH-SY5Y与人iPSC神经元播种/传播分开；没有把神经元核孔/毒性终点直接赋给SH-SY5Y。未独立核验原始实验。",
+      "independent_human_review": "pending"
+    },
+    {
+      "id": "R05",
+      "source_view_ref": "75bf96a0e25b4e6aa10e54f6781a5382",
+      "source_ref": "epmc:PPR:PPR1217875",
+      "source_excerpt": "ANXA11 fibrils induces pathological conversion of TDP-43, including hyperphosphorylation, accumulation in detergent-insoluble fractions, and formation of cytoplasmic aggregates.",
+      "view_character_range": [
+        839,
+        1016
+      ],
+      "candidate_json_pointer": "/evidence_anchors/2",
+      "assessment": "问题：作者诱导措辞被弱化",
+      "codex_initial_review": "候选写作者报告ANXA11纤维相关的TDP-43表型，未忠实重述原文induces；作者报告的诱导关系应保留，独立因果证据不足另列。当前输出不改；TDP-43与核孔蛋白对象区分正确。",
+      "independent_human_review": "pending"
+    },
+    {
+      "id": "R06",
+      "source_view_ref": "75bf96a0e25b4e6aa10e54f6781a5382",
+      "source_ref": "epmc:PPR:PPR1217875",
+      "source_excerpt": "aggregation-dependent enrichment of nuclear pore complex and nucleocytoplasmic transport factors in the ANXA11 aggregate-proximal proteome.",
+      "view_character_range": [
+        1072,
+        1211
+      ],
+      "candidate_json_pointer": "/evidence_anchors/1",
+      "assessment": "终点边界保留",
+      "codex_initial_review": "邻近富集没有被升级为直接结合、隔离、功能丧失或磷酸化证据。",
+      "independent_human_review": "pending"
+    },
+    {
+      "id": "R07",
+      "source_view_ref": "ef0d631b44e14b2abf8f10443c55d5c2",
+      "source_ref": "epmc:MED:41691309",
+      "source_excerpt": "Mutant SOD1 also lowers the abundance of FG-Nups at the nuclear pore without altering nuclear circularity.",
+      "view_character_range": [
+        850,
+        956
+      ],
+      "candidate_json_pointer": "/evidence_anchors/3",
+      "assessment": "阴性与条件边界保留",
+      "codex_initial_review": "同时保留FG-Nups丰度降低和核圆度不变，未把圆度不变推广为所有核形态正常；未把丰度当磷酸化。",
+      "independent_human_review": "pending"
+    },
+    {
+      "id": "R08",
+      "source_view_ref": "ef0d631b44e14b2abf8f10443c55d5c2",
+      "source_ref": "epmc:MED:41691309",
+      "source_excerpt": "AAV-mediated reduction of mutant SOD1 in transgenic mice restored nuclear XPO1 localization, underscoring the causal role of mutant SOD1 in NCT abnormalities.",
+      "view_character_range": [
+        1147,
+        1305
+      ],
+      "candidate_json_pointer": "/evidence_anchors/4",
+      "assessment": "测得终点保留；作者解释在摘要中省略",
+      "codex_initial_review": "候选保留转基因小鼠/SOD1降低/XPO1定位恢复，不扩张为存活或mRNA输出恢复。作者的causal role解释未被单独呈现；不能把该省略误当作者仅报告无方向共现。",
+      "independent_human_review": "pending"
+    },
+    {
+      "id": "R09",
+      "source_view_ref": "af80cf113c514689a5b9e25ef9f0b193",
+      "source_ref": "epmc:MED:42031697",
+      "source_excerpt": "TPR is phosphorylated at Ser2155 following EGFR activation via the canonical RAS-RAF-MEK-ERK MAPK cascade",
+      "view_character_range": [
+        886,
+        991
+      ],
+      "candidate_json_pointer": "/evidence_anchors/5",
+      "assessment": "来源报告位点可定位，不是编造候选位点",
+      "codex_initial_review": "Ser2155确实出现在所供TPR摘要；候选没有选它作为ALS机制的已知位点，也没有指定直接催化激酶。抗体检测不等同独立验证。",
+      "independent_human_review": "pending"
+    },
+    {
+      "id": "R10",
+      "source_view_ref": "af80cf113c514689a5b9e25ef9f0b193",
+      "source_ref": "epmc:MED:42031697",
+      "source_excerpt": "heterogeneous phosphorylation patterns in triple-negative breast cancer",
+      "view_character_range": [
+        1734,
+        1805
+      ],
+      "candidate_json_pointer": "/nearest_prior_work_scope",
+      "assessment": "异质性与体系差异保留",
+      "codex_initial_review": "未写成所有肿瘤一致升高；EGF刺激细胞、脾组织、CD3/CD28脾细胞、肿瘤背景分别描述；均未建立ALS输出机制。",
+      "independent_human_review": "pending"
+    },
+    {
+      "id": "R11",
+      "source_view_ref": "692ca660eef14f86a19318ca2e08d85b",
+      "source_ref": "epmc:MED:28831067",
+      "source_excerpt": "a protein kinase C (PKC) which phosphorylates serine 113 (S113) in the N-terminal domain leading to reduced interaction.",
+      "view_character_range": [
+        398,
+        518
+      ],
+      "candidate_json_pointer": "/evidence_anchors/6",
+      "assessment": "问题：作者leading to被弱化为伴随",
+      "codex_initial_review": "候选准确保留SUN1/S113和不是核孔蛋白的边界，但将原文导致相互作用降低概括为伴随；应在来源报告层忠实保留作者关系，另列证据充分性。不可据此认定作者仅主张相关。",
+      "independent_human_review": "pending"
+    },
+    {
+      "id": "R12",
+      "source_view_ref": "692ca660eef14f86a19318ca2e08d85b",
+      "source_ref": "epmc:MED:28831067",
+      "source_excerpt": "GFP-SUN1 carrying a S113A mutation was less efficient in restoring mRNA export after SUN1 knockdown as compared to the wild type protein.",
+      "view_character_range": [
+        614,
+        751
+      ],
+      "candidate_json_pointer": "/evidence_anchors/7",
+      "assessment": "较弱恢复未误写无效",
+      "codex_initial_review": "less efficient为相对恢复效率低，不是完全不能恢复；定量幅度/表达匹配当前视图未报告。",
+      "independent_human_review": "pending"
+    },
+    {
+      "id": "R13",
+      "source_view_ref": "692ca660eef14f86a19318ca2e08d85b",
+      "source_ref": "epmc:MED:28831067",
+      "source_excerpt": "By contrast, GFP-SUN1-S113D resembling the phosphorylated state allowed very efficient export of poly(A)+RNA.",
+      "view_character_range": [
+        752,
+        861
+      ],
+      "candidate_json_pointer": "/evidence_anchors/8",
+      "assessment": "保留模拟与原始修饰差异、配对范围",
+      "codex_initial_review": "不把S113D当真实磷酸化；单句未单独说明敲低背景或与PKC结合读数是否同条件。原文By contrast连接未充分突出，独立人工需防止过度拆散作者原有比较关系。",
+      "independent_human_review": "pending"
+    },
+    {
+      "id": "R14",
+      "source_view_ref": "692ca660eef14f86a19318ca2e08d85b",
+      "source_ref": "epmc:MED:28831067",
+      "source_excerpt": "expression of a GFP tagged SUN-domain deficient SUN1, which no longer can interact with Nesprin-2, did not affect mRNA export.",
+      "view_character_range": [
+        1062,
+        1188
+      ],
+      "candidate_json_pointer": "/nearest_prior_work_scope",
+      "assessment": "阴性构建体边界保留",
+      "codex_initial_review": "未把该变体输出无变化解释为恢复Nesprin-2敲低或整个LINC无作用。",
+      "independent_human_review": "pending"
+    },
+    {
+      "id": "R15",
+      "source_view_ref": "876e76bb00f84e928a89cbea813dacad",
+      "source_ref": "epmc:MED:35112738",
+      "source_excerpt": "We examined reporters containing the different TDP‐43 variants (Wt, 12D, 12A) and found that their import rates were indistinguishable",
+      "view_character_range": [
+        1336,
+        1470
+      ],
+      "candidate_json_pointer": "/evidence_anchors/9",
+      "assessment": "无差异、融合报告与对象边界保留",
+      "codex_initial_review": "未把无可辨差异当统计等效；50分钟来源于同视图图注。没有把TDP-43磷酸模拟/蛋白核输入当核孔蛋白真实磷酸化/mRNA输出。模型未在该段擅补未明确细胞体系。",
+      "independent_human_review": "pending"
+    },
+    {
+      "id": "R16",
+      "source_view_ref": "876e76bb00f84e928a89cbea813dacad",
+      "source_ref": "epmc:MED:35112738",
+      "source_excerpt": "splicing of\nSKAR\nand\nBim\nexon 3 were fully restored by all three TDP‐43 variants",
+      "view_character_range": [
+        6694,
+        6774
+      ],
+      "candidate_json_pointer": "/evidence_anchors/10",
+      "assessment": "阴性结果限于两个靶标及救援条件",
+      "codex_initial_review": "HeLa耗减后重表达与U2OS稳定诱导分别描述；未将两个靶标推广为所有RNA功能，未把另一实验输入动力学赋给U2OS。",
+      "independent_human_review": "pending"
+    },
+    {
+      "id": "R17",
+      "source_view_ref": "876e76bb00f84e928a89cbea813dacad",
+      "source_ref": "epmc:MED:35112738",
+      "source_excerpt": "effect on other RNA targets/RNA processing events or intracellular transport in other cell types cannot be excluded",
+      "view_character_range": [
+        7304,
+        7419
+      ],
+      "candidate_json_pointer": "/limitations",
+      "assessment": "跨体系和未读范围边界保留",
+      "codex_initial_review": "两项TDP-43结果不能直接反驳ANXA11聚集相关观察；候选未称两篇直接互相反驳。",
+      "independent_human_review": "pending"
+    },
+    {
+      "id": "R18",
+      "source_view_ref": null,
+      "source_ref": null,
+      "source_excerpt": "5份原文视图与39张原始卡片；摘要/局部正文及查询范围",
+      "view_character_range": null,
+      "candidate_json_pointer": "/limitations",
+      "assessment": "访问范围及证据单位保留",
+      "codex_initial_review": "4份摘要表示+1份7600字符Results片段，不是5篇全文；没有访问图像或补充文件。5个source_refs并不等于5项相互独立复现；多卡/摘要重述/同研究多条件不可累加为独立证据。",
+      "independent_human_review": "pending"
+    },
+    {
+      "id": "R19",
+      "source_view_ref": null,
+      "source_ref": null,
+      "source_excerpt": "查询首页与精确ID查询的已保存事实",
+      "view_character_range": null,
+      "candidate_json_pointer": "/nearest_prior_work_scope",
+      "assessment": "没有全球缺失或新颖性断言",
+      "codex_initial_review": "三条主题查询各只首五项且有下一页，精确ID查询不能冒充覆盖；未读命中不是阴性研究。来源版本未报告仅指实际视图元数据。",
+      "independent_human_review": "pending"
+    },
+    {
+      "id": "R20",
+      "source_view_ref": null,
+      "source_ref": null,
+      "source_excerpt": "候选新猜想与区分性预测",
+      "view_character_range": null,
+      "candidate_json_pointer": "/predictions",
+      "assessment": "可检验方向明确，操作可行性未验证",
+      "codex_initial_review": "时序、选择性纠正/重施异常修饰、到达与释放分段、输出—损伤中介有对应竞争解释；但尚无具体对象/选择性工具/可分辨mRNP释放的测量，不能宣称可直接实施。专家应评估能否区分释放延迟和招募/成熟障碍。",
+      "independent_human_review": "pending"
+    },
+    {
+      "id": "R21",
+      "source_view_ref": null,
+      "source_ref": null,
+      "source_excerpt": "预先定义有效干预、测量精度与有意义效应边界",
+      "view_character_range": null,
+      "candidate_json_pointer": "/falsification_conditions",
+      "assessment": "避免统计不显著即证伪",
+      "codex_initial_review": "明确要求靶向有效、适当时间窗、结果区间排除有意义效应，且将前提不成立限于选定情境；实际效应边界/功效与因果识别尚未设计或验证。",
+      "independent_human_review": "pending"
+    },
+    {
+      "id": "R22",
+      "source_view_ref": null,
+      "source_ref": null,
+      "source_excerpt": "原始请求、解析结果及候选身份",
+      "view_character_range": null,
+      "candidate_json_pointer": "/candidate_id",
+      "assessment": "契约/引用/绑定通过，科学未知",
+      "codex_initial_review": "source_report/author_interpretation/new_conjecture字段清楚，结构通过不保证措辞忠实或科学正确；没有执行Candidate Ethics/R0，不作准入判断或方法优劣比较。",
+      "independent_human_review": "pending"
+    }
+  ]
+}

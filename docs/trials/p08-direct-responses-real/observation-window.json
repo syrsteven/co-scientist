@@ -1,0 +1,8 @@
+{
+  "started_at": "2026-11-05T02:14:03.845585+00:00",
+  "started_epoch": 1793844843.84559,
+  "queries": 4,
+  "last_query_end_epoch": 1793845011.4495318,
+  "stopped": true,
+  "stop_reason": "terminal"
+}

@@ -1,0 +1,39 @@
+{
+  "actual_request": {
+    "endpoint": "https://api.openai.com/v1/responses/resp_0880c479f87ca5bf006aebe66dbbe887d297c8a8e4104c3708",
+    "method": "GET",
+    "timeout_seconds": 600,
+    "total_wait_seconds": 600
+  },
+  "binding": {
+    "candidate_id": "planned-p08-direct-responses",
+    "goal_ref": "goal-38a4a7a321d54c1eb475b9c7646930f0",
+    "mode": "DIRECT",
+    "packet_ref": "directed-seed-p05-packet-single",
+    "readiness_ref": "directed-seed-p07-readiness-single",
+    "run_id": "cea909fe8a004010b1896df1c1d98e02",
+    "seed_id": "seed-f87361b21b4f44609dedfa2ac9afc7bc-0"
+  },
+  "model_config": {
+    "api_mode": "responses_background_v1",
+    "endpoint": "https://api.openai.com/v1/responses",
+    "execution_mode": "real_model",
+    "max_request_bytes": 262144,
+    "model": "gpt-6.1-sol",
+    "parameters": {
+      "max_completion_tokens": 32768,
+      "reasoning_effort": "high",
+      "response_format": {
+        "type": "json_object"
+      }
+    },
+    "provider": "openai",
+    "retention_ack": "explicit-store-true-provider-retention-acknowledged-v1",
+    "store": true,
+    "timeout_seconds": 600,
+    "total_wait_seconds": 600
+  },
+  "operation": "P08.remote_query",
+  "prompt_version": "w1-p08-single-v1",
+  "response_id": "resp_0880c479f87ca5bf006aebe66dbbe887d297c8a8e4104c3708"
+}

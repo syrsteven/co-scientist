@@ -1,0 +1,104 @@
+P08 · SINGLE CALL
+从固定 ready seed 生成一个候选
+
+真实适配器配置 · 仅显式且已授权操作才发送；科学未验证。 Goal Ethics 为开发测试结果，不代表真实伦理审查。
+
+当前 Prompt：w1-p08-single-v1；Unresolved external call requires explicit recovery before generation
+
+已完成 ready（固定背景包）
+seed-f87361b21b4f44609dedfa2ac9afc7bc-0 · directed-seed-p07-readiness-single · 在不预选具体核孔蛋白或实验模型的前提下，若检测到核孔蛋白磷酸化变化，能否通过时序比较及针对该修饰的选择性干预，区分其参与 mRNA 输出障碍、属于细胞损伤后的反应，或与运输障碍和损伤并行变化？
+
+固定背景包：directed-seed-p05-packet-single；允许具体程度：与 requested_specificity 一致：可准备提出不预选具体核孔蛋白或模型、明确标注未知关系的条件性探索机制及检验思路，并保留实际锚点、情境差异、竞争解释和检索范围。不得把未知修饰或因果链写成事实，不得据当前阅读给出未经核实的实验参数、可行性保证或新颖性结论。本次在背景判断处停止，不进入生成。
+
+单次生成方式
+DIRECT · 单次直接生成
+ASSUMPTION_STRUCTURED · 公开科学假设清单
+调用方候选身份（修改需新身份）
+显式提交并生成一个候选
+
+每次仅一次生成；没有多轮辩论，也未认定任一方式更优。刷新只读取，不自动生成或重发。新候选待 Candidate Ethics/R0，非准入或科学验收。
+
+planned-p08-direct
+
+候选身份：planned-p08-direct · 方式：DIRECT
+
+调用状态：发送不确定，已停止；不自动重发 · 结果未完成
+
+执行标识：real_model · 固定Prompt：w1-p08-single-v1
+
+seed：seed-f87361b21b4f44609dedfa2ac9afc7bc-0 · 背景包：directed-seed-p05-packet-single · readiness：directed-seed-p07-readiness-single
+
+没有已保存的远端任务 ID；提交结果不确定，不能作为正在远端执行显示。
+
+技术状态：Unresolved Attempt 86948ac23ee2477cac992b24f6016796
+
+Attempt 5ad8cea64b1146c7bf2eb80e194e0798 · uncertain · 用量：{"cost": null, "input_tokens": null, "output_tokens": null, "tool_units": null}（null为未知）
+
+查看保存的实际请求 / 原始响应
+
+Attempt 86948ac23ee2477cac992b24f6016796 · uncertain · 用量：{"cost": null, "input_tokens": null, "output_tokens": null, "tool_units": null}（null为未知）
+
+查看保存的实际请求 / 原始响应
+
+迁移关联：原 Task c1119e1ab4ed431daca848c01811fc37 → 后继 Task 175a05d2d2aa4830a6e1bd974907e0dd。旧两次调用仍 uncertain，可能已执行/收费。
+
+原历史记录保留；后继任务另列，不代表旧调用已解决。
+
+本后继任务已有单独执行授权；不允许自动重发。
+
+迁移确认、身份替代与来源哈希
+固定输入、配置和来源关联
+条件性假说：核孔蛋白持续异常磷酸化通过延迟成熟 mRNP 的核孔释放，参与 ALS 相关输出障碍与后续损伤
+
+候选身份：planned-p08-direct-responses · 方式：DIRECT
+
+已生成，待Candidate Ethics/R0；未准入、未评分、科学未验证。
+
+执行标识：real_model · 固定Prompt：w1-p08-single-v1
+
+seed：seed-f87361b21b4f44609dedfa2ac9afc7bc-0 · 背景包：directed-seed-p05-packet-single · readiness：directed-seed-p07-readiness-single
+
+远端任务：resp_0880c479f87ca5bf006aebe66dbbe887d297c8a8e4104c3708 · 最近观测状态 completed · 已等待 164 秒（自本地保存提交响应起，非供应商计算时长）
+
+最近查询：{"at":"2026-11-05T02:16:51.394922+00:00","attempt_id":"d11dc55e5c384bfeb21629583c9a902a","outcome":"received","status":"completed"}；刷新只读，不自动查询或重新提交。
+
+Responses 后台 · store=true；供应商存储保留按已确认配置执行，未知费用不记0。
+
+提出一个待检验的条件性机制：若在选定的 ALS 相关非临床研究情境中，实测发现某一种核孔蛋白自身的磷酸化持续高于匹配基线，则这种持续修饰可能延长已经到达核孔的成熟信使核糖核蛋白复合体（mRNP）的停留、减慢其向胞质侧释放，造成先于可检测损伤的 mRNA 输出通量下降，并对后续细胞损伤作出贡献。该机制预测：在不直接改变致病背景、核孔蛋白丰度和定位的条件下，选择性恢复该修饰的基线状态，应先改善核孔释放和输出通量，随后减轻部分损伤。本候选不预选具体核孔蛋白、位点、激酶或实验模型，不宣称该修饰已在 ALS 中被观察到，也不把这一机制作为所有 ALS 的共同起因。
+
+主张与实验情境
+机制步骤：来源报告 / 作者解释 / 新猜想
+实际证据锚点与新因果桥接
+公开必要假设清单
+竞争解释和区分性预测
+证伪与概念验证
+近邻范围、引用与限制
+
+Attempt 138b35b1579b4267b392a68de8aa905e · succeeded · 用量：{"cost": null, "input_tokens": null, "output_tokens": null, "tool_units": null}（null为未知）
+
+查看保存的实际请求 / 原始响应
+
+Attempt cc8ca88fd45a4e6eaffd09abae31f0e4 · succeeded · 用量：{"cost": null, "input_tokens": null, "output_tokens": null, "tool_units": null}（null为未知）
+
+查看保存的实际请求 / 原始响应
+
+Attempt 24ec077f7cb6480f85e0293f29eec94b · succeeded · 用量：{"cost": null, "input_tokens": null, "output_tokens": null, "tool_units": null}（null为未知）
+
+查看保存的实际请求 / 原始响应
+
+Attempt d11dc55e5c384bfeb21629583c9a902a · succeeded · 用量：{"cost": null, "input_tokens": 39126, "output_tokens": 8543, "tool_units": null}（null为未知）
+
+查看保存的实际请求 / 原始响应
+
+Attempt b14e5fbc561a40d2869b0241126feb2d · succeeded · 用量：{"cost": null, "input_tokens": null, "output_tokens": null, "tool_units": null}（null为未知）
+
+查看保存的实际请求 / 原始响应
+
+迁移关联：原 Task c1119e1ab4ed431daca848c01811fc37 → 后继 Task 175a05d2d2aa4830a6e1bd974907e0dd。旧两次调用仍 uncertain，可能已执行/收费。
+
+后继执行状态见下方保存事实。
+
+本后继任务已有单独执行授权；不允许自动重发。
+
+迁移确认、身份替代与来源哈希
+固定输入、配置和来源关联

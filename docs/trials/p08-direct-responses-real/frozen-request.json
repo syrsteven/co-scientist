@@ -1,0 +1,7 @@
+{
+  "candidate_id": "planned-p08-direct-responses",
+  "mode": "DIRECT",
+  "packet_ref": "directed-seed-p05-packet-single",
+  "readiness_ref": "directed-seed-p07-readiness-single",
+  "seed_id": "seed-f87361b21b4f44609dedfa2ac9afc7bc-0"
+}

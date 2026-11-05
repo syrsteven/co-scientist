@@ -1,0 +1,19 @@
+{
+  "source": "User instruction in this chat,2026-11-05",
+  "scope": "Same original Run, unique DIRECT successor; at most1 new generation POST; GET only same persisted ID",
+  "accept_old_calls_may_have_executed_and_charged": true,
+  "accept_duplicate_execution_and_charge_risk": true,
+  "accept_store_true_retention": true,
+  "paid_execution_separately_authorized": true,
+  "query_minimum_gap_seconds": 15,
+  "maximum_queries": 60,
+  "observation_window_seconds": 1200,
+  "stop_on_terminal_or_query_failure": true,
+  "science_validated": false,
+  "excluded": [
+    "ASSUMPTION_STRUCTURED",
+    "Candidate Ethics",
+    "R0",
+    "other scientific modules"
+  ]
+}

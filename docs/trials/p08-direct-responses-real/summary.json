@@ -1,0 +1,42 @@
+{
+  "baseline": "9f7ca42f5aca6344df2467faa08a569b483d800e",
+  "original_database": "/private/tmp/co-scientist-p04-v2/runs/p04-v2-prepared.sqlite",
+  "database_sha256_current": "a1414816be01c06535e9493f9eaa62d40ee892ad45cf024af61dc7776ab7a2b9",
+  "run_id": "cea909fe8a004010b1896df1c1d98e02",
+  "source_task_id": "c1119e1ab4ed431daca848c01811fc37",
+  "source_attempt_ids": [
+    "5ad8cea64b1146c7bf2eb80e194e0798",
+    "86948ac23ee2477cac992b24f6016796"
+  ],
+  "successor_task_id": "175a05d2d2aa4830a6e1bd974907e0dd",
+  "candidate_id": "planned-p08-direct-responses",
+  "request_id": "planned-p08-responses-migration-single",
+  "migration_id": "migration-f494fa73f7d66e26d12fb3c75b1aa95104fa46e73982da5aecc5afd4fb445c71",
+  "prompt_version": "w1-p08-single-v1",
+  "task_status": "succeeded",
+  "post_attempts": 1,
+  "query_attempts": 4,
+  "science_validated": false,
+  "historical_unchanged": true,
+  "historical_costs_unknown": true,
+  "response_id": "resp_0880c479f87ca5bf006aebe66dbbe887d297c8a8e4104c3708",
+  "remote_status": "completed",
+  "provider_usage": {
+    "input_tokens": 39126,
+    "input_tokens_details": {
+      "cache_write_tokens": 39123,
+      "cached_tokens": 0
+    },
+    "output_tokens": 8543,
+    "output_tokens_details": {
+      "reasoning_tokens": 1034
+    },
+    "total_tokens": 47669
+  },
+  "response_model": "gpt-6.1-sol",
+  "incomplete_details": null,
+  "provider_error": null,
+  "finish_reason": null,
+  "cost_usd": null,
+  "generation_status": "generated"
+}
