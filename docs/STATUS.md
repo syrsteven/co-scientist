@@ -1,3 +1,24 @@
+# 项目状态 — P08 DIRECT 首次 Responses 后台真实结果
+
+## 同Run显式迁移与单次真实生成（2026-11-05）
+
+基线main `9f7ca42f5aca6344df2467faa08a569b483d800e`；独立分支 `codex/p08-responses-real-single`，本轮PR保持未合并。
+按本轮用户明确授权，在原真实库备份/只读重算预览后确认四项风险，唯一后继Task `175a05d2d2aa4830a6e1bd974907e0dd`，重复确认返回同一任务；另经专属入口记录单次付费授权。
+
+| 维度 | 本轮事实 |
+|---|---|
+| 实际调用 | DIRECT：1次Responses POST、4次同ID GET；queued→in_progress→completed即停止，查询间隔≥15秒、20分钟/60次以内，无重发/切换/新增检索或其他科学模块 |
+| 固定输入/配置 | 原Run/Goal/seed/P05包/P07 ready与w1-p08-single-v1原样；仅既定候选身份planned-p08-direct→planned-p08-direct-responses。实际HTTP请求145411字节≤262144，六字段USER、无审阅/兄弟输入；gpt-6.1-sol/high/32768/JSON，无temperature，background/store=true、truncation=disabled、socket/总期限各600秒 |
+| 保存结果 | response resp_0880c479f87ca5bf006aebe66dbbe887d297c8a8e4104c3708，completed、无incomplete_details/error、候选契约通过；不可变候选已存，Run awaiting_candidate_ethics，未准入/评分/科学通过 |
+| 用量 | input39126/output8543（含reasoning1034）/total47669；cache_write39123/cached0等完整provider_usage均保留；费用未知。早期状态与历史消耗null不填0，不累加同任务GET返回的重复用量 |
+| 历史保护 | SQLite备份仓库外保存，仅在原真实库执行。原Task/action/两次uncertain/error/请求/未知用量全行不变；备份12张表的所有原行全字段仍相同，含原Brief/原文/P04/P05/P07。迁移与新执行不解决旧调用 |
+| 页面持久化 | 新无凭据/未授权页面进程读取原库：显示原uncertain及后继、completed/用量/完整候选；实际刷新+3次GET，DB字节哈希和Attempt计数保持，无新增POST或查询。原工作区232项指纹不变 |
+| 初审 | Codex初审，待独立人工复核；22条原文位置→候选字段对照。发现ANXA11 induces被弱化为相关、SUN1 leading to被弱化为伴随等；不修补输出。释放阶段新猜想/方向与对象发现、干预选择性/测量可行性均待验证 |
+| 工程检查 | 项目Python3.12.11/pytest8.4.2新系统328通过、0失败/跳过（含7项获准loopback HTTP）；全仓Ruff沿用CI既有豁免、核验脚本format、JS、实际响应字节/哈希/候选/引用/间隔/历史/刷新检查。初次base Python3.11.5/pytest7.4.0有65 setup errors（263通过），如实记录后改用现有项目环境，无修改测试掩盖错误 |
+| 真实/科学边界 | 本次真实Responses链已返回一个候选；不代表生成方法稳定、科学/伦理正确、新颖或实验可行。Goal Ethics仍开发测试；science_validated=false。未执行ASSUMPTION_STRUCTURED、Candidate Ethics、R0或其他下游模块；独立人工/专家复核及旧G3全量未运行 |
+
+[实际请求、每次响应/状态/usage、候选全文、22项初审、备份来源与SHA256](trials/p08-direct-responses-real/README.md)。原始候选/P04/P05/P07不改，原设计状态不变。下方历史状态原文保留。
+
 # 项目状态 — P08显式迁移入口
 
 ## 窄范围迁移入口（2026-11-04）

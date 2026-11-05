@@ -1,0 +1,99 @@
+{
+  "allowed_specificity": "与 requested_specificity 一致：可准备提出不预选具体核孔蛋白或模型、明确标注未知关系的条件性探索机制及检验思路，并保留实际锚点、情境差异、竞争解释和检索范围。不得把未知修饰或因果链写成事实，不得据当前阅读给出未经核实的实验参数、可行性保证或新颖性结论。本次在背景判断处停止，不进入生成。",
+  "checks": [
+    {
+      "criterion": "goal_interpretable",
+      "met": true,
+      "record_refs": [
+        "997d55886d634f289612ba79e1755f16",
+        "seed-f87361b21b4f44609dedfa2ac9afc7bc-0"
+      ],
+      "why": "Goal 要求围绕核孔蛋白磷酸化解释 ALS 相关过程，并提出机制与检验实验；种子明确以“若检测到”为条件，比较参与输出障碍、损伤后反应及并行变化。保留核孔蛋白磷酸化问题、不预选分子或模型的约束清楚，无需改写 Goal。"
+    },
+    {
+      "criterion": "anchor_traceable",
+      "met": true,
+      "record_refs": [
+        "finding-f49335ad41a946f9aed8103f53f328ca-6",
+        "finding-f49335ad41a946f9aed8103f53f328ca-4",
+        "finding-f8cf38bfaf564f93a51f5b4b17aeefeb-1",
+        "finding-b8a3fb022bee44afa29c341c2b9115d7-2",
+        "finding-61730f7691fd43a8a2b9c92eb6126f3b-2"
+      ],
+      "why": "实际锚点包括 ANXA11 聚集相关的核孔蛋白分布、mRNA 输出及毒性表型，非 ALS 情境中的 TPR 位点磷酸化，以及 SUN1 修饰与相互作用变化。ANXA11 记录中的明确磷酸化对象是 TDP-43；TDP-43 核输入无差异结果也可追溯，均未被替换成核孔蛋白修饰证据。"
+    },
+    {
+      "criterion": "context_preserved",
+      "met": true,
+      "record_refs": [
+        "p04-v2-control-single",
+        "p04-v2-complement-single",
+        "directed-seed-p04-source-1-single",
+        "directed-seed-p04-source-2-single",
+        "directed-seed-p04-source-3-single"
+      ],
+      "why": "培养神经元、SH-SY5Y、HeLa/U2OS、SOD1 相关材料、免疫及肿瘤情境分别保留，未合并成同一实验或共同因果链。SUN1 是内核膜/LINC 蛋白，其结果不替代核孔蛋白自身的修饰；邻近富集、丰度、定位、蛋白输入与 mRNA 输出也未被视为等价终点。"
+    },
+    {
+      "criterion": "alternatives_considered",
+      "met": true,
+      "record_refs": [
+        "directed-seed-p05-packet-single",
+        "finding-f49335ad41a946f9aed8103f53f328ca-5",
+        "finding-c24e29a61d8a4b999f29c45aa9906729-1",
+        "finding-c24e29a61d8a4b999f29c45aa9906729-3",
+        "finding-b8a3fb022bee44afa29c341c2b9115d7-0"
+      ],
+      "why": "已明确考虑修饰参与障碍、损伤后或适应性反应、共同上游驱动的并行变化，以及不依赖该修饰的核孔组分、运输因子和表达调控变化。聚集体邻近富集、上游 SOD1 降低及 TPR 耗减均未被当作修饰选择性因果证据。"
+    },
+    {
+      "criterion": "critical_reading_adequate",
+      "met": true,
+      "record_refs": [
+        "p04-v2-complement-single",
+        "finding-c24e29a61d8a4b999f29c45aa9906729-1",
+        "finding-61730f7691fd43a8a2b9c92eb6126f3b-3",
+        "finding-61730f7691fd43a8a2b9c92eb6126f3b-4",
+        "finding-61730f7691fd43a8a2b9c92eb6126f3b-6",
+        "finding-b8a3fb022bee44afa29c341c2b9115d7-10"
+      ],
+      "why": "阅读已区分作者观察、解释与跨情境类比，并保留无差异、较弱恢复和异质性结果。SUN1 的结合降低与高效输出未被拼接成同条件配对终点；磷酸模拟、蛋白耗减及通路抑制未被等同于真实修饰的选择性改变。摘要及局部正文的访问边界明确，足以支撑当前探索性范围，但不支撑详细方法参数或科学验证结论。"
+    },
+    {
+      "criterion": "closest_prior_work_attempted",
+      "met": true,
+      "record_refs": [
+        "directed-seed-search-1-page1",
+        "directed-seed-search-2-page1",
+        "directed-seed-search-3-page1",
+        "directed-seed-p04-source-1-single",
+        "directed-seed-p04-source-2-single",
+        "directed-seed-p04-source-3-single"
+      ],
+      "why": "已有可追溯的 ALS—核孔、核孔—磷酸化—RNA 输出，以及核孔—磷酸化—时序/干预检索尝试，并对返回的相关近邻工作形成实际阅读记录。该条件要求已尝试寻找近邻研究，而非证明检索穷尽或全球新颖；第三条检索首页主要来自其他生物学情境，其适用性限制已保留。"
+    }
+  ],
+  "decision": "ready",
+  "focused_followups": [],
+  "hypothetical_unknowns": [
+    "疾病相关条件下是否存在核孔蛋白自身的磷酸化变化，以及其方向、位点和细胞类型依赖性。",
+    "若存在该变化，它与 mRNA 输出异常、核孔组分变化和损伤之间的发生及恢复顺序。",
+    "修饰是否参与运输障碍，属于损伤后或适应性反应，或与运输和损伤受共同上游因素驱动。",
+    "修饰选择性改变是否影响输出或损伤，以及如何区分蛋白剂量、定位和上游通路的广泛效应。",
+    "真实磷酸化与位点替换是否产生一致结果，运输读数能否与转录、RNA 稳定性及其他运输终点区分。"
+  ],
+  "limitations": [
+    "本次仅评估所供视图和记录，未新增检索、获取正文、访问源数据或执行实验。",
+    "ANXA11 为取得的 Abstract、Highlights 和 In Brief；SOD1、TPR、SUN1 为取得的摘要。完整取得摘要不等于全文阅读。TDP-43 仅覆盖原文本 [33770,41370]，其余部分未读。",
+    "未查看任何图像像素或补充材料；文字图注和源数据链接不表示相关文件已访问。来源版本未报告，不能补充未提供的版本或审稿状态。",
+    "三条定向检索分别报告 121、9、184 项，但各只供应首页 5 项，均有后续游标。两条精确 ID 查询范围完整，不代表主题检索完整；未显示或未读命中不是阴性研究。",
+    "保留的限制性结果包括：所测 TDP-43 变体的核定位、核输入及部分 RNA 功能未见损害；SOD1 相关核圆度不变；SUN1 S113A 恢复较弱但非完全无效、SUN 结构域缺失变体未影响输出；三阴性乳腺癌的磷酸化模式具有异质性。这些结果均不得超出各自条件推广，无差异报告不等于统计等效。",
+    "SOD1 降低后的 XPO1 核内定位恢复不等于 mRNA 输出、核孔蛋白磷酸化或神经元存活恢复。跨病理背景、细胞类型及运输终点的连接仍未建立。",
+    "ready 不表示 ALS 因果答案已获得、机制已验证、实验已证明可行或研究具有全球新颖性；适用范围为所述非临床文献检索开发验证。"
+  ],
+  "premise_gaps": [
+    "已读 ALS 视图未报告核孔蛋白自身的磷酸化测量，不能把该变化在 ALS 中存在作为既定前提；这一缺口不阻断以“若检测到”为条件的探索性准备。",
+    "TPR 与 SUN1 记录没有建立相应修饰关系向 ALS 情境的适用性，只能提供问题边界和类比背景，不能充当已成立的疾病机制。"
+  ],
+  "rationale": "所供背景足以支持请求的条件性、探索性机制猜想准备：目标可解释，实际观察与检索尝试可追溯，情境差异、阴性结果及竞争解释均已保留。核孔蛋白磷酸化与 ALS 中 mRNA 输出障碍之间的关系仍未知，但种子并未把它当作已证事实，因此不构成本次准备的阻断项。本判断仅表示背景准备就绪，不生成机制或实验方案，也不确认新颖性、因果关系或实验可行性。"
+}

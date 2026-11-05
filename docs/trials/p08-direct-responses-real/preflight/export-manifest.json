@@ -1,0 +1,10 @@
+{
+  "database_sha256_before": "4ffef4c2e8f257b7ff0e1a8c10332c09bef68176856837e095104c7cc4fc608f",
+  "database_sha256_after": "4ffef4c2e8f257b7ff0e1a8c10332c09bef68176856837e095104c7cc4fc608f",
+  "database_opened_readonly": true,
+  "migration_applied": false,
+  "model_requests": 0,
+  "credentials_read": false,
+  "science_validated": false,
+  "preview_hash": "f494fa73f7d66e26d12fb3c75b1aa95104fa46e73982da5aecc5afd4fb445c71"
+}

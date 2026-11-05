@@ -1,0 +1,93 @@
+[
+  {
+    "id": 57,
+    "task_id": "175a05d2d2aa4830a6e1bd974907e0dd",
+    "kind": "migration_reserved_without_send",
+    "detail": "{\"migration_id\": \"migration-f494fa73f7d66e26d12fb3c75b1aa95104fa46e73982da5aecc5afd4fb445c71\", \"paid_execution_authorized\": false, \"preview_hash\": \"f494fa73f7d66e26d12fb3c75b1aa95104fa46e73982da5aecc5afd4fb445c71\", \"source_attempt_ids\": [\"5ad8cea64b1146c7bf2eb80e194e0798\", \"86948ac23ee2477cac992b24f6016796\"], \"source_task_id\": \"c1119e1ab4ed431daca848c01811fc37\"}",
+    "created_at": "2026-11-05T02:13:52.432079+00:00"
+  },
+  {
+    "id": 58,
+    "task_id": "175a05d2d2aa4830a6e1bd974907e0dd",
+    "kind": "migration_successor_execution_authorized",
+    "detail": "{\"accept_paid_execution_risk\": true, \"at\": \"2026-11-05T02:14:03.865639+00:00\", \"config_sha256\": \"eb6c6cc79396554a5a257811e4a2a8db2cbd26525401ea3748d082072cad2843\", \"migration_id\": \"migration-f494fa73f7d66e26d12fb3c75b1aa95104fa46e73982da5aecc5afd4fb445c71\", \"task_id\": \"175a05d2d2aa4830a6e1bd974907e0dd\"}",
+    "created_at": "2026-11-05T02:14:03.868759+00:00"
+  },
+  {
+    "id": 59,
+    "task_id": "175a05d2d2aa4830a6e1bd974907e0dd",
+    "kind": "remote_submit_requested",
+    "detail": "{}",
+    "created_at": "2026-11-05T02:14:03.927243+00:00"
+  },
+  {
+    "id": 60,
+    "task_id": "175a05d2d2aa4830a6e1bd974907e0dd",
+    "kind": "remote_response_saved",
+    "detail": "{\"attempt_id\": \"b14e5fbc561a40d2869b0241126feb2d\", \"response_id\": \"resp_0880c479f87ca5bf006aebe66dbbe887d297c8a8e4104c3708\", \"status\": \"queued\"}",
+    "created_at": "2026-11-05T02:14:06.760723+00:00"
+  },
+  {
+    "id": 61,
+    "task_id": "175a05d2d2aa4830a6e1bd974907e0dd",
+    "kind": "remote_query_requested",
+    "detail": "{}",
+    "created_at": "2026-11-05T02:14:29.038658+00:00"
+  },
+  {
+    "id": 62,
+    "task_id": "175a05d2d2aa4830a6e1bd974907e0dd",
+    "kind": "remote_response_saved",
+    "detail": "{\"attempt_id\": \"138b35b1579b4267b392a68de8aa905e\", \"response_id\": \"resp_0880c479f87ca5bf006aebe66dbbe887d297c8a8e4104c3708\", \"status\": \"in_progress\"}",
+    "created_at": "2026-11-05T02:14:30.850348+00:00"
+  },
+  {
+    "id": 63,
+    "task_id": "175a05d2d2aa4830a6e1bd974907e0dd",
+    "kind": "remote_query_requested",
+    "detail": "{}",
+    "created_at": "2026-11-05T02:15:06.531753+00:00"
+  },
+  {
+    "id": 64,
+    "task_id": "175a05d2d2aa4830a6e1bd974907e0dd",
+    "kind": "remote_response_saved",
+    "detail": "{\"attempt_id\": \"cc8ca88fd45a4e6eaffd09abae31f0e4\", \"response_id\": \"resp_0880c479f87ca5bf006aebe66dbbe887d297c8a8e4104c3708\", \"status\": \"in_progress\"}",
+    "created_at": "2026-11-05T02:15:07.594577+00:00"
+  },
+  {
+    "id": 65,
+    "task_id": "175a05d2d2aa4830a6e1bd974907e0dd",
+    "kind": "remote_query_requested",
+    "detail": "{}",
+    "created_at": "2026-11-05T02:15:52.757700+00:00"
+  },
+  {
+    "id": 66,
+    "task_id": "175a05d2d2aa4830a6e1bd974907e0dd",
+    "kind": "remote_response_saved",
+    "detail": "{\"attempt_id\": \"24ec077f7cb6480f85e0293f29eec94b\", \"response_id\": \"resp_0880c479f87ca5bf006aebe66dbbe887d297c8a8e4104c3708\", \"status\": \"in_progress\"}",
+    "created_at": "2026-11-05T02:15:54.478260+00:00"
+  },
+  {
+    "id": 67,
+    "task_id": "175a05d2d2aa4830a6e1bd974907e0dd",
+    "kind": "remote_query_requested",
+    "detail": "{}",
+    "created_at": "2026-11-05T02:16:50.076190+00:00"
+  },
+  {
+    "id": 68,
+    "task_id": "175a05d2d2aa4830a6e1bd974907e0dd",
+    "kind": "remote_response_saved",
+    "detail": "{\"attempt_id\": \"d11dc55e5c384bfeb21629583c9a902a\", \"response_id\": \"resp_0880c479f87ca5bf006aebe66dbbe887d297c8a8e4104c3708\", \"status\": \"completed\"}",
+    "created_at": "2026-11-05T02:16:51.395318+00:00"
+  },
+  {
+    "id": 69,
+    "task_id": "175a05d2d2aa4830a6e1bd974907e0dd",
+    "kind": "result_applied",
+    "detail": "{}",
+    "created_at": "2026-11-05T02:16:51.403356+00:00"
+  }
+]

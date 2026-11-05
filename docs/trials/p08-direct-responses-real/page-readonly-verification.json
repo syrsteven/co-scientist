@@ -1,0 +1,15 @@
+{
+  "fresh_process_server": true,
+  "server_model_credentials_configured": false,
+  "server_model_execution_authorized": false,
+  "browser_refreshed": true,
+  "repeated_api_gets": 3,
+  "total_attempt_count_before": 32,
+  "total_attempt_count_after": 32,
+  "post_attempts": 1,
+  "get_attempts": 4,
+  "database_sha256_before": "a1414816be01c06535e9493f9eaa62d40ee892ad45cf024af61dc7776ab7a2b9",
+  "database_sha256_after": "a1414816be01c06535e9493f9eaa62d40ee892ad45cf024af61dc7776ab7a2b9",
+  "new_sends": 0,
+  "candidate_status": "generated_pending_candidate_ethics_r0"
+}
