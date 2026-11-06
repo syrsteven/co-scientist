@@ -1,0 +1,14 @@
+{
+  "provider": "openai",
+  "endpoint": "https://api.openai.com/v1/chat/completions",
+  "model": "gpt-6.1-sol",
+  "parameters": {
+    "reasoning_effort": "high",
+    "max_completion_tokens": 32768,
+    "response_format": {
+      "type": "json_object"
+    }
+  },
+  "max_request_bytes": 262144,
+  "timeout_seconds": 600
+}

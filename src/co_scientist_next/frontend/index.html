@@ -1,105 +1,8 @@
-<!doctype html>
-<html lang="zh-CN">
-  <head>
-    <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width,initial-scale=1" />
-    <title>Co-Scientist · 研究工作区</title>
-    <link rel="stylesheet" href="/app.css" />
-  </head>
-  <body>
-    <aside>
-      <div class="brand">
-        <span class="mark">C</span>
-        <div>Co-Scientist<small>研究工作区 · Candidate Ethics / R0</small></div>
-      </div>
-      <button id="new-project" class="primary">＋ 新建研究</button>
-      <h3>已保存研究</h3>
-      <nav id="projects"></nav>
-      <div class="sidebar-note">
-        Goal 制备与目标筛查<br />文献获取 · 背景准备（科学未验证）
-      </div>
-    </aside>
-    <main>
-      <header>
-        <div>
-          <span class="eyebrow">RESEARCH WORKSPACE</span>
-          <h1>让研究问题有一个清晰的起点</h1>
-          <p>保存简报，保留原始条件，查看固定运行的目标与筛查记录。</p>
-        </div>
-        <button id="refresh">刷新已保存数据</button>
-      </header>
-      <div id="mode" role="status" class="mode"></div>
-      <p id="notice" role="alert"></p>
-      <div class="layout">
-        <section class="panel">
-          <div class="section-heading">
-            <h2>研究简报草稿</h2>
-            <span id="revision-badge" class="badge">尚未保存</span>
-          </div>
-          <p class="muted">编辑会保存新版本，不改变已创建 Run 的输入。</p>
-          <form id="brief-form">
-            <label
-              >研究名称<input
-                id="name"
-                required
-                placeholder="为研究命名" /></label
-            ><label
-              >原始研究问题<textarea
-                id="question"
-                required
-                rows="5"
-                placeholder="完整保留您想研究的问题"
-              ></textarea>
-            </label>
-            <div class="fields">
-              <label
-                >明确硬约束（每行一项）<textarea
-                  id="constraints"
-                  rows="3"
-                  placeholder="必须保留的条件"
-                ></textarea></label
-              ><label
-                >研究偏好（每行一项）<textarea
-                  id="preferences"
-                  rows="3"
-                  placeholder="希望优先考虑的方向"
-                ></textarea>
-              </label>
-            </div>
-            <label>用户背景<textarea id="background" rows="3"></textarea></label
-            ><label>拟议用途（未指定可留空）<input id="intended-use" /></label
-            ><label
-              >用户材料引用（每行一项，本轮不获取正文）<textarea
-                id="materials"
-                rows="2"
-              ></textarea></label
-            ><button class="primary" type="submit">保存简报版本</button>
-          </form>
-          <div class="divider"></div>
-          <h2>创建固定 Run</h2>
-          <p class="muted">
-            使用左侧已保存版本；编辑后请先保存。政策必须显式传入，缺少政策不形成伦理决定。
-          </p>
-          <div class="fields">
-            <label>政策标识<input id="policy-id" /></label
-            ><label>政策版本<input id="policy-version" /></label>
-          </div>
-          <label>政策文本<textarea id="policy-text" rows="4"></textarea></label
-          ><button id="example-policy" hidden>填入开发示例政策</button>
-          <label id="fixture-label" hidden
-            >开发测试情景<select id="scenario">
-              <option value="pass">固定 pass</option>
-              <option value="reject">固定 reject</option>
-              <option value="clarification">关键歧义待澄清</option>
-              <option value="risk_information">风险信息待补充</option>
-              <option value="invalid_output">筛查输出无效</option>
-              <option value="technical_failure">已确认技术失败</option>
-              <option value="uncertain_send">发送结果不确定</option>
-            </select></label
-          ><button id="create-run" disabled>创建固定 Run</button>
-        </section>
-        <section>
-          <div class="panel">
+<!doctype html><html lang="zh-CN"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Co-Scientist · 阶段测试工作台</title><link rel="stylesheet" href="/workbench.css"></head><body>
+<aside><div class="brand"><span class="mark">C·</span><div>Co-Scientist<small>RESEARCH WORKSPACE</small></div></div><button id="new-project" class="primary">＋ 新建研究</button><nav class="appnav"><button data-nav="home">我的研究</button><button data-nav="overview">研究概览</button><button data-nav="candidates">候选假说</button><button data-nav="literature">文献与背景</button><button data-nav="activity">研究过程</button><button data-nav="settings">设置</button><button data-nav="history">历史演示</button></nav><h3>已保存研究</h3><nav id="projects"></nav><p class="sidebar-note">用户手动阶段测试<br>science_validated=false</p></aside>
+<main><header><div><span class="eyebrow">RESEARCH WORKSPACE · V6</span><h1 id="wb-title">我的研究</h1></div><div class="toolbar"><button data-nav="notes">人工评估</button><button id="wb-export" disabled>导出当前运行</button><button id="refresh">刷新本地状态</button></div></header><div id="mode" class="mode" role="status"></div><div id="wb-run-status" class="run-status" role="status"></div><p id="notice" role="alert"></p>
+<section id="wb-home" class="view"><div class="hero"><div><span class="eyebrow">START FROM A QUESTION</span><h2>从科学问题开始，<br>保留每一步研究事实。</h2><p>明确问题与条件，检索文献，阅读原文，探索有依据的假说。<br>执行由你发起，评价由你记录。</p><button class="primary" data-new-study>开始新研究 →</button></div><div class="hero-graph" aria-hidden="true"><span>QUESTION</span><i></i><span>EVIDENCE</span><i></i><span>HYPOTHESIS</span></div></div><h2>我的研究</h2><p class="muted">来自当前阶段测试数据库；查看不发送请求。</p><div id="wb-studies" class="study-grid"></div></section>
+<section id="wb-overview" class="view" hidden><div id="wb-overview-summary"></div><div class="panel">
             <div class="section-heading">
               <h2>固定运行</h2>
               <span class="badge" id="run-state">未选择 Run</span>
@@ -109,42 +12,62 @@
             </p>
             <div id="runs" class="runs"></div>
             <div id="run-tools" hidden>
-              <button id="execute" class="primary">执行当前切片</button
-              ><button id="recover" hidden>确认恢复中断运行</button>
+              <button id="execute" class="primary">执行当前切片</button><button id="recover" hidden>确认恢复中断运行</button>
             </div>
             <div id="run-detail" class="empty">
               保存简报并创建 Run 后，查看真实记录。
             </div>
+          </div></section>
+<section id="wb-brief" class="view" hidden><section class="panel">
+          <div class="section-heading">
+            <h2>研究简报草稿</h2>
+            <span id="revision-badge" class="badge">尚未保存</span>
           </div>
-          <div class="panel" id="literature-panel" hidden>
+          <p class="muted">编辑会保存新版本，不改变已创建 Run 的输入。</p>
+          <form id="brief-form">
+            <label>研究名称<input id="name" required placeholder="为研究命名"></label><label>原始研究问题<textarea id="question" required rows="5" placeholder="完整保留您想研究的问题"></textarea>
+            </label>
+            <div class="fields">
+              <label>明确硬约束（每行一项）<textarea id="constraints" rows="3" placeholder="必须保留的条件"></textarea></label><label>研究偏好（每行一项）<textarea id="preferences" rows="3" placeholder="希望优先考虑的方向"></textarea>
+              </label>
+            </div>
+            <label>用户背景<textarea id="background" rows="3"></textarea></label><label>拟议用途（未指定可留空）<input id="intended-use"></label><label>用户材料引用（每行一项，本轮不获取正文）<textarea id="materials" rows="2"></textarea></label><button class="primary" type="submit">保存简报版本</button>
+          </form>
+          <div class="divider"></div>
+          <h2>创建固定运行</h2><label>目标前置模式<select id="goal-test-choice"><option value="">请选择：当前目标前置仅有开发替身</option><option value="deterministic_development">明确采用 Goal 制备／筛查开发测试，不是真实伦理审查</option></select></label>
+          <p class="muted">
+            使用左侧已保存版本；编辑后请先保存。政策必须显式传入，缺少政策不形成伦理决定。
+          </p>
+          <div class="fields">
+            <label>政策标识<input id="policy-id"></label><label>政策版本<input id="policy-version"></label>
+          </div>
+          <label>政策文本<textarea id="policy-text" rows="4"></textarea></label><button id="example-policy" hidden>填入开发示例政策</button>
+          <label id="fixture-label" hidden>开发测试情景<select id="scenario">
+              <option value="pass">固定 pass</option>
+              <option value="reject">固定 reject</option>
+              <option value="clarification">关键歧义待澄清</option>
+              <option value="risk_information">风险信息待补充</option>
+              <option value="invalid_output">筛查输出无效</option>
+              <option value="technical_failure">已确认技术失败</option>
+              <option value="uncertain_send">发送结果不确定</option>
+            </select></label><button id="create-run" disabled>创建固定运行</button>
+        </section></section>
+<section id="wb-literature" class="view" hidden><div class="stage-tabs"><button data-subpanel="acquisition" data-nav="literature">检索与材料</button><button data-subpanel="background" data-nav="literature">阅读、背景与方向准备</button></div><div id="wb-literature-counts" class="metrics"></div><div id="wb-acquisition"><div class="panel" id="literature-panel" hidden>
             <h2>真实文献获取</h2>
             <p id="literature-mode" class="mode"></p>
             <p>
               固定目标与筛查见上方。查询由用户/开发者人工输入，不是 Agent
               自动规划。取得文献不代表已阅读或支持任何主张。
             </p>
-            <label
-              >人工查询<textarea
-                id="literature-query"
-                rows="3"
-                placeholder="输入明确的 Europe PMC 查询"
-              ></textarea>
+            <label>人工查询<textarea id="literature-query" rows="3" placeholder="输入明确的 Europe PMC 查询"></textarea>
             </label>
-            <label
-              >每页数量（1–20）<input
-                id="literature-page-size"
-                type="number"
-                min="1"
-                max="20"
-                value="5"
-            /></label>
+            <label>每页数量（1–20）<input id="literature-page-size" type="number" min="1" max="20" value="5"></label>
             <button id="literature-search" class="primary">
               执行真实公共检索
             </button>
             <p id="literature-gate" class="muted"></p>
             <div id="literature-history"></div>
-          </div>
-          <div class="panel" id="background-panel" hidden>
+          </div></div><div id="wb-background" hidden><div class="panel" id="background-panel" hidden>
             <h2>背景阅读与 seed 准备</h2>
             <p id="background-mode" class="mode"></p>
             <p id="background-prompt" class="muted"></p>
@@ -153,72 +76,38 @@
               <summary>当前显式模型配置与用量边界</summary>
               <pre id="background-config" class="data"></pre>
             </details>
-            <label
-              >准备范围<select id="background-scope">
+            <label>准备范围<select id="background-scope">
                 <option value="">宽背景 / 中性概览</option>
-              </select></label
-            >
-            <h3>1. 明确选择原始材料视图</h3>
+              </select></label>
+            <h3>选择阅读材料与范围</h3>
             <label>已取得材料<select id="background-material"></select></label>
             <div class="fields">
-              <label
-                >起始字符<input
-                  id="view-start"
-                  type="number"
-                  min="0"
-                  value="0" /></label
-              ><label
-                >结束字符<input id="view-end" type="number" min="1"
-              /></label>
+              <label>起始字符<input id="view-start" type="number" min="0" value="0"></label><label>结束字符<input id="view-end" type="number" min="1"></label>
             </div>
-            <label
-              >选择/裁剪理由<input
-                id="view-reason"
-                placeholder="裁剪时必填；不能声称阅读未选片段"
-            /></label>
+            <label>选择/裁剪理由<input id="view-reason" placeholder="裁剪时必填；不能声称阅读未选片段"></label>
             <button id="save-view">保存不可变材料视图</button>
             <div id="background-views"></div>
-            <h3>2. 显式执行一个步骤</h3>
-            <label
-              >操作<select id="background-operation">
-                <option value="P04">P04 · 阅读选择的视图</option>
-                <option value="P05">P05 · 综合当前范围实际阅读</option>
-                <option value="P06_DIRECTED">P06 · 规划定向 seed 问题</option>
-                <option value="P06_OPEN">P06 · 独立规划开放 seed 问题</option>
-                <option value="P03">P03 · 规划查询（不等于已执行）</option>
-                <option value="P07">P07 · 检查当前 seed readiness</option>
-              </select></label
-            >
-            <label id="background-view-label"
-              >材料视图<select id="background-view"></select
-            ></label>
-            <label id="background-orientation-label" hidden
-              >中性背景记录<select id="background-orientation"></select
-            ></label>
-            <label id="background-packet-label" hidden
-              >当前 seed 背景记录<select id="background-packet"></select
-            ></label>
-            <label id="background-number-label" hidden
-              >本次数量（配置，不是全局科研规则）<input
-                id="background-number"
-                type="number"
-                min="1"
-                value="1"
-            /></label>
-            <label id="background-specificity-label" hidden
-              >允许的机制具体程度<input
-                id="background-specificity"
-                value="可提出可检验的概念关系，不预设特定位点或激酶"
-            /></label>
-            <label id="background-fixture-label" hidden
-              >开发替身情景<select id="background-fixture">
+            <h3>选择下一项科研任务</h3>
+            <label>操作<select id="background-operation">
+                <option value="P04">阅读已选择原文</option>
+                <option value="P05">综合当前资料</option>
+                <option value="P06_DIRECTED">准备定向研究方向</option>
+                <option value="P06_OPEN">准备开放研究方向</option>
+                <option value="P03">规划文献查询（不自动检索）</option>
+                <option value="P07">评估当前方向的准备程度</option>
+              </select></label>
+            <label id="background-view-label">材料视图<select id="background-view"></select></label>
+            <label id="background-orientation-label" hidden>中性背景记录<select id="background-orientation"></select></label>
+            <label id="background-packet-label" hidden>当前 seed 背景记录<select id="background-packet"></select></label>
+            <label id="background-number-label" hidden>本次数量（配置，不是全局科研规则）<input id="background-number" type="number" min="1" value="1"></label>
+            <label id="background-specificity-label" hidden>允许的机制具体程度<input id="background-specificity" value="可提出可检验的概念关系，不预设特定位点或激酶"></label>
+            <label id="background-fixture-label" hidden>开发替身情景<select id="background-fixture">
                 <option value="ready">工程成功 / ready</option>
                 <option value="retrieve_more">需补具体材料</option>
                 <option value="unable_to_prepare">当前无法准备</option>
                 <option value="invalid_output">无效输出</option>
                 <option value="technical_failure">技术失败</option>
-              </select></label
-            >
+              </select></label>
             <button class="primary" id="background-run">
               保存并执行这一步
             </button>
@@ -229,39 +118,28 @@
             </p>
             <div id="background-seeds"></div>
             <div id="background-records"></div>
-          </div>
-          <div class="panel" id="generation-panel" hidden>
+          </div></div></section>
+<section id="wb-candidates" class="view" hidden><div class="reader-grid"><div class="panel"><h2>已保存候选</h2><div id="wb-candidate-index"></div></div><article id="wb-scientific-reader" class="panel"></article></div><div class="panel" id="generation-panel" hidden>
             <span class="eyebrow">P08 · SINGLE CALL</span>
-            <h2>从固定 ready seed 生成一个候选</h2>
+            <h2>从已准备的研究方向生成候选</h2>
             <p id="generation-mode"></p>
             <p id="generation-prompt"></p>
-            <label>已完成 ready（固定背景包）<select id="generation-ready"></select></label>
+            <label>已准备的方向（绑定固定资料包）<select id="generation-ready"></select></label>
             <p id="generation-specificity"></p>
             <label>单次生成方式<select id="generation-method">
               <option value="DIRECT">DIRECT · 单次直接生成</option>
               <option value="ASSUMPTION_STRUCTURED">ASSUMPTION_STRUCTURED · 公开科学假设清单</option>
             </select></label>
-            <label>调用方候选身份（修改需新身份）<input id="generation-candidate-id" placeholder="留空分配新身份" /></label>
+            <label>调用方候选身份（修改需新身份）<input id="generation-candidate-id" placeholder="留空分配新身份"></label>
             <button id="generation-submit" class="primary">显式提交并生成一个候选</button>
             <p>每次仅一次生成；没有多轮辩论，也未认定任一方式更优。刷新只读取，不自动生成或重发。新候选待 Candidate Ethics/R0，非准入或科学验收。</p>
-            <div id="generation-records"></div>
-          </div>
-          <div class="panel boundary">
-            <span class="eyebrow">CAPABILITY BOUNDARY</span>
-            <h2>本轮到此为止</h2>
-            <p>
-              完成的 pass 可进入显式文献获取与 P03–P07 逐步背景准备。
-              科学有效性未验证。Candidate Ethics/R0仅在显式政策和授权下分别执行；
-              没有无人值守循环、R1执行、科学准入或科研完成声明。
-            </p>
-            <strong>科学有效性与伦理分类准确性：未验证</strong>
-          </div>
-        </section>
-      </div>
-    </main>
-    <script src="/app.js" defer></script>
-    <script src="/background.js" defer></script>
-    <script src="/candidate-review.js" defer></script>
-    <script src="/generation.js" defer></script>
-  </body>
-</html>
+            <details><summary>任务执行、恢复入口与完整原始记录</summary><div id="generation-records"></div></details>
+          </div></section>
+<section id="wb-reviews" class="view" hidden><h2>独立候选审查</h2><p class="muted">候选伦理不继承 Goal pass；仅有效 pass 才能进入 R0。R0通过只表示等待R1，不代表科学准入。</p><div id="wb-review-records"></div></section>
+<section id="wb-activity" class="view" hidden><h2>运行实况与研究过程</h2><p>只展示保存的事实，没有模拟百分比或预计完成时间。刷新不查询供应商。</p><div id="wb-activity-content"></div><div class="panel"><h3>尚未实现的后续能力</h3><p>M03、R1、Ranking、Evolution 等阶段尚未接入，不能执行或显示假结果。</p></div></section>
+<section id="wb-notes" class="view" hidden><h2>独立人工评估与个人笔记</h2><p class="muted">意见绑定当前Run及内容版本，保存到后端；不会覆盖模型输出，也不会自动进入模型输入。</p><form id="wb-note-form" class="panel"><label>评估对象<select id="wb-note-target"></select></label><label>评估类型<select id="wb-note-category"><option value="retrieval">检索相关性与重要遗漏</option><option value="reading">阅读情境、阴性结果与作者措辞</option><option value="generation">候选证据忠实性、机制价值与可检验性</option><option value="note">个人研究笔记</option></select></label><div id="wb-note-rubric"></div><label>个人意见<textarea id="wb-note-text" rows="5"></textarea></label><button type="submit" class="primary">保存独立人工意见</button></form><div id="wb-note-list"></div></section>
+<section id="wb-settings" class="view" hidden><h2>服务、模型与能力设置</h2><p>模型和API分别显式配置，每项任务冻结当时配置。密钥只在后端读取，不返回浏览器或保存在浏览器存储。</p><div id="wb-settings-content"></div></section>
+<section id="wb-history" class="view" hidden><div class="panel warning"><h2>独立历史演示</h2><p>V5青光眼G0–G3、10候选、比较、排序与回放属于历史设计演示；其数据、按钮和状态不写入当前研究，不发送真实请求。</p><button id="wb-open-demo">打开 V5 交互历史演示</button><button id="wb-open-history">浏览已保存 ALS 只读记录</button></div><iframe id="wb-demo-frame" title="独立V5历史演示" sandbox="allow-scripts allow-downloads" hidden></iframe><div id="wb-history-records"></div></section>
+<footer>阶段工程测试工作台 · 科学有效性及伦理分类准确性未验证 · science_validated=false</footer></main>
+<dialog id="wb-source-dialog"><button id="wb-close-source">关闭来源</button><h2 id="wb-source-title"></h2><p id="wb-source-meta"></p><pre id="wb-source-text"></pre><div id="wb-source-annotations"></div></dialog>
+<script src="/app.js" defer></script><script src="/background.js" defer></script><script src="/candidate-review.js" defer></script><script src="/generation.js" defer></script><script src="/workbench.js" defer></script></body></html>

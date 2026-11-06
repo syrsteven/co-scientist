@@ -1,0 +1,25 @@
+{
+  "tasks": [
+    {
+      "module": "goal.prepare.v1",
+      "status": "succeeded"
+    },
+    {
+      "module": "goal.screen.v1",
+      "status": "succeeded"
+    }
+  ],
+  "attempts": [
+    {
+      "status": "succeeded",
+      "call_key": "model",
+      "ordinal": 1
+    },
+    {
+      "status": "succeeded",
+      "call_key": "model",
+      "ordinal": 1
+    }
+  ],
+  "annotation_count": 0
+}

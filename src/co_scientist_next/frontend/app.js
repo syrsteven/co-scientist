@@ -1,5 +1,6 @@
 "use strict";
 const el = (id) => document.getElementById(id);
+const workspaceChanged = () => document.dispatchEvent(new CustomEvent("workspace-change"));
 const state = {
   project: null,
   revision: null,
@@ -17,7 +18,7 @@ const labels = {
   invalid_input: "输入无效",
   invalid_output: "模型输出无效",
   awaiting_risk_context: "风险信息待补充（非伦理结论）",
-  awaiting_background: "等待背景调研接入",
+  awaiting_background: "目标前置完成 · 可开始文献与背景准备",
   goal_rejected: "目标筛查 reject，已停止",
   adapter_not_configured: "未接入模型适配器",
   failed: "技术执行失败",
@@ -50,14 +51,18 @@ async function api(path, data) {
       : {},
   );
   const result = await response.json();
-  if (!response.ok) throw new Error(result.error || "请求失败");
+  if (!response.ok) {
+    const error = new Error(response.status === 409 ? "本机另一项写操作仍在执行。可继续浏览已保存记录，待其结束后再保存；这不是模型执行失败。不会自动重发。" : (result.error || "请求失败"));
+    error.status = response.status; throw error;
+  }
   return result;
 }
 async function action(fn) {
   if (state.busy) return;
   state.busy = true;
+  workspaceChanged();
   el("notice").textContent = "";
-  const buttons = [...document.querySelectorAll("button")];
+  const buttons = [...document.querySelectorAll("button:not([data-nav]):not(#refresh):not([data-read-only])")];
   const disabled = buttons.map((b) => b.disabled);
   buttons.forEach((b) => (b.disabled = true));
   try {
@@ -66,6 +71,7 @@ async function action(fn) {
     el("notice").textContent = e.message;
   } finally {
     state.busy = false;
+    workspaceChanged();
     buttons.forEach((b, i) => (b.disabled = disabled[i]));
     updateActions();
     if (state.run) {
@@ -104,29 +110,33 @@ function block(title, data) {
 }
 function updateActions() {
   document.querySelectorAll("#runs button, #projects button").forEach((b) => (b.disabled = state.busy));
-  el("create-run").disabled = !state.revision || state.dirty;
+  el("create-run").disabled = !state.revision || state.dirty || (state.config?.goal_test_opt_in_required && el("goal-test-choice")?.value !== "deterministic_development");
   const status = state.run?.run.status;
   el("execute").disabled =
     status !== "ready" ||
     state.run?.tasks.at(-1)?.module.startsWith("literature.") ||
     state.run?.tasks.at(-1)?.module.startsWith("background.") ||
-    state.run?.tasks.at(-1)?.module.startsWith("generation.");
+    state.run?.tasks.at(-1)?.module.startsWith("generation.") ||
+    state.run?.tasks.at(-1)?.module.startsWith("candidate_review.");
   el("recover").hidden =
     status !== "running" ||
     state.run?.tasks.at(-1)?.module.startsWith("literature.") ||
     state.run?.tasks.at(-1)?.module.startsWith("background.") ||
-    state.run?.tasks.at(-1)?.module.startsWith("generation.");
+    state.run?.tasks.at(-1)?.module.startsWith("generation.") ||
+    state.run?.tasks.at(-1)?.module.startsWith("candidate_review.");
 }
 function reset() {
   state.project = null;
   state.revision = null;
   state.run = null;
+  generationData = null; candidateReviewData = null; backgroundData = null; literatureData = [];
   el("literature-panel").hidden = true;
   el("background-panel").hidden = true;
   el("generation-panel").hidden = true;
   state.dirty = false;
   location.hash = "";
   el("brief-form").reset();
+  if (el("goal-test-choice")) el("goal-test-choice").value = "";
   el("name").readOnly = false;
   el("revision-badge").textContent = "尚未保存";
   el("runs").replaceChildren();
@@ -134,6 +144,7 @@ function reset() {
   el("run-tools").hidden = true;
   el("run-state").textContent = "未选择 Run";
   updateActions();
+  workspaceChanged();
 }
 async function projects() {
   const list = await api("/api/projects");
@@ -150,6 +161,7 @@ async function project(id) {
   const data = await api("/api/project?id=" + encodeURIComponent(id));
   if (state.project && state.project !== id) {
     state.run = null;
+    generationData = null; candidateReviewData = null; backgroundData = null; literatureData = [];
     el("literature-panel").hidden = true;
     el("background-panel").hidden = true;
     el("generation-panel").hidden = true;
@@ -174,14 +186,15 @@ async function project(id) {
     ? "草稿版本 " + r.id.slice(0, 8)
     : "尚未保存";
   el("runs").replaceChildren();
-  for (const run of data.runs) {
+  for (const [index, run] of data.runs.entries()) {
     const button = document.createElement("button");
     button.textContent =
-      run.id.slice(0, 8) + " · " + (labels[run.status] || run.status);
+      "运行 " + (index+1) + " · " + (labels[run.status] || run.status);
     button.onclick = () => action(() => showRun(run.id));
     el("runs").append(button);
   }
   updateActions();
+  workspaceChanged();
 }
 function folded(title, data) {
   const d = document.createElement("details");
@@ -298,7 +311,7 @@ async function showRun(id) {
   if (data.run.status === "awaiting_background")
     detail.append(
       block(
-        "真实待接入边界",
+        "下一步：显式准备文献与背景",
         "Goal Ethics 已完成 pass；可以显式检索/获取和执行 P03–P07 背景准备。模型表现仍需审阅，P08需显式提交，科研未完成。",
       ),
     );
@@ -313,6 +326,7 @@ async function showRun(id) {
   await showBackground(data);
   await showGeneration(data);
   updateActions();
+  workspaceChanged();
 }
 el("new-project").onclick = () => reset();
 el("brief-form").oninput = () => {
@@ -356,9 +370,11 @@ el("create-run").onclick = () =>
       revision_id: state.revision,
       policy,
       scenario: el("scenario").value,
+      goal_test_mode: el("goal-test-choice")?.value,
     });
     await project(state.project);
     await showRun(result.run_id);
+    if (typeof wbShow === "function") wbShow("overview");
   });
 el("execute").onclick = () =>
   action(async () => {
@@ -374,21 +390,24 @@ el("recover").onclick = () =>
     await project(state.project);
     await showRun(id);
   });
-el("refresh").onclick = () =>
-  action(async () => {
+el("refresh").onclick = async () => {
+    try {
     await projects();
     if (state.project) await project(state.project);
     if (state.run) await showRun(state.run.run.id);
-  });
+    workspaceChanged();
+    } catch(e) {el("notice").textContent=e.message;}
+  };
 (async () => {
   try {
     state.config = await api("/api/config");
     el("mode").textContent = state.config.development_test
-      ? "开发测试模式 · Goal 制备与 Goal Ethics 是历史确定性测试结果；Candidate Ethics/R0 的政策范围及真实／替身执行方式见各自记录。不代表组织伦理批准。"
+      ? "开发测试模式 · Goal 制备与 Goal Ethics 当前仅提供确定性开发适配器；每次新运行须明确选择；Candidate Ethics/R0 的政策范围及真实／替身执行方式见各自记录。不代表组织伦理批准。"
       : "Goal 模型适配器未配置 · 背景阅读的供应商配置与执行标识另见下方；没有默认替身。";
     el("example-policy").hidden = !state.config.development_test;
     el("fixture-label").hidden = !state.config.development_test;
     await projects();
+    workspaceChanged();
     const match = location.hash.match(/^#run=([a-f0-9]+)$/);
     if (match) {
       const saved = await api("/api/run?id=" + match[1]);
@@ -413,6 +432,7 @@ function litButton(text, parent, fn) {
   parent.append(b);
   return b;
 }
+let literatureData = [];
 let pendingLiterature = null;
 async function submitLiterature(request) {
   const run = state.run.run.id;
@@ -455,7 +475,7 @@ async function showLiterature(data) {
     "awaiting_generation",
   ].includes(data.run.status);
   el("literature-search").disabled = !allowed || !idle;
-  el("literature-mode").textContent = data.development_test
+  el("literature-mode").textContent = state.config.literature_execution_mode === "offline_fixture" ? "OFFLINE 响应夹具 · 不是真实检索或科学证据。" : data.development_test
     ? "目标筛查为测试结果，文献获取为真实请求（需显式操作）；不代表真实伦理审查或生产科学链。"
     : "真实公共文献请求；未执行模型阅读。";
   el("literature-gate").textContent = !passed
@@ -468,6 +488,7 @@ async function showLiterature(data) {
   const history = await api(
     "/api/literature?run_id=" + encodeURIComponent(data.run.id),
   );
+  literatureData = history;
   const root = el("literature-history");
   root.replaceChildren();
   if (!history.length) note("尚无检索记录。", root);
@@ -481,7 +502,7 @@ async function showLiterature(data) {
     const h = document.createElement("h3");
     h.textContent =
       request.kind === "search"
-        ? "人工查询：" + request.query
+        ? "显式查询：" + request.query
         : "获取材料：" + request.source_ref;
     card.append(h);
     note(
