@@ -43,13 +43,18 @@ def workspace(store, run):
     for e in events:
         e["detail"] = json.loads(e["detail"])
     from .goal_diagnostics import inspect_goal
-    invalid_background = [a for a in actions if (a.get("result") or {}).get("background_status") == "invalid_output"]
+    invalid_background = [a for a in actions if (a.get("result") or {}).get("background_status") in ("invalid_output", "capacity_exceeded")]
     background_issue = None
     if invalid_background:
         failed = invalid_background[-1]
         background_issue = {"operation": failed["operation"], "request_id": failed["request_id"],
                             "message": "The saved reading response could not be linked reliably to its selected source. The research is stopped; no automatic resend.",
-                            "diagnostic": failed["result"].get("parse_error")}
+                            "diagnostic": failed["result"].get("parse_error"),
+                            "status": failed["result"]["background_status"],
+                            "actual_request_bytes": failed["result"].get("actual_request_bytes"),
+                            "limit": failed["result"].get("limit")}
+        if background_issue["status"] == "capacity_exceeded":
+            background_issue["message"] = "The complete background request exceeds this task's saved local size limit. No model request was sent. All material is preserved; the research is stopped."
     return {
         "background_issue": background_issue,
         "goal_issue": inspect_goal(store, run),

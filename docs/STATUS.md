@@ -773,3 +773,12 @@ Baseline a34c2cd1a892f92b0d61275a14919f52025f66ca. Run c112c098940f4a8f9f02041e8
 New w1-l2-p04-bound-view-v3 omits opaque per-card view ID repetition and program-binds the single frozen view when absent. Explicit wrong IDs, invented quotes and negative quotes still rejected. Legacy versions stay strict; no old result mutation, automatic recovery or new paid request. Page now explains reading-specific source-binding failure. [Evidence](workbench/automatic/p04-binding-repair/README.md). Service reloaded only after all3actual Runs checked blocked. science_validated=false.
 
 Final P04 repair validation:453passed73.22s; Ruff/JS/wheel/diff checks passed. Actual failure page/detail verified read-only; original execution/input table hashes unchanged. Legacy G3 full local regression not run. PR21 unmerged; real model/search requests0.
+
+
+## PR21 — P05 local byte capacity (2026-11-08)
+
+Baseline fb49cd35c13f22997b710a15bb0df877f37fd7ff. Run c91774672901422ea27a8a1ec38d0aa6 P05 request646381bytes exceeded saved262144byte cap. 16readings/16source views preserved; Task25800f45184949a3bd794ba6a24a2f97 has zero Attempts, no new supplier consumption. No provider output or token-capacity error.
+
+Current workbench Chat/Responses byte cap raised to existing supported2000000bytes, keeping actual request/messages/Prompt/model/high/32768/no-temperature/600s unchanged. Exact original request reconstructed offline and compared equal. Local byte cap is NOT a provider token/context guarantee. Frozen old Run/Task configuration remains unchanged and blocked; no automatic recovery, repeated retrieval/reading or new call. Page distinguishes capacity state with byte details and no-send statement. [Evidence](workbench/automatic/p05-capacity-repair/README.md). science_validated=false.
+
+P05 final checks:454offline tests passed73.06s; Ruff/JS/build/diff passed, actual capacity page verified. Target Task remains zero Attempts/frozen262144bytes. Invalid whole-table sqlite.Row repr fingerprint discarded; exact request reconstruction and target-record checks used. Full legacy G3 local suite not run.

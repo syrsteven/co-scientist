@@ -1,0 +1,17 @@
+{
+  "run_id": "c91774672901422ea27a8a1ec38d0aa6",
+  "task_id": "25800f45184949a3bd794ba6a24a2f97",
+  "operation": "P05",
+  "actual_request_bytes": 646381,
+  "frozen_limit": 262144,
+  "new_task_limit": 2000000,
+  "request_body_and_messages_unchanged": true,
+  "reading_records": 16,
+  "source_views": 16,
+  "request_sha256": "249a9da8310b79a72db22bdac9a1350f1fbe870d5015a7c438367a56f42bf55f",
+  "supplier_attempts": 0,
+  "token_capacity_verified": false,
+  "scientific_material_trimmed": false,
+  "historical_config_changed": false,
+  "science_validated": false
+}

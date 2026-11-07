@@ -724,6 +724,9 @@ class BackgroundService:
                     "background_status": "capacity_exceeded",
                     "actual_request_bytes": size,
                     "limit": config["max_request_bytes"],
+                    "capacity_kind": "local_request_bytes",
+                    "supplier_request_sent": False,
+                    "input_preserved": True,
                     "reason": "No model send and no silent truncation; select explicit smaller material views or configure capacity",
                 }
             )
