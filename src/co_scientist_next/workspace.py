@@ -458,8 +458,6 @@ def make_server(
                     run=confirm(controller,data["source_run_id"],data["preview_hash"],data.get("authorize_successor_execution"))
                     self.reply(201,{"run_id":run})
                 elif path == "/api/research/start":
-                    if goal_restart_only:
-                        raise ValueError("This service only permits explicitly confirmed Goal successors")
                     if suspend_controller_worker:
                         raise ValueError("Scheduling is suspended for diagnostics; no new Start is permitted")
                     if not controller or data.get("authorize_automatic_execution") is not True:

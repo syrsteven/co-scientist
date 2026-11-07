@@ -103,7 +103,7 @@ class ResearchController:
                     encode(policies),
                     encode(profiles),
                     "running",
-                    encode({"phase": "goal", "seed_index": -1, "seeds": [], "round": 0, "policy_selection": policy_selection, "defaults_version": defaults_version}),
+                    encode({"phase": "goal", "seed_index": -1, "seeds": [], "round": 0, "policy_selection": policy_selection, "defaults_version": defaults_version, "explicit_current_start": self.restart_only}),
                     None,
                     now(),
                     now(),
@@ -182,7 +182,7 @@ class ResearchController:
         return {"status": new, "remote_cancelled": False}
 
     def authorized_run(self, run):
-        return not self.restart_only or bool(self.store.rows("SELECT successor_run_id FROM goal_restarts WHERE successor_run_id=?", (run,)))
+        return not self.restart_only or bool(self.store.rows("SELECT successor_run_id FROM goal_restarts WHERE successor_run_id=?", (run,))) or bool(self.store.rows("SELECT run_id FROM research_runs WHERE run_id=? AND json_extract(state, '$.explicit_current_start')=1", (run,)))
 
     def guard(self, task_id, request):
         task = self.store.one("SELECT run_id FROM tasks WHERE id=?", (task_id,))

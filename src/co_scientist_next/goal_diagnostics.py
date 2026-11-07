@@ -41,7 +41,7 @@ def inspect_goal(store, run_id):
             store.rows("SELECT task_id FROM literature_actions WHERE run_id=?", (run_id,))
         ),
         "reason": result.get("parse_error", result.get("reason")),
-        "next_step": "Review the saved response in diagnostics. A new versioned preparation request requires separate authorization; ordinary Start is not a retry."
+        "next_step": f"Review the saved {stage} response in diagnostics. A corrected screening format can be checked offline; no automatic new request is authorized."
         if invalid
         else "Resolve the saved issue before any further execution.",
         "task_id": task["id"],
