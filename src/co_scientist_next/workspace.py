@@ -51,6 +51,7 @@ def make_server(
     history_db=None,
     literature_mode="real_public",
     automatic_research=False,
+    suspend_controller_worker=False,
     offline_start_response_loss=False,
     goal_adapter=None,
     allow_development_goal_policy=False,
@@ -219,8 +220,10 @@ def make_server(
                         200,
                         {
                             "automatic_research": automatic_research,
+                            "scheduling_suspended": suspend_controller_worker,
                             "policy_choices": __import__("co_scientist_next.policy_catalog", fromlist=["choices"]).choices(development_test),
                             "research_policies": {"goal": DEVELOPMENT_POLICY, "candidate": REVIEW_POLICY, "decision_policy": DEVELOPMENT_DECISIONS, "r0": DEVELOPMENT_R0_POLICY} if development_test else __import__("co_scientist_next.research_policies", fromlist=["POLICIES"]).POLICIES,
+                            "research_defaults_version": __import__("co_scientist_next.research_config", fromlist=["DEFAULT_VERSION"]).DEFAULT_VERSION,
                             "research_defaults": __import__("co_scientist_next.research_config", fromlist=["DEFAULTS"]).DEFAULTS,
                             "goal_model": controller.profiles()["goal"] if controller else {"execution_mode":"development_fixture" if development_test else "not_configured"},
                             "development_test": development_test,
@@ -439,6 +442,8 @@ def make_server(
                     if managed_run and store.rows("SELECT run_id FROM research_runs WHERE run_id=?", (managed_run,)):
                         raise ValueError("Automatic Run is controller-owned; manual submissions/recovery cannot bypass its frozen plan or stop state")
                 if path == "/api/research/start":
+                    if suspend_controller_worker:
+                        raise ValueError("Scheduling is suspended for diagnostics; no new Start is permitted")
                     if not controller or data.get("authorize_automatic_execution") is not True:
                         raise ValueError("Explicit Start authorization required")
                     if development_test and data.get("goal_test_mode") != "deterministic_development":
@@ -447,7 +452,10 @@ def make_server(
                         raise ValueError("Client policy text is not accepted")
                     from .policy_catalog import resolve
                     policies = resolve(data.get("policy_selection"), development_test)
-                    run=controller.start(data["revision_id"],data["start_key"],data["config"],policies,policy_selection=data["policy_selection"])
+                    from .research_config import DEFAULT_VERSION, public_start_config
+                    previous = store.rows("SELECT config FROM research_runs WHERE start_key=?", (data["start_key"],))
+                    config = public_start_config(data, fixture=development_test, existing=json.loads(previous[0]["config"]) if previous else None)
+                    run=controller.start(data["revision_id"],data["start_key"],config,policies,policy_selection=data["policy_selection"],defaults_version=None if development_test else DEFAULT_VERSION)
                     if development_test and offline_start_response_loss and not getattr(self.server, 'start_response_lost', False):
                         self.server.start_response_lost = True
                         self.close_connection = True
@@ -586,7 +594,7 @@ def make_server(
     server = (ThreadingHTTPServer if responsive else HTTPServer)(("127.0.0.1", port), Handler)
     server.daemon_threads = True
     server.research_controller = controller
-    if controller:
+    if controller and not suspend_controller_worker:
         controller.start_worker(write_lock)
     return server
 
@@ -658,6 +666,7 @@ def main():
         help="Optional historical database: read-only GET/export only, never a Store",
     )
     parser.add_argument("--automatic-research", action="store_true", help="Enable explicit Start and persisted bounded controller; startup alone creates no research")
+    parser.add_argument("--suspend-controller-worker", action="store_true", help="Read-only scheduling session: never start controller worker")
     parser.add_argument("--real-goal", action="store_true", help="Use explicitly configured reading Chat profile for actual Goal preparation/screening")
     parser.add_argument("--allow-development-goal-policy", action="store_true")
     args = parser.parse_args()
@@ -727,6 +736,7 @@ def main():
             store,
             port=args.port,
             automatic_research=args.automatic_research,
+            suspend_controller_worker=args.suspend_controller_worker,
             goal_adapter=adapter if args.real_goal else None,
             allow_development_goal_policy=args.allow_development_goal_policy,
             development_test=args.development_test,

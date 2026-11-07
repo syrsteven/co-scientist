@@ -63,3 +63,21 @@ def expected_candidates(config):
         * config["candidates_per_mode"]
         * (2 if config["mode"] == "Both" else 1)
     )
+
+
+DEFAULT_VERSION = "journey-defaults-2026-11-07-v1"
+
+
+def public_start_config(data, *, fixture=False, existing=None):
+    # Existing launch identities replay their frozen configuration, never today's defaults.
+    if existing is not None:
+        if "config" in data and validate_config(data["config"]) != existing:
+            raise ValueError("Start identity reused with different configuration")
+        return existing
+    if fixture:
+        return validate_config(data.get("config", {}))
+    if "config" in data:
+        raise ValueError("Research limits are server-managed; refresh the New Research page")
+    if data.get("defaults_version") != DEFAULT_VERSION:
+        raise ValueError("Research defaults changed; refresh and review the execution scope")
+    return dict(DEFAULTS)

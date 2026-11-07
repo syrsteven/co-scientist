@@ -727,3 +727,14 @@ local new-system rerun and whole-repository Ruff check are recorded in FINAL_CHE
 
 CI-mode local rerun: 420 passed in 64.38s, 0 failed/skipped. Remote CI is rerun on
 the corrected head; do not interpret the earlier head's collection failure as green CI.
+
+
+## PR #21 — first real Goal failure repair (2026-11-07)
+
+Baseline 87906a4257cd19f4c6f2e7d6c8b386ca559c00d0. Read-only inspection of Run a5d7c9aef42640858423fec3ea1116b0 found completed Chat transport (200/stop, input592/output1620, reasoning670, unknown cost) but invalid Goal Preparation, not Screening. Exact locator mismatch and background/use hard-requirement reclassification are documented in [Goal repair evidence](workbench/automatic/goal-repair/README.md). No safe semantics-preserving offline success; original failure and usage retained. New unsent semantic-v3 proposal exported privately, requiring future explicit authorization.
+
+New preparations construct fixed Brief fields/constraints deterministically and ask only for separately located semantic judgments. Legacy parser/replay preserved. New Research uses server-owned versioned defaults (1 Directed +1 Open, one DIRECT each); prior Run configurations remain frozen. Failure/review labels, structured reading, actual query intent and independent assessment dimensions corrected. Service 8770 is temporarily diagnostics-only, no credentials/authorization and worker suspended; no Start or automatic recovery.
+
+Original workspace and historical scientific records preserved. New real model requests0, real retrieval requests0, science_validated=false. Final check results follow in the Goal repair evidence; no claim of real v3 scientific validation.
+
+Final Goal-repair verification: 436 new-system tests passed (69.46s), no failed/skipped; full workflow Ruff, Journey/workbench JS, wheel build and diff check passed. Desktop/390px browser inspection and read-only target-Run inspection completed. Full legacy G3 local suite not run; remote CI tracked on PR.

@@ -60,7 +60,7 @@ class ResearchController:
             "review": self.reviews.config(),
         }
 
-    def start(self, revision_id, start_key, config, policies, *, policy_selection=None):
+    def start(self, revision_id, start_key, config, policies, *, policy_selection=None, defaults_version=None):
         config = validate_config(config)
         if not isinstance(start_key, str) or not 8 <= len(start_key) <= 100:
             raise ValueError("Stable Start identity required")
@@ -99,7 +99,7 @@ class ResearchController:
                     encode(policies),
                     encode(profiles),
                     "running",
-                    encode({"phase": "goal", "seed_index": -1, "seeds": [], "round": 0, "policy_selection": policy_selection}),
+                    encode({"phase": "goal", "seed_index": -1, "seeds": [], "round": 0, "policy_selection": policy_selection, "defaults_version": defaults_version}),
                     None,
                     now(),
                     now(),

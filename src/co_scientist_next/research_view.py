@@ -42,7 +42,9 @@ def workspace(store, run):
     events = store.rows("SELECT * FROM research_events WHERE run_id=? ORDER BY id", (run,))
     for e in events:
         e["detail"] = json.loads(e["detail"])
+    from .goal_diagnostics import inspect_goal
     return {
+        "goal_issue": inspect_goal(store, run),
         "research": row,
         "goal": GoalSlice(store).snapshot(run),
         "background": background,

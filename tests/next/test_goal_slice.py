@@ -152,9 +152,9 @@ class ChangedOutput(DevelopmentAdapter):
         lambda v: v.update(original_question="被改写的问题"),
         lambda v: v.update(hard_requirements=[]),
         lambda v: v.update(optional_interpretations=["改用未提供的人类iPSC模型"]),
-        lambda v: v["hard_requirements"].append(
+        lambda v: v.update(additional_conditions=[
             {"text": "iPSC", "input_locator": "original_question", "supporting_span": "iPSC"}
-        ),
+        ]),
         lambda v: v.update(clarification_required=True),
         lambda v: v.update(
             clarification_questions=[{"question": "非关键未知", "essential": False}],
@@ -279,7 +279,7 @@ with Store(os.environ['DB']) as store:
   p=store.create_project('Crash goal');b=store.revise_brief(p,{'question':'原始科研问题','hard_constraints':['只保留给定条件']})
   run=service.create_run(b,DEVELOPMENT_POLICY)
   print(json.dumps({'pid':os.getpid(),'run':run}),flush=True)
-  goal.parse_prepare=lambda *args:os._exit(76)
+  goal.parse_prepare_v3=lambda *args:os._exit(76)
   service.execute(run)
  else:
   run=os.environ['RUN'];status=service.execute(run,recover=True)
