@@ -119,7 +119,9 @@ class LiteratureService:
                 raise ValueError("Executed query must equal selected saved plan")
             payload["background_context"] = background_context
             if payload["kind"] == "search":
-                payload["query_origin"] = "model_planned_user_executed"
+                managed = self.store.rows("SELECT name FROM sqlite_master WHERE type='table' AND name='research_runs'")
+                automatic = managed and self.store.rows("SELECT run_id FROM research_runs WHERE run_id=?", (run_id,))
+                payload["query_origin"] = "model_planned_controller_executed" if automatic else "model_planned_user_executed"
         old = self.store.rows("SELECT * FROM literature_actions WHERE request_id=?", (request_id,))
         if old:
             if old[0]["run_id"] != run_id or old[0]["request"] != encode(payload):
@@ -222,6 +224,14 @@ class LiteratureService:
     def acquire(self, inputs, calls):
         self.passed_goal(inputs.run_id)  # M12 gate is checked again at execution.
         request = inputs.previous_result["manual_literature_request"]
+        library = None
+        if self.store.rows("SELECT name FROM sqlite_master WHERE name='research_runs'") and self.store.rows("SELECT run_id FROM research_runs WHERE run_id=?", (inputs.run_id,)):
+            from .research_library import ResearchLibrary
+            library = ResearchLibrary(self.store)
+            if request["kind"] == "fetch":
+                reused = library.lookup(request["source_ref"], request["desired_access"])
+                if reused:
+                    return ModuleResult(reused)
         port = EuropePMC(calls, page_size=request.get("page_size", 5), transport=self.transport)
         if request["kind"] == "search":
             result = port.search(
@@ -231,14 +241,10 @@ class LiteratureService:
             result = port.fetch(
                 FetchRequest(request["source_ref"], AccessLevel(request["desired_access"]))
             )
-        return ModuleResult(
-            {
-                "acquisition": asdict(result),
-                "details": port.details,
-                "model_read": False,
-                "science_validated": False,
-            }
-        )
+        output = {"acquisition": asdict(result), "details": port.details, "model_read": False, "science_validated": False}
+        if library and request["kind"] == "fetch":
+            library.save(inputs.task_id, request, output)
+        return ModuleResult(output)
 
     def source_refs(self, run_id):
         return {

@@ -94,3 +94,10 @@
 - Focused checks: `PYTHONPATH=src python -m pytest -q tests/next` and
   `python -m ruff check src/co_scientist_next tests/next`. Use an available Python
   environment; no mandatory `.venv`. Update STATUS with executed checks and limits.
+
+- V6 automatic research authorization (2026-11-06): an explicit Start may authorize
+  the bounded persisted controller and same-ID remote queries for that new Run.
+  Earlier manual-only rules remain applicable to historical/manual runs. Pause/stop
+  prevent new reservations; already submitted provider work is not cancelled.
+  No-ID uncertain never auto-retries. Freeze limits, policy and adapter profiles;
+  no silent truncation, model switching or claim of scientific validation.

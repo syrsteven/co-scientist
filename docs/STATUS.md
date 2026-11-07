@@ -660,3 +660,70 @@ python -m ruff format --check src/co_scientist_next tests/next
 - 真实ALS只读验收：P09真实模型+限定非生产用途pass；P10 proceed_to_R1、6项未知、8项R1核查、无达标阻断缺陷；逐条保留原文，未把ANXA11/SUN1独立人工初审问题冒充R0发现。R1未执行／能力未实现。
 - 回归起始398 passed；最终403 passed（新增5项前端映射/DOM/隔离/409断连测试），失败0/跳过0。Ruff、全部Next JS语法、wheel/sdist通过。桌面及390px浏览器已验候选内意见保存/刷新、来源问题、兄弟候选与Run隔离、空新问题、V5比较和G0→G3回放；延迟夹具执行中GET刷新后两个任务仍仅两个ordinal=1 Attempt。截图、命令和限制见 `docs/workbench/reading-refinement/README.md`。
 - 科学/历史保护：真实模型请求0、真实检索0；原工作区232项指纹及两历史DB SHA不变，科学原件和V5 HTML未改。science_validated=false。旧G3全量、在线供应商/检索和科学质量验收未运行，不实现M03/R1/Ranking/Evolution。
+
+
+## V6 automatic research — 2026-11-07
+
+PR #20 fixed head b93c1f5f50159cd61c205720cd95b6e2b267da57 was verified and
+merged as 0e5600f55a54412e27d48b56fedf85de64305c5c; this slice starts there
+on codex/v6-auto-research in an isolated worktree.
+
+Backend/M12: persisted bounded Start, separate seed rounds, material snapshot reuse,
+abstract relevance screening, traceable segments, real Goal adapter, existing P03–P10
+composition, pass-only R0, pause/resume/stop and pre-send hard limits. Existing
+uncertain records are untouched. OPEN isolation and P08 six-field contract retained.
+Page: supplied Journey layout connected to persisted aggregation, views, candidates,
+independent human notes and export. Policy maturity and execution mode are separate.
+Service: http://127.0.0.1:8770/ with independent stage DB; started empty (0 attempts).
+
+Final new-system regression: 413 passed in 61.76s, no failed/skipped tests. Ruff,
+JavaScript syntax and wheel build passed. Desktop and 390px mobile viewport browser
+checks passed; downloaded JSON parsed with persisted human assessment. Original
+232-file workspace fingerprint and both historical database hashes unchanged.
+Real model requests 0; real search requests 0; scientific quality NOT validated.
+No R1/M03/Ranking/Evolution. Physical mobile device and real scientific end-to-end
+quality checks: 未运行. Details, limits, commands and evidence: docs/workbench/automatic/.
+science_validated=false. New PR remains unmerged.
+
+
+## PR #21 product corrections — 2026-11-07
+
+Supersedes the initial V6 completion description. Reviewed head
+f07f04c395d171576c565a4a46dbc89a36ca029b was still the open PR head before this update.
+Controller and P03–P10 scientific responsibilities retained. New engineering boundaries:
+independent short annotation transactions with hash/submission deduplication; durable
+draft/start lookup and same-key recovery; server-owned versioned policy choices;
+project lifecycle with stop-before-hide and restore-without-execution; incremental
+local status, on-demand source/candidate detail and Run response guards; exact-task
+Seed holds permit independent siblings while preserving unresolved calls and quotas.
+
+Product: English researcher controls; five stages and actual direction/query/finding
+cards; broad/seed literature and explicit resource omissions; full frozen Brief;
+structured candidate reading and side-by-side comparisons; scientific activity links;
+separate diagnostics. Original scientific texts and historical design files unchanged.
+No scientific quality score, policy production approval or scientific validation implied.
+
+Final new-system regression: 420 passed in 66.72s, 0 failed/skipped. Ruff, JS syntax
+and wheel build passed. Actual Chrome 390px checks: all research/settings pages,
+comparison, draft and project manager; document width == viewport width == 390.
+Desktop/reference comparison uses 1440x1000. Browser verified note saved during a
+12-second reading wait, retained unsaved text, definite Start failure/edit, lost Start
+response/recovery, draft lookup, Trash restore, source opening and comparison.
+Evidence and explicit design differences: docs/workbench/automatic/product-verification/.
+
+Updated service: http://127.0.0.1:8770/, independent stage DB remains 0 Runs/0 Attempts.
+Detached process startup prevents session cleanup from taking down the local service.
+Offline acceptance service 8779 is separate; complete fixture export is committed,
+not the SQLite database. Real model sends 0; real literature sends 0. Original 232-file
+workspace fingerprint and both historical DB hashes unchanged. Physical-device testing,
+real scientific quality and old G3 full regression: 未运行. science_validated=false.
+PR #21 remains unmerged.
+
+CI compatibility correction: the first updated head's new test helper import failed
+under pytest --import-mode=importlib (both Python matrix jobs stopped at collection).
+Replaced same-directory imports with explicit runpy paths, matching existing fixtures.
+This changes only test loading; scientific/runtime behavior is unchanged. The CI-mode
+local new-system rerun and whole-repository Ruff check are recorded in FINAL_CHECKS.md.
+
+CI-mode local rerun: 420 passed in 64.38s, 0 failed/skipped. Remote CI is rerun on
+the corrected head; do not interpret the earlier head's collection failure as green CI.

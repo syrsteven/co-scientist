@@ -269,6 +269,18 @@ class BackgroundService:
                 payload["neutral_overview"] = {
                     k: neutral[k] for k in ("overview", "competing_explanations", "limitations")
                 }
+            if request.get("followup_ref"):
+                prior = self.action(run_id, request["followup_ref"], "P07")
+                if prior["seed_id"] != seed_id or prior["result"]["artifact"]["decision"] != "retrieve_more":
+                    raise ValueError("Focused followup requires same-seed retrieve_more")
+                payload["focused_followups"] = [f for f in prior["result"]["artifact"]["focused_followups"] if f.get("resolution_kind") != "experiment"]
+                payload["followup_stop_condition"] = "Bounded attempt to address these gaps; experiments are not literature tasks; no new material is not ready"
+        elif operation == "ABSTRACT_SELECT":
+            ids = request.get("view_ids")
+            views = [v for v in self.views(run_id) if v["id"] in (ids or []) and v["seed_id"] in (None, seed_id) and v["access"] == "abstract"]
+            if not ids or len(views) != len(set(ids)):
+                raise ValueError("Actual same-scope abstract views required")
+            payload.update({"seed_brief": seed_brief, "abstract_views": views})
         elif operation == "P04":
             view = next((v for v in self.views(run_id) if v["id"] == request["view_id"]), None)
             if not view or view["seed_id"] not in (None, seed_id):
@@ -378,7 +390,8 @@ class BackgroundService:
         ):
             raise ValueError("Explicit supported operation/request identity required")
         allowed = {
-            "P03": {"seed_id", "query_count"},
+            "P03": {"seed_id", "query_count", "followup_ref"},
+            "ABSTRACT_SELECT": {"seed_id", "view_ids"},
             "P04": {"seed_id", "view_id"},
             "P05": {"seed_id", "reading_refs", "omitted_readings"},
             "P06_DIRECTED": {"orientation_ref", "count"},
@@ -411,11 +424,16 @@ class BackgroundService:
             """,
             (run_id,),
         )
-        if unresolved:
+        from .research_scope import blocking_attempts
+        if blocking_attempts(self.store, run_id, unresolved):
             raise ValueError(
                 "Unresolved external send must be recovered explicitly before a new model task"
             )
         payload = self.build_input(run_id, operation, request)
+        version = operation_prompt_version(operation)
+        if operation == "P07" and self.store.rows("SELECT name FROM sqlite_master WHERE name='research_runs'") and self.store.rows("SELECT run_id FROM research_runs WHERE run_id=?", (run_id,)):
+            version = "v6-p07-bounded-followups-v1"
+            payload["followup_requirements"] = "Separate literature-resolvable gaps and future experimental unknowns; include expected information and finite stopping conditions"
         config = self.config()
         if request.get("fixture_scenario") not in (
             None,
@@ -451,7 +469,7 @@ class BackgroundService:
                     encode(payload),
                     encode(config),
                     now(),
-                    operation_prompt_version(operation),
+                    version,
                 ),
             )
         return self.store.one("SELECT * FROM background_actions WHERE request_id=?", (request_id,))

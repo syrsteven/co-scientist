@@ -7,6 +7,7 @@ SQL mutation is outside the supported API. No compatibility with G3 databases.
 import fcntl
 import json
 import sqlite3
+from contextlib import nullcontext
 from datetime import UTC, datetime
 from pathlib import Path
 from uuid import uuid4
@@ -53,6 +54,10 @@ class Store:
                     target_kind TEXT NOT NULL, target_ref TEXT NOT NULL,
                     target_sha256 TEXT NOT NULL, category TEXT NOT NULL,
                     observations TEXT NOT NULL, note TEXT NOT NULL, created_at TEXT NOT NULL
+                );
+                CREATE TABLE IF NOT EXISTS annotation_submissions (
+                    id TEXT PRIMARY KEY, input_hash TEXT NOT NULL,
+                    annotation_id TEXT NOT NULL REFERENCES human_annotations(id)
                 );
                 CREATE TABLE IF NOT EXISTS projects (
                     id TEXT PRIMARY KEY, name TEXT NOT NULL, created_at TEXT NOT NULL
@@ -212,6 +217,7 @@ class Store:
         policy_ref: str,
         goal_context_ref: str | None = None,
         goal_config: JSON | None = None,
+        commit: bool = True,
     ):
         if not modules or not all(isinstance(m, str) and m for m in modules):
             raise ValueError("A nonempty explicit module plan is required")
@@ -219,7 +225,7 @@ class Store:
             raise ValueError("A fixed policy reference is required")
         revision = self.one("SELECT * FROM brief_revisions WHERE id=?", (revision_id,))
         run_id = identity()
-        with self.db:
+        with self.db if commit else nullcontext():
             self.db.execute(
                 "INSERT INTO runs VALUES(?,?,?,?,?,?,?,?)",
                 (

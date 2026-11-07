@@ -316,6 +316,8 @@ class CandidateReviewService:
             "SELECT p.id FROM attempts p JOIN tasks t ON t.id=p.task_id WHERE t.run_id=? AND t.id!=? AND p.status IN ('in_flight','uncertain') AND NOT EXISTS (SELECT 1 FROM attempts n WHERE n.task_id=p.task_id AND n.call_key=p.call_key AND n.ordinal>p.ordinal)",
             (run_id, exclude_task),
         )
+        from .research_scope import blocking_attempts
+        unresolved = blocking_attempts(self.store, run_id, unresolved)
         if any(p["id"] not in allowed for p in unresolved):
             raise ValueError("Other unresolved external call remains blocked")
 
