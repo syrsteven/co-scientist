@@ -660,3 +660,27 @@ python -m ruff format --check src/co_scientist_next tests/next
 - 真实ALS只读验收：P09真实模型+限定非生产用途pass；P10 proceed_to_R1、6项未知、8项R1核查、无达标阻断缺陷；逐条保留原文，未把ANXA11/SUN1独立人工初审问题冒充R0发现。R1未执行／能力未实现。
 - 回归起始398 passed；最终403 passed（新增5项前端映射/DOM/隔离/409断连测试），失败0/跳过0。Ruff、全部Next JS语法、wheel/sdist通过。桌面及390px浏览器已验候选内意见保存/刷新、来源问题、兄弟候选与Run隔离、空新问题、V5比较和G0→G3回放；延迟夹具执行中GET刷新后两个任务仍仅两个ordinal=1 Attempt。截图、命令和限制见 `docs/workbench/reading-refinement/README.md`。
 - 科学/历史保护：真实模型请求0、真实检索0；原工作区232项指纹及两历史DB SHA不变，科学原件和V5 HTML未改。science_validated=false。旧G3全量、在线供应商/检索和科学质量验收未运行，不实现M03/R1/Ranking/Evolution。
+
+
+## V6 automatic research — 2026-11-07
+
+PR #20 fixed head b93c1f5f50159cd61c205720cd95b6e2b267da57 was verified and
+merged as 0e5600f55a54412e27d48b56fedf85de64305c5c; this slice starts there
+on codex/v6-auto-research in an isolated worktree.
+
+Backend/M12: persisted bounded Start, separate seed rounds, material snapshot reuse,
+abstract relevance screening, traceable segments, real Goal adapter, existing P03–P10
+composition, pass-only R0, pause/resume/stop and pre-send hard limits. Existing
+uncertain records are untouched. OPEN isolation and P08 six-field contract retained.
+Page: supplied Journey layout connected to persisted aggregation, views, candidates,
+independent human notes and export. Policy maturity and execution mode are separate.
+Service: http://127.0.0.1:8770/ with independent stage DB; started empty (0 attempts).
+
+Final new-system regression: 413 passed in 61.76s, no failed/skipped tests. Ruff,
+JavaScript syntax and wheel build passed. Desktop and 390px mobile viewport browser
+checks passed; downloaded JSON parsed with persisted human assessment. Original
+232-file workspace fingerprint and both historical database hashes unchanged.
+Real model requests 0; real search requests 0; scientific quality NOT validated.
+No R1/M03/Ranking/Evolution. Physical mobile device and real scientific end-to-end
+quality checks: 未运行. Details, limits, commands and evidence: docs/workbench/automatic/.
+science_validated=false. New PR remains unmerged.

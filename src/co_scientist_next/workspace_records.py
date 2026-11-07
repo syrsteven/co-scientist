@@ -142,6 +142,8 @@ class WorkspaceRecords:
             "generation_actions",
             "candidate_review_actions",
             "generation_migrations",
+            "research_runs",
+            "research_events",
         ):
             result[table] = (
                 s.rows("SELECT * FROM " + table + " WHERE run_id=?", (run_id,))

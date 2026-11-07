@@ -2,6 +2,7 @@
 
 import argparse
 import json
+import sqlite3
 from http.server import BaseHTTPRequestHandler, HTTPServer, ThreadingHTTPServer
 from importlib.resources import files
 from pathlib import Path
@@ -46,6 +47,9 @@ def make_server(
     responsive=False,
     history_db=None,
     literature_mode="real_public",
+    automatic_research=False,
+    goal_adapter=None,
+    allow_development_goal_policy=False,
 ):
     database_path = store.one("PRAGMA database_list")["file"]
     if history_db and Path(history_db).resolve() == Path(database_path).resolve():
@@ -54,7 +58,7 @@ def make_server(
         raise ValueError("Responsive server requires explicitly serialized HTTP Store threads")
     write_lock = Lock()
     service = GoalSlice(
-        store, DevelopmentAdapter() if development_test else None, development_test=development_test
+        store, DevelopmentAdapter() if development_test else goal_adapter, development_test=development_test, allow_development_policy=allow_development_goal_policy
     )
 
     literature = LiteratureService(store, enabled=public_literature, transport=literature_transport)
@@ -62,6 +66,14 @@ def make_server(
     background = BackgroundService(store, reading_adapter)
     generation = GenerationService(store, generation_adapter)
     reviews = CandidateReviewService(store, review_adapter, development=development_review)
+
+    controller = None
+    if automatic_research:
+        if not responsive:
+            raise ValueError("Automatic controller requires responsive serialized runtime")
+        from .research import ResearchController
+        controller = ResearchController(store, service, background, literature, generation, reviews)
+        controller.initialize()
 
     class Handler(BaseHTTPRequestHandler):
         def log_message(self, *_):
@@ -114,6 +126,18 @@ def make_server(
                 self.allowed_origin()
                 parsed = urlsplit(self.path)
                 path = parsed.path
+                if path == "/api/research-workspace":
+                    from .research_view import workspace
+                    self.reply(200, workspace(store, parse_qs(parsed.query)["run_id"][0]))
+                    return
+                if path == "/api/research-runs":
+                    rows = store.rows("SELECT r.*,p.name FROM research_runs a JOIN runs r ON a.run_id=r.id JOIN projects p ON p.id=r.project_id ORDER BY r.created_at DESC") if controller else []
+                    self.reply(200, rows)
+                    return
+                if path == "/reader.js":
+                    raw=files("co_scientist_next").joinpath("frontend", "workbench.js").read_text()
+                    self.reply(200, raw.split("// Live data only.")[0].encode(), "text/javascript")
+                    return
                 if path in (
                     "/",
                     "/app.js",
@@ -124,9 +148,14 @@ def make_server(
                     "/workbench.js",
                     "/workbench.css",
                     "/history.html",
+                    "/journey.js", "/journey.css", "/journey", "/manual",
                 ):
                     asset, mime = {
-                        "/": ("index.html", "text/html"),
+                        "/": ("journey.html" if controller else "index.html", "text/html"),
+                        "/manual": ("index.html", "text/html"),
+                        "/journey": ("journey.html", "text/html"),
+                        "/journey.js": ("journey.js", "text/javascript"),
+                        "/journey.css": ("journey.css", "text/css"),
                         "/app.js": ("app.js", "text/javascript"),
                         "/background.js": ("background.js", "text/javascript"),
                         "/generation.js": ("generation.js", "text/javascript"),
@@ -145,6 +174,10 @@ def make_server(
                     self.reply(
                         200,
                         {
+                            "automatic_research": automatic_research,
+                            "research_policies": {"goal": DEVELOPMENT_POLICY, "candidate": REVIEW_POLICY, "decision_policy": DEVELOPMENT_DECISIONS, "r0": DEVELOPMENT_R0_POLICY} if development_test else __import__("co_scientist_next.research_policies", fromlist=["POLICIES"]).POLICIES,
+                            "research_defaults": __import__("co_scientist_next.research_config", fromlist=["DEFAULTS"]).DEFAULTS,
+                            "goal_model": controller.profiles()["goal"] if controller else {"execution_mode":"development_fixture" if development_test else "not_configured"},
                             "development_test": development_test,
                             "real_adapter_connected": False,
                             "reading_model": background.config(),
@@ -295,6 +328,18 @@ def make_server(
                 self.reply(400, {"error": str(exc)})
 
         def do_POST(self):
+            if urlsplit(self.path).path == "/api/research/control":
+                try:
+                    self.allowed_origin()
+                    size=int(self.headers.get("Content-Length", "0"))
+                    if not controller or not 0 < size < 4000:
+                        raise ValueError("Invalid controller request")
+                    data=json.loads(self.rfile.read(size))
+                    with sqlite3.connect(database_path) as db:
+                        self.reply(200, controller.control(db, data["run_id"], data["action"]))
+                except (ValueError, KeyError) as exc:
+                    self.reply(400, {"error":str(exc)})
+                return
             if not write_lock.acquire(blocking=False):
                 self.reply(409, {"error": "当前操作正在执行；可读取本地状态，等待后再保存或执行。"})
                 return
@@ -315,7 +360,24 @@ def make_server(
                     raise ValueError("JSON request required")
                 data = json.loads(self.rfile.read(size))
                 path = urlsplit(self.path).path
-                if path == "/api/annotations":
+                if controller and path not in ("/api/research/start", "/api/brief", "/api/annotations", "/api/runs"):
+                    managed_run = data.get("run_id")
+                    if data.get("request_id"):
+                        for table in ("background_actions", "literature_actions", "generation_actions", "candidate_review_actions"):
+                            rows = store.rows("SELECT run_id FROM " + table + " WHERE request_id=?", (data["request_id"],))
+                            if rows:
+                                managed_run = rows[0]["run_id"]
+                                break
+                    if managed_run and store.rows("SELECT run_id FROM research_runs WHERE run_id=?", (managed_run,)):
+                        raise ValueError("Automatic Run is controller-owned; manual submissions/recovery cannot bypass its frozen plan or stop state")
+                if path == "/api/research/start":
+                    if not controller or data.get("authorize_automatic_execution") is not True:
+                        raise ValueError("Explicit Start authorization required")
+                    if development_test and data.get("goal_test_mode") != "deterministic_development":
+                        raise ValueError("Explicit isolated fixture mode choice required")
+                    run=controller.start(data["revision_id"],data["start_key"],data["config"],data["policies"])
+                    self.reply(201,{"run_id":run})
+                elif path == "/api/annotations":
                     self.reply(201, WorkspaceRecords(store).save(data["run_id"], data))
                 elif path == "/api/brief":
                     validate_brief(data["brief"])
@@ -447,6 +509,9 @@ def make_server(
 
     server = (ThreadingHTTPServer if responsive else HTTPServer)(("127.0.0.1", port), Handler)
     server.daemon_threads = True
+    server.research_controller = controller
+    if controller:
+        controller.start_worker(write_lock)
     return server
 
 
@@ -516,7 +581,12 @@ def main():
         "--history-db",
         help="Optional historical database: read-only GET/export only, never a Store",
     )
+    parser.add_argument("--automatic-research", action="store_true", help="Enable explicit Start and persisted bounded controller; startup alone creates no research")
+    parser.add_argument("--real-goal", action="store_true", help="Use explicitly configured reading Chat profile for actual Goal preparation/screening")
+    parser.add_argument("--allow-development-goal-policy", action="store_true")
     args = parser.parse_args()
+    if args.real_goal and (args.development_test or not args.reading_model_config):
+        parser.error("Real Goal requires explicit reading profile and forbids development fixture fallback")
     if args.allow_development_review_policy and (
         not args.review_responses_config or args.development_review
     ):
@@ -580,6 +650,9 @@ def main():
         server = make_server(
             store,
             port=args.port,
+            automatic_research=args.automatic_research,
+            goal_adapter=adapter if args.real_goal else None,
+            allow_development_goal_policy=args.allow_development_goal_policy,
             development_test=args.development_test,
             public_literature=args.public_literature,
             require_goal_test_opt_in=args.require_goal_test_opt_in,
@@ -596,7 +669,7 @@ def main():
         )
         # No store.recover() here. Restart and refresh are observational until explicit POST.
         print(
-            f"http://127.0.0.1:{server.server_port} | development_test={args.development_test} | goal_real_adapter_connected=False | reading_mode={adapter.execution_mode if adapter else 'not_configured'}",
+            f"http://127.0.0.1:{server.server_port} | development_test={args.development_test} | goal_real_adapter_connected={args.real_goal} | reading_mode={adapter.execution_mode if adapter else 'not_configured'}",
             flush=True,
         )
         try:
@@ -604,6 +677,8 @@ def main():
         except KeyboardInterrupt:
             pass
         finally:
+            if server.research_controller:
+                server.research_controller.stop_event.set()
             server.server_close()
 
 

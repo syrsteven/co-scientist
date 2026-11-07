@@ -234,10 +234,10 @@ async function readerNotes(root,ctx,kind,ref) {
     const target=data.targets.find(t=>t.kind===kind&&t.ref===ref);
     if (!target) {root.append(wbNode("p","此来源仅存在于冻结模型输入中，没有后端支持的 material_view 注释目标，无法在这里持久化意见。","reading-notice"));return;}
     const binding={...target,run_id:runId};const draftKey=[runId,kind,ref,target.sha256].join(":");
-    const fields=kind==="candidate"?['证据忠实性','机制价值','可检验性','主要问题']:['实验情境是否保留','阴性结果是否保留','作者措辞是否忠实'];
+    const fields=kind==="candidate"?['证据忠实性','机制价值','可检验性','主要问题']:kind==="run"?['检索相关性','重要遗漏','研究过程问题']:['实验情境是否保留','阴性结果是否保留','作者措辞是否忠实'];
     const draft=readerDrafts.get(draftKey)||{};
     const form=wbNode("form",undefined,"inline-assessment");
-    form.append(wbNode("p","自动绑定当前"+(kind==="candidate"?"候选":"原文视图")+"及内容版本。意见不会改写科学结果，也不会自动进入模型输入。","muted"));
+    form.append(wbNode("p","自动绑定当前"+(kind==="candidate"?"候选":kind==="run"?"研究":"原文视图")+"及内容版本。意见不会改写科学结果，也不会自动进入模型输入。","muted"));
     const inputs={};
     for (const name of [...fields,'个人意见']) {const label=wbNode("label",name);const input=wbNode("textarea");input.rows=2;input.value=draft[name]||"";input.oninput=()=>{const d=readerDrafts.get(draftKey)||{};d[name]=input.value;readerDrafts.set(draftKey,d);};label.append(input);form.append(label);inputs[name]=input;}
     const save=wbNode("button","保存当前对象的独立判断","primary");save.type="submit";save.disabled=state.busy;form.append(save);
@@ -246,7 +246,7 @@ async function readerNotes(root,ctx,kind,ref) {
     form.onsubmit=e=>{e.preventDefault();action(async()=>{
       if (state.run?.run.id!==runId) throw new Error("运行已切换，请回到对应研究再保存意见。");
       const observations=Object.fromEntries(fields.map(name=>[name,inputs[name].value]));
-      await api('/api/annotations',{run_id:runId,target_kind:kind,target_ref:ref,target_sha256:target.sha256,category:kind==="candidate"?'generation':'reading',observations,note:inputs['个人意见'].value});
+      await api('/api/annotations',{run_id:runId,target_kind:kind,target_ref:ref,target_sha256:target.sha256,category:kind==="candidate"?'generation':kind==="run"?'retrieval':'reading',observations,note:inputs['个人意见'].value});
       readerDrafts.delete(draftKey);message.textContent="已保存独立人工意见；原始科学内容和正式审查结果保持不变。";
       await readerNotes(root,ctx,kind,ref);
     });};

@@ -1,0 +1,12 @@
+[
+  {
+    "file": "co_scientist_v6_research_journey_REBUILT.html",
+    "sha256": "4b8c02fe9f1a730ca588d0660f23b990818cd908227c5a46b5699dd0b9fbca5d",
+    "role": "user supplied design reference; demo data is not execution evidence"
+  },
+  {
+    "file": "co_scientist_v6_backend_data_gap_audit.md",
+    "sha256": "2ed82aec2d1c4e8021a7ff3654301e819f31a11e2f4320b09d2ee15028b4f247",
+    "role": "user supplied design reference; demo data is not execution evidence"
+  }
+]
