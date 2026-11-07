@@ -6,6 +6,8 @@ from .store import now
 
 
 def initialize(store):
+    from .run_lifecycle import initialize as initialize_runs
+    initialize_runs(store)
     store.db.executescript("""
     CREATE TABLE IF NOT EXISTS project_lifecycle (
       project_id TEXT PRIMARY KEY REFERENCES projects(id), state TEXT NOT NULL,
@@ -25,7 +27,7 @@ def projects(store):
             {**revisions[0], "content": json.loads(revisions[0]["content"])} if revisions else None
         )
         p["runs"] = store.rows(
-            "SELECT id,status,revision_id FROM runs WHERE project_id=? ORDER BY created_at DESC",
+            "SELECT r.id,r.status,r.revision_id,COALESCE(l.state,'active') AS lifecycle FROM runs r LEFT JOIN run_lifecycle l ON r.id=l.run_id WHERE r.project_id=? ORDER BY r.created_at DESC",
             (p["id"],),
         )
         result.append(p)

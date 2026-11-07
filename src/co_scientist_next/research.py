@@ -45,6 +45,8 @@ class ResearchController:
         """)
         from .goal_restart import initialize as initialize_restarts
         initialize_restarts(self.store)
+        from .run_lifecycle import initialize as initialize_runs
+        initialize_runs(self.store)
         ResearchLibrary(self.store).initialize()
         from .research_projects import initialize
         initialize(self.store)
@@ -182,6 +184,8 @@ class ResearchController:
         return {"status": new, "remote_cancelled": False}
 
     def authorized_run(self, run):
+        if self.store.rows("SELECT run_id FROM run_lifecycle WHERE run_id=? AND state='trash'", (run,)):
+            return False
         return not self.restart_only or bool(self.store.rows("SELECT successor_run_id FROM goal_restarts WHERE successor_run_id=?", (run,))) or bool(self.store.rows("SELECT run_id FROM research_runs WHERE run_id=? AND json_extract(state, '$.explicit_current_start')=1", (run,)))
 
     def guard(self, task_id, request):

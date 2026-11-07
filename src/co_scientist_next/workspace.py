@@ -399,7 +399,7 @@ def make_server(
                 except (ValueError, KeyError, sqlite3.Error) as exc:
                     self.reply(400, {"error": str(exc) if not isinstance(exc, sqlite3.Error) else "Local save unavailable; your draft is retained"})
                 return
-            if urlsplit(self.path).path in ("/api/research/control", "/api/projects/change"):
+            if urlsplit(self.path).path in ("/api/research/control", "/api/projects/change", "/api/runs/change"):
                 try:
                     self.allowed_origin()
                     size=int(self.headers.get("Content-Length", "0"))
@@ -409,7 +409,10 @@ def make_server(
                     if goal_restart_only and data.get("action")=="resume" and not controller.authorized_run(data.get("run_id")):
                         raise ValueError("Historical Runs cannot resume in successor-only mode")
                     with sqlite3.connect(database_path) as db:
-                        if urlsplit(self.path).path == "/api/projects/change":
+                        if urlsplit(self.path).path == "/api/runs/change":
+                            from .run_lifecycle import change as change_run
+                            self.reply(200, change_run(db, data["run_id"], data["action"]))
+                        elif urlsplit(self.path).path == "/api/projects/change":
                             from .research_projects import change
                             scoped = Store.__new__(Store)
                             scoped.db = db
