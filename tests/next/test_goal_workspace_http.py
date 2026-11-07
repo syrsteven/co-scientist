@@ -103,7 +103,7 @@ with Store(sys.argv[1]) as store:
  service=goal.GoalSlice(store,goal.DevelopmentAdapter(),development_test=True)
  run=service.create_run(b,goal.DEVELOPMENT_POLICY)
  print(run,flush=True)
- goal.parse_prepare=lambda *args:os._exit(78)
+ goal.parse_prepare_v3=lambda *args:os._exit(78)
  service.execute(run)
 """
     env = {**os.environ, "PYTHONPATH": str(ROOT / "src")}

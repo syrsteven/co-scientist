@@ -9,6 +9,6 @@
       "type": "json_object"
     }
   },
-  "max_request_bytes": 262144,
+  "max_request_bytes": 2000000,
   "timeout_seconds": 600
 }

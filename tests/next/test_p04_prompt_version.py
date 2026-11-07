@@ -11,11 +11,13 @@ from co_scientist_next import background as background_module
 from co_scientist_next.background import BackgroundService
 from co_scientist_next.background_ops import (
     LEGACY_P04_PROMPT,
-    P04_PROMPT_VERSION,
     PROMPT_VERSION,
     DevelopmentReadingAdapter,
     operation_prompt,
     operation_prompt_version,
+)
+from co_scientist_next.background_ops import (
+    P04_BOUND_PROMPT_VERSION as P04_PROMPT_VERSION,
 )
 from co_scientist_next.reading_model import OpenAIChat
 from co_scientist_next.store import Store

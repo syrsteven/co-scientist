@@ -1,0 +1,37 @@
+{
+  "run_id": "c112c098940f4a8f9f02041e8c0654bf",
+  "task_id": "97ae7a90332946528d5dcc212c308f2f",
+  "attempt_id": "4c3dbd5f762b40acb58e288f1a690535",
+  "http_status": 200,
+  "finish_reason": "stop",
+  "provider_usage": {
+    "completion_tokens": 11433,
+    "completion_tokens_details": {
+      "accepted_prediction_tokens": 0,
+      "audio_tokens": 0,
+      "reasoning_tokens": 2050,
+      "rejected_prediction_tokens": 0
+    },
+    "prompt_tokens": 4733,
+    "prompt_tokens_details": {
+      "audio_tokens": 0,
+      "cache_write_tokens": 4730,
+      "cached_tokens": 0
+    },
+    "total_tokens": 16166
+  },
+  "cost": null,
+  "card_count": 26,
+  "invalid_card_index": 1,
+  "expected_view_id": "8e07d726b7454f0d9bfea0d1de4fb266",
+  "returned_view_id": "8e07d726b7454f0d9bfea0d9bfea0d1de4fb266",
+  "exact_supporting_quote_present": true,
+  "all_negative_quotes_present": true,
+  "frozen_prompt_version": "w1-l2-p04-context-v2",
+  "replay_error": "finding_cards[1]: source_view_ref does not match selected view",
+  "response_sha256": "9e8c5b2b9d8d6b4004eb208e9c8785e903af0a6f91054843603ca7c96763b468",
+  "request_sha256": "1879277010a3da54be011d131489b0343216cd51f5783f8235925cd97e58615e",
+  "original_result_unchanged": true,
+  "new_supplier_calls": 0,
+  "science_validated": false
+}

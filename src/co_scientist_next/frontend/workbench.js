@@ -234,19 +234,20 @@ async function readerNotes(root,ctx,kind,ref) {
     const target=data.targets.find(t=>t.kind===kind&&t.ref===ref);
     if (!target) {root.append(wbNode("p","此来源仅存在于冻结模型输入中，没有后端支持的 material_view 注释目标，无法在这里持久化意见。","reading-notice"));return;}
     const binding={...target,run_id:runId};const draftKey=[runId,kind,ref,target.sha256].join(":");
-    const fields=kind==="candidate"?['证据忠实性','机制价值','可检验性','主要问题']:['实验情境是否保留','阴性结果是否保留','作者措辞是否忠实'];
+    const fields=kind==="candidate"?['证据忠实性','机制价值','可检验性','主要问题']:kind==="run"?['检索相关性','重要遗漏','研究过程问题']:['实验情境是否保留','阴性结果是否保留','作者措辞是否忠实'];
     const draft=readerDrafts.get(draftKey)||{};
     const form=wbNode("form",undefined,"inline-assessment");
-    form.append(wbNode("p","自动绑定当前"+(kind==="candidate"?"候选":"原文视图")+"及内容版本。意见不会改写科学结果，也不会自动进入模型输入。","muted"));
+    form.append(wbNode("p","自动绑定当前"+(kind==="candidate"?"候选":kind==="run"?"研究":"原文视图")+"及内容版本。意见不会改写科学结果，也不会自动进入模型输入。","muted"));
     const inputs={};
-    for (const name of [...fields,'个人意见']) {const label=wbNode("label",name);const input=wbNode("textarea");input.rows=2;input.value=draft[name]||"";input.oninput=()=>{const d=readerDrafts.get(draftKey)||{};d[name]=input.value;readerDrafts.set(draftKey,d);};label.append(input);form.append(label);inputs[name]=input;}
+    for (const name of [...fields,'个人意见']) {const label=wbNode("label",name);const input=wbNode("textarea");input.rows=2;input.value=draft[name]||"";input.oninput=()=>{const d=readerDrafts.get(draftKey)||{};d[name]=input.value;delete d.submission_id;readerDrafts.set(draftKey,d);};label.append(input);form.append(label);inputs[name]=input;}
     const save=wbNode("button","保存当前对象的独立判断","primary");save.type="submit";save.disabled=state.busy;form.append(save);
     const message=wbNode("p",state.busy?"本机写操作执行中；可继续阅读，待完成后保存意见。":"","muted");message.classList.add("assessment-status");form.append(message);
     const list=wbNode("div");readerNoteRecords(list,ReaderFacts.annotations(data.records,binding));
     form.onsubmit=e=>{e.preventDefault();action(async()=>{
       if (state.run?.run.id!==runId) throw new Error("运行已切换，请回到对应研究再保存意见。");
       const observations=Object.fromEntries(fields.map(name=>[name,inputs[name].value]));
-      await api('/api/annotations',{run_id:runId,target_kind:kind,target_ref:ref,target_sha256:target.sha256,category:kind==="candidate"?'generation':'reading',observations,note:inputs['个人意见'].value});
+      const pendingDraft=readerDrafts.get(draftKey)||draft;pendingDraft.submission_id??=crypto.randomUUID();readerDrafts.set(draftKey,{...pendingDraft,...Object.fromEntries(Object.entries(inputs).map(([k,v])=>[k,v.value]))});
+      await api('/api/annotations',{submission_id:pendingDraft.submission_id,run_id:runId,target_kind:kind,target_ref:ref,target_sha256:target.sha256,category:kind==="candidate"?'generation':kind==="run"?'retrieval':'reading',observations,note:inputs['个人意见'].value});
       readerDrafts.delete(draftKey);message.textContent="已保存独立人工意见；原始科学内容和正式审查结果保持不变。";
       await readerNotes(root,ctx,kind,ref);
     });};
@@ -393,7 +394,7 @@ el('new-project').onclick=()=>{reset();wbShow('brief');};
 el('goal-test-choice').onchange=updateActions;
 el('wb-close-source').onclick=()=>el('wb-source-dialog').close();
 el('wb-note-category').onchange=wbRubric;wbRubric();
-el('wb-note-form').onsubmit=e=>{e.preventDefault();action(async()=>{const target=wb.targets.find(t=>t.kind+':'+t.ref===el('wb-note-target').value);if(!target)throw new Error('请选择本运行已保存的对象');const observations={};el('wb-note-rubric').querySelectorAll('textarea').forEach(t=>{observations[t.dataset.rubric]=t.value;});await api('/api/annotations',{run_id:state.run.run.id,target_kind:target.kind,target_ref:target.ref,target_sha256:target.sha256,category:el('wb-note-category').value,observations,note:el('wb-note-text').value});el('wb-note-text').value='';el('wb-note-rubric').querySelectorAll('textarea').forEach(t=>{t.value='';});await wbNotes();el('notice').textContent='独立人工意见已保存；没有修改或发送模型输入。';});};
+el('wb-note-form').onsubmit=e=>{e.preventDefault();action(async()=>{const target=wb.targets.find(t=>t.kind+':'+t.ref===el('wb-note-target').value);if(!target)throw new Error('请选择本运行已保存的对象');const observations={};el('wb-note-rubric').querySelectorAll('textarea').forEach(t=>{observations[t.dataset.rubric]=t.value;});await api('/api/annotations',{submission_id:pendingDraft.submission_id,run_id:state.run.run.id,target_kind:target.kind,target_ref:target.ref,target_sha256:target.sha256,category:el('wb-note-category').value,observations,note:el('wb-note-text').value});el('wb-note-text').value='';el('wb-note-rubric').querySelectorAll('textarea').forEach(t=>{t.value='';});await wbNotes();el('notice').textContent='独立人工意见已保存；没有修改或发送模型输入。';});};
 el('wb-export').onclick=()=>action(async()=>{const data=await api('/api/export?run_id='+encodeURIComponent(state.run.run.id));const url=URL.createObjectURL(new Blob([JSON.stringify(data,null,2)],{type:'application/json'}));const a=document.createElement('a');a.href=url;a.download='co-scientist-run-'+state.run.run.id+'.json';a.click();URL.revokeObjectURL(url);});
 el('wb-open-demo').onclick=()=>{wb.history=null;wbRunStatus();const f=el('wb-demo-frame');if(!f.getAttribute('src'))f.src='/history.html';f.hidden=false;el('wb-history-records').replaceChildren();};
 function wbHistorical() {

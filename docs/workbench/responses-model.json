@@ -11,7 +11,7 @@
   },
   "timeout_seconds": 600,
   "total_wait_seconds": 600,
-  "max_request_bytes": 262144,
+  "max_request_bytes": 2000000,
   "store": true,
   "retention_ack": "explicit-store-true-provider-retention-acknowledged-v1"
 }

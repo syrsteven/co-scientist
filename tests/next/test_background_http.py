@@ -67,8 +67,8 @@ else:
  data=op('http-readiness','P07',{'seed_id':seed,'packet_ref':'http-seed-packet','requested_specificity':'conceptual conjecture'})
  assert data['actions'][-1]['result']['artifact']['decision']=='ready'
  assert data['reading_count_saved']==1 and data['current_model_config']['execution_mode']=='development_fixture'
- assert data['current_prompt_versions']['P04']=='w1-l2-p04-context-v2'
- assert data['actions'][0]['prompt_version']=='w1-l2-p04-context-v2'
+ assert data['current_prompt_versions']['P04']=='w1-l2-p04-bound-view-v3'
+ assert data['actions'][0]['prompt_version']=='w1-l2-p04-bound-view-v3'
  assert api('/api/background/execute',{'request_id':'http-readiness'})==data
  for _ in range(3):assert api('/api/background?run_id='+run)==data
  assert api('/api/run?id='+run)['run']['status']=='awaiting_generation'

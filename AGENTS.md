@@ -94,3 +94,22 @@
 - Focused checks: `PYTHONPATH=src python -m pytest -q tests/next` and
   `python -m ruff check src/co_scientist_next tests/next`. Use an available Python
   environment; no mandatory `.venv`. Update STATUS with executed checks and limits.
+
+- V6 automatic research authorization (2026-11-06): an explicit Start may authorize
+  the bounded persisted controller and same-ID remote queries for that new Run.
+  Earlier manual-only rules remain applicable to historical/manual runs. Pause/stop
+  prevent new reservations; already submitted provider work is not cancelled.
+  No-ID uncertain never auto-retries. Freeze limits, policy and adapter profiles;
+  no silent truncation, model switching or claim of scientific validation.
+
+- Goal v3 linked restart: explicit preview/hash confirmation may create one atomic
+  successor per failed legacy Goal Run, reusing the frozen Brief with current
+  server defaults. It is a new versioned execution, never a retry/reinterpretation
+  of the old response. No automatic restart chains. `--goal-restart-only` gates
+  scheduling and sends to persisted authorized successors only. See
+  docs/workbench/automatic/goal-restart.md.
+
+- New P04 tasks freeze w1-l2-p04-bound-view-v3: exactly one selected frozen
+  view is program-bound when model cards omit source_view_ref. Explicit wrong
+  IDs and non-verbatim quotes remain invalid. Preserve v1/v2 strict replay;
+  do not reinterpret or overwrite historical invalid results automatically.

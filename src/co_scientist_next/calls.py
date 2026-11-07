@@ -75,6 +75,9 @@ class TaskCalls:
         for _ in range(max_attempts):
             attempt_id = identity()
             with store.db:
+                if hasattr(store, "call_guard"):
+                    store.db.execute("BEGIN IMMEDIATE")
+                    store.call_guard(self.task_id, request)
                 store.db.execute(
                     """INSERT INTO attempts
                     (id,task_id,call_key,target,request,ordinal,previous_id,status,usage,started_at)

@@ -660,3 +660,125 @@ python -m ruff format --check src/co_scientist_next tests/next
 - 真实ALS只读验收：P09真实模型+限定非生产用途pass；P10 proceed_to_R1、6项未知、8项R1核查、无达标阻断缺陷；逐条保留原文，未把ANXA11/SUN1独立人工初审问题冒充R0发现。R1未执行／能力未实现。
 - 回归起始398 passed；最终403 passed（新增5项前端映射/DOM/隔离/409断连测试），失败0/跳过0。Ruff、全部Next JS语法、wheel/sdist通过。桌面及390px浏览器已验候选内意见保存/刷新、来源问题、兄弟候选与Run隔离、空新问题、V5比较和G0→G3回放；延迟夹具执行中GET刷新后两个任务仍仅两个ordinal=1 Attempt。截图、命令和限制见 `docs/workbench/reading-refinement/README.md`。
 - 科学/历史保护：真实模型请求0、真实检索0；原工作区232项指纹及两历史DB SHA不变，科学原件和V5 HTML未改。science_validated=false。旧G3全量、在线供应商/检索和科学质量验收未运行，不实现M03/R1/Ranking/Evolution。
+
+
+## V6 automatic research — 2026-11-07
+
+PR #20 fixed head b93c1f5f50159cd61c205720cd95b6e2b267da57 was verified and
+merged as 0e5600f55a54412e27d48b56fedf85de64305c5c; this slice starts there
+on codex/v6-auto-research in an isolated worktree.
+
+Backend/M12: persisted bounded Start, separate seed rounds, material snapshot reuse,
+abstract relevance screening, traceable segments, real Goal adapter, existing P03–P10
+composition, pass-only R0, pause/resume/stop and pre-send hard limits. Existing
+uncertain records are untouched. OPEN isolation and P08 six-field contract retained.
+Page: supplied Journey layout connected to persisted aggregation, views, candidates,
+independent human notes and export. Policy maturity and execution mode are separate.
+Service: http://127.0.0.1:8770/ with independent stage DB; started empty (0 attempts).
+
+Final new-system regression: 413 passed in 61.76s, no failed/skipped tests. Ruff,
+JavaScript syntax and wheel build passed. Desktop and 390px mobile viewport browser
+checks passed; downloaded JSON parsed with persisted human assessment. Original
+232-file workspace fingerprint and both historical database hashes unchanged.
+Real model requests 0; real search requests 0; scientific quality NOT validated.
+No R1/M03/Ranking/Evolution. Physical mobile device and real scientific end-to-end
+quality checks: 未运行. Details, limits, commands and evidence: docs/workbench/automatic/.
+science_validated=false. New PR remains unmerged.
+
+
+## PR #21 product corrections — 2026-11-07
+
+Supersedes the initial V6 completion description. Reviewed head
+f07f04c395d171576c565a4a46dbc89a36ca029b was still the open PR head before this update.
+Controller and P03–P10 scientific responsibilities retained. New engineering boundaries:
+independent short annotation transactions with hash/submission deduplication; durable
+draft/start lookup and same-key recovery; server-owned versioned policy choices;
+project lifecycle with stop-before-hide and restore-without-execution; incremental
+local status, on-demand source/candidate detail and Run response guards; exact-task
+Seed holds permit independent siblings while preserving unresolved calls and quotas.
+
+Product: English researcher controls; five stages and actual direction/query/finding
+cards; broad/seed literature and explicit resource omissions; full frozen Brief;
+structured candidate reading and side-by-side comparisons; scientific activity links;
+separate diagnostics. Original scientific texts and historical design files unchanged.
+No scientific quality score, policy production approval or scientific validation implied.
+
+Final new-system regression: 420 passed in 66.72s, 0 failed/skipped. Ruff, JS syntax
+and wheel build passed. Actual Chrome 390px checks: all research/settings pages,
+comparison, draft and project manager; document width == viewport width == 390.
+Desktop/reference comparison uses 1440x1000. Browser verified note saved during a
+12-second reading wait, retained unsaved text, definite Start failure/edit, lost Start
+response/recovery, draft lookup, Trash restore, source opening and comparison.
+Evidence and explicit design differences: docs/workbench/automatic/product-verification/.
+
+Updated service: http://127.0.0.1:8770/, independent stage DB remains 0 Runs/0 Attempts.
+Detached process startup prevents session cleanup from taking down the local service.
+Offline acceptance service 8779 is separate; complete fixture export is committed,
+not the SQLite database. Real model sends 0; real literature sends 0. Original 232-file
+workspace fingerprint and both historical DB hashes unchanged. Physical-device testing,
+real scientific quality and old G3 full regression: 未运行. science_validated=false.
+PR #21 remains unmerged.
+
+CI compatibility correction: the first updated head's new test helper import failed
+under pytest --import-mode=importlib (both Python matrix jobs stopped at collection).
+Replaced same-directory imports with explicit runpy paths, matching existing fixtures.
+This changes only test loading; scientific/runtime behavior is unchanged. The CI-mode
+local new-system rerun and whole-repository Ruff check are recorded in FINAL_CHECKS.md.
+
+CI-mode local rerun: 420 passed in 64.38s, 0 failed/skipped. Remote CI is rerun on
+the corrected head; do not interpret the earlier head's collection failure as green CI.
+
+
+## PR #21 — first real Goal failure repair (2026-11-07)
+
+Baseline 87906a4257cd19f4c6f2e7d6c8b386ca559c00d0. Read-only inspection of Run a5d7c9aef42640858423fec3ea1116b0 found completed Chat transport (200/stop, input592/output1620, reasoning670, unknown cost) but invalid Goal Preparation, not Screening. Exact locator mismatch and background/use hard-requirement reclassification are documented in [Goal repair evidence](workbench/automatic/goal-repair/README.md). No safe semantics-preserving offline success; original failure and usage retained. New unsent semantic-v3 proposal exported privately, requiring future explicit authorization.
+
+New preparations construct fixed Brief fields/constraints deterministically and ask only for separately located semantic judgments. Legacy parser/replay preserved. New Research uses server-owned versioned defaults (1 Directed +1 Open, one DIRECT each); prior Run configurations remain frozen. Failure/review labels, structured reading, actual query intent and independent assessment dimensions corrected. Service 8770 is temporarily diagnostics-only, no credentials/authorization and worker suspended; no Start or automatic recovery.
+
+Original workspace and historical scientific records preserved. New real model requests0, real retrieval requests0, science_validated=false. Final check results follow in the Goal repair evidence; no claim of real v3 scientific validation.
+
+Final Goal-repair verification: 436 new-system tests passed (69.46s), no failed/skipped; full workflow Ruff, Journey/workbench JS, wheel build and diff check passed. Desktop/390px browser inspection and read-only target-Run inspection completed. Full legacy G3 local suite not run; remote CI tracked on PR.
+
+
+## PR21 — explicit Goal v3 successor (2026-11-07)
+
+Baseline 63b77bc6ea34bcd3bc3d26a1fb7007691377660d. Added read-only preview and explicit confirmation for one linked successor of a failed legacy preparation, atomic with Start/Task/provenance. Same frozen Brief; current versioned defaults and exact Both→DIRECT /4→2 differences displayed. Old records unchanged. Duplicate/lost responses resolve the same successor; failed successors cannot chain-restart. Original/ successor links and export provenance included.
+
+Service8770 now uses --goal-restart-only, gating both scheduler and sends to confirmed successors. Before enabling and final restart: only original Run blocked; credential availability confirmed without printing or probing. Browser opened preview, closed, refreshed; final confirmation NOT clicked, successors0 and original Attempt1. No real model/search requests. User may now confirm in the page. Policies remain nonproduction; science_validated=false.
+
+439 offline new-system tests passed (69.03s); final focused19 passed; Ruff, JS, wheel build and diff check passed. Legacy G3 full local suite not run. [Entry, restart command, evidence and limits](workbench/automatic/goal-restart.md). PR remains unmerged.
+
+## PR21 — screening format and independent Start repair (2026-11-07)
+
+Checked clean codex/v6-auto-research at a479ac72ca56a3522eee4c9eda56f35ccef29db8. Actual screening failure in Run bea14c2502254638a733ad914cd66d9c: completed response has rationale as three nonempty strings, policy_refs as id/version/clauses object; strict legacy string/list contract rejected it. No missing scientific rationale. New goal-screen-format-v2 explicitly accepts/validates these representations, preserves reason text and reported references, rejects empty reasons/wrong policy/unknown clauses. Historical parser/config/results/usage retained; no real recovery applied or new paid call.
+
+Start disabled root condition: frontend goal_restart_only unconditional disabling paired with backend refusal of normal Start. Authorization checkbox could never override it. Current guarded service now permits independently explicitly authorized new Starts, persists their authorization marker, and keeps historical Runs outside the scheduling/send gate. Button eligibility recalculates on editing/checking; adjacent English missing-field/consent/service messages. No pre-save prerequisite. Frozen start_key recovery/dedup retained. Screening issue text no longer tells users to request a preparation retry.
+
+446 offline tests passed (78.41s); Ruff/JS/build checks passed. Browser on isolated fixture8779: missing question disabled with explicit message; consent missing disabled; both conditions completed enabled; saved draft survived refresh and consent reset; submitted successfully after updating stale fixture backend; response-loss recovery/refresh retained Run e09a1afcee7b46b0a64db40e927ebd87. Fixture only, no real searches/models. Actual A-failure→B-start browser sequence not fully performed; new-run gate and historical isolation covered by existing/new automated tests. Real screening response checked read-only; original remains invalid under frozen legacy parser. No new supplier requests, science_validated=false.
+
+
+## PR21 — Trash-bound draft fix, Run deletion, complete browser journey
+
+Baseline de1368ce5a59a7ded99067187fb600d15262fe50. Actual project had been trashed while browser draft retained savedBrief.project_id; Start correctly rejected hidden project. New Research now detaches old project/start identity while preserving input text, save handles hidden target, and safe launch errors survive refresh. Pending unknown Start lookup remains mandatory.
+
+Added recoverable Run Trash/restore with stopped scheduling, immutable historical records and no automatic resume; audit includes lifecycle. Export uses direct same-origin download. 448full-suite tests passed73.74s plus2final targeted tests; Ruff/JS/build passed.
+
+Browser-started arbitrary-topic offline Run30dbe7e8dff543499b5f25f9f4b55615 completed Goal→queries/acquisition→9readings→3packets→2seeds/readiness→2DIRECT→2P09/2P10 without manual step transitions. Original sources, candidate comparison, notes save/reload, Run Trash/restore and downloaded JSON verified. This is invented deterministic fixture engineering evidence only. Real requests0; original real records preserved; science_validated=false. [Full evidence](workbench/automatic/full-journey-repair/README.md).
+
+
+## PR21 — P04 opaque source identity failure (2026-11-08)
+
+Baseline a34c2cd1a892f92b0d61275a14919f52025f66ca. Run c112c098940f4a8f9f02041e8c0654bf failed in P04 Task97ae7a90332946528d5dcc212c308f2f. Actual response200/stop with26cards, card1 copied a repeated substring into source_view_ref; its quote exists exactly. Input4733/output11433 tokens incl reasoning2050, costunknown. No provider/extraction/truncation failure.
+
+New w1-l2-p04-bound-view-v3 omits opaque per-card view ID repetition and program-binds the single frozen view when absent. Explicit wrong IDs, invented quotes and negative quotes still rejected. Legacy versions stay strict; no old result mutation, automatic recovery or new paid request. Page now explains reading-specific source-binding failure. [Evidence](workbench/automatic/p04-binding-repair/README.md). Service reloaded only after all3actual Runs checked blocked. science_validated=false.
+
+Final P04 repair validation:453passed73.22s; Ruff/JS/wheel/diff checks passed. Actual failure page/detail verified read-only; original execution/input table hashes unchanged. Legacy G3 full local regression not run. PR21 unmerged; real model/search requests0.
+
+
+## PR21 — P05 local byte capacity (2026-11-08)
+
+Baseline fb49cd35c13f22997b710a15bb0df877f37fd7ff. Run c91774672901422ea27a8a1ec38d0aa6 P05 request646381bytes exceeded saved262144byte cap. 16readings/16source views preserved; Task25800f45184949a3bd794ba6a24a2f97 has zero Attempts, no new supplier consumption. No provider output or token-capacity error.
+
+Current workbench Chat/Responses byte cap raised to existing supported2000000bytes, keeping actual request/messages/Prompt/model/high/32768/no-temperature/600s unchanged. Exact original request reconstructed offline and compared equal. Local byte cap is NOT a provider token/context guarantee. Frozen old Run/Task configuration remains unchanged and blocked; no automatic recovery, repeated retrieval/reading or new call. Page distinguishes capacity state with byte details and no-send statement. [Evidence](workbench/automatic/p05-capacity-repair/README.md). science_validated=false.
+
+P05 final checks:454offline tests passed73.06s; Ruff/JS/build/diff passed, actual capacity page verified. Target Task remains zero Attempts/frozen262144bytes. Invalid whole-table sqlite.Row repr fingerprint discarded; exact request reconstruction and target-record checks used. Full legacy G3 local suite not run.
