@@ -1,12 +1,19 @@
 """Product boundaries, offline only."""
 
+import runpy
+from pathlib import Path
+
 import pytest
-from test_research_controller import controller, start
 
 from co_scientist_next.annotation_writer import save_annotation
 from co_scientist_next.policy_catalog import choices, resolve
 from co_scientist_next.store import Store
 from co_scientist_next.workspace_records import WorkspaceRecords
+
+HELPERS = runpy.run_path(str(Path(__file__).with_name("test_research_controller.py")))
+controller, start, drain, FixtureTransport = (
+    HELPERS[k] for k in ("controller", "start", "drain", "FixtureTransport")
+)
 
 
 def test_annotation_independent_of_runtime_lock(tmp_path):
@@ -67,8 +74,6 @@ def test_project_trash_restore_never_resumes(tmp_path):
 
 
 def test_seed_uncertain_isolated_but_common_failure_stops(tmp_path):
-
-    from test_research_controller import drain
 
     from co_scientist_next.background_ops import DevelopmentReadingAdapter
 
@@ -131,8 +136,6 @@ def _http_notes_during_external_wait_and_start_recovery(tmp_path):
     import threading
     import time
     import urllib.request
-
-    from test_research_controller import FixtureTransport
 
     from co_scientist_next.background_ops import DevelopmentReadingAdapter
     from co_scientist_next.candidate_review_ops import DevelopmentReviewAdapter
@@ -235,8 +238,6 @@ def _http_notes_during_external_wait_and_start_recovery(tmp_path):
 
 def test_summary_does_not_ship_raw_material_or_messages(tmp_path):
     import json
-
-    from test_research_controller import drain
 
     from co_scientist_next.research_view import summary
 

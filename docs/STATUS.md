@@ -718,3 +718,12 @@ not the SQLite database. Real model sends 0; real literature sends 0. Original 2
 workspace fingerprint and both historical DB hashes unchanged. Physical-device testing,
 real scientific quality and old G3 full regression: 未运行. science_validated=false.
 PR #21 remains unmerged.
+
+CI compatibility correction: the first updated head's new test helper import failed
+under pytest --import-mode=importlib (both Python matrix jobs stopped at collection).
+Replaced same-directory imports with explicit runpy paths, matching existing fixtures.
+This changes only test loading; scientific/runtime behavior is unchanged. The CI-mode
+local new-system rerun and whole-repository Ruff check are recorded in FINAL_CHECKS.md.
+
+CI-mode local rerun: 420 passed in 64.38s, 0 failed/skipped. Remote CI is rerun on
+the corrected head; do not interpret the earlier head's collection failure as green CI.

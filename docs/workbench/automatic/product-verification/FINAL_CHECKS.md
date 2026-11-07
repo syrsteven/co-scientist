@@ -21,3 +21,10 @@ with approved loopback binding. No paid model or real literature requests were m
 
 Physical mobile devices, real end-to-end scientific quality and old G3 suite: not run.
 Remote CI is separate from these local results; this PR is not merged.
+
+CI discovery: bb80434's initial remote collection failed because importlib mode does
+not put tests/next on sys.path. Test helper loading now uses explicit runpy paths;
+no scientific implementation or original output was changed. Whole-repository Ruff
+with the workflow's three baseline migration import-order exclusions also passed.
+
+`PYTHONPATH=src python -m pytest tests/next --import-mode=importlib -p no:cacheprovider -m 'not online' -q`: **420 passed in 64.38s**, 0 failed/skipped.
