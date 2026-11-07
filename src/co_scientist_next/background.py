@@ -729,7 +729,7 @@ class BackgroundService:
             )
         response = calls.execute("model", self.adapter.target, model_request, self.adapter)
         try:
-            artifact = parse_output(operation, self.adapter.text(response.output), payload)
+            artifact = parse_output(operation, self.adapter.text(response.output), payload, version=action["prompt_version"])
         except (ValueError, TypeError, KeyError, IndexError) as exc:
             with self.store.db:
                 self.store.fact(

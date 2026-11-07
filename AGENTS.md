@@ -108,3 +108,8 @@
   of the old response. No automatic restart chains. `--goal-restart-only` gates
   scheduling and sends to persisted authorized successors only. See
   docs/workbench/automatic/goal-restart.md.
+
+- New P04 tasks freeze w1-l2-p04-bound-view-v3: exactly one selected frozen
+  view is program-bound when model cards omit source_view_ref. Explicit wrong
+  IDs and non-verbatim quotes remain invalid. Preserve v1/v2 strict replay;
+  do not reinterpret or overwrite historical invalid results automatically.

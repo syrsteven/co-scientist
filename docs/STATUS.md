@@ -764,3 +764,12 @@ Baseline de1368ce5a59a7ded99067187fb600d15262fe50. Actual project had been trash
 Added recoverable Run Trash/restore with stopped scheduling, immutable historical records and no automatic resume; audit includes lifecycle. Export uses direct same-origin download. 448full-suite tests passed73.74s plus2final targeted tests; Ruff/JS/build passed.
 
 Browser-started arbitrary-topic offline Run30dbe7e8dff543499b5f25f9f4b55615 completed Goal→queries/acquisition→9readings→3packets→2seeds/readiness→2DIRECT→2P09/2P10 without manual step transitions. Original sources, candidate comparison, notes save/reload, Run Trash/restore and downloaded JSON verified. This is invented deterministic fixture engineering evidence only. Real requests0; original real records preserved; science_validated=false. [Full evidence](workbench/automatic/full-journey-repair/README.md).
+
+
+## PR21 — P04 opaque source identity failure (2026-11-08)
+
+Baseline a34c2cd1a892f92b0d61275a14919f52025f66ca. Run c112c098940f4a8f9f02041e8c0654bf failed in P04 Task97ae7a90332946528d5dcc212c308f2f. Actual response200/stop with26cards, card1 copied a repeated substring into source_view_ref; its quote exists exactly. Input4733/output11433 tokens incl reasoning2050, costunknown. No provider/extraction/truncation failure.
+
+New w1-l2-p04-bound-view-v3 omits opaque per-card view ID repetition and program-binds the single frozen view when absent. Explicit wrong IDs, invented quotes and negative quotes still rejected. Legacy versions stay strict; no old result mutation, automatic recovery or new paid request. Page now explains reading-specific source-binding failure. [Evidence](workbench/automatic/p04-binding-repair/README.md). Service reloaded only after all3actual Runs checked blocked. science_validated=false.
+
+Final P04 repair validation:453passed73.22s; Ruff/JS/wheel/diff checks passed. Actual failure page/detail verified read-only; original execution/input table hashes unchanged. Legacy G3 full local regression not run. PR21 unmerged; real model/search requests0.

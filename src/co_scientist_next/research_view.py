@@ -43,7 +43,15 @@ def workspace(store, run):
     for e in events:
         e["detail"] = json.loads(e["detail"])
     from .goal_diagnostics import inspect_goal
+    invalid_background = [a for a in actions if (a.get("result") or {}).get("background_status") == "invalid_output"]
+    background_issue = None
+    if invalid_background:
+        failed = invalid_background[-1]
+        background_issue = {"operation": failed["operation"], "request_id": failed["request_id"],
+                            "message": "The saved reading response could not be linked reliably to its selected source. The research is stopped; no automatic resend.",
+                            "diagnostic": failed["result"].get("parse_error")}
     return {
+        "background_issue": background_issue,
         "goal_issue": inspect_goal(store, run),
         "goal_restart": store.rows("SELECT source_run_id,successor_run_id,created_at FROM goal_restarts WHERE source_run_id=? OR successor_run_id=?", (run,run)),
         "research": row,
