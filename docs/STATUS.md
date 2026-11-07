@@ -738,3 +738,12 @@ New preparations construct fixed Brief fields/constraints deterministically and 
 Original workspace and historical scientific records preserved. New real model requests0, real retrieval requests0, science_validated=false. Final check results follow in the Goal repair evidence; no claim of real v3 scientific validation.
 
 Final Goal-repair verification: 436 new-system tests passed (69.46s), no failed/skipped; full workflow Ruff, Journey/workbench JS, wheel build and diff check passed. Desktop/390px browser inspection and read-only target-Run inspection completed. Full legacy G3 local suite not run; remote CI tracked on PR.
+
+
+## PR21 — explicit Goal v3 successor (2026-11-07)
+
+Baseline 63b77bc6ea34bcd3bc3d26a1fb7007691377660d. Added read-only preview and explicit confirmation for one linked successor of a failed legacy preparation, atomic with Start/Task/provenance. Same frozen Brief; current versioned defaults and exact Both→DIRECT /4→2 differences displayed. Old records unchanged. Duplicate/lost responses resolve the same successor; failed successors cannot chain-restart. Original/ successor links and export provenance included.
+
+Service8770 now uses --goal-restart-only, gating both scheduler and sends to confirmed successors. Before enabling and final restart: only original Run blocked; credential availability confirmed without printing or probing. Browser opened preview, closed, refreshed; final confirmation NOT clicked, successors0 and original Attempt1. No real model/search requests. User may now confirm in the page. Policies remain nonproduction; science_validated=false.
+
+439 offline new-system tests passed (69.03s); final focused19 passed; Ruff, JS, wheel build and diff check passed. Legacy G3 full local suite not run. [Entry, restart command, evidence and limits](workbench/automatic/goal-restart.md). PR remains unmerged.

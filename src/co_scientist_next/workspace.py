@@ -52,6 +52,7 @@ def make_server(
     literature_mode="real_public",
     automatic_research=False,
     suspend_controller_worker=False,
+    goal_restart_only=False,
     offline_start_response_loss=False,
     goal_adapter=None,
     allow_development_goal_policy=False,
@@ -133,6 +134,12 @@ def make_server(
                 self.allowed_origin()
                 parsed = urlsplit(self.path)
                 path = parsed.path
+                if path == "/api/research/goal-restart":
+                    if not controller:
+                        raise ValueError("Automatic research unavailable")
+                    from .goal_restart import preview
+                    self.reply(200, preview(controller, parse_qs(parsed.query)["run_id"][0]))
+                    return
                 if path == "/api/projects":
                     from .research_projects import projects
                     self.reply(200, projects(store))
@@ -221,6 +228,7 @@ def make_server(
                         {
                             "automatic_research": automatic_research,
                             "scheduling_suspended": suspend_controller_worker,
+                            "goal_restart_only": goal_restart_only,
                             "policy_choices": __import__("co_scientist_next.policy_catalog", fromlist=["choices"]).choices(development_test),
                             "research_policies": {"goal": DEVELOPMENT_POLICY, "candidate": REVIEW_POLICY, "decision_policy": DEVELOPMENT_DECISIONS, "r0": DEVELOPMENT_R0_POLICY} if development_test else __import__("co_scientist_next.research_policies", fromlist=["POLICIES"]).POLICIES,
                             "research_defaults_version": __import__("co_scientist_next.research_config", fromlist=["DEFAULT_VERSION"]).DEFAULT_VERSION,
@@ -398,6 +406,8 @@ def make_server(
                     if not controller or not 0 < size < 4000:
                         raise ValueError("Invalid controller request")
                     data=json.loads(self.rfile.read(size))
+                    if goal_restart_only and data.get("action")=="resume" and not controller.authorized_run(data.get("run_id")):
+                        raise ValueError("Historical Runs cannot resume in successor-only mode")
                     with sqlite3.connect(database_path) as db:
                         if urlsplit(self.path).path == "/api/projects/change":
                             from .research_projects import change
@@ -441,7 +451,15 @@ def make_server(
                                 break
                     if managed_run and store.rows("SELECT run_id FROM research_runs WHERE run_id=?", (managed_run,)):
                         raise ValueError("Automatic Run is controller-owned; manual submissions/recovery cannot bypass its frozen plan or stop state")
-                if path == "/api/research/start":
+                if path == "/api/research/goal-restart":
+                    if not controller or suspend_controller_worker:
+                        raise ValueError("Successor execution is not enabled")
+                    from .goal_restart import confirm
+                    run=confirm(controller,data["source_run_id"],data["preview_hash"],data.get("authorize_successor_execution"))
+                    self.reply(201,{"run_id":run})
+                elif path == "/api/research/start":
+                    if goal_restart_only:
+                        raise ValueError("This service only permits explicitly confirmed Goal successors")
                     if suspend_controller_worker:
                         raise ValueError("Scheduling is suspended for diagnostics; no new Start is permitted")
                     if not controller or data.get("authorize_automatic_execution") is not True:
@@ -594,6 +612,8 @@ def make_server(
     server = (ThreadingHTTPServer if responsive else HTTPServer)(("127.0.0.1", port), Handler)
     server.daemon_threads = True
     server.research_controller = controller
+    if controller:
+        controller.restart_only = goal_restart_only
     if controller and not suspend_controller_worker:
         controller.start_worker(write_lock)
     return server
@@ -666,6 +686,7 @@ def main():
         help="Optional historical database: read-only GET/export only, never a Store",
     )
     parser.add_argument("--automatic-research", action="store_true", help="Enable explicit Start and persisted bounded controller; startup alone creates no research")
+    parser.add_argument("--goal-restart-only", action="store_true", help="Only explicitly confirmed Goal successors may execute; historical Runs cannot resume")
     parser.add_argument("--suspend-controller-worker", action="store_true", help="Read-only scheduling session: never start controller worker")
     parser.add_argument("--real-goal", action="store_true", help="Use explicitly configured reading Chat profile for actual Goal preparation/screening")
     parser.add_argument("--allow-development-goal-policy", action="store_true")
@@ -737,6 +758,7 @@ def main():
             port=args.port,
             automatic_research=args.automatic_research,
             suspend_controller_worker=args.suspend_controller_worker,
+            goal_restart_only=args.goal_restart_only,
             goal_adapter=adapter if args.real_goal else None,
             allow_development_goal_policy=args.allow_development_goal_policy,
             development_test=args.development_test,

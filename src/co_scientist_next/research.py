@@ -2,6 +2,7 @@
 
 import json
 import time
+from contextlib import nullcontext
 from threading import Event, Thread
 
 from .background import digest
@@ -25,6 +26,7 @@ class ResearchController:
         self.goal, self.background, self.literature = goal, background, literature
         self.generation, self.reviews = generation, reviews
         self.stop_event = Event()
+        self.restart_only = False
 
     def initialize(self):
         self.store.db.executescript("""
@@ -41,6 +43,8 @@ class ResearchController:
             id INTEGER PRIMARY KEY AUTOINCREMENT, run_id TEXT NOT NULL REFERENCES runs(id),
             seed_id TEXT, kind TEXT NOT NULL, detail TEXT NOT NULL, created_at TEXT NOT NULL);
         """)
+        from .goal_restart import initialize as initialize_restarts
+        initialize_restarts(self.store)
         ResearchLibrary(self.store).initialize()
         from .research_projects import initialize
         initialize(self.store)
@@ -60,7 +64,7 @@ class ResearchController:
             "review": self.reviews.config(),
         }
 
-    def start(self, revision_id, start_key, config, policies, *, policy_selection=None, defaults_version=None):
+    def start(self, revision_id, start_key, config, policies, *, policy_selection=None, defaults_version=None, commit=True):
         config = validate_config(config)
         if not isinstance(start_key, str) or not 8 <= len(start_key) <= 100:
             raise ValueError("Stable Start identity required")
@@ -88,7 +92,7 @@ class ResearchController:
         if any(p.get("execution_mode") == "real_model" and not p.get("credential_configured") for p in profiles.values()):
             raise ValueError("A real module credential is not configured; no fixture fallback")
         # Run, first Task, frozen configuration and unique Start reservation commit together.
-        with self.store.db:
+        with self.store.db if commit else nullcontext():
             run = self.goal.create_run(revision_id, policies["goal"], commit=False)
             self.store.db.execute(
                 "INSERT INTO research_runs VALUES(?,?,?,?,?,?,?,?,?,?)",
@@ -177,8 +181,13 @@ class ResearchController:
             )
         return {"status": new, "remote_cancelled": False}
 
+    def authorized_run(self, run):
+        return not self.restart_only or bool(self.store.rows("SELECT successor_run_id FROM goal_restarts WHERE successor_run_id=?", (run,)))
+
     def guard(self, task_id, request):
         task = self.store.one("SELECT run_id FROM tasks WHERE id=?", (task_id,))
+        if not self.authorized_run(task["run_id"]):
+            raise ResearchYield()
         rows = self.store.rows(
             "SELECT status,config FROM research_runs WHERE run_id=?", (task["run_id"],)
         )
@@ -393,6 +402,8 @@ class ResearchController:
             s.pop(key, None)
 
     def tick(self, run):
+        if not self.authorized_run(run):
+            return
         row = self.row(run)
         if row["status"] != "running":
             return

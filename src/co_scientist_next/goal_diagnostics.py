@@ -51,6 +51,7 @@ def inspect_goal(store, run_id):
         "http_status": response.get("http_status"),
         "provider_usage": response.get("provider_usage"),
         "recovery_action": None,
+        "restart_eligible": stage == "preparation" and invalid and json.loads(store.one("SELECT config FROM goal_run_config WHERE run_id=?", (run_id,))["config"]).get("prompt_version") in ("w0-t4-goal-v1", "v6-goal-focus-v2"),
     }
 
 

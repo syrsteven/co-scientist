@@ -45,6 +45,7 @@ def workspace(store, run):
     from .goal_diagnostics import inspect_goal
     return {
         "goal_issue": inspect_goal(store, run),
+        "goal_restart": store.rows("SELECT source_run_id,successor_run_id,created_at FROM goal_restarts WHERE source_run_id=? OR successor_run_id=?", (run,run)),
         "research": row,
         "goal": GoalSlice(store).snapshot(run),
         "background": background,

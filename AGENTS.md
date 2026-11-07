@@ -101,3 +101,10 @@
   prevent new reservations; already submitted provider work is not cancelled.
   No-ID uncertain never auto-retries. Freeze limits, policy and adapter profiles;
   no silent truncation, model switching or claim of scientific validation.
+
+- Goal v3 linked restart: explicit preview/hash confirmation may create one atomic
+  successor per failed legacy Goal Run, reusing the frozen Brief with current
+  server defaults. It is a new versioned execution, never a retry/reinterpretation
+  of the old response. No automatic restart chains. `--goal-restart-only` gates
+  scheduling and sends to persisted authorized successors only. See
+  docs/workbench/automatic/goal-restart.md.

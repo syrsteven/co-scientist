@@ -164,4 +164,5 @@ class WorkspaceRecords:
                 if table in tables and task_ids
                 else []
             )
+        result["goal_restarts"] = s.rows("SELECT * FROM goal_restarts WHERE source_run_id=? OR successor_run_id=?", (run_id,run_id)) if "goal_restarts" in tables else []
         return result
