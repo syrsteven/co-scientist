@@ -73,3 +73,41 @@ def workspace(store, run):
         "independent_studies": "not adjudicated; identifiers/views/cards are not independence evidence",
         "science_validated": False,
     }
+
+
+def summary(store, run):
+    """Researcher projection, excluding raw sources, model messages and responses."""
+    data = workspace(store, run)
+    for group in ("background", "generation", "reviews"):
+        for action in data[group]["actions"]:
+            for key in ("attempts", "input", "messages", "config"):
+                action.pop(key, None)
+    for action in data["generation"]["actions"]:
+        candidate = (action.get("result") or {}).get("candidate")
+        if candidate:
+            action["result"]["candidate"] = {
+                k: candidate[k] for k in ("candidate_id", "title", "scoped_claim")
+            }
+    for view in data["background"]["views"]:
+        view.pop("text", None)
+    for action in data["literature"]:
+        action.pop("attempts", None)
+        if action.get("result"):
+            action["result"].get("acquisition", {}).pop("text", None)
+    data["research"].pop("policies", None)
+    data["research"].pop("profiles", None)
+    data["goal"].pop("attempts", None)
+    data["goal"].pop("results", None)
+    return strip_material_text(data)
+
+
+def strip_material_text(value):
+    if isinstance(value, dict):
+        return {
+            k: strip_material_text(v)
+            for k, v in value.items()
+            if k not in ("text", "raw_response", "actual_request", "messages")
+        }
+    if isinstance(value, list):
+        return [strip_material_text(v) for v in value]
+    return value

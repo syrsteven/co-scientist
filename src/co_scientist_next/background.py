@@ -424,7 +424,8 @@ class BackgroundService:
             """,
             (run_id,),
         )
-        if unresolved:
+        from .research_scope import blocking_attempts
+        if blocking_attempts(self.store, run_id, unresolved):
             raise ValueError(
                 "Unresolved external send must be recovered explicitly before a new model task"
             )

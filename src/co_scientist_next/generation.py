@@ -43,6 +43,8 @@ class GenerationService:
             from .generation_migration import scoped_exemptions
 
             allowed = scoped_exemptions(self.store, run_id, exclude_task)
+        from .research_scope import blocking_attempts
+        unresolved = blocking_attempts(self.store, run_id, unresolved)
         if any(p["id"] not in allowed for p in unresolved):
             raise ValueError(
                 "Unresolved external call requires explicit recovery before generation"

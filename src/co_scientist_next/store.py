@@ -55,6 +55,10 @@ class Store:
                     target_sha256 TEXT NOT NULL, category TEXT NOT NULL,
                     observations TEXT NOT NULL, note TEXT NOT NULL, created_at TEXT NOT NULL
                 );
+                CREATE TABLE IF NOT EXISTS annotation_submissions (
+                    id TEXT PRIMARY KEY, input_hash TEXT NOT NULL,
+                    annotation_id TEXT NOT NULL REFERENCES human_annotations(id)
+                );
                 CREATE TABLE IF NOT EXISTS projects (
                     id TEXT PRIMARY KEY, name TEXT NOT NULL, created_at TEXT NOT NULL
                 );

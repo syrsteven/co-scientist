@@ -33,11 +33,17 @@ class ResearchController:
             config TEXT NOT NULL, policies TEXT NOT NULL, profiles TEXT NOT NULL,
             status TEXT NOT NULL, state TEXT NOT NULL, reason TEXT,
             created_at TEXT NOT NULL, updated_at TEXT NOT NULL);
+        CREATE TABLE IF NOT EXISTS research_seed_holds (
+            run_id TEXT NOT NULL REFERENCES runs(id), seed_id TEXT NOT NULL,
+            task_id TEXT NOT NULL REFERENCES tasks(id), reason TEXT NOT NULL,
+            created_at TEXT NOT NULL, PRIMARY KEY(run_id,task_id));
         CREATE TABLE IF NOT EXISTS research_events (
             id INTEGER PRIMARY KEY AUTOINCREMENT, run_id TEXT NOT NULL REFERENCES runs(id),
             seed_id TEXT, kind TEXT NOT NULL, detail TEXT NOT NULL, created_at TEXT NOT NULL);
         """)
         ResearchLibrary(self.store).initialize()
+        from .research_projects import initialize
+        initialize(self.store)
         self.store.call_guard = self.guard
 
     def profiles(self):
@@ -54,7 +60,7 @@ class ResearchController:
             "review": self.reviews.config(),
         }
 
-    def start(self, revision_id, start_key, config, policies):
+    def start(self, revision_id, start_key, config, policies, *, policy_selection=None):
         config = validate_config(config)
         if not isinstance(start_key, str) or not 8 <= len(start_key) <= 100:
             raise ValueError("Stable Start identity required")
@@ -70,6 +76,10 @@ class ResearchController:
             ):
                 raise ValueError("Start identity reused with different frozen input")
             return row["run_id"]
+        revision = self.store.one('SELECT project_id FROM brief_revisions WHERE id=?', (revision_id,))
+        lifecycle = self.store.rows('SELECT state FROM project_lifecycle WHERE project_id=?', (revision['project_id'],))
+        if lifecycle and lifecycle[0]['state'] != 'active':
+            raise ValueError('Restore this project before starting a new Run')
         profiles = self.profiles()
         if any(p.get("execution_mode") == "not_configured" for p in profiles.values()):
             raise ValueError("All module profiles must be configured; no fixture fallback")
@@ -89,7 +99,7 @@ class ResearchController:
                     encode(policies),
                     encode(profiles),
                     "running",
-                    encode({"phase": "goal", "seed_index": -1, "seeds": [], "round": 0}),
+                    encode({"phase": "goal", "seed_index": -1, "seeds": [], "round": 0, "policy_selection": policy_selection}),
                     None,
                     now(),
                     now(),
@@ -216,16 +226,15 @@ class ResearchController:
 
     def idle(self, run):
         # This is only controller-owned routing; never clears unresolved calls.
-        if self.store.rows(
-            "SELECT id FROM tasks WHERE run_id=? AND status IN ('ready','running','waiting_remote')",
-            (run,),
-        ):
+        from .research_scope import blocking_attempts, isolated_task
+        active_tasks = self.store.rows("SELECT id FROM tasks WHERE run_id=? AND status IN ('ready','running','waiting_remote')", (run,))
+        if any(not isolated_task(self.store, run, t['id']) for t in active_tasks):
             return
         unresolved = self.store.rows(
             "SELECT a.id FROM attempts a JOIN tasks t ON t.id=a.task_id WHERE t.run_id=? AND a.status IN ('uncertain','in_flight')",
             (run,),
         )
-        if unresolved:
+        if blocking_attempts(self.store, run, unresolved):
             raise LocalProblem("unresolved_send_requires_explicit_recovery")
         with self.store.db:
             self.store.db.execute("UPDATE runs SET status='awaiting_background' WHERE id=?", (run,))
@@ -406,14 +415,18 @@ class ResearchController:
                 "SELECT a.id FROM attempts a JOIN tasks t ON t.id=a.task_id WHERE t.run_id=? AND a.status IN ('uncertain','in_flight')",
                 (run,),
             )
-            if (
-                row["state"].get("seed_id")
-                and not unresolved
-                and not reason.startswith(
-                    ("resource_limit", "frozen_profiles", "credentials_invalid")
-                )
-            ):
-                self.next_seed(row, reason)
+            seed = row["state"].get("seed_id")
+            from .research_scope import blocking_attempts, task_seed
+            unresolved = blocking_attempts(self.store, run, unresolved)
+            global_reason = reason.startswith(("resource_limit", "frozen_profiles", "credentials_invalid")) or "configuration" in reason
+            # Only current-seed tasks can be held. Broad/common dependencies remain Run-level.
+            own = [a for a in unresolved if task_seed(self.store, self.store.one("SELECT task_id FROM attempts WHERE id=?", (a['id'],))['task_id']) == seed] if seed else []
+            if seed and not global_reason and len(own) == len(unresolved):
+                with self.store.db:
+                    for attempt in own:
+                        task_id = self.store.one("SELECT task_id FROM attempts WHERE id=?", (attempt['id'],))['task_id']
+                        self.store.db.execute("INSERT OR IGNORE INTO research_seed_holds VALUES(?,?,?,?,?)", (run,seed,task_id,reason,now()))
+                self.next_seed(row, reason + ("; unresolved call retained; no automatic resend" if own else ""))
                 self.save(row)
             else:
                 self.save(row, status="blocked", reason=reason)

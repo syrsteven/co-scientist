@@ -36,7 +36,7 @@ def validate_brief(brief):
             not isinstance(x, str) or not x.strip() for x in brief.get(field, [])
         ):
             raise ValueError(f"{field} must contain nonempty text entries")
-    for field in ("background", "intended_use", "research_focus", "objectives"):
+    for field in ("background", "intended_use", "research_focus", "objectives", "reference_materials"):
         if brief.get(field) is not None and not isinstance(brief[field], str):
             raise ValueError(f"{field} must be text or null")
     if not isinstance(brief.get("materials", []), list) or any(
@@ -57,7 +57,7 @@ def prepare_input(inputs):
         "intended_use_if_supplied": brief.get("intended_use"),
         "supplied_material_manifest": brief.get("materials", []),
         "supplied_background": brief.get("background", ""),
-        **{k: brief[k] for k in ("research_focus", "objectives") if k in brief},
+        **{k: brief[k] for k in ("research_focus", "objectives", "reference_materials") if k in brief},
     }
 
 
@@ -406,7 +406,7 @@ class GoalSlice:
                 {
                     "brief_revision_id": inputs.brief_revision_id,
                     "intended_use": inputs.brief.get("intended_use"),
-                    **{k: payload[k] for k in ("research_focus", "objectives") if k in payload},
+                    **{k: payload[k] for k in ("research_focus", "objectives", "reference_materials") if k in payload},
                 }
             )
             return ModuleResult(

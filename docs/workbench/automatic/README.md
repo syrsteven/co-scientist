@@ -83,3 +83,35 @@ node --check src/co_scientist_next/frontend/workbench.js
 python -m build --wheel --no-isolation
 ```
 See verification/REPORT.md and screenshots. Databases and credentials are not committed.
+
+## PR #21 product corrections
+
+Use the researcher UI in English; original scientific texts retain their language.
+Policies are selected from the server catalog, with frozen ID/version/hash. Editing
+policy JSON in the browser is no longer supported. Diagnostics/audit contains technical
+configuration. Run limits and execution modes remain separate from policy maturity.
+
+Save Draft makes the project findable in My Research even before a Run exists. Start
+uses a persistent launch identity; a lost response is looked up before any recovery.
+A definite validation error allows a new Brief revision; a frozen Run never changes.
+Archive/Trash stop new scheduling; restoring a project does not resume paid execution.
+No physical record deletion is provided.
+
+Live state uses lightweight incremental GETs. Reading/notes components are not replaced
+by the timer; original material and candidate detail load on demand. Independent notes
+save through short database transactions while model work is pending. Failed notes stay
+in the editor and are deduplicated by submission identity and content binding.
+
+Inspect candidate comparisons without scores, then follow source buttons to actual
+text/range and add independent assessments. Read resource omissions separately from
+relevance exclusions or access failures. Scientific performance remains unvalidated.
+
+See [product acceptance and remaining differences](product-verification/PRODUCT_ACCEPTANCE.md).
+
+The delivered instance is detached so closing this chat does not stop the service.
+Its PID is recorded in `/private/tmp/co-scientist-product-stage.pid`, with startup
+output in `/private/tmp/co-scientist-product-stage.log`. Before a manual restart,
+identify the listener using `lsof -nP -iTCP:8770 -sTCP:LISTEN`, stop that confirmed
+Co-Scientist Python process with `kill -TERM <PID>`, and run the start command above.
+Pause active research before restarting if you do not want its authorized controller
+to continue. Restoring an archived/trashed project never resumes execution.

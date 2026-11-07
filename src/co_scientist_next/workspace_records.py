@@ -23,11 +23,10 @@ class WorkspaceRecords:
                     "content"
                 ]
             )
-            goal = s.rows("SELECT content FROM goal_contexts WHERE run_id=?", (run_id,))
             return {
                 "revision_id": run["revision_id"],
                 "brief": brief,
-                "goal": json.loads(goal[0]["content"]) if goal else None,
+                "binding_version": "immutable-run-brief-v2",
             }
         if kind == "material_view":
             rows = s.rows(
@@ -80,7 +79,7 @@ class WorkspaceRecords:
             )
         ]
 
-    def save(self, run_id, data):
+    def save(self, run_id, data, *, commit=True):
         value = self.target(run_id, data["target_kind"], data["target_ref"])
         content_hash = digest(value)
         if data.get("target_sha256") != content_hash:
@@ -110,10 +109,13 @@ class WorkspaceRecords:
             "note": note,
             "created_at": now(),
         }
-        with self.store.db:
-            self.store.db.execute(
-                "INSERT INTO human_annotations VALUES(?,?,?,?,?,?,?,?,?)", tuple(row.values())
-            )
+        def insert():
+            self.store.db.execute("INSERT INTO human_annotations VALUES(?,?,?,?,?,?,?,?,?)", tuple(row.values()))
+        if commit:
+            with self.store.db:
+                insert()
+        else:
+            insert()
         return {**row, "observations": observations}
 
     def export(self, run_id):
@@ -144,6 +146,7 @@ class WorkspaceRecords:
             "generation_migrations",
             "research_runs",
             "research_events",
+            "research_seed_holds",
         ):
             result[table] = (
                 s.rows("SELECT * FROM " + table + " WHERE run_id=?", (run_id,))

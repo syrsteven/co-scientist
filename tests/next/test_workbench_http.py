@@ -68,7 +68,7 @@ try:
 except urllib.error.HTTPError as e:assert e.code==400
 r=api('/api/runs',{'revision_id':b['revision_id'],'policy':c['example_policy'],'goal_test_mode':'deterministic_development'})['run_id']
 t=api('/api/annotations?run_id='+r)['targets'][0]
-a=api('/api/annotations',{'run_id':r,'target_kind':t['kind'],'target_ref':t['ref'],'target_sha256':t['sha256'],'category':'note','note':'Independent human opinion','observations':{}})
+a=api('/api/annotations',{'submission_id':'http-assessment-single','run_id':r,'target_kind':t['kind'],'target_ref':t['ref'],'target_sha256':t['sha256'],'category':'note','note':'Independent human opinion','observations':{}})
 assert api('/api/export?run_id='+r)['human_annotations'][0]['note']=='Independent human opinion'
 for _ in range(3):
  assert api('/api/run?id='+r)['usage']['input_tokens']['unknown_attempts']==0

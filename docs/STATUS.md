@@ -684,3 +684,37 @@ Real model requests 0; real search requests 0; scientific quality NOT validated.
 No R1/M03/Ranking/Evolution. Physical mobile device and real scientific end-to-end
 quality checks: 未运行. Details, limits, commands and evidence: docs/workbench/automatic/.
 science_validated=false. New PR remains unmerged.
+
+
+## PR #21 product corrections — 2026-11-07
+
+Supersedes the initial V6 completion description. Reviewed head
+f07f04c395d171576c565a4a46dbc89a36ca029b was still the open PR head before this update.
+Controller and P03–P10 scientific responsibilities retained. New engineering boundaries:
+independent short annotation transactions with hash/submission deduplication; durable
+draft/start lookup and same-key recovery; server-owned versioned policy choices;
+project lifecycle with stop-before-hide and restore-without-execution; incremental
+local status, on-demand source/candidate detail and Run response guards; exact-task
+Seed holds permit independent siblings while preserving unresolved calls and quotas.
+
+Product: English researcher controls; five stages and actual direction/query/finding
+cards; broad/seed literature and explicit resource omissions; full frozen Brief;
+structured candidate reading and side-by-side comparisons; scientific activity links;
+separate diagnostics. Original scientific texts and historical design files unchanged.
+No scientific quality score, policy production approval or scientific validation implied.
+
+Final new-system regression: 420 passed in 66.72s, 0 failed/skipped. Ruff, JS syntax
+and wheel build passed. Actual Chrome 390px checks: all research/settings pages,
+comparison, draft and project manager; document width == viewport width == 390.
+Desktop/reference comparison uses 1440x1000. Browser verified note saved during a
+12-second reading wait, retained unsaved text, definite Start failure/edit, lost Start
+response/recovery, draft lookup, Trash restore, source opening and comparison.
+Evidence and explicit design differences: docs/workbench/automatic/product-verification/.
+
+Updated service: http://127.0.0.1:8770/, independent stage DB remains 0 Runs/0 Attempts.
+Detached process startup prevents session cleanup from taking down the local service.
+Offline acceptance service 8779 is separate; complete fixture export is committed,
+not the SQLite database. Real model sends 0; real literature sends 0. Original 232-file
+workspace fingerprint and both historical DB hashes unchanged. Physical-device testing,
+real scientific quality and old G3 full regression: 未运行. science_validated=false.
+PR #21 remains unmerged.
